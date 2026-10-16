@@ -166,6 +166,173 @@
     };
   }
 
+  // ---------- 검색 ----------
+  const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+  const norm = s => String(s || '').toLowerCase().replace(/\s+/g, '');
+  const chosung = s => [...String(s || '')].map(c => {
+    const code = c.charCodeAt(0) - 0xAC00;
+    return code >= 0 && code < 11172 ? CHO[Math.floor(code / 588)] : c;
+  }).join('').replace(/\s+/g, '').toLowerCase();
+  const isChosungOnly = q => /^[ㄱ-ㅎ]+$/.test(q);
+
+  let searchIndex = null;
+  function getIndex() {
+    if (searchIndex && searchIndex.data === data) return searchIndex;
+    const items = data.events.map(e => {
+      const text = [e.title, e.place, e.songs.join(' '), e.videoMemo, e.related.map(v => v.title).join(' ')].join(' ');
+      return { e, text: norm(text), cho: chosung(text) };
+    });
+    const fuse = window.Fuse ? new window.Fuse(data.events, {
+      keys: [{ name: 'title', weight: 2 }, { name: 'songs', weight: 2 }, 'place', 'related.title'],
+      threshold: 0.35, ignoreLocation: true,
+    }) : null;
+    searchIndex = { data, items, fuse };
+    return searchIndex;
+  }
+
+  const MEMBER_LIST = ['배두훈', '강형호', '조민규', '고우림'];
+  let shown = 50;
+
+  function readParams() {
+    const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+    return { q: qs.get('q') || '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: qs.get('member') || '', video: qs.get('video') === '1', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
+  }
+  function writeParams(p) {
+    const qs = new URLSearchParams();
+    if (p.q) qs.set('q', p.q);
+    if (p.cat) qs.set('cat', p.cat);
+    if (p.year) qs.set('year', p.year);
+    if (p.member) qs.set('member', p.member);
+    if (p.video) qs.set('video', '1');
+    if (p.sort === 'old') qs.set('sort', 'old');
+    const s = qs.toString();
+    history.replaceState(null, '', '#/search' + (s ? '?' + s : ''));
+  }
+
+  function runSearch(p) {
+    const { items, fuse } = getIndex();
+    const q = p.q.trim();
+    let fuzzy = false;
+    let list;
+    if (!q) list = items.map(i => i.e);
+    else if (isChosungOnly(q)) list = items.filter(i => i.cho.includes(q)).map(i => i.e);
+    else {
+      const nq = norm(q);
+      list = items.filter(i => i.text.includes(nq) || i.cho.includes(chosung(q))).map(i => i.e);
+      if (!list.length && fuse) { list = fuse.search(q).map(r => r.item); fuzzy = list.length > 0; }
+    }
+    list = list.filter(e =>
+      (!p.cat || e.category === p.cat) &&
+      (!p.year || e.date.startsWith(p.year)) &&
+      (!p.member || e.members.includes(p.member)) &&
+      (!p.video || e.videoId || e.related.length));
+    if (!fuzzy) list = list.slice().sort((a, b) => p.sort === 'old' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
+    return { list, fuzzy };
+  }
+
+  function resultCard(e) {
+    const hasVideo = e.videoId || e.related.length;
+    return `
+      <a class="card" href="#/e/${encodeURIComponent(e.id)}">
+        <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${hasVideo ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}</span>
+        <span class="card-title">${esc(e.title)}</span>
+        ${songsLine(e)}
+      </a>`;
+  }
+
+  // 유튜브 임시 재생목록 (최대 50개)
+  function playAllUrl(list) {
+    const ids = [];
+    list.forEach(e => {
+      const id = e.videoId || (e.related.find(v => v.source !== '공식채널') || {}).videoId;
+      if (id && !ids.includes(id)) ids.push(id);
+    });
+    return ids.length ? `https://www.youtube.com/watch_videos?video_ids=${ids.slice(0, 50).join(',')}` : '';
+  }
+
+  function searchResults(p) {
+    const { list, fuzzy } = runSearch(p);
+    const desc = [p.q && `'${p.q}'`, p.cat, p.year && `${p.year}년`, p.member, p.video && '영상 있음'].filter(Boolean).join(' · ');
+    const play = playAllUrl(list);
+    return `
+      <div class="result-head">
+        <span>${desc ? esc(desc) + ' · ' : ''}<b>${list.length}건</b>${fuzzy ? ' · 비슷한 결과' : ''}</span>
+        <button type="button" class="link-btn" id="sort">${p.sort === 'old' ? '오래된순' : '최신순'} ▾</button>
+      </div>
+      ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>검색 결과 영상 이어보기</a>` : ''}
+      ${list.length ? `<div class="stack">${list.slice(0, shown).map(resultCard).join('')}</div>` :
+        `<p class="empty">찾는 기록이 없어요. 혹시 빠진 기록이라면 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`}
+      ${list.length > shown ? `<button type="button" class="btn btn-soft" id="show-more">더 보기 (${list.length - shown}건 남음)</button>` : ''}`;
+  }
+
+  function searchView() {
+    const p = readParams();
+    const cats = [...new Set(data.events.map(e => e.category).filter(Boolean))];
+    const years = [...new Set(data.events.map(e => e.date.slice(0, 4)))].sort().reverse();
+    const chip = (attr, val, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}</button>`;
+    return `
+      <div class="search-top">
+        <form class="searchbox" role="search" id="search-form">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소 · 초성도 OK" value="${esc(p.q)}" autocomplete="off">
+        </form>
+        <div class="chips" id="filters">
+          ${cats.map(c => chip('cat', c, c, p.cat === c)).join('')}
+          <label class="chip chip-select${p.year ? ' on' : ''}"><span class="sr">연도</span>
+            <select id="year"><option value="">연도 ▾</option>${years.map(y => `<option value="${y}"${p.year === y ? ' selected' : ''}>${y}년</option>`).join('')}</select></label>
+          <label class="chip chip-select${p.member ? ' on' : ''}"><span class="sr">멤버</span>
+            <select id="member"><option value="">멤버 ▾</option>${MEMBER_LIST.map(m => `<option value="${m}"${p.member === m ? ' selected' : ''}>${m}</option>`).join('')}</select></label>
+          ${chip('video', '1', '▶ 영상 있음', p.video)}
+        </div>
+      </div>
+      <div id="results">${searchResults(p)}</div>`;
+  }
+
+  function bindSearch() {
+    const form = document.getElementById('search-form');
+    const input = form.q;
+    const update = (change, resetShown = true) => {
+      const p = Object.assign(readParams(), change);
+      writeParams(p);
+      if (resetShown) shown = 50;
+      document.getElementById('results').innerHTML = searchResults(p);
+      bindResults();
+    };
+    const bindResults = () => {
+      const s = document.getElementById('sort');
+      if (s) s.onclick = () => update({ sort: readParams().sort === 'old' ? 'new' : 'old' });
+      const m = document.getElementById('show-more');
+      if (m) m.onclick = () => { shown += 50; update({}, false); };
+    };
+    let timer;
+    input.oninput = () => { clearTimeout(timer); timer = setTimeout(() => update({ q: input.value }), 150); };
+    form.onsubmit = ev => { ev.preventDefault(); input.blur(); update({ q: input.value }); };
+    document.querySelectorAll('#filters .chip[data-cat]').forEach(b => b.onclick = () => {
+      const p = readParams();
+      update({ cat: p.cat === b.dataset.cat ? '' : b.dataset.cat });
+      document.querySelectorAll('#filters .chip[data-cat]').forEach(x => { const on = x.dataset.cat === readParams().cat; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    });
+    const v = document.querySelector('#filters .chip[data-video]');
+    v.onclick = () => { const on = !readParams().video; update({ video: on }); v.classList.toggle('on', on); v.setAttribute('aria-pressed', on); };
+    ['year', 'member'].forEach(id => {
+      const sel = document.getElementById(id);
+      sel.onchange = () => { update({ [id]: sel.value }); sel.parentElement.classList.toggle('on', !!sel.value); };
+    });
+    bindResults();
+    if (!readParams().q && !readParams().cat) input.focus({ preventScroll: true });
+  }
+
+  // 구글 폼 미리 채우기 주소
+  function formUrl({ type, date, title, song } = {}) {
+    const f = window.CONFIG.form;
+    const qs = new URLSearchParams({ usp: 'pp_url' });
+    if (type) qs.set(f.fields.type, type);
+    if (date) qs.set(f.fields.date, date);
+    if (title) qs.set(f.fields.title, title);
+    if (song) qs.set(f.fields.song, song);
+    return `${f.url}?${qs}`;
+  }
+
   const routes = {
     home: () => `
       ${header()}
@@ -174,7 +341,7 @@
       ${homeRandom()}
       ${homeMonth()}
       ${homePrograms()}`,
-    search: () => soon('검색', '다음 단계에서 만들어요.'),
+    search: searchView,
     e: () => soon('일정 상세', '다음 단계에서 만들어요.'),
     program: () => soon('프로그램별 모아보기', '사이트 2단계에서 만들어요.'),
     songs: () => soon('곡 아카이브', '사이트 2단계에서 만들어요.'),
@@ -197,6 +364,7 @@
     if (!data) return;
     view.innerHTML = routes[name]();
     if (name === 'home') bindHome();
+    if (name === 'search') bindSearch();
   }
 
   function showLoading() {
