@@ -39,12 +39,6 @@
     `<span class="play-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>영상</span>` : '';
 
   // 하루 동안 같은 결과가 나오는 랜덤 (오늘의 랜덤 무대)
-  function seeded(seed) {
-    let h = 2166136261;
-    for (const c of seed) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
-    return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 100000) / 100000; };
-  }
-
   // ---------- 공유 ----------
   const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
   const TAGS = '#포레스텔라 #숲별기록장';
@@ -157,12 +151,17 @@
 
   // 랜덤 무대 후보: 공식 영상이 있고 곡이 확인된 일정
   let pickCount = 0;
+  let randomPick = null;
   function homeRandom() {
     const pool = data.events.filter(e => e.videoId && e.songs.length && e.songSource !== '참고');
     if (!pool.length) return '';
-    const rnd = seeded(todayParts().iso + ':' + pickCount);
-    const e = pool[Math.floor(rnd() * pool.length)];
-    const song = e.songs[Math.floor(rnd() * e.songs.length)];
+    // 들어올 때마다, 다시 뽑을 때마다 새로 뽑아요 (방금 본 무대는 빼고)
+    if (!randomPick || randomPick.n !== pickCount || !pool.includes(randomPick.e)) {
+      let e;
+      do { e = pool[Math.floor(Math.random() * pool.length)]; } while (pool.length > 1 && randomPick && e === randomPick.e);
+      randomPick = { n: pickCount, e, song: e.songs[Math.floor(Math.random() * e.songs.length)] };
+    }
+    const { e, song } = randomPick;
     return `
       <section class="block" id="random">
         <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2>${shareBtn('랜덤 무대 공유하기', `오늘의 포레스텔라 랜덤 무대 🎲\n${fmtDate(e.date, false)} ${e.title} · ${song}\n\n나도 뽑아보기 👉 ${SITE}\n${TAGS}`, '')}</div>
