@@ -207,6 +207,7 @@
     if (p.sort === 'old') qs.set('sort', 'old');
     const s = qs.toString();
     history.replaceState(null, '', '#/search' + (s ? '?' + s : ''));
+    baseHash = location.hash;
   }
 
   function runSearch(p) {
@@ -342,29 +343,173 @@
       ${homeMonth()}
       ${homePrograms()}`,
     search: searchView,
-    e: () => soon('일정 상세', '다음 단계에서 만들어요.'),
     program: () => soon('프로그램별 모아보기', '사이트 2단계에서 만들어요.'),
     songs: () => soon('곡 아카이브', '사이트 2단계에서 만들어요.'),
     timeline: () => soon('연표', '사이트 2단계에서 만들어요.'),
     more: () => soon('더보기', '사이트 3단계에서 만들어요.'),
   };
 
-  function currentRoute() {
-    const path = location.hash.replace(/^#\/?/, '').split('?')[0].split('/')[0];
-    return routes[path] ? path : 'home';
+  // ---------- 일정 상세 (아래에서 올라오는 시트) ----------
+  const SOURCE_NOTE = {
+    '방송사 영상': '방송사 공식 채널 영상으로 확인했어요.',
+    '공식채널': '포레스텔라 공식 유튜브로 확인했어요.',
+    '언론사 영상': '언론사 공식 채널 영상으로 확인했어요.',
+    '팬 영상': '팬 영상 제목 기준이라 틀릴 수 있어요. 팬 영상 링크는 걸지 않아요.',
+  };
+  const ytWatch = id => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
+  const ytThumb = id => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`;
+
+  function songCount(song) {
+    return data.events.filter(e => e.songSource !== '참고' && e.songs.includes(song)).length;
   }
 
-  function render() {
-    const name = currentRoute();
+  function reportsFor(e) {
+    const t = norm(e.title);
+    return data.reports.filter(r => r.date === e.date && (!r.title || t.includes(norm(r.title)) || norm(r.title).includes(t)));
+  }
+
+  function detailView(e) {
+    const time = e.start ? ` · ${esc(e.start)}${e.end ? '~' + esc(e.end) : ''}` : '';
+    const period = e.endDate && e.endDate !== e.date ? ` ~ ${fmtDate(e.endDate, false)}` : '';
+    const thumb = e.videoId ? `
+      <a class="thumb" href="${ytWatch(e.videoId)}" target="_blank" rel="noopener" aria-label="유튜브에서 영상 보기">
+        <img src="${ytThumb(e.videoId)}" alt="" loading="lazy">
+        <span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span>
+        <span class="thumb-cap">${e.songSource === '참고' ? '참고 영상 · ' : ''}유튜브에서 열기</span>
+      </a>` : '';
+
+    let songs;
+    if (e.songSource === '참고') {
+      songs = `
+        <div class="notice">
+          <span class="src-badge">참고</span>
+          <span>녹화일이거나 연속 방송 회차라서 이 일정의 곡은 확정하지 않았어요.${e.videoMemo ? ' ' + esc(e.videoMemo) : ''}</span>
+        </div>`;
+    } else if (e.songs.length) {
+      songs = `
+        ${e.songs.map(s => `<a class="song-row" href="#/search?q=${encodeURIComponent(s)}"><span>${esc(s)}</span><span class="song-count">확인된 무대 ${songCount(s)}개 ›</span></a>`).join('')}
+        ${SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
+    } else {
+      songs = `<p class="src-note">아직 영상으로 확인된 곡이 없어요.</p>`;
+    }
+
+    const reports = reportsFor(e);
+    const reportList = reports.length ? `
+      <section class="d-block">
+        <h2 class="h3">팬 제보</h2>
+        ${reports.map(r => `
+          <div class="report">
+            <span class="report-badge">팬 제보 · 미확인</span>
+            <span>${esc([r.type, r.song].filter(Boolean).join(' · '))}</span>
+            ${r.message ? `<span class="report-msg">${esc(r.message)}</span>` : ''}
+            ${/^https?:\/\//.test(r.link) ? `<a href="${esc(r.link)}" target="_blank" rel="noopener nofollow">근거 링크 ›</a>` : ''}
+          </div>`).join('')}
+      </section>` : '';
+
+    const related = e.related.length ? `
+      <section class="d-block">
+        <h2 class="h3">관련 영상</h2>
+        ${e.related.map(v => `
+          <a class="rel" href="${ytWatch(v.videoId)}" target="_blank" rel="noopener">
+            <span class="tag">${esc(v.source || '영상')}</span>
+            <span class="rel-body"><span>${esc(v.title)}</span>${v.note ? `<span class="row-sub">${esc(v.note)}</span>` : ''}</span>
+          </a>`).join('')}
+      </section>` : '';
+
+    const ym = e.date.slice(0, 7);
+    return `
+      <div class="sheet-grab" aria-hidden="true"><span></span></div>
+      <button type="button" class="sheet-close" id="sheet-close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <div class="sheet-body">
+        <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span></div>
+        <h1 class="d-title">${esc(e.title)}</h1>
+        ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
+        ${thumb}
+        <section class="d-block">
+          <div class="block-head"><h2 class="h3">영상으로 확인된 곡</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
+          ${songs}
+          ${e.videoMemo && e.songSource !== '참고' ? `<p class="src-note">${esc(e.videoMemo)}</p>` : ''}
+          <div class="notice notice-col">
+            <span>영상이 남아 있는 곡만 표시돼요. 실제로는 더 불렀을 수 있어요.</span>
+            <span class="notice-links">
+              <a href="${formUrl({ type: '빠진 곡', date: e.date, title: e.title })}" target="_blank" rel="noopener">빠진 곡 제보 ›</a>
+              <a href="${formUrl({ type: '틀린 정보', date: e.date, title: e.title })}" target="_blank" rel="noopener">틀린 정보 알려주기 ›</a>
+            </span>
+          </div>
+        </section>
+        ${reportList}
+        ${related}
+        <a class="same-time" href="#/timeline?ym=${ym}"><span class="sub">같은 시기의 기록</span><span>${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5))}월 연표에서 보기 ›</span></a>
+      </div>`;
+  }
+
+  const sheet = document.createElement('div');
+  sheet.className = 'sheet-wrap';
+  sheet.hidden = true;
+  sheet.innerHTML = '<div class="sheet-backdrop"></div><section class="sheet" role="dialog" aria-modal="true" aria-label="일정 상세"></section>';
+  document.querySelector('.app').appendChild(sheet);
+  let baseHash = null;   // 시트 아래에 깔린 화면의 주소
+  let openedInApp = false;
+
+  function closeSheet() {
+    if (openedInApp) history.back();
+    else location.hash = baseHash || '#/';
+  }
+  sheet.querySelector('.sheet-backdrop').onclick = closeSheet;
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !sheet.hidden) closeSheet(); });
+
+  function showSheet(id) {
+    const e = data.byId.get(decodeURIComponent(id || ''));
+    const box = sheet.querySelector('.sheet');
+    box.innerHTML = e ? detailView(e) : `
+      <div class="sheet-body"><p class="empty">이 기록을 찾지 못했어요. 주소가 바뀌었거나 숨김 처리된 일정일 수 있어요.</p></div>`;
+    sheet.hidden = false;
+    document.body.classList.add('sheet-open');
+    box.scrollTop = 0;
+    const c = document.getElementById('sheet-close');
+    if (c) c.onclick = closeSheet;
+    (c || box).focus({ preventScroll: true });
+  }
+  function hideSheet() {
+    sheet.hidden = true;
+    document.body.classList.remove('sheet-open');
+  }
+
+  function currentRoute() {
+    const path = location.hash.replace(/^#\/?/, '').split('?')[0].split('/')[0];
+    return path === 'e' || routes[path] ? path : 'home';
+  }
+
+  function setTabs(name) {
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === name;
       t.classList.toggle('on', on);
       if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
-    if (!data) return;
+  }
+
+  function renderBase(name) {
+    setTabs(name);
     view.innerHTML = routes[name]();
     if (name === 'home') bindHome();
     if (name === 'search') bindSearch();
+  }
+
+  // 반환값: 바탕 화면을 새로 그렸는지 (스크롤을 맨 위로 올릴지)
+  function render() {
+    const name = currentRoute();
+    if (!data) { setTabs(name === 'e' ? 'home' : name); return false; }
+    if (name === 'e') {
+      if (baseHash === null) { baseHash = '#/'; renderBase('home'); }
+      showSheet(location.hash.split('/')[2]);
+      return false;
+    }
+    hideSheet();
+    openedInApp = false;
+    if (baseHash === location.hash && view.innerHTML) return false;
+    baseHash = location.hash;
+    renderBase(name);
+    return true;
   }
 
   function showLoading() {
@@ -385,14 +530,18 @@
   async function start() {
     showLoading();
     try {
-      data = await window.DATA.load(next => { data = next; render(); });
+      data = await window.DATA.load(next => { data = next; searchIndex = null; if (currentRoute() !== 'e') baseHash = null; render(); });
       render();
     } catch (err) {
       showError(err);
     }
   }
 
-  window.addEventListener('hashchange', () => { render(); view.scrollTop = 0; window.scrollTo(0, 0); });
+  window.addEventListener('hashchange', () => {
+    const wasOpen = !sheet.hidden;
+    if (render()) window.scrollTo(0, 0);
+    if (currentRoute() === 'e' && !wasOpen) openedInApp = true;
+  });
   render();
   start();
 })();
