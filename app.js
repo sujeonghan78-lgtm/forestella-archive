@@ -294,7 +294,7 @@
     else if (isChosungOnly(q)) list = items.filter(i => i.cho.includes(q)).map(i => i.e);
     else {
       const nq = norm(q);
-      list = items.filter(i => i.text.includes(nq) || i.cho.includes(chosung(q))).map(i => i.e);
+      list = items.filter(i => i.text.includes(nq)).map(i => i.e);
       if (!list.length && fuse) { list = fuse.search(q).map(r => r.item); fuzzy = list.length > 0; }
     }
     list = list.filter(e =>
