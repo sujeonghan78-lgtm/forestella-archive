@@ -45,6 +45,76 @@
     return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 100000) / 100000; };
   }
 
+  // ---------- 공유 ----------
+  const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
+  const TAGS = '#포레스텔라 #숲별기록장';
+  const link = path => SITE + path;
+  const xUrl = (text, url) => `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}${url ? '&url=' + encodeURIComponent(url) : ''}`;
+  const shareIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>';
+  // 동그란 공유 버튼 (홈 · 곡 상세 · 프로그램별)
+  const shareBtn = (label, text, url) =>
+    `<button type="button" class="share-round" data-share data-text="${esc(text)}" data-url="${esc(url)}" aria-label="${esc(label)}">${shareIcon}</button>`;
+
+  function eventShareText(e) {
+    const songs = e.songSource !== '참고' && e.songs.length ? `\n🎵 ${e.songs.join(' / ')}` : '';
+    return `📅 ${fmtDate(e.date, false)} ${e.title}${songs}\n\n${TAGS}`;
+  }
+
+  function toast(msg) {
+    let t = document.getElementById('toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._h);
+    t._h = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); toast('링크를 복사했어요'); }
+    catch (err) { window.prompt('이 주소를 복사해 주세요', text); }
+  }
+
+  // 폰은 기본 공유창, 컴퓨터는 X · 링크 복사 메뉴
+  function shareMenu(text, url) {
+    const old = document.getElementById('share-menu');
+    if (old) old.remove();
+    const m = document.createElement('div');
+    m.id = 'share-menu';
+    m.className = 'share-menu';
+    m.innerHTML = `
+      <div class="share-backdrop"></div>
+      <div class="share-box" role="dialog" aria-label="공유하기">
+        <a class="share-item" href="${xUrl(text, url)}" target="_blank" rel="noopener">X에 올리기</a>
+        <button type="button" class="share-item" data-copy="${esc(url || text)}">${url ? '링크 복사' : '문구 복사'}</button>
+        <button type="button" class="share-item share-cancel">닫기</button>
+      </div>`;
+    document.body.appendChild(m);
+    const close = () => m.remove();
+    m.querySelector('.share-backdrop').onclick = close;
+    m.querySelector('.share-cancel').onclick = close;
+    m.querySelector('a').onclick = () => setTimeout(close, 100);
+  }
+
+  async function share(text, url) {
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      try { await navigator.share(url ? { text, url } : { text }); } catch (err) { /* 사용자가 닫음 */ }
+      return;
+    }
+    shareMenu(text, url);
+  }
+
+  document.addEventListener('click', ev => {
+    const s = ev.target.closest('[data-share]');
+    if (s) { ev.preventDefault(); share(s.dataset.text, s.dataset.url); return; }
+    const c = ev.target.closest('[data-copy]');
+    if (c) {
+      ev.preventDefault();
+      copyText(c.dataset.copy);
+      const m = document.getElementById('share-menu');
+      if (m) m.remove();
+    }
+  });
+
   // ---------- 홈 ----------
   // 정확히 같은 날짜가 없으면, 앞뒤 3일 안에서 가장 가까운 날을 보여줘요.
   function yearsAgoToday() {
@@ -75,9 +145,14 @@
       </a>`).join('');
     return `
       <section class="block">
-        <div class="block-head"><h2 class="h2">${title}</h2><span class="sub">${t.m}월 ${t.d}일</span></div>
+        <div class="block-head"><h2 class="h2">${title}</h2><span class="sub head-side">${t.m}월 ${t.d}일${exact ? shareBtn(title + ' 공유하기', agoText(years, hits[0]), link('#/e/' + encodeURIComponent(hits[0].id))) : ''}</span></div>
         <div class="stack">${cards}</div>
       </section>`;
+  }
+
+  function agoText(years, e) {
+    const song = e.songSource !== '참고' && e.songs.length ? ` 「${e.songs[0]}」` : '';
+    return `${years}년 전 오늘의 포레스텔라 🌲\n${e.title}${song}\n\n${TAGS}`;
   }
 
   // 랜덤 무대 후보: 공식 영상이 있고 곡이 확인된 일정
@@ -90,7 +165,7 @@
     const song = e.songs[Math.floor(rnd() * e.songs.length)];
     return `
       <section class="block" id="random">
-        <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2></div>
+        <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2>${shareBtn('랜덤 무대 공유하기', `오늘의 포레스텔라 랜덤 무대 🎲\n${fmtDate(e.date, false)} ${e.title} · ${song}\n\n나도 뽑아보기 👉 ${SITE}\n${TAGS}`, '')}</div>
         <div class="dice-card">
           <a class="dice-link" href="#/e/${encodeURIComponent(e.id)}">
             <span class="dice" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="15" r="1"/><circle cx="15" cy="9" r="1"/><circle cx="9" cy="15" r="1"/></svg></span>
@@ -381,7 +456,7 @@
     return `
       <a class="back" href="#/songs">‹ 곡 아카이브</a>
       <section class="song-hero">
-        <h1 class="song-title">${esc(so.name)}</h1>
+        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1>${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</div>
         <span class="count-pill">확인된 무대 ${so.events.length}개</span>
         <div class="facts">
           <div class="fact"><b>처음 확인</b><span>${fmtDate(so.first.date, false)} · ${esc(so.first.title)}</span></div>
@@ -478,7 +553,7 @@
     return `
       <div class="prog-top">
         <a class="back" href="#/">‹ 홈</a>
-        <h1 class="h1">프로그램별 모아보기</h1>
+        <div class="block-head"><h1 class="h1">프로그램별 모아보기</h1>${shareBtn('이 프로그램 모음 공유하기', `포레스텔라 ${prog} 무대 몰아보기 ▶▶\n\n${TAGS}`, link('#/program/' + encodeURIComponent(prog)))}</div>
         <div class="chips">${PROGRAMS.map(p => `<a class="chip${p === prog ? ' on' : ''}" href="#/program/${encodeURIComponent(p)}"${p === prog ? ' aria-current="true"' : ''}>${p}</a>`).join('')}</div>
       </div>
       ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>${esc(prog)} 무대 이어보기</a>` : ''}
@@ -501,6 +576,125 @@
       <p class="src-note foot">공식 팬카페 캘린더에 등록된 출연만 있어요.${prog === '음악방송' ? ' 뮤직뱅크 · 음악중심 · 엠카운트다운 · 인기가요 · 쇼챔피언 · 더쇼를 모았어요.' : ''} 빠진 회차는 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`;
   }
 
+  // ---------- 더보기 ----------
+  const menuIcon = d => `<span class="mi-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg></span>`;
+  function moreView() {
+    const item = (href, icon, label, side, ext) =>
+      `<a class="mi" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''}>${menuIcon(icon)}<span class="mi-l">${label}</span><span class="mi-side">${side} ›</span></a>`;
+    return `
+      <h1 class="h1 page-title">더보기</h1>
+      <a class="about-card" href="#/about">
+        <span class="block-head"><span class="about-title">기록은 이렇게 모았어요</span><span aria-hidden="true">›</span></span>
+        <span>일정은 공식 팬카페 캘린더, 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
+      </a>
+      <nav aria-label="더보기 메뉴">
+        ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '불후 · 열린음악회')}
+        ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
+        ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
+        ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
+        ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기', '홈 화면에 추가')}
+        ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해', '')}
+      </nav>`;
+  }
+
+  function membersView() {
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">멤버 개인 활동</h1>
+      <p class="sub">일정명에 멤버 이름이 표시된 기록만 모았어요. 완전체 무대는 빠져요.</p>
+      <nav class="member-list">
+        ${MEMBER_LIST.map(m => {
+          const n = data.events.filter(e => e.members.includes(m)).length;
+          return `<a class="mi" href="#/search?member=${encodeURIComponent(m)}"><span class="mi-l">${m}</span><span class="mi-side">${n}건 ›</span></a>`;
+        }).join('')}
+      </nav>`;
+  }
+
+  function aboutView() {
+    const badge = (cls, label, text) => `<div class="b-row"><span class="bd ${cls}">${label}</span><span>${text}</span></div>`;
+    return `
+      <div class="about-top">
+        <a class="back" href="#/more">‹ 더보기</a>
+        <h1 class="h1">이 사이트에 대해</h1>
+        <p>숲별 기록장은 팬이 만든 <b>비공식</b> 아카이브예요. 소속사 · 공식 채널과 관계가 없어요.</p>
+      </div>
+      <section class="sec">
+        <h2 class="h3">일정은 어디서 왔나요?</h2>
+        <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라 그 이전 기록은 비어 있어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요.</p>
+      </section>
+      <section class="sec">
+        <h2 class="h3">곡 정보는 이렇게 적었어요</h2>
+        <p>영상으로 확인된 곡만 적었어요. <b>실제로는 더 불렀을 수 있어요.</b></p>
+        <div class="badges">
+          ${badge('bd-tv', '방송사 영상', '방송사 공식 채널 영상으로 확인')}
+          ${badge('bd-official', '공식채널', '포레스텔라 공식 유튜브로 확인')}
+          ${badge('bd-press', '언론사 영상', '언론사 공식 채널 영상으로 확인')}
+          ${badge('bd-fan', '팬 영상', '팬이 올린 영상 제목 기준이라 틀릴 수 있어요')}
+          ${badge('bd-ref', '참고', '녹화일 · 연속 방송이라 곡을 확정하지 않고 관련 방송 영상만 연결')}
+          ${badge('bd-report', '팬 제보 · 미확인', '제보 폼으로 들어온 내용이에요. 아직 확인 전이에요')}
+        </div>
+      </section>
+      <section class="sec">
+        <h2 class="h3">영상 링크</h2>
+        <p>방송사 · 공식 채널 · 언론사 영상만 연결해요. 팬 영상은 링크를 걸지 않아요.</p>
+      </section>
+      <section class="sec">
+        <h2 class="h3">빠지거나 틀린 게 있다면</h2>
+        <p>제보 폼으로 알려주세요. 제보는 "팬 제보 · 미확인" 표시와 함께 바로 보이고, 확인한 뒤 기록에 반영해요.</p>
+        <div class="two-btn">
+          <a class="btn btn-link" href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">기록 제보하기</a>
+          <a class="btn btn-link btn-line" href="${formUrl({ type: '틀린 정보' })}" target="_blank" rel="noopener">정정 요청</a>
+        </div>
+      </section>
+      <section class="sec">
+        <h2 class="h3">문의 · 삭제 요청</h2>
+        <p>문의 연락처는 준비 중이에요. 그동안은 제보 폼의 "하고 싶은 말"에 남겨주세요.</p>
+      </section>`;
+  }
+
+  // 홈 화면에 추가 안내 (첫 접속 팝업 없이, 더보기에서만)
+  let installPrompt = null;
+  window.addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); installPrompt = ev; });
+  function installView() {
+    const ua = navigator.userAgent;
+    const kakao = /KAKAOTALK/i.test(ua);
+    const android = /Android/i.test(ua);
+    const os = new URLSearchParams(location.hash.split('?')[1] || '').get('os') || (android ? 'android' : 'ios');
+    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    const step = (n, t, d) => `<div class="step"><span class="num">${n}</span><div class="st"><b>${t}</b><span>${d}</span></div></div>`;
+    const steps = os === 'android' ? [
+      step(1, '크롬에서 열기', kakao ? '지금 카톡 안에서 열었어요. 오른쪽 위 ⋮ 메뉴에서 "다른 브라우저로 열기"를 눌러주세요.' : '카톡 안에서 열었다면 오른쪽 위 ⋮ 메뉴에서 "다른 브라우저로 열기"를 눌러주세요.'),
+      step(2, '메뉴 열기', '크롬 오른쪽 위 ⋮ 버튼을 눌러요.'),
+      step(3, '"홈 화면에 추가" 선택', '"앱 설치"로 보일 수도 있어요. 추가를 누르면 끝!'),
+    ] : [
+      step(1, '사파리에서 열기', kakao ? '지금 카톡 안에서 열었어요. 오른쪽 아래 메뉴에서 "Safari로 열기"를 눌러주세요.' : '카톡 안에서 열었다면 오른쪽 아래 메뉴에서 "Safari로 열기"를 눌러주세요.'),
+      step(2, '공유 버튼 누르기', '화면 아래쪽, 네모에 화살표가 있는 버튼이에요.'),
+      step(3, '"홈 화면에 추가" 선택', '목록을 아래로 내리면 있어요. 추가를 누르면 끝!'),
+    ];
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <div class="install-head">
+        <img src="icons/icon-192.png" alt="" width="60" height="60">
+        <div><h1 class="h1">앱처럼 쓰기</h1><p class="sub">홈 화면에 추가하면 아이콘으로 바로 열려요</p></div>
+      </div>
+      ${standalone ? '<div class="notice">이미 홈 화면에서 열었어요. 👍</div>' : ''}
+      <div class="checks">
+        <span>✓ 주소창 없이 전체 화면으로</span>
+        <span>✓ 한 번 열어두면 다음부터 더 빨리</span>
+        <span>✓ 앱스토어 설치 필요 없음</span>
+      </div>
+      ${installPrompt ? '<button type="button" class="btn install-now" id="install-now">지금 홈 화면에 추가하기</button>' : ''}
+      <div class="seg-wrap" role="tablist">
+        <a class="seg${os === 'ios' ? ' on' : ''}" href="#/install?os=ios" role="tab" aria-selected="${os === 'ios'}">아이폰</a>
+        <a class="seg${os === 'android' ? ' on' : ''}" href="#/install?os=android" role="tab" aria-selected="${os === 'android'}">안드로이드</a>
+      </div>
+      <div class="steps">${steps.join('')}</div>`;
+  }
+  function bindInstall() {
+    const b = document.getElementById('install-now');
+    if (b) b.onclick = async () => { installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; renderBase('install'); };
+  }
+
   const routes = {
     home: () => `
       ${header()}
@@ -514,7 +708,10 @@
     songs: songsView,
     song: songView,
     timeline: timelineView,
-    more: () => soon('더보기', '사이트 3단계에서 만들어요.'),
+    more: moreView,
+    members: membersView,
+    about: aboutView,
+    install: installView,
   };
 
   // ---------- 일정 상세 (아래에서 올라오는 시트) ----------
@@ -595,6 +792,11 @@
         <h1 class="d-title">${esc(e.title)}</h1>
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
         ${thumb}
+        <div class="share-row">
+          <button type="button" class="act act-wide" data-share data-text="${esc(eventShareText(e))}" data-url="${esc(link('#/e/' + encodeURIComponent(e.id)))}">${shareIcon}공유하기</button>
+          <a class="act" href="${xUrl(eventShareText(e), link('#/e/' + encodeURIComponent(e.id)))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>X</a>
+          <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
+        </div>
         <section class="d-block">
           <div class="block-head"><h2 class="h3">영상으로 확인된 곡</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
           ${songs}
@@ -651,7 +853,7 @@
   }
 
   function setTabs(name) {
-    const tabName = { song: 'songs', program: 'home' }[name] || name;
+    const tabName = { song: 'songs', program: 'home', members: 'more', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -666,6 +868,7 @@
     if (name === 'search') bindSearch();
     if (name === 'songs') bindSongs();
     if (name === 'timeline') bindTimeline();
+    if (name === 'install') bindInstall();
   }
 
   // 반환값: 바탕 화면을 새로 그렸는지 (스크롤을 맨 위로 올릴지)
@@ -717,4 +920,6 @@
   });
   render();
   start();
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
