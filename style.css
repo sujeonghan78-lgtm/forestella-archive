@@ -28,7 +28,8 @@ body {
   overflow-wrap: anywhere;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, .hero-title, .card-title, .d-title, .song-title, .brand-name, .dice-song { letter-spacing: -0.025em; }
+h1, h2, h3, .hero-title, .card-title, .d-title, .song-title, .brand-name, .dice-card .btn { flex: none; min-height: 36px; height: 36px; padding: 0 12px; font-size: 12px; border-radius: 10px; }
+.dice-song { letter-spacing: -0.025em; }
 a { color: var(--green); text-decoration: none; }
 button { font-family: inherit; }
 
@@ -106,13 +107,14 @@ button { font-family: inherit; }
 .play-pill { display: flex; align-items: center; gap: 4px; flex: none; margin-left: auto; font-size: 11px; font-weight: 700; background: #FFFFFF; border-radius: 16px; padding: 6px 12px; }
 .play-pill svg { width: 14px; height: 14px; fill: var(--green-2); }
 
-.dice-card { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 20px; border: 1.5px dashed #A9D9C1; }
-.dice-link { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; color: var(--ink); }
-.dice { width: 56px; height: 56px; border-radius: 16px; flex: none; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #C6EC6B, #62D3A1 55%, #72BCF3); }
-.dice svg { width: 30px; height: 30px; stroke: #FFFFFF; fill: none; stroke-width: 1.7; }
+.dice-card { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 20px; border: 1.5px dashed #A9D9C1; }
+.dice-link { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; color: var(--ink); }
+.dice { width: 44px; height: 44px; border-radius: 13px; flex: none; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #C6EC6B, #62D3A1 55%, #72BCF3); }
+.dice svg { width: 24px; height: 24px; stroke: #FFFFFF; fill: none; stroke-width: 1.7; }
 .dice-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .dice-text .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dice-song { font-size: 14px; font-weight: 700; }
+.dice-card .btn { flex: none; min-height: 36px; height: 36px; padding: 0 12px; font-size: 12px; border-radius: 10px; }
+.dice-song { font-size: 14px; font-weight: 700; overflow-wrap: break-word; line-height: 1.35; }
 
 .row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 4px; border-bottom: 1px solid #EAF1EC; color: var(--ink); }
 .row-year { flex: none; width: 40px; white-space: nowrap; font-size: 11px; font-weight: 700; color: var(--green); }
