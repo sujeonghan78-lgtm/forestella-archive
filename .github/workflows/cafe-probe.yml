@@ -15,5 +15,12 @@ jobs:
           curl -sSL -A "$M" -o m_list.html -w "m %{http_code}\n" "https://m.cafe.daum.net/official.forestella/XkhA?boardType=Q" || true
           curl -sSL -A "$P" -o pc_list.html -w "pc %{http_code}\n" "https://cafe.daum.net/official.forestella/XkhA" || true
           ls -la
+          for f in m_list.html pc_list.html; do
+            echo "::notice title=$f size::$(wc -c < $f) bytes / title: $(grep -o '<title>[^<]*' $f | head -1)"
+            echo "::notice title=$f classes::$(grep -o 'class=\"[^\"]*\"' $f | sort | uniq -c | sort -rn | head -40 | tr '\n' ' ')"
+            echo "::notice title=$f links::$(grep -o 'href=\"[^\"]*XkhA[^\"]*\"' $f | head -15 | tr '\n' ' ')"
+            echo "::notice title=$f scripts::$(grep -o 'src=\"[^\"]*\.js[^\"]*\"' $f | head -15 | tr '\n' ' ')"
+            echo "::notice title=$f hints::$(grep -o -i '[a-z_]*\(api\|article\|dataid\|fldid\|grpid\|frame\|iframe\)[^ <>]\{0,60\}' $f | sort -u | head -40 | tr '\n' ' ')"
+          done
       - uses: actions/upload-artifact@v4
         with: { name: probe, path: probe, retention-days: 1 }
