@@ -1,0 +1,19 @@
+# 임시: 카페 일정 게시판이 어떤 모양인지 확인용 (확인 끝나면 지워요)
+name: cafe-probe
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/cafe-probe.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir -p probe && cd probe
+          M="Mozilla/5.0 (Linux; Android 13; SM-S911N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"
+          P="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+          curl -sSL -A "$M" -o m_list.html -w "m %{http_code}\n" "https://m.cafe.daum.net/official.forestella/XkhA?boardType=Q" || true
+          curl -sSL -A "$P" -o pc_list.html -w "pc %{http_code}\n" "https://cafe.daum.net/official.forestella/XkhA" || true
+          ls -la
+      - uses: actions/upload-artifact@v4
+        with: { name: probe, path: probe, retention-days: 1 }
