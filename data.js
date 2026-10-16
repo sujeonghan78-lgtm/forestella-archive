@@ -138,12 +138,13 @@
 
   async function fetchAll() {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports] = await Promise.all([
+    const [events, videos, reports, cafe] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
+      fetchText('cafe.json').catch(() => ''),
     ]);
-    return { events, videos, reports, savedAt: Date.now() };
+    return { events, videos, reports, cafe, savedAt: Date.now() };
   }
 
   function readCache() {
@@ -153,8 +154,23 @@
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(raw)); } catch (e) { /* 저장 공간이 없으면 넘어가요 */ }
   }
 
+  // 카페 스케줄에서 자동으로 가져온 일정 중 시트에 아직 없는 것 (숨김 처리한 일정도 시트에 있는 것으로 봐요)
+  function buildCafe(text, sheetRows) {
+    let list = [];
+    try { list = JSON.parse(text).events || []; } catch (e) { return []; }
+    const known = new Set(sheetRows.map(r => r['ID']).filter(Boolean));
+    return list.filter(c => c.id && c.date && !known.has(c.id)).map(c => ({
+      id: c.id, date: c.date, endDate: c.endDate || '', start: c.start || '', end: c.end || '',
+      category: c.category || '기타', title: c.title, place: c.place || '',
+      content: '', note: '', videoId: '', songs: [], songSource: '', videoMemo: '',
+      members: membersOf(c.title), songKeys: [], auto: true,
+    }));
+  }
+
   function build(raw) {
-    const events = buildEvents(toObjects(raw.events));
+    const sheetRows = toObjects(raw.events);
+    const events = buildEvents(sheetRows).concat(raw.cafe ? buildCafe(raw.cafe, sheetRows) : [])
+      .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     const videos = buildVideos(toObjects(raw.videos));
     const reports = raw.reports ? buildReports(toObjects(raw.reports)) : [];
     const byId = new Map(events.map(e => [e.id, e]));

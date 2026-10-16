@@ -799,6 +799,7 @@
         <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span></div>
         <h1 class="d-title">${esc(e.title)}</h1>
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
+        ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
         <div class="share-row">
           <button type="button" class="act act-wide" data-share data-text="${esc(eventShareText(e))}" data-url="${esc(link('#/e/' + encodeURIComponent(e.id)))}">${shareIcon}공유하기</button>
