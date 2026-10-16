@@ -222,7 +222,7 @@
     return `
       <form class="searchbox" role="search" id="home-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소로 찾기 · 초성도 OK" autocomplete="off">
+        <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소 검색 · 초성 OK" autocomplete="off">
       </form>`;
   }
 
@@ -545,6 +545,15 @@
     '음악방송': e => /뮤직뱅크|음악중심|엠카운트다운|인기가요|쇼챔피언|더\s?쇼/i.test(e.title),
   };
 
+  // 프로그램 화면에서는 "[KBS2] 불후의 명곡 - " 같은 앞부분을 떼서 회차 이름만 보여줘요.
+  function programTitle(title, prog) {
+    if (!['불후의 명곡', '열린음악회'].includes(prog)) return title;
+    const i = title.indexOf(prog);
+    if (i < 0) return title;
+    const rest = title.slice(i + prog.length).replace(/^[\s\-–:·]+/, '').trim();
+    return rest || prog;
+  }
+
   function programView() {
     const name = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const prog = PROGRAM_MATCH[name] ? name : PROGRAMS[0];
@@ -563,9 +572,9 @@
           const hasVideo = e.videoId || e.related.length;
           return `
             <a class="ep" href="#/e/${encodeURIComponent(e.id)}">
-              <span class="ep-date">${fmtDate(e.date, false)}</span>
               <span class="ep-body">
-                <span class="ep-title">${esc(e.title)}</span>
+                <span class="ep-date">${fmtDate(e.date)}</span>
+                <span class="ep-title">${esc(programTitle(e.title, prog))}</span>
                 ${ref ? `<span class="ep-ref">참고${e.videoMemo ? ' · ' + esc(e.videoMemo.replace(/^참고:\s*/, '')) : ''}</span>` :
                   e.songs.length ? `<span class="ep-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
               </span>
@@ -580,7 +589,7 @@
   const menuIcon = d => `<span class="mi-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg></span>`;
   function moreView() {
     const item = (href, icon, label, side, ext) =>
-      `<a class="mi" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''}>${menuIcon(icon)}<span class="mi-l">${label}</span><span class="mi-side">${side} ›</span></a>`;
+      `<a class="mi" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''}>${menuIcon(icon)}<span class="mi-l">${label}</span><span class="mi-side">${side ? side + ' ' : ''}›</span></a>`;
     return `
       <h1 class="h1 page-title">더보기</h1>
       <a class="about-card" href="#/about">
@@ -588,11 +597,11 @@
         <span>일정은 공식 팬카페 캘린더, 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
       </a>
       <nav aria-label="더보기 메뉴">
-        ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '불후 · 열린음악회')}
+        ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
         ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
         ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
-        ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기', '홈 화면에 추가')}
+        ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기', '')}
         ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해', '')}
       </nav>`;
   }
