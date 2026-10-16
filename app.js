@@ -648,7 +648,7 @@
       </section>
       <section class="sec">
         <h2 class="h3">문의 · 삭제 요청</h2>
-        <p>문의 연락처는 준비 중이에요. 그동안은 제보 폼의 "하고 싶은 말"에 남겨주세요.</p>
+        <p>X(트위터) <a href="https://x.com/duun1122" target="_blank" rel="noopener">@duun1122</a>로 연락해 주세요. 기록 정정은 제보 폼이 더 빨라요.</p>
       </section>`;
   }
 
