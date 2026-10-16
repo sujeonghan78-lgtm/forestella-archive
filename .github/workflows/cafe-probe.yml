@@ -15,13 +15,18 @@ jobs:
           curl -sSL -A "$M" -o m_list.html -w "m %{http_code}\n" "https://m.cafe.daum.net/official.forestella/XkhA?boardType=Q" || true
           curl -sSL -A "$P" -o pc_list.html -w "pc %{http_code}\n" "https://cafe.daum.net/official.forestella/XkhA" || true
           ls -la
-          curl -sSL -o sm.js "https://t1.daumcdn.net/cafe_cj/mobileweb/build/js/schedule_monthly-c0a5ecac1d.min.js"
+          curl -sS -G -A "$M" -H "Accept: application/json" -H "Referer: https://m.cafe.daum.net/official.forestella/XkhA?boardType=Q" -o api.json -w "api %{http_code}\n" "https://m.cafe.daum.net/official.forestella/XkhA/schedule" --data-urlencode "startTime=2026-10-01T00:00:00+09:00" --data-urlencode "endTime=2026-10-31T23:59:59+09:00" || true
           python3 - <<'PY'
-          import re
-          s=open('sm.js',encoding='utf-8',errors='replace').read()
-          for pat in [r'[,;\s]af=',r'[,;\s]cf=',r'function cf\(',r'function af\(',r'baseURL',r'\.create\(']:
-            for m in list(re.finditer(pat,s))[:4]:
-              print('::notice title=ctx %s::'%pat + s[max(0,m.start()-150):m.start()+350].replace('%','%25').replace('\n',' '))
+          import json
+          raw=open('api.json',encoding='utf-8',errors='replace').read()
+          print('::notice title=api raw::'+raw[:400].replace('%','%25').replace('\n',' '))
+          try:
+            d=json.loads(raw); L=d['data']['scheduleList']
+            print('::notice title=api count::%d keys=%s'%(len(L), sorted(L[0].keys()) if L else ''))
+            for x in L[:4]:
+              y={k:v for k,v in x.items() if k not in ('description','image')}
+              print('::notice title=api item::'+json.dumps(y,ensure_ascii=False)[:1500].replace('%','%25'))
+          except Exception as e: print('::notice title=api err::'+repr(e))
           PY
       - uses: actions/upload-artifact@v4
         with: { name: probe, path: probe, retention-days: 1 }
