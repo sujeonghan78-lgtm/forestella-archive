@@ -818,7 +818,7 @@
   const sheet = document.createElement('div');
   sheet.className = 'sheet-wrap';
   sheet.hidden = true;
-  sheet.innerHTML = '<div class="sheet-backdrop"></div><section class="sheet" role="dialog" aria-modal="true" aria-label="일정 상세"></section>';
+  sheet.innerHTML = '<div class="sheet-backdrop"></div><section class="sheet" role="dialog" aria-modal="true" aria-label="일정 상세" tabindex="-1"></section>';
   document.querySelector('.app').appendChild(sheet);
   let baseHash = null;   // 시트 아래에 깔린 화면의 주소
   let openedInApp = false;
@@ -840,7 +840,7 @@
     box.scrollTop = 0;
     const c = document.getElementById('sheet-close');
     if (c) c.onclick = closeSheet;
-    (c || box).focus({ preventScroll: true });
+    box.focus({ preventScroll: true });
   }
   function hideSheet() {
     sheet.hidden = true;
