@@ -2,7 +2,8 @@
 name: cafe-sync
 on:
   schedule:
-    - cron: '23 * * * *'
+    # 한국 시간 아침 8시~밤 12시에만 (새벽 1~7시는 쉬어요)
+    - cron: '23 0-15,23 * * *'
   workflow_dispatch:
     inputs:
       full:
