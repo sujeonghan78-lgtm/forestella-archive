@@ -47,6 +47,19 @@
     return String(s || '').split('/').map(x => x.trim()).filter(Boolean);
   }
 
+  // 곡 아카이브에서 같은 곡으로 묶기 위한 이름.
+  // "Piano Man (스페셜 크로스오버상 수상)", "Arabian Nights(고우림)", "꽃병 외 10곡"처럼
+  // 한글 설명이 붙은 괄호와 "외 N곡"은 떼고, 대소문자는 구분하지 않아요.
+  // "White Night 소개"(소개만 한 곡)와 "참고:"로 시작하는 메모는 곡으로 세지 않아요.
+  function songBase(name) {
+    let n = String(name).trim();
+    if (/^참고/.test(n) || /\s소개$/.test(n)) return '';
+    n = n.replace(/\s*외\s*\d+\s*곡$/, '');
+    n = n.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /[가-힣]|^with\s/i.test(inner) ? '' : m);
+    return n.trim();
+  }
+  const songKey = name => songBase(name).toLowerCase().replace(/\s+/g, ' ');
+
   // 일정명 앞의 [강형호], [두훈/우림] 같은 표시에서 멤버 뽑기
   const MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
   const SHORT = { 두훈: '배두훈', 형호: '강형호', 민규: '조민규', 우림: '고우림' };
@@ -79,6 +92,9 @@
         songSource: r['곡 확인 출처'],
         videoMemo: r['영상 메모'],
         members: membersOf(r['일정명']),
+      }))
+      .map(e => Object.assign(e, {
+        songKeys: e.songSource === '참고' ? [] : [...new Set(e.songs.map(songKey).filter(Boolean))],
       }))
       .filter(e => e.date)
       .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
@@ -144,7 +160,26 @@
     const byId = new Map(events.map(e => [e.id, e]));
     events.forEach(e => { e.related = []; });
     videos.forEach(v => { const e = byId.get(v.eventId); if (e) e.related.push(v); });
-    return { events, videos, reports, byId, savedAt: raw.savedAt };
+    // 곡별로 확인된 무대 모으기 (이름은 가장 많이 쓰인 표기로)
+    const songs = new Map();
+    events.forEach(e => {
+      if (e.songSource === '참고') return;
+      e.songs.forEach(name => {
+        const key = songKey(name);
+        if (!key) return;
+        if (!songs.has(key)) songs.set(key, { key, names: {}, events: [] });
+        const so = songs.get(key);
+        const base = songBase(name);
+        so.names[base] = (so.names[base] || 0) + 1;
+        if (!so.events.includes(e)) so.events.push(e);
+      });
+    });
+    songs.forEach(so => {
+      so.name = Object.keys(so.names).sort((a, b) => so.names[b] - so.names[a])[0];
+      so.first = so.events[0];
+      so.last = so.events[so.events.length - 1];
+    });
+    return { events, videos, reports, byId, songs, savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
@@ -163,5 +198,5 @@
     return build(raw);
   }
 
-  window.DATA = { load, parseCSV, normDate };
+  window.DATA = { load, parseCSV, normDate, songKey };
 })();

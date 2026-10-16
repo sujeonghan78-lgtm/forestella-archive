@@ -334,6 +334,173 @@
     return `${f.url}?${qs}`;
   }
 
+  // ---------- 곡 아카이브 ----------
+  const koCollator = new Intl.Collator('ko');
+  // 가나다순: 한글 곡 먼저, 그다음 영어 곡 (한국어 사이트라서)
+  const hangulFirst = (a, b) => {
+    const ha = /^[가-힣]/.test(a), hb = /^[가-힣]/.test(b);
+    return ha !== hb ? (ha ? -1 : 1) : koCollator.compare(a, b);
+  };
+  let songSort = 'name';
+
+  function songsView() {
+    const list = [...data.songs.values()].sort((a, b) =>
+      songSort === 'first' ? a.first.date.localeCompare(b.first.date) || hangulFirst(a.name, b.name) : hangulFirst(a.name, b.name));
+    return `
+      <div class="page-head">
+        <h1 class="h1">곡 아카이브</h1>
+        <p class="sub">한 곡을 누르면 그 곡이 확인된 무대가 모두 나와요</p>
+      </div>
+      <div class="notice">영상으로 확인된 무대만 모았어요. 영상이 없는 무대는 빠져 있을 수 있어요.</div>
+      <div class="chips" id="song-sort">
+        <button type="button" class="chip${songSort === 'name' ? ' on' : ''}" data-sort="name" aria-pressed="${songSort === 'name'}">가나다순</button>
+        <button type="button" class="chip${songSort === 'first' ? ' on' : ''}" data-sort="first" aria-pressed="${songSort === 'first'}">처음 확인된 순</button>
+      </div>
+      <div>
+        ${list.map(so => `
+          <a class="song-item" href="#/song/${encodeURIComponent(so.key)}">
+            <span class="song-name">${esc(so.name)}</span>
+            ${songSort === 'first' ? `<span class="song-first">${fmtDate(so.first.date, false)}</span>` : ''}
+            <span class="song-n">${so.events.length}개 ›</span>
+          </a>`).join('')}
+      </div>`;
+  }
+  function bindSongs() {
+    document.querySelectorAll('#song-sort .chip').forEach(b => b.onclick = () => {
+      songSort = b.dataset.sort;
+      renderBase('songs');
+    });
+  }
+
+  function songView() {
+    const key = decodeURIComponent(location.hash.split('/')[2] || '');
+    const so = data.songs.get(key);
+    if (!so) return `<p class="empty">이 곡을 찾지 못했어요. <a href="#/songs">곡 목록으로 ›</a></p>`;
+    const stages = so.events.slice().reverse();
+    const play = playAllUrl(stages);
+    return `
+      <a class="back" href="#/songs">‹ 곡 아카이브</a>
+      <section class="song-hero">
+        <h1 class="song-title">${esc(so.name)}</h1>
+        <span class="count-pill">확인된 무대 ${so.events.length}개</span>
+        <div class="facts">
+          <div class="fact"><b>처음 확인</b><span>${fmtDate(so.first.date, false)} · ${esc(so.first.title)}</span></div>
+          ${so.events.length > 1 ? `<div class="fact"><b>최근 확인</b><span>${fmtDate(so.last.date, false)} · ${esc(so.last.title)}</span></div>` : ''}
+        </div>
+        ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
+      </section>
+      <h2 class="h3 list-title">무대 목록</h2>
+      <div class="stack">${stages.map(resultCard).join('')}</div>
+      <p class="src-note foot">영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.</p>`;
+  }
+
+  // ---------- 연표 ----------
+  const FIRST_YEAR = 2018;   // 포레스텔라 데뷔 해
+  const CALENDAR_START = '2021-08';   // 팬카페 캘린더가 시작된 달
+
+  function timelineView() {
+    const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+    const ym = qs.get('ym') || '';
+    const years = [];
+    const lastYear = data.events.length ? Number(data.events[data.events.length - 1].date.slice(0, 4)) : new Date().getFullYear();
+    for (let y = FIRST_YEAR; y <= lastYear; y++) years.push(String(y));
+    const has = new Set(data.events.map(e => e.date.slice(0, 4)));
+    const year = qs.get('y') || (ym ? ym.slice(0, 4) : String(lastYear));
+
+    const events = data.events.filter(e => e.date.startsWith(year));
+    const months = new Map();
+    events.forEach(e => {
+      const m = e.date.slice(0, 7);
+      if (!months.has(m)) months.set(m, []);
+      months.get(m).push(e);
+    });
+
+    const gapText = year < CALENDAR_START.slice(0, 4) ? `${year}년` :
+      year === CALENDAR_START.slice(0, 4) ? `${year}년 1~${Number(CALENDAR_START.slice(5)) - 1}월` : '';
+    const gap = gapText ? `
+      <div class="gap-card">
+        <b>${gapText}</b>
+        <span>이 시기 기록은 아직 비어 있어요. 기억나는 무대가 있다면 알려주세요.</span>
+        <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">기록 제보하기 ›</a>
+      </div>` : '';
+
+    const body = [...months.entries()].map(([m, list]) => `
+      <h2 class="month" id="m-${m}">${Number(m.slice(0, 4))}년 ${Number(m.slice(5))}월</h2>
+      ${list.map(e => {
+        const songs = e.songSource !== '참고' && e.songs.length;
+        return `
+          <a class="ev" href="#/e/${encodeURIComponent(e.id)}">
+            <span class="dot${songs ? '' : ' dot-plain'}" aria-hidden="true"></span>
+            <span class="ev-body">
+              <span class="ev-date">${e.date.slice(5).replace('-', '.')} · ${esc(e.place || e.category)}</span>
+              <span class="ev-title">${esc(e.title)}</span>
+              ${songs ? `<span class="ev-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
+            </span>
+          </a>`;
+      }).join('')}`).join('');
+
+    return `
+      <div class="tl-top">
+        <h1 class="h1">연표</h1>
+        <div class="chips" id="years">
+          ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="#/timeline?y=${y}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
+        </div>
+      </div>
+      <div class="tl">
+        ${gap}
+        ${body || (gap ? '' : '<p class="empty">이 해의 기록이 아직 없어요.</p>')}
+      </div>`;
+  }
+  function bindTimeline() {
+    const on = document.querySelector('#years .yr.on');
+    if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+    const ym = new URLSearchParams(location.hash.split('?')[1] || '').get('ym');
+    const target = ym && document.getElementById('m-' + ym);
+    if (target) requestAnimationFrame(() => {
+      const top = target.getBoundingClientRect().top + scrollY - document.querySelector('.tl-top').offsetHeight - 8;
+      window.scrollTo(0, Math.max(0, top));
+    });
+  }
+
+  // ---------- 프로그램별 모아보기 ----------
+  const PROGRAM_MATCH = {
+    '불후의 명곡': e => e.title.includes('불후의 명곡'),
+    '열린음악회': e => e.title.includes('열린음악회'),
+    '라디오': e => e.category === '라디오',
+    '음악방송': e => /뮤직뱅크|음악중심|엠카운트다운|인기가요|쇼챔피언|더\s?쇼/i.test(e.title),
+  };
+
+  function programView() {
+    const name = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
+    const prog = PROGRAM_MATCH[name] ? name : PROGRAMS[0];
+    const list = data.events.filter(PROGRAM_MATCH[prog]).slice().reverse();
+    const play = playAllUrl(list);
+    return `
+      <div class="prog-top">
+        <a class="back" href="#/">‹ 홈</a>
+        <h1 class="h1">프로그램별 모아보기</h1>
+        <div class="chips">${PROGRAMS.map(p => `<a class="chip${p === prog ? ' on' : ''}" href="#/program/${encodeURIComponent(p)}"${p === prog ? ' aria-current="true"' : ''}>${p}</a>`).join('')}</div>
+      </div>
+      ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>${esc(prog)} 무대 이어보기</a>` : ''}
+      <div>
+        ${list.map(e => {
+          const ref = e.songSource === '참고';
+          const hasVideo = e.videoId || e.related.length;
+          return `
+            <a class="ep" href="#/e/${encodeURIComponent(e.id)}">
+              <span class="ep-date">${fmtDate(e.date, false)}</span>
+              <span class="ep-body">
+                <span class="ep-title">${esc(e.title)}</span>
+                ${ref ? `<span class="ep-ref">참고${e.videoMemo ? ' · ' + esc(e.videoMemo.replace(/^참고:\s*/, '')) : ''}</span>` :
+                  e.songs.length ? `<span class="ep-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
+              </span>
+              ${hasVideo && !ref ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}
+            </a>`;
+        }).join('') || '<p class="empty">아직 기록이 없어요.</p>'}
+      </div>
+      <p class="src-note foot">공식 팬카페 캘린더에 등록된 출연만 있어요.${prog === '음악방송' ? ' 뮤직뱅크 · 음악중심 · 엠카운트다운 · 인기가요 · 쇼챔피언 · 더쇼를 모았어요.' : ''} 빠진 회차는 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`;
+  }
+
   const routes = {
     home: () => `
       ${header()}
@@ -343,9 +510,10 @@
       ${homeMonth()}
       ${homePrograms()}`,
     search: searchView,
-    program: () => soon('프로그램별 모아보기', '사이트 2단계에서 만들어요.'),
-    songs: () => soon('곡 아카이브', '사이트 2단계에서 만들어요.'),
-    timeline: () => soon('연표', '사이트 2단계에서 만들어요.'),
+    program: programView,
+    songs: songsView,
+    song: songView,
+    timeline: timelineView,
     more: () => soon('더보기', '사이트 3단계에서 만들어요.'),
   };
 
@@ -359,8 +527,10 @@
   const ytWatch = id => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
   const ytThumb = id => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`;
 
-  function songCount(song) {
-    return data.events.filter(e => e.songSource !== '참고' && e.songs.includes(song)).length;
+  function songRow(name) {
+    const so = data.songs.get(window.DATA.songKey(name));
+    if (!so) return `<div class="song-row"><span>${esc(name)}</span></div>`;
+    return `<a class="song-row" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(name)}</span><span class="song-count">확인된 무대 ${so.events.length}개 ›</span></a>`;
   }
 
   function reportsFor(e) {
@@ -387,7 +557,7 @@
         </div>`;
     } else if (e.songs.length) {
       songs = `
-        ${e.songs.map(s => `<a class="song-row" href="#/search?q=${encodeURIComponent(s)}"><span>${esc(s)}</span><span class="song-count">확인된 무대 ${songCount(s)}개 ›</span></a>`).join('')}
+        ${e.songs.map(songRow).join('')}
         ${SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
     } else {
       songs = `<p class="src-note">아직 영상으로 확인된 곡이 없어요.</p>`;
@@ -481,8 +651,9 @@
   }
 
   function setTabs(name) {
+    const tabName = { song: 'songs', program: 'home' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
-      const on = t.dataset.tab === name;
+      const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
       if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
@@ -493,6 +664,8 @@
     view.innerHTML = routes[name]();
     if (name === 'home') bindHome();
     if (name === 'search') bindSearch();
+    if (name === 'songs') bindSongs();
+    if (name === 'timeline') bindTimeline();
   }
 
   // 반환값: 바탕 화면을 새로 그렸는지 (스크롤을 맨 위로 올릴지)
