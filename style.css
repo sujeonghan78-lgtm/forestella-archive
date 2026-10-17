@@ -270,6 +270,7 @@ body.sheet-open { overflow: hidden; }
 .ev-body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
 .ev-date { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; color: var(--muted); }
 .ev-date .tag { font-size: 10px; padding: 1px 6px; }
+.ev-date > :not(.ev-place) { flex: none; white-space: nowrap; }
 .ev-place { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ev-place::before { content: '· '; }
 .ev-days { display: inline-flex; gap: 4px; flex: none; }
