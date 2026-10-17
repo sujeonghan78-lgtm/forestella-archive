@@ -343,12 +343,17 @@
 
   function resultCard(e) {
     const hasVideo = e.videoId || e.related.length;
-    return `
+    const card = `
       <a class="card${e.setlist ? ' card-concert' : ''}" href="#/e/${encodeURIComponent(e.id)}">
         <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${upcoming(e)}${hasVideo ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}</span>
         <span class="card-title">${esc(e.title)}</span>
         ${songsLine(e)}
       </a>`;
+    if (!e.setlist) return card;
+    return `
+      <div class="card-wrap">${card}
+        <a class="card-sl" href="#/tour/${encodeURIComponent(e.setlist.id)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>셋리 보기</a>
+      </div>`;
   }
 
   // 유튜브 임시 재생목록 (최대 50개)
@@ -535,7 +540,11 @@
     const has = new Set(data.events.map(e => e.date.slice(0, 4)));
     const year = qs.get('y') || (ym ? ym.slice(0, 4) : String(lastYear));
 
-    const events = data.events.filter(e => e.date.startsWith(year));
+    const cat = qs.get('cat') || '';
+    const yearEvents = data.events.filter(e => e.date.startsWith(year));
+    const cats = [...new Set(yearEvents.map(e => e.category).concat(cat || []).filter(Boolean))];
+    const events = cat ? yearEvents.filter(e => e.category === cat) : yearEvents;
+    const tlHref = (y, c) => `#/timeline?y=${y}${c ? '&cat=' + encodeURIComponent(c) : ''}`;
     const months = new Map();
     events.forEach(e => {
       const m = e.date.slice(0, 7);
@@ -576,13 +585,13 @@
       <div class="tl-top">
         <h1 class="h1">연표</h1>
         <div class="chips" id="years">
-          ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="#/timeline?y=${y}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
+          ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="${tlHref(y, cat)}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
         </div>
-        <div class="tl-legend"><span><i class="dot"></i>곡 확인됨</span><span><i class="dot dot-plain"></i>일정만</span></div>
+        ${cats.length > 1 ? `<div class="chips tl-cats">${['', ...cats].map(c => `<a class="chip${c === cat ? ' on' : ''}" href="${tlHref(year, c)}"${c === cat ? ' aria-current="true"' : ''}>${c || '전체'}</a>`).join('')}</div>` : ''}
       </div>
       <div class="tl">
         ${gap}
-        ${body || (gap ? '' : '<p class="empty">이 해의 기록이 아직 없어요.</p>')}
+        ${body || (gap ? '' : `<p class="empty">${cat ? `이 해의 ${esc(cat)} 기록이 없어요.` : '이 해의 기록이 아직 없어요.'}</p>`)}
       </div>`;
   }
   function bindTimeline() {
@@ -890,13 +899,6 @@
       </div>`;
   }
 
-  function setlistBlock(e) {
-    const t = e.setlist;
-    if (!t) return '';
-    return `
-      <a class="setlist-link" href="#/tour/${encodeURIComponent(t.id)}"><span class="sub">이 공연 셋리스트</span><span>${esc(t.name)} · ${t.songs.length}곡 보기 ›</span></a>`;
-  }
-
   function reportsFor(e) {
     const t = norm(e.title);
     return data.reports.filter(r => r.date === e.date && (!r.title || t.includes(norm(r.title)) || norm(r.title).includes(t)));
@@ -978,7 +980,6 @@
             </span>
           </div>
         </section>
-        ${setlistBlock(e)}
         ${reportList}
         ${related}
         <a class="same-time" href="#/timeline?ym=${ym}"><span class="sub">같은 시기의 기록</span><span>${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5))}월 연표에서 보기 ›</span></a>

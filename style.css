@@ -445,3 +445,9 @@ body.sheet-open { overflow: hidden; }
 .sc .mi-ic { grid-row: auto; margin-bottom: 8px; }
 .sc-l { white-space: normal; }
 .hero { background: #FFFFFF; border: 1px solid #E1ECE5; box-shadow: 0 3px 10px rgba(46, 139, 106, 0.06); }
+.card-wrap { position: relative; }
+.card-wrap .card { padding-right: 96px; }
+.card-sl { position: absolute; top: 12px; right: 12px; height: 32px; padding: 0 11px; border-radius: 16px; background: #FFFFFF; border: 1px solid #D6E6DC; color: var(--green); font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.card-sl svg { width: 14px; height: 14px; stroke: var(--green-2); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tl-cats { margin-top: 8px; }
+.tl-cats .chip { height: 32px; }
