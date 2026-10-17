@@ -942,7 +942,11 @@
           ${a.credit ? `<div class="fact"><b>작사·작곡</b><span>${esc(a.credit)}</span></div>` : ''}
           ${a.label ? `<div class="fact"><b>기획·유통</b><span>${esc(a.label)}</span></div>` : ''}
         </div>
-        ${a.tracks.length ? `<h2 class="h3 list-title">수록곡</h2><ol class="track-list">${a.tracks.map(t => { const so = data.songs.get(window.DATA.songKey(t)); return `<li>${so ? `<a href="#/song/${encodeURIComponent(so.key)}">${esc(t)}</a>` : esc(t)}</li>`; }).join('')}</ol>` : ''}
+        ${a.tracks.length ? `<h2 class="h3 list-title">수록곡</h2><ol class="setlist-list">${a.tracks.map(t => {
+          const so = data.songs.get(window.DATA.songKey(t));
+          const isTitle = a.title && a.title.split(/[,/]/).some(x => x.trim() && window.DATA.songKey(x) === window.DATA.songKey(t));
+          return `<li><span class="sl-title">${so ? `<a href="#/song/${encodeURIComponent(so.key)}">${esc(t)}</a>` : esc(t)}</span>${isTitle ? '<span class="sl-note">타이틀</span>' : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent((a.member || '포레스텔라') + ' ' + t)}" target="_blank" rel="noopener" aria-label="${esc(t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`;
+        }).join('')}</ol>` : ''}
         ${a.note ? `<p class="src-note">${esc(a.note)}</p>` : ''}
         ${a.src.length ? `<p class="src-note">출처: ${a.src.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">${i + 1}</a>`).join(' · ')}</p>` : ''}
       </section>
