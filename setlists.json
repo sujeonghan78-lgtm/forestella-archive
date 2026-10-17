@@ -536,7 +536,7 @@
     "name": "나무위키",
     "url": "https://namu.wiki/w/The%20Beginning%20World%20Tree"
    },
-   "caution": "서울 공연 기사에서는 바람의 노래를 본공연에서, 숲의 노래를 마지막에 불렀다고 해요. Champions는 출처에 두 번 적혀 있어요.",
+   "caution": "서울 공연 기사에서는 바람의 노래를 본공연에서, 숲의 노래를 마지막에 불렀다고 해요.",
    "songs": [
     {
      "t": "Inner Universe",
@@ -650,7 +650,7 @@
     },
     {
      "t": "Champions",
-     "note": "앵콜 (출처에 두 번 적혀 있음)",
+     "note": "앵콜",
      "ok": false
     },
     {
@@ -899,13 +899,8 @@
      "ok": true
     },
     {
-     "t": "Lotus (인트로)",
-     "note": "UTOPIA 인트로",
-     "ok": true
-    },
-    {
      "t": "UTOPIA",
-     "note": "",
+     "note": "인트로 Lotus와 이어서",
      "ok": true
     },
     {
@@ -1601,7 +1596,7 @@
    "songs": [
     {
      "t": "Intro : Runes",
-     "note": "1부 · 서울",
+     "note": "1부",
      "ok": true
     },
     {
@@ -1736,7 +1731,7 @@
    "songs": [
     {
      "t": "OVERTURE",
-     "note": "1부 · 서울",
+     "note": "1부",
      "ok": true
     },
     {
