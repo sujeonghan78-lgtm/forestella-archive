@@ -138,14 +138,15 @@
 
   async function fetchAll() {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, x] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
       fetchText('cafe.json').catch(() => ''),
       fetchText('setlists.json').catch(() => ''),
+      fetchText('x.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, x, savedAt: Date.now() };
   }
 
   function readCache() {
@@ -188,6 +189,10 @@
       const t = tours.find(x => x.dates.includes(e.date));
       if (t) { e.setlist = t; t.events.push(e); }
     });
+    // 공식 X 글 (tools/x_match.py 로 일정 ID에 맞춰 둔 것)
+    let xPosts = {};
+    try { xPosts = JSON.parse(raw.x || '{}').events || {}; } catch (err) { /* 없으면 넘어가요 */ }
+    events.forEach(e => { e.xPosts = xPosts[e.id] || []; });
     videos.forEach(v => { const e = byId.get(v.eventId); if (e) e.related.push(v); });
     // 곡별로 확인된 무대 모으기 (이름은 가장 많이 쓰인 표기로)
     const songs = new Map();
@@ -221,7 +226,7 @@
   // onUpdate는 새 데이터가 도착했을 때 다시 그리라고 불러요.
   async function load(onUpdate) {
     const cached = readCache();
-    const fresh = cached && 'setlists' in cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'x' in cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
