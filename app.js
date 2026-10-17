@@ -254,8 +254,9 @@
       `<a class="sc" href="${href}">${menuIcon(icon)}<span class="sc-l">${label}</span><span class="sc-s">${sub}</span></a>`;
     return `
       <nav class="shortcuts" aria-label="바로가기">
-        ${tile('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '불후 · 열린음악회 …')}
-        ${tile('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트 셋리스트', `투어·공연 ${data.tours.length}개`)}
+        ${tile('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범·싱글별')}
+        ${tile('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트 셋리스트', `투어 ${data.tours.length}개`)}
+        ${tile('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '불후·열린음악회')}
       </nav>`;
   }
 
@@ -694,7 +695,7 @@
       <nav aria-label="더보기 메뉴">
         ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트 셋리스트', data.tours.length + '개')}
-        ${item('#/xfeed', '<path d="M4 4l16 16M20 4L4 20"/>', '공식 X 모아보기', '사진 · 후기 · 공지')}
+        ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표', '연도·월별 기록')}
         ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범 · 싱글별 공식 X')}
         ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
         ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
@@ -894,14 +895,14 @@
   const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
   function xfeedView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-    const cat = qs.get('cat') || '', mem = qs.get('m') || '', rel = qs.get('rel') || '';
+    const cat = qs.get('cat') || '', mem = qs.get('m') || '', rel = qs.get('rel') || '', yr = qs.get('y') || '';
     let n = 0;
-    const href = (c, m) => '#/xfeed?' + new URLSearchParams(Object.entries({ cat: c, m }).filter(x => x[1])).toString();
+    const href = (c, m, y = yr) => '#/xfeed?' + new URLSearchParams(Object.entries({ cat: c, m, y }).filter(x => x[1])).toString();
     const chip = (on, h, label) => `<a class="chip${on ? ' on' : ''}" href="${h}">${label}</a>`;
     const fill = () => {
       const box = document.getElementById('xfeed');
       if (!box) return;
-      let list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)) && (!rel || p.rel === rel));
+      let list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)) && (!rel || p.rel === rel) && (!yr || p.date.startsWith(yr)));
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => `
           <a class="x-card${p.img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">
@@ -920,10 +921,10 @@
     };
     setTimeout(fill);
     return `
-      ${rel ? '' : '<a class="back" href="#/more">‹ 더보기</a>'}
       ${rel ? `<a class="back" href="#/releases">‹ 음반 이야기</a><h1 class="h1 page-title">${esc(rel)}</h1><p class="sub">티저부터 발매·이벤트까지 공식 X 글을 순서대로 모았어요.</p><div id="xfeed"><p class="empty">불러오는 중…</p></div>` : ''}
       ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
       <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
+      <div class="chips tl-cats">${chip(!yr, href(cat, mem, ''), '전체 연도')}${[...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(cat, mem, y), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(cat, ''), '멤버 전체')}${X_MEMBERS.map(m => chip(m === mem, href(cat, m), m.slice(1))).join('')}</div>
       <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
   }
@@ -1139,7 +1140,7 @@
   }
 
   function setTabs(name) {
-    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', xfeed: 'more', releases: 'more', about: 'more', install: 'more' }[name] || name;
+    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', timeline: 'more', releases: 'xfeed', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);

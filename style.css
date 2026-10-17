@@ -476,3 +476,6 @@ h1:has(> .help), h2:has(> .help) { position: relative; }
 .member-x .x-strip { display: flex; gap: 8px; overflow-x: auto; margin: 10px 0 12px; padding-bottom: 2px; }
 .member-x .x-strip a { flex: none; }
 .member-x .x-strip img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; background: #EEF3EF; display: block; }
+.shortcuts { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sc { padding: 12px 10px; }
+.sc-l { font-size: 12.5px; word-break: keep-all; }
