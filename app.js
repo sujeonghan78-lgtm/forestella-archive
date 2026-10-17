@@ -479,6 +479,7 @@
           ${so.events.length > 1 ? `<div class="fact"><b>최근 확인</b><span>${fmtDate(so.last.date, false)} · ${esc(so.last.title)}</span></div>` : ''}
         </div>
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
+        ${findRow('포레스텔라 ' + so.name)}
       </section>
       <h2 class="h3 list-title">무대 목록</h2>
       <div class="stack">${stages.map(resultCard).join('')}</div>
@@ -772,6 +773,15 @@
     '언론사 영상': '언론사 공식 채널 영상으로 확인했어요.',
     '팬 영상': '팬 영상 제목 기준이라 틀릴 수 있어요. 팬 영상 링크는 걸지 않아요.',
   };
+  // 유튜브·X에서 바로 찾아보기 (검색어가 미리 써진 화면을 열어요)
+  const findRow = q => `
+    <div class="find-row">
+      <a class="find-btn" href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg>유튜브에서 검색</a>
+      <a class="find-btn" href="https://x.com/search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>X에서 검색</a>
+    </div>`;
+  // 일정명 앞의 [방송사] 같은 표시는 빼고 검색해요
+  const findQuery = title => '포레스텔라 ' + title.replace(/^(\[[^\]]*\]\s*)+/, '').replace(/\s*\([^)]*녹화[^)]*\)/, '').trim();
+
   const ytWatch = id => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
   const ytThumb = id => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`;
 
@@ -936,6 +946,7 @@
           <a class="act" href="${xUrl(eventShareText(e), link('#/e/' + encodeURIComponent(e.id)))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>X</a>
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
+        ${findRow(findQuery(e.title))}
         <section class="d-block">
           <div class="block-head"><h2 class="h3">영상으로 확인된 곡</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
           ${songs}

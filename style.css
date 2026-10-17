@@ -421,3 +421,9 @@ body.sheet-open { overflow: hidden; }
 .tour-foot { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; }
 .tour-foot a, .setlist-list a { color: inherit; }
 .tour-list { margin-top: 14px; }
+.find-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.find-label { font-size: 11px; color: var(--muted); flex: none; margin-right: 2px; }
+.find-btn { flex: 1; height: 40px; border-radius: 12px; border: 1px solid #D6E6DC; background: #FFFFFF; color: var(--ink); font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.find-btn svg { width: 16px; height: 16px; stroke: var(--green-2); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.find-btn svg .fill { fill: var(--green-2); stroke: none; }
+.song-hero .find-row { margin-top: 0; }
