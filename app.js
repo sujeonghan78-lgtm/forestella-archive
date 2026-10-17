@@ -909,7 +909,7 @@
             ${p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${esc(p.date.replace(/-/g, '.'))} · ${esc(p.cat)}</span>${esc(p.text || '(글 없음)')}</span>
           </a>`;
-      if (!list.length) { box.innerHTML = '<p class="empty">해당하는 글이 없어요.</p>'; return; }
+      if (!list.length) { box.innerHTML = `<p class="empty">${rel ? '이 음반에 묶인 공식 X 글이 없어요.' : '해당하는 글이 없어요.'}</p>`; return; }
       box.innerHTML = `<p class="sub">${list.length}개</p><div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
       const more = () => {
         box.querySelector('.x-list').insertAdjacentHTML('beforeend', list.slice(n, n + 40).map(card).join(''));
@@ -921,7 +921,7 @@
     };
     setTimeout(fill);
     return `
-      ${rel ? `<a class="back" href="#/releases">‹ 음반 이야기</a><h1 class="h1 page-title">${esc(rel)}</h1><p class="sub">티저부터 발매·이벤트까지 공식 X 글을 순서대로 모았어요.</p><div id="xfeed"><p class="empty">불러오는 중…</p></div>` : ''}
+      ${rel ? albumHead(rel) + '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' : ''}
       ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
       <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(cat, mem, ''), '전체 연도')}${[...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(cat, mem, y), y)).join('')}</div>
@@ -929,21 +929,45 @@
       <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
   }
 
+  function albumHead(rel) {
+    const a = (data.albums || []).find(x => (x.rel || x.name) === rel);
+    if (!a) return `<a class="back" href="#/releases">‹ 음반 이야기</a><h1 class="h1 page-title">${esc(rel)}</h1><p class="sub">티저부터 발매·이벤트까지 공식 X 글을 순서대로 모았어요.</p>`;
+    return `<a class="back" href="#/releases">‹ 음반 이야기</a>
+      <section class="album-head">
+        ${a.img ? `<img class="album-img" src="${esc(a.img)}?name=medium" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+        <h1 class="h1">${esc(a.name)}</h1>
+        <p class="sub">${esc(a.date.replace(/-/g, '.'))} 발매 · ${esc(a.kind)}${a.ok ? '' : ' · <span class="tag">확인 중</span>'}</p>
+        <div class="facts">
+          ${a.title ? `<div class="fact"><b>타이틀</b><span>${esc(a.title)}</span></div>` : ''}
+          ${a.credit ? `<div class="fact"><b>작사·작곡</b><span>${esc(a.credit)}</span></div>` : ''}
+          ${a.label ? `<div class="fact"><b>기획·유통</b><span>${esc(a.label)}</span></div>` : ''}
+        </div>
+        ${a.tracks.length ? `<h2 class="h3 list-title">수록곡</h2><ol class="track-list">${a.tracks.map(t => { const so = data.songs.get(window.DATA.songKey(t)); return `<li>${so ? `<a href="#/song/${encodeURIComponent(so.key)}">${esc(t)}</a>` : esc(t)}</li>`; }).join('')}</ol>` : ''}
+        ${a.note ? `<p class="src-note">${esc(a.note)}</p>` : ''}
+        ${a.src.length ? `<p class="src-note">출처: ${a.src.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">${i + 1}</a>`).join(' · ')}</p>` : ''}
+      </section>
+      <hr class="divider">
+      <h2 class="h3 list-title">공식 X로 보는 이야기</h2>`;
+  }
+
   function releasesView() {
     const map = new Map();
     (data.xFeed || []).forEach(p => { if (p.rel) { if (!map.has(p.rel)) map.set(p.rel, []); map.get(p.rel).push(p); } });
-    const rels = [...map.entries()].map(([name, ps]) => ({ name, ps, first: ps[ps.length - 1], last: ps[0], img: (ps.find(p => /release|발매|concept|컨셉/i.test(p.raw) && p.img) || ps.find(p => p.img) || {}).img }))
-      .sort((a, b) => (a.first.date < b.first.date ? 1 : -1));
+    // 시트 "음반 정보"가 있으면 그 순서대로, 없으면 공식 X 글로 묶은 것만
+    const items = data.albums && data.albums.length
+      ? data.albums.map(a => { const ps = map.get(a.rel) || []; return { key: a.rel || a.name, name: a.name, sub: `${a.date.replace(/-/g, '.')} · ${a.kind}`, img: a.img || (ps.find(p => p.img) || {}).img, n: ps.length }; })
+      : [...map.entries()].map(([name, ps]) => ({ key: name, name, sub: `${ps[ps.length - 1].date.replace(/-/g, '.')}부터`, img: (ps.find(p => p.img) || {}).img, n: ps.length, d: ps[ps.length - 1].date }))
+        .sort((a, b) => (a.d < b.d ? 1 : -1));
     return `
-      <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">음반 이야기${help('공식 X의 음반·컴백 글을 앨범·싱글별로 묶었어요. 시트 "공식X" 탭의 음반 칸에 이름을 쓰면 그대로 묶여요.')}</h1>
-      <p class="sub">앨범·싱글마다 티저부터 발매까지 순서대로 볼 수 있어요.</p>
-      <div class="stack x-list">${rels.map(r => `
-        <a class="x-card${r.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(r.name)}">
+      <h1 class="h1 page-title">음반 이야기${help('앨범 정보는 음원 사이트·위키·기사에서 두 곳 이상 맞는 것만 적었어요. 공식 X 글은 앨범·싱글별로 묶었어요.')}</h1>
+      <p class="sub">앨범·싱글마다 정보와 티저부터 발매까지의 공식 X 글을 모았어요.</p>
+      <div class="stack x-list">${items.map(r => `
+        <a class="x-card${r.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
           ${r.img ? `<img src="${esc(r.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
-          <span class="x-text"><span class="x-date">${esc(r.first.date.replace(/-/g, '.'))}부터 · 글 ${r.ps.length}개</span><b>${esc(r.name)}</b></span>
+          <span class="x-text"><span class="x-date">${esc(r.sub)}${r.n ? ` · 공식 X ${r.n}개` : ''}</span><b>${esc(r.name)}</b></span>
         </a>`).join('')}</div>`;
   }
+
 
   function concertsView() {
     const tours = data.tours.slice().reverse();

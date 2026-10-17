@@ -138,15 +138,16 @@
 
   async function fetchAll() {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
       fetchText('cafe.json').catch(() => ''),
       fetchText('setlists.json').catch(() => ''),
       fetchText(s.x).catch(() => ''),
+      s.albums ? fetchText(s.albums).catch(() => '') : '',
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, savedAt: Date.now() };
   }
 
   function readCache() {
@@ -211,8 +212,7 @@
     const RELEASES = [
       ['THE LEGACY', /the legacy|정규\s?4집/], ['Etude', /etude|에튀드/], ['Nella Notte', /nella notte/], ['Still Here', /still here/],
       ['창귀', /창귀/], ['그리고 봄', /그리고 봄/], ['Everything', /everything/], ['Apocalypse', /apocalypse/],
-      ['Piano Man', /piano man/], ['Unfinished', /unfinished/], ['신세계 : PARANA', /parana|신세계/],
-      ['KOOL', /\bkool\b/], ['White Night', /white night|백야/], ['The Bloom : UTOPIA', /utopia|the bloom/],
+      ['Piano Man', /piano man/], ['Unfinished', /unfinished/], ['KOOL', /\bkool\b/], ['White Night', /white night|백야/], ['The Bloom : UTOPIA', /utopia|the bloom/],
       ['The Beginning : World Tree', /world tree|the beginning|save our lives/],
     ];
     xFeed.forEach(p => {
@@ -254,14 +254,21 @@
       const so = songs.get(songKey(setlistName(part)));
       if (so && !so.tours.includes(t)) so.tours.push(t);
     })));
-    return { events, videos, reports, byId, songs, tours, xFeed, savedAt: raw.savedAt };
+    // 음반 정보 (시트 "음반 정보" 탭)
+    const albums = toObjects(raw.albums || '').filter(a => a['앨범명']).map(a => ({
+      name: a['앨범명'], kind: a['종류'], date: normDate(a['발매일']) || a['발매일'], title: a['타이틀곡'],
+      tracks: (a['수록곡'] || '').split(' / ').map(t => t.trim()).filter(Boolean), credit: a['타이틀 작사·작곡'],
+      label: a['기획사·유통사'], rel: a['음반 이야기 이름'], img: a['사진'],
+      src: [a['출처1'], a['출처2']].filter(u => /^https?:/.test(u || '')), ok: a['확인'] !== '확인 중', note: a['비고'],
+    })).sort((a, b) => (a.date < b.date ? 1 : -1));
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
   // onUpdate는 새 데이터가 도착했을 때 다시 그리라고 불러요.
   async function load(onUpdate) {
     const cached = readCache();
-    const fresh = cached && 'xsheet' in cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'albums' in cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
