@@ -1166,7 +1166,7 @@
   }
 
   function setTabs(name) {
-    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', timeline: 'more', releases: 'xfeed', about: 'more', install: 'more' }[name] || name;
+    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', timeline: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);

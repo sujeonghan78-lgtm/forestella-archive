@@ -147,7 +147,7 @@
       fetchText(s.x).catch(() => ''),
       s.albums ? fetchText(s.albums).catch(() => '') : '',
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, sheets: JSON.stringify(s), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -268,7 +268,8 @@
   // onUpdate는 새 데이터가 도착했을 때 다시 그리라고 불러요.
   async function load(onUpdate) {
     const cached = readCache();
-    const fresh = cached && 'albums' in cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    // 시트 주소가 바뀌었으면(새 탭 연결 등) 저장본을 버려요.
+    const fresh = cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
