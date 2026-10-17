@@ -706,13 +706,24 @@
   function membersView() {
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">멤버 개인 활동${help('일정명에 멤버 이름이 표시된 기록만 모았어요. 완전체 무대는 빠져요.')}</h1>
+      <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 공식 X는 글에 멤버 이름이 나온 것만 모았어요.')}</h1>
       <nav class="member-list">
         ${MEMBER_LIST.map(m => {
           const n = data.events.filter(e => e.members.includes(m)).length;
           return `<a class="mi" href="#/search?member=${encodeURIComponent(m)}"><span class="mi-l">${m}</span><span class="mi-side">${n}건 ›</span></a>`;
         }).join('')}
-      </nav>`;
+      </nav>
+      ${MEMBER_LIST.map(m => {
+        const xs = (data.xFeed || []).filter(p => p.m.includes(m));
+        if (!xs.length) return '';
+        const bday = xs.filter(p => p.cat === '생일').length;
+        return `<hr class="divider">
+        <section class="member-x">
+          <div class="block-head"><h2 class="h3">${m} · 공식 X</h2><a class="more" href="#/xfeed?m=${encodeURIComponent(m)}">${xs.length}개 ›</a></div>
+          <div class="x-strip">${xs.filter(p => p.img).slice(0, 8).map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div>
+          ${bday ? `<a class="chip" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${encodeURIComponent(m)}">생일 축하 글 ${bday}개 ›</a>` : ''}
+        </section>`;
+      }).join('')}`;
   }
 
   function aboutView() {
