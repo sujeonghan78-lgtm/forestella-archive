@@ -1,0 +1,28 @@
+# 공식 X 글의 사진 주소를 받아 data/x_photos.json 에 담아요. (직접 눌러서 실행)
+name: x-photos
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: '이번에 받을 글 개수 (비우면 전부)'
+        default: ''
+permissions:
+  contents: write
+concurrency: x-photos
+jobs:
+  photos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/x_photos.mjs ${{ inputs.limit }}
+      - run: |
+          git diff --quiet -- data/x_photos.json 2>/dev/null && git ls-files --error-unmatch data/x_photos.json >/dev/null 2>&1 && exit 0
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/x_photos.json
+          git commit -m "공식 X 사진 주소 반영"
+          git pull --rebase -q origin main
+          git push
