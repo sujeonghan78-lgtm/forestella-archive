@@ -358,12 +358,16 @@
   }
 
   function resultCard(e) {
-    const hasVideo = e.videoId || e.related.length;
+    // 영상이 있으면 오른쪽에 썸네일을 보여줘요 (못 불러오면 ▶ 동그라미로)
+    const vid = e.videoId || (e.related[0] || {}).videoId;
+    const thumb = vid ? `<span class="card-thumb" aria-label="영상 있음"><img src="https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span></span>` : '';
     const card = `
-      <a class="card${e.setlist ? ' card-concert' : ''}" href="#/e/${encodeURIComponent(e.id)}">
-        <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${upcoming(e)}${hasVideo ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}</span>
-        <span class="card-title">${esc(e.title)}</span>
-        ${songsLine(e)}
+      <a class="card${e.setlist ? ' card-concert' : ''}${vid ? ' has-thumb' : ''}" href="#/e/${encodeURIComponent(e.id)}">
+        <span class="card-body">
+          <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${upcoming(e)}</span>
+          <span class="card-title">${esc(e.title)}</span>
+          ${songsLine(e)}
+        </span>${thumb}
       </a>`;
     if (!e.setlist) return card;
     return `
@@ -382,17 +386,75 @@
     return ids.length ? `https://www.youtube.com/watch_videos?video_ids=${ids.slice(0, 50).join(',')}` : '';
   }
 
+  // 검색어에 맞는 곡·음반·콘서트·프로그램 바로가기
+  function searchShortcuts(q) {
+    const nq = norm(q), cho = isChosungOnly(q);
+    if (!nq || (!cho && nq.length < 2)) return '';
+    const hit = name => cho ? chosung(name).includes(nq) : norm(name).includes(nq);
+    const out = [];
+    PROGRAMS.filter(hit).forEach(pg => out.push({ href: '#/program/' + encodeURIComponent(pg), kind: '프로그램', name: pg + ' 모아보기' }));
+    [...data.songs.values()].filter(so => hit(so.name)).sort((a, b) => playCount(b) - playCount(a)).slice(0, 4)
+      .forEach(so => out.push({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', name: so.name, img: songPic(so) }));
+    (data.albums || []).filter(a => hit(a.name)).slice(0, 3)
+      .forEach(a => out.push({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, img: a.img && imgSize(a.img, 'small') }));
+    (data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).slice(0, 3)
+      .forEach(c => out.push({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, img: c.img ? imgSize(c.img, 'small') : tourPic(c.tour || c) }));
+    if (!out.length) return '';
+    return `<div class="shortcut-row">${out.map(x => `
+      <a class="shortcut-card" href="${x.href}">
+        ${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'sc-ph'}))">` : '<span class="sc-ph"></span>'}
+        <span><small>${esc(x.kind)}</small><b>${esc(x.name)}</b></span>
+      </a>`).join('')}</div>`;
+  }
+
+  // 검색 전 화면: 최근 검색어, 많이 찾는 곡, 프로그램
+  const RECENT_Q = 'soopbyeol-recent-q';
+  function recentQueries() { try { return JSON.parse(localStorage.getItem(RECENT_Q) || '[]'); } catch (err) { return []; } }
+  function saveQuery(q) {
+    q = (q || '').trim();
+    if (q.length < 2 && !isChosungOnly(q)) return;
+    try { localStorage.setItem(RECENT_Q, JSON.stringify([q, ...recentQueries().filter(x => x !== q)].slice(0, 8))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
+  }
+  function searchHome() {
+    const recent = recentQueries();
+    const top = [...data.songs.values()].filter(so => so.events.length).sort((a, b) => b.events.length - a.events.length).slice(0, 10);
+    return `
+      ${recent.length ? `<h2 class="h3 list-title">최근 검색어 <button type="button" class="link-btn" id="clear-recent">지우기</button></h2>
+      <div class="chips wrap">${recent.map(q => `<button type="button" class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
+      <h2 class="h3 list-title">많이 찾는 곡</h2>
+      <div class="chips wrap">${top.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>
+      <h2 class="h3 list-title">프로그램 바로가기</h2>
+      <div class="chips wrap">${PROGRAMS.map(pg => `<a class="chip" href="#/program/${encodeURIComponent(pg)}">${pg}</a>`).join('')}</div>
+      <button type="button" class="btn btn-soft" id="show-all">전체 기록 ${data.events.length}건 보기</button>`;
+  }
+
+  let showAll = false;
   function searchResults(p) {
+    if (!p.q && !p.cat && !p.year && !p.member && !p.video && !showAll) return searchHome();
     const { list, fuzzy } = runSearch(p);
     const desc = [p.q && `'${p.q}'`, p.cat, p.year && `${p.year}년`, p.member, p.video && '영상 있음'].filter(Boolean).join(' · ');
     const play = playAllUrl(list);
+    // 연도별로 묶어요. 결과가 적으면 다 펼치고, 많으면 첫 해만 펼쳐요
+    const part = list.slice(0, shown);
+    let body;
+    if (fuzzy) body = `<div class="stack">${part.map(resultCard).join('')}</div>`;
+    else {
+      const byYear = new Map();
+      part.forEach(e => { const y = e.date.slice(0, 4); if (!byYear.has(y)) byYear.set(y, []); byYear.get(y).push(e); });
+      body = [...byYear.entries()].map(([y, l], i) => `
+        <details class="year-group"${i === 0 || list.length <= 20 ? ' open' : ''}>
+          <summary><span class="yg-year">${y}년</span><span class="song-count">${l.length}건</span></summary>
+          <div class="stack">${l.map(resultCard).join('')}</div>
+        </details>`).join('');
+    }
     return `
+      ${p.q ? searchShortcuts(p.q) : ''}
       <div class="result-head">
         <span>${desc ? esc(desc) + ' · ' : ''}<b>${list.length}건</b>${fuzzy ? ' · 비슷한 결과' : ''}</span>
         <button type="button" class="link-btn" id="sort">${p.sort === 'old' ? '오래된순' : '최신순'} ▾</button>
       </div>
       ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>검색 결과 영상 이어보기</a>` : ''}
-      ${list.length ? `<div class="stack">${list.slice(0, shown).map(resultCard).join('')}</div>` :
+      ${list.length ? body :
         `<p class="empty">찾는 기록이 없어요. 혹시 빠진 기록이라면 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`}
       ${list.length > shown ? `<button type="button" class="btn btn-soft" id="show-more">더 보기 (${list.length - shown}건 남음)</button>` : ''}`;
   }
@@ -410,12 +472,11 @@
         </form>
         <div class="chips" id="filters">
           ${cats.map(c => chip('cat', c, c, p.cat === c)).join('')}
-          <label class="chip chip-select${p.year ? ' on' : ''}"><span class="sr">연도</span>
-            <select id="year"><option value="">연도 ▾</option>${years.map(y => `<option value="${y}"${p.year === y ? ' selected' : ''}>${y}년</option>`).join('')}</select></label>
-          <label class="chip chip-select${p.member ? ' on' : ''}"><span class="sr">멤버</span>
-            <select id="member"><option value="">멤버 ▾</option>${MEMBER_LIST.map(m => `<option value="${m}"${p.member === m ? ' selected' : ''}>${m}</option>`).join('')}</select></label>
-          ${chip('video', '1', '▶ 영상 있음', p.video)}
         </div>
+        <div class="chips" id="filters2">
+          ${chip('video', '1', '▶ 영상 있음', p.video)}${MEMBER_LIST.map(m => chip('member', m, m.slice(1), p.member === m)).join('')}
+        </div>
+        <div class="chips" id="filters3">${years.map(y => chip('year', y, y, p.year === y)).join('')}</div>
       </div>
       <div id="results">${searchResults(p)}</div>`;
   }
@@ -435,21 +496,29 @@
       if (s) s.onclick = () => update({ sort: readParams().sort === 'old' ? 'new' : 'old' });
       const m = document.getElementById('show-more');
       if (m) m.onclick = () => { shown += 50; update({}, false); };
+      const all = document.getElementById('show-all');
+      if (all) all.onclick = () => { showAll = true; update({}); };
+      const clr = document.getElementById('clear-recent');
+      if (clr) clr.onclick = () => { try { localStorage.removeItem(RECENT_Q); } catch (err) { /* 괜찮아요 */ } update({}); };
+      document.querySelectorAll('#results .chip[data-q]').forEach(b => b.onclick = () => { input.value = b.dataset.q; update({ q: b.dataset.q }); });
+      // 결과를 누르면 그 검색어를 최근 검색어로 남겨요
+      document.getElementById('results').onclick = ev => { if (ev.target.closest('a')) saveQuery(readParams().q); };
     };
     let timer;
     input.oninput = () => { clearTimeout(timer); timer = setTimeout(() => update({ q: input.value }), 150); };
-    form.onsubmit = ev => { ev.preventDefault(); input.blur(); update({ q: input.value }); };
+    form.onsubmit = ev => { ev.preventDefault(); input.blur(); saveQuery(input.value); update({ q: input.value }); };
     document.querySelectorAll('#filters .chip[data-cat]').forEach(b => b.onclick = () => {
       const p = readParams();
       update({ cat: p.cat === b.dataset.cat ? '' : b.dataset.cat });
       document.querySelectorAll('#filters .chip[data-cat]').forEach(x => { const on = x.dataset.cat === readParams().cat; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     });
-    const v = document.querySelector('#filters .chip[data-video]');
+    const v = document.querySelector('#filters2 .chip[data-video]');
     v.onclick = () => { const on = !readParams().video; update({ video: on }); v.classList.toggle('on', on); v.setAttribute('aria-pressed', on); };
-    ['year', 'member'].forEach(id => {
-      const sel = document.getElementById(id);
-      sel.onchange = () => { update({ [id]: sel.value }); sel.parentElement.classList.toggle('on', !!sel.value); };
-    });
+    // 연도·멤버 칩: 한 번 더 누르면 풀려요
+    ['year', 'member'].forEach(k => document.querySelectorAll(`.chip[data-${k}]`).forEach(b => b.onclick = () => {
+      update({ [k]: readParams()[k] === b.dataset[k] ? '' : b.dataset[k] });
+      document.querySelectorAll(`.chip[data-${k}]`).forEach(x => { const on = x.dataset[k] === readParams()[k]; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    }));
     bindResults();
     if (!readParams().q && !readParams().cat) input.focus({ preventScroll: true });
   }
@@ -948,6 +1017,7 @@
   // ---------- 공식 X 모아보기 ----------
   const X_CATS = ['일정 후기', '일정 현장', '비하인드·직캠', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사', '생일', '투표·이벤트'];
   const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
+  let xQuery = '';
   function xfeedView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     const cat = qs.get('cat') || '', mem = qs.get('m') || '', rel = qs.get('rel') || '', yr = qs.get('y') || '';
@@ -957,7 +1027,8 @@
     const fill = () => {
       const box = document.getElementById('xfeed');
       if (!box) return;
-      let list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)) && (!rel || p.rel === rel) && (!yr || p.date.startsWith(yr)));
+      const nq = rel ? '' : norm(xQuery);
+      let list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)) && (!rel || p.rel === rel) && (!yr || p.date.startsWith(yr)) && (!nq || norm(p.raw).includes(nq)));
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => `
           <a class="x-card${p.img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">
@@ -974,10 +1045,20 @@
       box.querySelector('.more-btn').onclick = more;
       more();
     };
-    setTimeout(fill);
+    setTimeout(() => {
+      fill();
+      // 공식 X 글 찾기: 입력이 멈추면 목록만 다시 채워요
+      const q = document.getElementById('xq');
+      let timer;
+      if (q) q.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { xQuery = q.value; n = 0; fill(); }, 200); };
+    });
     return `
       ${rel ? albumHead(rel) + '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' : ''}
       ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
+      <form class="searchbox song-search" role="search" onsubmit="return false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="xq" aria-label="공식 X 글 찾기" placeholder="공식 X 글 찾기 · 곡명, 프로그램" value="${esc(xQuery)}" autocomplete="off">
+      </form>
       <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(cat, mem, ''), '전체 연도')}${[...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(cat, mem, y), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(cat, ''), '멤버 전체')}${X_MEMBERS.map(m => chip(m === mem, href(cat, m), m.slice(1))).join('')}</div>
