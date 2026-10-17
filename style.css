@@ -392,3 +392,8 @@ body.sheet-open { overflow: hidden; }
   background: var(--grad);
 }
 .sheet-close:focus:not(:focus-visible) { outline: none; }
+
+.upcoming { flex: none; font-size: 10px; font-weight: 700; color: #8A5A00; background: #FFF1C9; border-radius: 6px; padding: 1px 6px; }
+.tl-legend { display: flex; gap: 14px; margin-top: 10px; font-size: 11px; color: var(--muted); }
+.tl-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.tl-legend .dot { width: 8px; height: 8px; margin: 0; box-shadow: none; }

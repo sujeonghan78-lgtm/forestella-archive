@@ -33,6 +33,8 @@
     return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate(), iso: `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}` };
   }
   const tag = cat => `<span class="tag">${esc(cat)}</span>`;
+  // 아직 오지 않은 일정에는 '예정' 표시
+  const upcoming = e => e.date > todayParts().iso ? '<span class="upcoming">예정</span>' : '';
   const songsLine = e => e.songSource === '참고' || !e.songs.length ? '' :
     `<span class="songs"><span class="songs-label">확인된 곡</span>${e.songs.map(esc).join(' · ')}</span>`;
   const playBadge = e => e.videoId ?
@@ -324,7 +326,7 @@
     const hasVideo = e.videoId || e.related.length;
     return `
       <a class="card" href="#/e/${encodeURIComponent(e.id)}">
-        <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${hasVideo ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}</span>
+        <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${upcoming(e)}${hasVideo ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}</span>
         <span class="card-title">${esc(e.title)}</span>
         ${songsLine(e)}
       </a>`;
@@ -539,7 +541,7 @@
           <div class="ev">
             <span class="dot${songs.length ? '' : ' dot-plain'}" aria-hidden="true"></span>
             <span class="ev-body">
-              <span class="ev-date">${tag(e.category)}${when}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
+              <span class="ev-date">${tag(e.category)}${upcoming(e)}${when}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
               <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
               ${songs.length ? `<span class="ev-songs">확인된 곡 · ${songs.map(esc).join(', ')}</span>` : ''}
             </span>
@@ -552,6 +554,7 @@
         <div class="chips" id="years">
           ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="#/timeline?y=${y}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
         </div>
+        <div class="tl-legend"><span><i class="dot"></i>곡 확인됨</span><span><i class="dot dot-plain"></i>일정만</span></div>
       </div>
       <div class="tl">
         ${gap}
@@ -661,7 +664,7 @@
       </div>
       <section class="sec">
         <h2 class="h3">일정은 어디서 왔나요?</h2>
-        <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라 그 이전 기록은 비어 있어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요.</p>
+        <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라 그 이전 기록은 비어 있어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요. 카페에 새 일정이 올라오면 하루 몇 번 자동으로 확인해서 여기에도 추가돼요.</p>
       </section>
       <section class="sec">
         <h2 class="h3">곡 정보는 이렇게 적었어요</h2>
@@ -777,7 +780,7 @@
   }
 
   function detailView(e) {
-    const time = e.start ? ` · ${esc(e.start)}${e.end ? '~' + esc(e.end) : ''}` : '';
+    const time = !e.start || e.start === '종일' ? '' : ` · ${esc(e.start)}${e.end && e.end !== e.start ? '~' + esc(e.end) : ''}`;
     const period = e.endDate && e.endDate !== e.date ? ` ~ ${fmtDate(e.endDate, false)}` : '';
     const thumb = e.videoId ? `
       <a class="thumb" href="${ytWatch(e.videoId)}" target="_blank" rel="noopener" aria-label="유튜브에서 영상 보기">
@@ -829,7 +832,7 @@
       <div class="sheet-grab" aria-hidden="true"><span></span></div>
       <button type="button" class="sheet-close" id="sheet-close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       <div class="sheet-body">
-        <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span></div>
+        <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span>${upcoming(e)}</div>
         <h1 class="d-title">${esc(e.title)}</h1>
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
