@@ -665,6 +665,7 @@
       <section class="sec">
         <h2 class="h3">일정은 어디서 왔나요?</h2>
         <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라 그 이전 기록은 비어 있어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요. 카페에 새 일정이 올라오면 하루 몇 번 자동으로 확인해서 여기에도 추가돼요.</p>
+        <p>몇 명이 들어왔는지 보려고 방문 수만 세고 있어요. 쿠키나 개인정보는 남기지 않아요.</p>
       </section>
       <section class="sec">
         <h2 class="h3">곡 정보는 이렇게 적었어요</h2>
@@ -958,13 +959,24 @@
     }
   }
 
+  // 방문자 수: 주소의 #/ 뒤 화면 이름만 보내요 (검색어 같은 ?뒤 내용은 빼요)
+  function countView(tries = 0) {
+    if (location.hostname !== 'sujeonghan78-lgtm.github.io') return;
+    const gc = window.goatcounter;
+    if (!gc || !gc.count) { if (tries < 20) setTimeout(() => countView(tries + 1), 500); return; }
+    const route = (location.hash || '#/').split('?')[0];
+    gc.count({ path: location.pathname + route });
+  }
+
   window.addEventListener('hashchange', () => {
     const wasOpen = !sheet.hidden;
+    countView();
     if (render()) window.scrollTo(0, 0);
     if (currentRoute() === 'e' && !wasOpen) openedInApp = true;
   });
   render();
   start();
+  countView();
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
