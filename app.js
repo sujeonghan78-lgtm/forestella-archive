@@ -474,6 +474,19 @@
   const FIRST_YEAR = 2018;   // 포레스텔라 데뷔 해
   const CALENDAR_START = '2021-08';   // 팬카페 캘린더가 시작된 달
 
+  // 같은 공연이 이틀 연속 열리면 연표에서 한 줄로 묶어요
+  function groupRuns(list) {
+    const runs = [];
+    list.forEach(e => {
+      const last = runs[runs.length - 1];
+      const prev = last && last[last.length - 1];
+      const close = prev && (new Date(e.date) - new Date(prev.date)) / 864e5 <= 3;
+      if (prev && close && prev.title === e.title && prev.place === e.place) last.push(e);
+      else runs.push([e]);
+    });
+    return runs;
+  }
+
   function timelineView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     const ym = qs.get('ym') || '';
@@ -502,17 +515,22 @@
 
     const body = [...months.entries()].map(([m, list]) => `
       <h2 class="month" id="m-${m}">${Number(m.slice(0, 4))}년 ${Number(m.slice(5))}월</h2>
-      ${list.map(e => {
-        const songs = e.songSource !== '참고' && e.songs.length;
+      ${groupRuns(list).map(run => {
+        const e = run[0];
+        const songs = [...new Set(run.flatMap(x => x.songSource !== '참고' ? x.songs : []))];
+        const md = x => x.date.slice(5).replace('-', '.');
+        const when = run.length > 1
+          ? `<span class="ev-days">${run.map(x => `<a class="ev-day" href="#/e/${encodeURIComponent(x.id)}">${md(x)}</a>`).join('')}</span>`
+          : `<span>${md(e)}</span>`;
         return `
-          <a class="ev" href="#/e/${encodeURIComponent(e.id)}">
-            <span class="dot${songs ? '' : ' dot-plain'}" aria-hidden="true"></span>
+          <div class="ev">
+            <span class="dot${songs.length ? '' : ' dot-plain'}" aria-hidden="true"></span>
             <span class="ev-body">
-              <span class="ev-date">${e.date.slice(5).replace('-', '.')} · ${esc(e.place || e.category)}</span>
-              <span class="ev-title">${esc(e.title)}</span>
-              ${songs ? `<span class="ev-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
+              <span class="ev-date">${tag(e.category)}${when}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
+              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
+              ${songs.length ? `<span class="ev-songs">확인된 곡 · ${songs.map(esc).join(', ')}</span>` : ''}
             </span>
-          </a>`;
+          </div>`;
       }).join('')}`).join('');
 
     return `

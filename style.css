@@ -263,13 +263,20 @@ body.sheet-open { overflow: hidden; }
 .gap-card { position: relative; margin: 0 0 18px 25px; padding: 14px; border-radius: 16px; border: 1.5px dashed #A9D9C1; background: #FAFDF8; display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--muted); line-height: 1.5; }
 .gap-card b { font-size: 12px; color: var(--ink); }
 .gap-card a { font-weight: 700; min-height: 32px; display: inline-flex; align-items: center; }
-.month { position: relative; margin: 8px 0 12px 25px; font-size: 11px; font-weight: 700; color: var(--green); background: #FFFFFF; padding: 2px 0; scroll-margin-top: 140px; }
-.ev { display: flex; gap: 14px; position: relative; padding-bottom: 16px; color: var(--ink); }
-.dot { width: 12px; height: 12px; border-radius: 6px; background: #62D3A1; margin-top: 5px; flex: none; position: relative; z-index: 1; box-shadow: 0 0 0 4px #FFFFFF; }
+.month { position: relative; margin: 10px 0 10px 25px; font-size: 13px; font-weight: 700; color: var(--green); background: #FFFFFF; padding: 2px 0; scroll-margin-top: 140px; }
+.ev { display: flex; gap: 14px; position: relative; padding-bottom: 14px; color: var(--ink); }
+.dot { width: 12px; height: 12px; border-radius: 6px; background: #62D3A1; margin-top: 4px; flex: none; position: relative; z-index: 1; box-shadow: 0 0 0 4px #FFFFFF; }
 .dot-plain { background: #72BCF3; }
 .ev-body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
-.ev-date { font-size: 11px; color: var(--muted); }
-.ev-title { font-size: 13px; font-weight: 500; line-height: 1.4; }
+.ev-date { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; color: var(--muted); }
+.ev-date .tag { font-size: 10px; padding: 1px 6px; }
+.ev-place { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-place::before { content: '· '; }
+.ev-days { display: inline-flex; gap: 4px; flex: none; }
+.ev-day { color: var(--muted); }
+.ev-day + .ev-day::before { content: '· '; }
+.ev-count { font-size: 10px; font-weight: 700; color: var(--green); background: #EEF7F1; border-radius: 6px; padding: 1px 6px; vertical-align: 2px; }
+.ev-title { font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--ink); }
 .ev-songs { font-size: 11px; color: #1C6A4E; line-height: 1.5; }
 
 /* 프로그램별 */
