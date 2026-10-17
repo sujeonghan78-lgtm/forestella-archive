@@ -1,0 +1,11 @@
+name: sheet-check
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          U='https://docs.google.com/spreadsheets/d/e/2PACX-1vRNdG6P8rWav2itwJt2z9Om7q3WNU-KBojmWOqYTMdXFb7WadSBc2rql_KJB8h1fCnurF6PAdKbkXmH/pub?gid=1927596948&single=true&output=csv'
+          curl -sL -o a.csv -w '%{http_code} %{content_type}\n' "$U" | sed 's/^/::notice::status /'
+          echo "::notice::lines $(wc -l < a.csv)"
+          head -c 600 a.csv | tr '\n' '|' | sed 's/^/::notice::head /'; echo
