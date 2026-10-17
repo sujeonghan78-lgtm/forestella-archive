@@ -695,6 +695,7 @@
         ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트 셋리스트', data.tours.length + '개')}
         ${item('#/xfeed', '<path d="M4 4l16 16M20 4L4 20"/>', '공식 X 모아보기', '사진 · 후기 · 공지')}
+        ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범 · 싱글별 공식 X')}
         ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
         ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
         ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
@@ -833,6 +834,7 @@
     concerts: concertsView,
     tour: tourView,
     xfeed: xfeedView,
+    releases: releasesView,
   };
 
   // ---------- 일정 상세 (아래에서 올라오는 시트) ----------
@@ -892,14 +894,15 @@
   const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
   function xfeedView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-    const cat = qs.get('cat') || '', mem = qs.get('m') || '';
+    const cat = qs.get('cat') || '', mem = qs.get('m') || '', rel = qs.get('rel') || '';
     let n = 0;
     const href = (c, m) => '#/xfeed?' + new URLSearchParams(Object.entries({ cat: c, m }).filter(x => x[1])).toString();
     const chip = (on, h, label) => `<a class="chip${on ? ' on' : ''}" href="${h}">${label}</a>`;
     const fill = () => {
       const box = document.getElementById('xfeed');
       if (!box) return;
-      const list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)));
+      let list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)) && (!rel || p.rel === rel));
+      if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => `
           <a class="x-card${p.img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">
             ${p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
@@ -917,11 +920,28 @@
     };
     setTimeout(fill);
     return `
-      <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
+      ${rel ? '' : '<a class="back" href="#/more">‹ 더보기</a>'}
+      ${rel ? `<a class="back" href="#/releases">‹ 음반 이야기</a><h1 class="h1 page-title">${esc(rel)}</h1><p class="sub">티저부터 발매·이벤트까지 공식 X 글을 순서대로 모았어요.</p><div id="xfeed"><p class="empty">불러오는 중…</p></div>` : ''}
+      ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
       <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(cat, ''), '멤버 전체')}${X_MEMBERS.map(m => chip(m === mem, href(cat, m), m.slice(1))).join('')}</div>
-      <div id="xfeed"><p class="empty">불러오는 중…</p></div>`;
+      <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
+  }
+
+  function releasesView() {
+    const map = new Map();
+    (data.xFeed || []).forEach(p => { if (p.rel) { if (!map.has(p.rel)) map.set(p.rel, []); map.get(p.rel).push(p); } });
+    const rels = [...map.entries()].map(([name, ps]) => ({ name, ps, first: ps[ps.length - 1], last: ps[0], img: (ps.find(p => /release|발매|concept|컨셉/i.test(p.raw) && p.img) || ps.find(p => p.img) || {}).img }))
+      .sort((a, b) => (a.first.date < b.first.date ? 1 : -1));
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">음반 이야기${help('공식 X의 음반·컴백 글을 앨범·싱글별로 묶었어요. 시트 "공식X" 탭의 음반 칸에 이름을 쓰면 그대로 묶여요.')}</h1>
+      <p class="sub">앨범·싱글마다 티저부터 발매까지 순서대로 볼 수 있어요.</p>
+      <div class="stack x-list">${rels.map(r => `
+        <a class="x-card${r.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(r.name)}">
+          ${r.img ? `<img src="${esc(r.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+          <span class="x-text"><span class="x-date">${esc(r.first.date.replace(/-/g, '.'))}부터 · 글 ${r.ps.length}개</span><b>${esc(r.name)}</b></span>
+        </a>`).join('')}</div>`;
   }
 
   function concertsView() {
@@ -1119,7 +1139,7 @@
   }
 
   function setTabs(name) {
-    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', xfeed: 'more', about: 'more', install: 'more' }[name] || name;
+    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', xfeed: 'more', releases: 'more', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);

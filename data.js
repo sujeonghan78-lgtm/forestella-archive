@@ -205,7 +205,22 @@
       img: r['사진'] || '',
       after: r['후기 일정ID'] || '',
       behind: r['비하인드 일정ID'] || '',
+      rel: r['음반'] || '',
     })).sort((a, b) => (a.id.length - b.id.length) || (a.id < b.id ? -1 : 1));
+    // 음반 이야기: 시트 "음반" 칸이 있으면 그걸, 없으면 글 속 이름으로 (위에 있을수록 먼저 맞춰요)
+    const RELEASES = [
+      ['THE LEGACY', /the legacy|정규\s?4집/], ['Etude', /etude|에튀드/], ['Nella Notte', /nella notte/], ['Still Here', /still here/],
+      ['창귀', /창귀/], ['그리고 봄', /그리고 봄/], ['Everything', /everything/], ['Apocalypse', /apocalypse/],
+      ['Piano Man', /piano man/], ['Unfinished', /unfinished/], ['신세계 : PARANA', /parana|신세계/],
+      ['KOOL', /\bkool\b/], ['White Night', /white night|백야/], ['The Bloom : UTOPIA', /utopia|the bloom/],
+      ['The Beginning : World Tree', /world tree|the beginning|save our lives/],
+    ];
+    xFeed.forEach(p => {
+      if (p.rel || !/음반|투표/.test(p.cat)) return;
+      const t = p.raw.normalize('NFKC').toLowerCase();
+      const hit = RELEASES.find(([, rx]) => rx.test(t));
+      if (hit) p.rel = hit[0];
+    });
     events.forEach(e => { e.xBehind = []; });
     xFeed.forEach(p => {
       const a = byId.get(p.after), b = byId.get(p.behind);
