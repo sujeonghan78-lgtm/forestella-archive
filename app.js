@@ -255,7 +255,7 @@
     return `
       <nav class="shortcuts" aria-label="바로가기">
         ${tile('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범·싱글별')}
-        ${tile('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트 셋리스트', `투어 ${data.tours.length}개`)}
+        ${tile('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', `공연 ${(data.concerts || []).length || data.tours.length}개`)}
         ${tile('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '불후·열린음악회')}
       </nav>`;
   }
@@ -694,7 +694,7 @@
       </a>
       <nav aria-label="더보기 메뉴">
         ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
-        ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트 셋리스트', data.tours.length + '개')}
+        ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
         ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표', '연도·월별 기록')}
         ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범 · 싱글별 공식 X')}
         ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
@@ -972,23 +972,55 @@
 
 
   function concertsView() {
-    const tours = data.tours.slice().reverse();
+    // 시트 "콘서트 정보"가 있으면 셋리스트가 없는 공연까지 다 보여줘요.
+    const list = data.concerts && data.concerts.length
+      ? data.concerts.map(c => ({ id: c.id, name: c.name, img: c.img, sub: `${concertRange(c)}${/^\d+$/.test(c.count || '') ? ` · ${c.count}회` : ''}${c.tour ? ` · 셋리스트 ${c.tour.songs.length}곡` : ''}` }))
+      : data.tours.slice().reverse().map(t => ({ id: t.id, name: t.name, sub: `${tourRange(t)} · ${t.complete ? '' : '일부 '}${t.songs.length}곡` }));
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">콘서트 셋리스트${help('나무위키·setlist.fm·뉴스 기사를 모아 정리했어요. 틀린 곳이 있으면 제보해 주세요.')}</h1>
-      <p class="sub">단독 콘서트와 투어에서 부른 곡을 순서대로 모았어요.</p>
-      <div class="stack tour-list">
-        ${tours.map(t => `
-          <a class="card tour-card" href="#/tour/${encodeURIComponent(t.id)}">
-            <span class="card-title">${esc(t.name)}</span>
-            <span class="row-sub">${tourRange(t)} · ${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
+      <h1 class="h1 page-title">콘서트${help('공연 정보는 예매처·기사·위키 중 두 곳 이상 맞는 것만 적었어요. 셋리스트는 나무위키·setlist.fm·뉴스 기사를 모았어요. 틀린 곳이 있으면 제보해 주세요.')}</h1>
+      <p class="sub">단독 콘서트와 투어의 일정, 공연장, 부른 곡을 모았어요.</p>
+      <div class="stack x-list">
+        ${list.map(c => `
+          <a class="x-card${c.img ? '' : ' no-img'}" href="#/tour/${encodeURIComponent(c.id)}">
+            ${c.img ? `<img src="${esc(c.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+            <span class="x-text"><span class="x-date">${esc(c.sub)}</span><b>${esc(c.name)}</b></span>
           </a>`).join('')}
       </div>`;
+  }
+
+  const concertRange = c => {
+    const a = c.from, b = c.to;
+    if (!a) return '';
+    return a === b ? fmtDate(a, false) : `${fmtDate(a, false)} ~ ${a.slice(0, 4) === b.slice(0, 4) ? b.slice(5).replace('-', '.') : fmtDate(b, false)}`;
+  };
+
+  // 콘서트 정보 (시트): 포스터, 기간·회차·주최, 공연 일정, 특징, 출처
+  function concertInfo(c, short) {
+    return `
+      ${c.img ? `<a href="${esc(c.imgPost || c.img)}" target="_blank" rel="noopener"><img class="album-img" src="${esc(c.img)}?name=medium" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
+      <div class="facts">
+        ${short ? '' : `<div class="fact"><b>기간</b><span>${esc(concertRange(c))}${c.ok ? '' : ' <span class="tag">확인 중</span>'}</span></div>`}
+        ${c.count ? `<div class="fact"><b>회차</b><span>${esc(/^\d+$/.test(c.count) ? c.count + '회' : c.count)}</span></div>` : ''}
+        ${c.org && c.org !== '확인 중' ? `<div class="fact"><b>주최·기획</b><span>${esc(c.org)}</span></div>` : ''}
+      </div>
+      ${c.shows.length && !short ? `<h2 class="h3 list-title">공연 일정</h2><ul class="track-list show-list">${c.shows.map(x => `<li>${esc(x.replace(/^(\d{4})-(\d\d)-(\d\d)/, '$1.$2.$3').replace(/~(\d\d)-(\d\d)/, '~$1.$2'))}</li>`).join('')}</ul>` : ''}
+      ${c.facts.length ? `<h2 class="h3 list-title">이런 공연이었어요</h2><ul class="track-list fact-list">${c.facts.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+      ${c.src.length ? `<p class="src-note">출처: ${c.src.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener nofollow">${i + 1}</a>`).join(' · ')}</p>` : ''}`;
   }
 
   function tourView() {
     const id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const t = data.tours.find(x => x.id === id);
+    const info = (data.concerts || []).find(x => x.id === id);
+    if (!t && info) return `
+      <a class="back" href="#/concerts">‹ 콘서트</a>
+      <section class="album-head">
+        <div class="block-head"><h1 class="h1">${esc(info.name)}</h1></div>
+        ${concertInfo(info)}
+        ${findRow('포레스텔라 ' + info.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
+      </section>
+      <p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. <a href="${formUrl({ type: '틀린 정보', title: info.name })}" target="_blank" rel="noopener">알고 있는 곡 알려주기 ›</a></p>`;
     if (!t) return `<p class="empty">이 콘서트를 찾지 못했어요. <a href="#/concerts">콘서트 목록으로 ›</a></p>`;
     // 같은 장소는 한 줄로 모아요 (띄어쓰기만 다른 장소 이름도 같은 곳으로 봐요)
     const places = new Map();
@@ -1003,7 +1035,7 @@
       `<div class="tour-show"><span class="tour-place">${esc(label)}</span><span class="ev-days">${list.map(x => `<a class="ev-day" href="#/e/${encodeURIComponent(x.id)}">${x.date.slice(5).replace('-', '.')}</a>`).join('')}</span></div>`).join('');
     const top = t.songs.slice(0, 3).map(x => x.t).join(', ');
     return `
-      <a class="back" href="#/concerts">‹ 콘서트 셋리스트</a>
+      <a class="back" href="#/concerts">‹ 콘서트</a>
       <section class="song-hero">
         <div class="block-head"><h1 class="song-title">${esc(t.name)}${help('곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.')}</h1>${shareBtn('이 셋리스트 공유하기', `포레스텔라 ${t.name} 셋리스트 🎤\n${top} …\n\n${TAGS}`, link('#/tour/' + encodeURIComponent(t.id)))}</div>
         <span class="count-pill">${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
@@ -1011,6 +1043,7 @@
         ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
         ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
+      ${t.info ? `<section class="album-head tour-info">${concertInfo(t.info, true)}</section><hr class="divider"><h2 class="h3 list-title">셋리스트</h2>` : ''}
       ${setlistSections(t.songs).map((sec, i) => `
         ${i ? '<hr class="divider">' : ''}
         ${sec.name ? `<h2 class="h3 list-title">${sec.name}</h2>` : ''}

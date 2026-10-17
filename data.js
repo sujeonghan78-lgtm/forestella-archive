@@ -138,7 +138,7 @@
 
   async function fetchAll() {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -146,8 +146,9 @@
       fetchText('setlists.json').catch(() => ''),
       fetchText(s.x).catch(() => ''),
       s.albums ? fetchText(s.albums).catch(() => '') : '',
+      s.concerts ? fetchText(s.concerts).catch(() => '') : '',
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, sheets: JSON.stringify(s), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, sheets: JSON.stringify(s), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -261,7 +262,20 @@
       label: a['기획사·유통사'], rel: a['음반 이야기 이름'], img: a['사진'],
       src: [a['출처1'], a['출처2']].filter(u => /^https?:/.test(u || '')), ok: a['확인'] !== '확인 중', note: a['비고'],
     })).sort((a, b) => (a.date < b.date ? 1 : -1));
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, savedAt: raw.savedAt };
+    // 콘서트 정보 (시트 "콘서트 정보" 탭). 투어ID가 셋리스트와 같으면 서로 이어 붙여요.
+    const urls = t => (t || '').split(/[\s;]+/).filter(u => /^https?:/.test(u));
+    const concerts = toObjects(raw.concerts || '').filter(c => c['투어ID'] && c['공연명']).map(c => {
+      const [from, to] = (c['기간'] || '').split('~').map(x => x.trim());
+      return {
+        id: c['투어ID'], name: c['공연명'], from, to: to || from, count: c['회차'], org: c['주최·기획'],
+        shows: (c['공연 일정'] || '').split(' / ').map(x => x.trim()).filter(Boolean),
+        facts: (c['특징'] || '').split(' / ').map(x => x.trim()).filter(Boolean),
+        img: c['포스터'], imgPost: c['포스터 글'], src: [...urls(c['출처1']), ...urls(c['출처2'])].slice(0, 6),
+        ok: c['확인'] !== '확인 중', note: c['비고'],
+      };
+    }).sort((a, b) => (a.from < b.from ? 1 : -1));
+    concerts.forEach(c => { c.tour = tours.find(t => t.id === c.id); if (c.tour) c.tour.info = c; });
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

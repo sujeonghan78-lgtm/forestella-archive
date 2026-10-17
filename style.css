@@ -482,3 +482,6 @@ h1:has(> .help), h2:has(> .help) { position: relative; }
 .album-head .album-img { width: 100%; max-height: 320px; object-fit: cover; border-radius: 18px; margin: 6px 0 14px; background: #EEF3EF; display: block; }
 .track-list { margin: 6px 0 10px; padding-left: 22px; font-size: 14px; line-height: 1.8; }
 .track-list a { color: var(--green); }
+
+.show-list li, .fact-list li { font-size: 13px; line-height: 1.6; }
+.tour-info { margin-top: 18px; }
