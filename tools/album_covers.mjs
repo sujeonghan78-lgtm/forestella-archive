@@ -2,13 +2,14 @@
 // 발매일이 맞는 앨범을 먼저 고르고, 없으면 이름이 가장 비슷한 것. 못 찾으면 빈칸.
 import fs from 'node:fs';
 
-const rows = fs.readFileSync('data/albums_lookup.csv', 'utf8').trim().split('\n').slice(1).map(l => {
+const rows0 = fs.readFileSync('data/albums_lookup.csv', 'utf8').trim().split('\n').slice(1).map(l => {
   const c = l.match(/("([^"]|"")*"|[^,]*)(,|$)/g).map(x => x.replace(/,$/, '').replace(/^"|"$/g, '').replace(/""/g, '"'));
   return { artist: c[0], album: c[1], date: c[2] };
 });
 const flat = t => t.toLowerCase().replace(/\([^)]*\)/g, '').replace(/[^0-9a-z가-힣]/g, '');
 const out = {};
 let ok = 0;
+const rows = process.env.PROBE ? [] : rows0;
 for (const r of rows) {
   const term = `${r.artist} ${r.album.replace(/\([^)]*\)/g, '')}`;
   try {
