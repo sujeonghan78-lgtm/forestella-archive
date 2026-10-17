@@ -129,11 +129,14 @@
     const t = todayParts();
     const { exact, hits } = yearsAgoToday();
     if (!hits.length) return '';
-    const years = t.y - Number(hits[0].date.slice(0, 4));
-    const title = exact ? `${years}년 전 오늘` : `${years}년 전 이맘때`;
+    const yearsOf = e => t.y - Number(e.date.slice(0, 4));
+    const years = yearsOf(hits[0]);
+    // 그날 기록이 여러 해에 걸쳐 있으면 '지난 오늘'로 묶고, 카드마다 몇 년 전인지 붙여요
+    const multi = new Set(hits.map(yearsOf)).size > 1;
+    const title = multi ? (exact ? '지난 오늘' : '지난 이맘때') : exact ? `${years}년 전 오늘` : `${years}년 전 이맘때`;
     const cards = hits.map(e => `
       <a class="hero" href="#/e/${encodeURIComponent(e.id)}">
-        <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span></span>
+        <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${multi ? ` · ${yearsOf(e)}년 전` : ''}</span></span>
         <span class="hero-title">${esc(e.title)}</span>
         <span class="hero-foot">${songsLine(e)}${playBadge(e)}</span>
       </a>`).join('');
@@ -707,8 +710,8 @@
     home: () => `
       ${header()}
       ${homeSearchBox()}
-      ${homeAgo()}
       ${homeRandom()}
+      ${homeAgo()}
       ${homeMonth()}
       ${homePrograms()}`,
     search: searchView,
