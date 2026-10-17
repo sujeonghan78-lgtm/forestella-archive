@@ -1,0 +1,16 @@
+# 표지 후보 찾아보기 (직접 실행)
+name: album-find
+on:
+  workflow_dispatch:
+    inputs:
+      names:
+        default: 'THE LEGACY|Nella Notte|Still Here|Apocalypse|Unfinished|UTOPIA|Nella Fantasia'
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/album_find.mjs "${{ inputs.names }}"
