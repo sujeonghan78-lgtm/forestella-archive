@@ -40,12 +40,14 @@ def main(events_csv, out_xlsx=None):
             res.setdefault(best[2], []).append(p['id'])
         rows.append([p['date'], p['text'][:120], evs[best[2]][0] if best[2] else '', evs[best[2]][2] if best[2] else '(못 찾음)', best[0]])
     d = json.load(open('x.json', encoding='utf-8'))
+    try: photos = json.load(open('data/x_photos.json', encoding='utf-8'))
+    except FileNotFoundError: photos = {}
     d['behind'] = res
     for ids in res.values():
         for pid in ids:
             q = next(x for x in posts if x['id'] == pid)
             t = re.sub(r'^\[[^\]]*\]\s*', '', q['text']); t = re.sub(r'#\S+|https?://\s?\S+', '', t)
-            d['posts'][pid] = [q['date'], re.sub(r'\s+', ' ', t).strip()[:90], d['posts'].get(pid, ['', '', ''])[2]]
+            d['posts'][pid] = [q['date'], re.sub(r'\s+', ' ', t).strip()[:90], (photos.get(pid) or [''])[0]]
     json.dump(d, open('x.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
     print(f'비하인드 글 {len(posts)}개 중 {sum(len(v) for v in res.values())}개를 일정 {len(res)}개에 붙임')
     if out_xlsx:
