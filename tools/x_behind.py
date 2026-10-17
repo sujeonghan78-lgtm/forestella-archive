@@ -7,7 +7,7 @@ import csv, json, re, sys, datetime as dt
 sys.path.insert(0, 'tools')
 from x_match import load_events
 
-BEHIND = re.compile(r'포레미파솔|비하인드|BEHIND', re.I)
+BEHIND = re.compile(r'포레미파솔|비하인드|BEHIND|직캠|Fancam', re.I)
 STOP = {'포레스텔라', 'forestella', '비하인드', '포레미파솔', 'behind', '콘서트', 'concert', '2021', '2022', '2023', '2024', '2025', '2026', 'kbs2', 'mbc', 'sbs', 'kbs'}
 
 def words(title):

@@ -972,7 +972,7 @@
     if (!e.xPost && !b.length) return '';
     return `<hr class="divider"><section class="d-block">
       <div class="block-head"><h2 class="h3">공식 X${help('포레스텔라 공식 X 계정이 이 일정 뒤에 올린 글과 비하인드예요. 날짜와 글 내용으로 골라서 가끔 다른 글일 수 있어요.')}</h2></div>
-      <div class="stack x-list">${e.xPost ? xCard(e.xPost, '후기') : ''}${b.map(p => xCard(p, '비하인드')).join('')}</div>
+      <div class="stack x-list">${e.xPost ? xCard(e.xPost, '후기') : ''}${b.map(p => xCard(p, /직캠|fancam|choreo/i.test(p.text) ? '직캠' : /포레미파솔/.test(p.text) ? '포레미파솔' : '비하인드')).join('')}</div>
     </section>`;
   }
 
