@@ -678,6 +678,7 @@
       <nav aria-label="더보기 메뉴">
         ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트 셋리스트', data.tours.length + '개')}
+        ${item('#/xfeed', '<path d="M4 4l16 16M20 4L4 20"/>', '공식 X 모아보기', '사진 · 후기 · 공지')}
         ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
         ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
         ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
@@ -804,6 +805,7 @@
     install: installView,
     concerts: concertsView,
     tour: tourView,
+    xfeed: xfeedView,
   };
 
   // ---------- 일정 상세 (아래에서 올라오는 시트) ----------
@@ -857,6 +859,48 @@
     const a = t.dates[0], b = t.dates[t.dates.length - 1];
     return a === b ? fmtDate(a, false) : `${fmtDate(a, false)} ~ ${a.slice(0, 4) === b.slice(0, 4) ? b.slice(5).replace('-', '.') : fmtDate(b, false)}`;
   };
+
+  // ---------- 공식 X 모아보기 ----------
+  const X_CATS = ['일정 후기', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사·방송', '생일', '투표·이벤트'];
+  const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
+  let xFeed = null;
+  function xfeedView() {
+    const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+    const cat = qs.get('cat') || '', mem = qs.get('m') || '';
+    let n = 0;
+    const href = (c, m) => '#/xfeed?' + new URLSearchParams(Object.entries({ cat: c, m }).filter(x => x[1])).toString();
+    const chip = (on, h, label) => `<a class="chip${on ? ' on' : ''}" href="${h}">${label}</a>`;
+    const fill = () => {
+      const box = document.getElementById('xfeed');
+      if (!box) return;
+      const list = xFeed.filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)));
+      const card = p => `
+          <a class="x-card${p.img ? '' : ' no-img'}" href="https://x.com/official_fore/status/${esc(p.id)}" target="_blank" rel="noopener">
+            ${p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+            <span class="x-text"><span class="x-date">${esc(p.date.replace(/-/g, '.'))} · ${esc(p.cat)}</span>${esc(p.text || '(글 없음)')}</span>
+          </a>`;
+      if (!list.length) { box.innerHTML = '<p class="empty">해당하는 글이 없어요.</p>'; return; }
+      box.innerHTML = `<p class="sub">${list.length}개</p><div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
+      const more = () => {
+        box.querySelector('.x-list').insertAdjacentHTML('beforeend', list.slice(n, n + 40).map(card).join(''));
+        n += 40;
+        box.querySelector('.more-btn').hidden = n >= list.length;
+      };
+      box.querySelector('.more-btn').onclick = more;
+      more();
+    };
+    setTimeout(() => {
+      if (xFeed) return fill();
+      fetch('x_feed.json').then(r => r.json()).then(d => { xFeed = d.posts; fill(); })
+        .catch(() => { const b = document.getElementById('xfeed'); if (b) b.innerHTML = '<p class="empty">글을 불러오지 못했어요.</p>'; });
+    });
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
+      <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
+      <div class="chips tl-cats">${chip(!mem, href(cat, ''), '멤버 전체')}${X_MEMBERS.map(m => chip(m === mem, href(cat, m), m.slice(1))).join('')}</div>
+      <div id="xfeed"><p class="empty">불러오는 중…</p></div>`;
+  }
 
   function concertsView() {
     const tours = data.tours.slice().reverse();
@@ -1052,7 +1096,7 @@
   }
 
   function setTabs(name) {
-    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', about: 'more', install: 'more' }[name] || name;
+    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', xfeed: 'more', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);

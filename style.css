@@ -467,3 +467,6 @@ h1:has(> .help), h2:has(> .help) { position: relative; }
 .x-card img{width:84px;height:84px;object-fit:cover;border-radius:10px;flex:none;background:#eef3ef}
 .x-text{font-size:14px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .x-date{display:block;font-size:12px;color:var(--muted,#6b7a72);margin-bottom:2px}
+.more-btn{display:block;width:100%;margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:15px;color:var(--muted)}
+.x-list{gap:10px}
+#xfeed > .sub{margin:12px 0 8px}
