@@ -144,7 +144,7 @@
       fetchText(s.reports).catch(() => ''),
       fetchText('cafe.json').catch(() => ''),
       fetchText('setlists.json').catch(() => ''),
-      fetchText('x.json').catch(() => ''),
+      fetchText(s.x).catch(() => ''),
     ]);
     return { events, videos, reports, cafe, setlists, x, savedAt: Date.now() };
   }
@@ -189,15 +189,29 @@
       const t = tours.find(x => x.dates.includes(e.date));
       if (t) { e.setlist = t; t.events.push(e); }
     });
-    // 공식 X 대표 글 (tools/x_match.py 로 일정마다 1개 골라 둔 것)
-    let xd = {};
-    try { xd = JSON.parse(raw.x || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
-    events.forEach(e => {
-      const pid = (xd.events || {})[e.id], p = pid && (xd.posts || {})[pid];
-      const mk = id => { const q = (xd.posts || {})[id]; return q && { url: 'https://x.com/official_fore/status/' + id, date: q[0], text: q[1], img: q[2] }; };
-      if (p) e.xPost = mk(pid);
-      e.xBehind = ((xd.behind || {})[e.id] || []).map(mk).filter(Boolean);
+    // 공식 X (시트 "공식X" 탭: 한 줄이 글 하나, 후기·비하인드 일정ID로 일정에 붙여요)
+    const xClean = t => {
+      const body = t.replace(/^\[[^\]]*\]\s*/, '').replace(/#\S+/g, '').replace(/https?:\/\/\s?\S+/g, '').replace('더보기', '').replace(/\s+/g, ' ').trim();
+      return (body || (t.match(/#(\S+)/g) || []).map(h => h.slice(1)).filter(h => !/^(포레스텔라|forestella)$/i.test(h)).join(' ')).slice(0, 120);
+    };
+    const xFeed = toObjects(raw.x || '').filter(r => r['링크']).map(r => ({
+      id: r['링크'].split('/').pop(),
+      url: r['링크'],
+      date: normDate(r['날짜']) || r['날짜'],
+      cat: r['종류'] || '사진·일상',
+      m: (r['멤버'] || '').split(',').map(x => x.trim()).filter(Boolean),
+      text: xClean(r['글'] || ''),
+      img: r['사진'] || '',
+      after: r['후기 일정ID'] || '',
+      behind: r['비하인드 일정ID'] || '',
+    })).sort((a, b) => (a.id.length - b.id.length) || (a.id < b.id ? -1 : 1));
+    events.forEach(e => { e.xBehind = []; });
+    xFeed.forEach(p => {
+      const a = byId.get(p.after), b = byId.get(p.behind);
+      if (a && !a.xPost) a.xPost = p;
+      if (b) b.xBehind.push(p);
     });
+    xFeed.reverse();  // 모아보기는 최신 글부터
     videos.forEach(v => { const e = byId.get(v.eventId); if (e) e.related.push(v); });
     // 곡별로 확인된 무대 모으기 (이름은 가장 많이 쓰인 표기로)
     const songs = new Map();
@@ -224,7 +238,7 @@
       const so = songs.get(songKey(setlistName(part)));
       if (so && !so.tours.includes(t)) so.tours.push(t);
     })));
-    return { events, videos, reports, byId, songs, tours, savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, tours, xFeed, savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

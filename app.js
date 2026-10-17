@@ -863,7 +863,6 @@
   // ---------- 공식 X 모아보기 ----------
   const X_CATS = ['일정 후기', '일정 현장', '비하인드·직캠', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사', '생일', '투표·이벤트'];
   const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
-  let xFeed = null;
   function xfeedView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     const cat = qs.get('cat') || '', mem = qs.get('m') || '';
@@ -873,10 +872,10 @@
     const fill = () => {
       const box = document.getElementById('xfeed');
       if (!box) return;
-      const list = xFeed.filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)));
+      const list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)));
       const card = p => `
-          <a class="x-card${p.img ? '' : ' no-img'}" href="https://x.com/official_fore/status/${esc(p.id)}" target="_blank" rel="noopener">
-            ${p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+          <a class="x-card${p.img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">
+            ${p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${esc(p.date.replace(/-/g, '.'))} · ${esc(p.cat)}</span>${esc(p.text || '(글 없음)')}</span>
           </a>`;
       if (!list.length) { box.innerHTML = '<p class="empty">해당하는 글이 없어요.</p>'; return; }
@@ -889,11 +888,7 @@
       box.querySelector('.more-btn').onclick = more;
       more();
     };
-    setTimeout(() => {
-      if (xFeed) return fill();
-      fetch('x_feed.json').then(r => r.json()).then(d => { xFeed = d.posts; fill(); })
-        .catch(() => { const b = document.getElementById('xfeed'); if (b) b.innerHTML = '<p class="empty">글을 불러오지 못했어요.</p>'; });
-    });
+    setTimeout(fill);
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
@@ -962,7 +957,7 @@
 
   // 공식 X 대표 글: 사진 + 글 앞부분 카드 하나, 누르면 X로
   function xCard(p, label) {
-    const img = p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+    const img = p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
     return `<a class="x-card${img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">${img}
         <span class="x-text"><span class="x-date">${label} · ${esc(p.date.replace(/-/g, '.'))}</span>${esc(p.text)}</span>
       </a>`;
