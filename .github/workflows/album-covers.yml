@@ -1,0 +1,23 @@
+# 음반 정보 표지 주소를 애플뮤직에서 찾아 data/album_covers.json 에 담아요. (직접 눌러서 실행)
+name: album-covers
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  covers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/album_covers.mjs
+      - run: |
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/album_covers.json
+          git diff --cached --quiet && exit 0
+          git commit -m "음반 표지 주소 반영"
+          git pull --rebase -q origin main
+          git push
