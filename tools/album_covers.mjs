@@ -13,12 +13,14 @@ for (const r of rows) {
   const term = `${r.artist} ${r.album.replace(/\([^)]*\)/g, '')}`;
   try {
     const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=album&country=kr&limit=10`);
-    const list = (await res.json()).results || [];
+    const body = await res.text();
+    if (!res.ok || !body.startsWith('{')) { console.log(`::notice::${res.status} ${body.slice(0, 120)}`); }
+    const list = JSON.parse(body).results || [];
     const pick = list.find(a => (a.releaseDate || '').slice(0, 10) === r.date)
       || list.find(a => flat(a.collectionName).includes(flat(r.album)) || flat(r.album).includes(flat(a.collectionName)));
     out[r.album] = pick ? pick.artworkUrl100.replace('100x100bb', '600x600bb') : '';
     if (pick) ok++;
-  } catch (e) { out[r.album] = ''; }
+  } catch (e) { out[r.album] = ''; if (!ok) console.log(`::notice::오류 ${e.message}`); }
   await new Promise(s => setTimeout(s, 1500));
 }
 fs.writeFileSync('data/album_covers.json', JSON.stringify(out, null, 1));
