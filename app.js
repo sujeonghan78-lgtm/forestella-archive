@@ -477,6 +477,32 @@
   const SONG_FILTERS = [['', '전체'], ['video', '무대 영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
   const playCount = so => so.events.length + so.tours.length;
 
+  // 곡 이름이 나온 공식 X 글 (짧은 이름은 엉뚱한 글이 섞여서 한글 2자·영문 4자 이상만)
+  function songX(so) {
+    if (so._x && so._xFeed === data.xFeed) return so._x;
+    const flat = t => t.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+    const nm = flat(so.name);
+    const hangul = /[가-힣]/.test(nm);
+    // 영어 곡은 낱말 경계로 (Angel이 Los Angeles에 걸리지 않게)
+    const words = so.name.toLowerCase().match(/[0-9a-z]+/g) || [];
+    const rx = new RegExp('(^|[^a-z])' + words.join('[^a-z0-9]*') + '($|[^a-z])');
+    const hit = p => hangul ? flat(p.raw).includes(nm) : rx.test(p.raw.toLowerCase());
+    so._xFeed = data.xFeed;
+    so._x = nm.length >= (hangul ? 2 : 4) && (hangul || words.length) ? (data.xFeed || []).filter(hit) : [];
+    return so._x;
+  }
+  // 곡 대표 사진: 음반 표지 → 최근 무대 영상 썸네일 → 공식 X 사진
+  function songPic(so) {
+    const al = so.albums.find(a => a.img);
+    if (al) return imgSize(al.img, 'small');
+    for (let i = so.events.length - 1; i >= 0; i--) {
+      const e = so.events[i], vid = e.videoId || (e.related[0] || {}).videoId;
+      if (vid) return `https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg`;
+    }
+    const xp = songX(so).find(p => p.img);
+    return xp ? imgSize(xp.img, 'small') : '';
+  }
+
   function songsView() {
     const pass = so => !songFilter || (songFilter === 'video' ? so.events.length : songFilter === 'album' ? so.albums.length : so.tours.length);
     const list = [...data.songs.values()].filter(pass).sort((a, b) =>
@@ -503,7 +529,7 @@
           const meta = [so.events.length ? `<b>무대 ${so.events.length}</b>` : '', so.tours.length ? `콘서트 ${so.tours.length}` : '', so.titleOf.length ? '타이틀' : ''].filter(Boolean).join(' · ');
           return `
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(so.name + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(so.name))}">
-            ${al && al.img ? `<img class="song-thumb" src="${esc(imgSize(al.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
+            ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
             <span class="song-name">${esc(so.name)}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
             ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}
             <span class="song-n">${meta} ›</span>
@@ -530,15 +556,7 @@
     if (!so) return `<p class="empty">이 곡을 찾지 못했어요. <a href="#/songs">곡 목록으로 ›</a></p>`;
     const stages = so.events.slice().reverse();
     const play = playAllUrl(stages);
-    // 곡 이름이 나온 공식 X 글 (짧은 이름은 엉뚱한 글이 섞여서 한글 2자·영문 4자 이상만)
-    const flat = t => t.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
-    const nm = flat(so.name);
-    const hangul = /[가-힣]/.test(nm);
-    // 영어 곡은 낱말 경계로 (Angel이 Los Angeles에 걸리지 않게)
-    const words = so.name.toLowerCase().match(/[0-9a-z]+/g) || [];
-    const rx = new RegExp('(^|[^a-z])' + words.join('[^a-z0-9]*') + '($|[^a-z])');
-    const hit = p => hangul ? flat(p.raw).includes(nm) : rx.test(p.raw.toLowerCase());
-    const xs = nm.length >= (hangul ? 2 : 4) ? (data.xFeed || []).filter(hit) : [];
+    const xs = songX(so);
     // 수록 음반 (표지 + 음반 이야기 링크)
     const albumRow = so.albums.length ? `<div class="song-albums">${so.albums.map(a => `
       <a class="song-album" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
@@ -1015,7 +1033,7 @@
   function concertsView() {
     // 시트 "콘서트 정보"가 있으면 셋리스트가 없는 공연까지 다 보여줘요.
     const list = data.concerts && data.concerts.length
-      ? data.concerts.map(c => ({ id: c.id, name: c.name, img: c.img, sub: `${concertRange(c)}${/^\d+$/.test(c.count || '') ? ` · ${c.count}회` : ''}${c.tour ? ` · 셋리스트 ${c.tour.songs.length}곡` : ''}` }))
+      ? data.concerts.map(c => ({ id: c.id, name: c.name, img: c.img || tourPic(c.tour), sub: `${concertRange(c)}${/^\d+$/.test(c.count || '') ? ` · ${c.count}회` : ''}${c.tour ? ` · 셋리스트 ${c.tour.songs.length}곡` : ''}` }))
       : data.tours.slice().reverse().map(t => ({ id: t.id, name: t.name, sub: `${tourRange(t)} · ${t.complete ? '' : '일부 '}${t.songs.length}곡` }));
     return `
       <a class="back" href="#/more">‹ 더보기</a>
@@ -1032,6 +1050,13 @@
 
   // X 사진만 크기를 골라 받을 수 있어요. 다른 곳 사진은 주소 그대로 써요.
   function imgSize(u, size) { return /pbs\.twimg\.com/.test(u) ? `${u}?name=${size}` : u; }
+
+  // 포스터가 없는 공연은 그 투어 무대 영상 썸네일로
+  function tourPic(t) {
+    const e = t && t.events.slice().reverse().find(x => x.videoId || x.related.length);
+    const vid = e && (e.videoId || e.related[0].videoId);
+    return vid ? `https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg` : '';
+  }
 
   const concertRange = c => {
     const a = c.from, b = c.to;
