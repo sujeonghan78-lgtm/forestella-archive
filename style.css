@@ -41,6 +41,7 @@ button { font-family: inherit; }
 }
 .view {
   padding: 20px 20px calc(var(--tabs-h) + 32px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, #F1FAE3 0, #E9F7F1 90px, #FFFFFF 220px) no-repeat;
   outline: none;
 }
 
@@ -250,7 +251,7 @@ body.sheet-open { overflow: hidden; }
 .tl-top {
   display: flex; flex-direction: column; gap: 12px;
   margin: -20px -20px 0; padding: 20px 20px 12px;
-  background: #FFFFFF; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #F1FAE3 0%, #E9F7F1 55%, #FFFFFF 100%); border-bottom: 1px solid var(--line);
   position: sticky; top: 0; z-index: 5;
 }
 .tl-top .h1 { margin: 0; }
