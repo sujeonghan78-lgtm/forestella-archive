@@ -451,3 +451,8 @@ body.sheet-open { overflow: hidden; }
 .card-sl svg { width: 14px; height: 14px; stroke: var(--green-2); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tl-cats { margin-top: 8px; }
 .tl-cats .chip { height: 32px; }
+.divider { border: 0; border-top: 1px solid #E3EDE7; margin: 22px 0 0; }
+.sheet-body .divider { margin-top: 18px; }
+.tour-foot { margin-top: 14px; }
+.divider + .list-title { margin-top: 18px; }
+.tl .month ~ .month { border-top: 1px solid #E3EDE7; padding-top: 14px; margin-top: 18px; }

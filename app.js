@@ -509,6 +509,7 @@
       <div class="stack">${stages.map(resultCard).join('')}</div>
       <p class="src-note foot">영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.</p>
       ${so.tours.length ? `
+      <hr class="divider">
       <h2 class="h3 list-title">이 곡을 부른 콘서트</h2>
       <div class="tour-chips">${so.tours.map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>
       <p class="src-note">콘서트 셋리스트 기준이에요. 위 무대 목록과 달리 영상으로 확인한 건 아니에요.</p>` : ''}`;
@@ -777,8 +778,10 @@
     home: () => `
       ${header()}
       ${homeSearchBox()}
+      <hr class="divider">
       ${homeRandom()}
       ${homeShortcuts()}
+      <hr class="divider">
       ${homeAgo()}
       ${homeMonth()}`,
     search: searchView,
@@ -887,11 +890,13 @@
         ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
         ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
-      ${setlistSections(t.songs).map(sec => `
+      ${setlistSections(t.songs).map((sec, i) => `
+        ${i ? '<hr class="divider">' : ''}
         ${sec.name ? `<h2 class="h3 list-title">${sec.name}</h2>` : ''}
         <ol class="setlist-list" start="${sec.items[0].n}">
           ${sec.items.map(s => `<li><span class="sl-title">${setlistSong(s.t)}</span>${s.note ? `<span class="sl-note">${esc(s.note)}</span>` : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent('포레스텔라 ' + window.DATA.setlistName(s.t.split(' / ')[0]) + ' ' + t.name.replace(/^[\d-]+\s*/, ''))}" target="_blank" rel="noopener" aria-label="${esc(s.t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`).join('')}
         </ol>`).join('')}
+      <hr class="divider">
       <div class="tour-foot">
         <p class="src-note">곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.</p>
         ${t.caution ? `<p class="src-note">${esc(t.caution)}</p>` : ''}
@@ -931,6 +936,7 @@
 
     const reports = reportsFor(e);
     const reportList = reports.length ? `
+      <hr class="divider">
       <section class="d-block">
         <h2 class="h3">팬 제보</h2>
         ${reports.map(r => `
@@ -943,6 +949,7 @@
       </section>` : '';
 
     const related = e.related.length ? `
+      <hr class="divider">
       <section class="d-block">
         <h2 class="h3">관련 영상</h2>
         ${e.related.map(v => `
@@ -968,6 +975,7 @@
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
         ${findRow(findQuery(e.title))}
+        <hr class="divider">
         <section class="d-block">
           <div class="block-head"><h2 class="h3">영상으로 확인된 곡</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
           ${songs}
