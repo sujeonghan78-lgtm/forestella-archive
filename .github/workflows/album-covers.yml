@@ -12,10 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node tools/cover_probe.mjs
       - run: node tools/album_covers.mjs
-        env:
-          PROBE: "1"
       - run: |
           git config user.name "숲별 기록장 봇"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
