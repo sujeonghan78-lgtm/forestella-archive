@@ -152,25 +152,38 @@
     return `${years}년 전 오늘의 포레스텔라 🌲\n${e.title}${song}\n\n${TAGS}`;
   }
 
-  // 랜덤 무대 후보: 공식 영상이 있고 곡이 확인된 일정
+  // 랜덤 무대 후보: 곡이 확인된 모든 일정의 (일정, 곡) 한 쌍씩. 일정이 아니라 곡 단위로 뽑아서
+  // 곡이 많은 공연도, 한 곡만 부른 방송도 고르게 나와요. 최근에 나온 것들은 한동안 다시 안 나와요.
   let pickCount = 0;
   let randomPick = null;
+  const RECENT_KEY = 'soopbyeol-recent-picks';
+  function recentPicks() {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch (err) { return []; }
+  }
   function homeRandom() {
-    const pool = data.events.filter(e => e.videoId && e.songs.length && e.songSource !== '참고');
+    const pool = [];
+    data.events.forEach(e => {
+      if (e.songSource === '참고') return;
+      e.songs.forEach(song => { if (window.DATA.songKey(song)) pool.push({ e, song }); });
+    });
     if (!pool.length) return '';
-    // 들어올 때마다, 다시 뽑을 때마다 새로 뽑아요 (방금 본 무대는 빼고)
-    if (!randomPick || randomPick.n !== pickCount || !pool.includes(randomPick.e)) {
-      let e;
-      do { e = pool[Math.floor(Math.random() * pool.length)]; } while (pool.length > 1 && randomPick && e === randomPick.e);
-      randomPick = { n: pickCount, e, song: e.songs[Math.floor(Math.random() * e.songs.length)] };
+    if (!randomPick || randomPick.n !== pickCount || !data.events.includes(randomPick.e)) {
+      const recent = recentPicks();
+      const keep = Math.min(30, Math.floor(pool.length / 2));
+      const fresh = pool.filter(p => !recent.includes(p.e.id + '|' + p.song));
+      const from = fresh.length ? fresh : pool;
+      const p = from[Math.floor(Math.random() * from.length)];
+      randomPick = { n: pickCount, e: p.e, song: p.song };
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify([p.e.id + '|' + p.song, ...recent].slice(0, keep))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
     }
     const { e, song } = randomPick;
+    const vid = e.videoId || (e.related[0] || {}).videoId || '';
     return `
       <section class="block" id="random">
         <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2><span class="head-side"><button type="button" class="reroll" id="reroll"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>다시 뽑기</button>${shareBtn('랜덤 무대 공유하기', `오늘의 포레스텔라 랜덤 무대 🎲\n${fmtDate(e.date, false)} ${e.title} · ${song}\n\n나도 뽑아보기 👉 ${SITE}\n${TAGS}`, '')}</span></div>
         <div class="dice-card">
           <a class="dice-link" href="#/e/${encodeURIComponent(e.id)}">
-            <span class="dice-thumb" aria-hidden="true"><img src="https://i.ytimg.com/vi/${encodeURIComponent(e.videoId)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="dice-play"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></span>
+            <span class="dice-thumb" aria-hidden="true">${vid ? `<img src="https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="dice-play"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></span>
             <span class="dice-text">
               <span class="sub">${fmtDate(e.date, false)} · ${esc(e.title)}</span>
               <span class="dice-song">${esc(song)}</span>
