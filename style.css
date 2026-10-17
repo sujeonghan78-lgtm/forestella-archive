@@ -41,7 +41,7 @@ button { font-family: inherit; }
 }
 .view {
   padding: 20px 20px calc(var(--tabs-h) + 32px + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, #F1FAE3 0, #E9F7F1 90px, #FFFFFF 220px) no-repeat;
+  background: linear-gradient(180deg, #F1FAE3 0, #EEF9F0 50px, #FFFFFF 120px) no-repeat;
   outline: none;
 }
 
