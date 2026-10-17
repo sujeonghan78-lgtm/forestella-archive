@@ -470,3 +470,4 @@ h1:has(> .help), h2:has(> .help) { position: relative; }
 .more-btn{display:block;width:100%;margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:15px;color:var(--muted)}
 .x-list{gap:10px}
 #xfeed > .sub{margin:12px 0 8px}
+.find-btn { background: linear-gradient(135deg, #F6FCEA 0%, #EEFAF4 50%, #EEF6FE 100%); border-color: #DCEFE4; }

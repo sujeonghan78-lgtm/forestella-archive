@@ -1021,7 +1021,6 @@
           </a>`).join('')}
       </section>` : '';
 
-    const ym = e.date.slice(0, 7);
     return `
       <div class="sheet-grab" aria-hidden="true"><span></span></div>
       <button type="button" class="sheet-close" id="sheet-close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -1038,6 +1037,7 @@
         </div>
         ${findRow(findQuery(e.title))}
         ${xBlock(e)}
+        ${related}
         <hr class="divider">
         <section class="d-block">
           <div class="block-head"><h2 class="h3">영상으로 확인된 곡${help('영상이 남아 있는 곡만 표시돼요. 실제로는 더 불렀을 수 있어요.')}</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
@@ -1051,8 +1051,6 @@
           </div>
         </section>
         ${reportList}
-        ${related}
-        <a class="same-time" href="#/timeline?ym=${ym}"><span class="sub">같은 시기의 기록</span><span>${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5))}월 연표에서 보기 ›</span></a>
       </div>`;
   }
 
