@@ -10,7 +10,8 @@ CATS = [
     ('일정 후기', r'완료|종료|마쳤|무사히|함께해\s?주신'),
     ('투표·이벤트', r'투표|후보|EVENT|이벤트|포요고사|퀴즈|응모|추첨'),
     ('음반·컴백', r'COMEBACK|NEWSONG|앨범|정규\s?\d|미니\s?\d|선공개곡|PocaAlbum|포카앨범|발매|음원|티저|트랙\s?리스트|Lyric Video|\bM/?V\b'),
-    ('영상', r'VIDEO|youtu|직캠|Fancam|포레미파솔|비하인드|LIVE CLIP|라이브 클립'),
+    ('비하인드·직캠', r'포레미파솔|비하인드|Behind|직캠|Fancam|Choreo'),
+    ('영상', r'VIDEO|youtu|LIVE CLIP|라이브 클립'),
     ('공지·안내', r'NOTICE|안내|공지|명단|인원 체크|티켓|예매|팬클럽|응원봉|굿즈|MD|입금|환불|일정|멤버십|멤버쉽|fromm|판매'),
     ('기사', r'NEWS|naver\.me|기사|인터뷰|화보|매거진|Magazine'),
 ]
@@ -32,10 +33,10 @@ def near_event(date, text, byday, evs):
 
 def classify(text, ev=''):
     text = re.sub(r'(https?://\s?[\w.]+)\S*', r'\1', text)  # 링크 뒤 영상 ID(…MvB…)가 낱말로 잡히지 않게
-    cat = next((c for c, rx in CATS[:7] if re.search(rx, text, re.I)), '')
+    cat = next((c for c, rx in CATS[:8] if re.search(rx, text, re.I)), '')
     if not cat and (ev or re.search(STAGE, text, re.I)):
         cat = '일정 현장'
-    cat = cat or next((c for c, rx in CATS[7:] if re.search(rx, text, re.I)), '사진·일상')
+    cat = cat or next((c for c, rx in CATS[8:] if re.search(rx, text, re.I)), '사진·일상')
     mem = [m for m, rx in MEMBERS.items() if re.search(rx, text, re.I)]
     return cat, (mem if len(mem) < 4 else [])
 
