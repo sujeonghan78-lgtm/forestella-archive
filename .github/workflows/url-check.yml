@@ -1,0 +1,19 @@
+# 이미지 주소가 열리는지 확인 (직접 실행)
+name: url-check
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        required: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          URLS: ${{ inputs.urls }}
+        run: |
+          for u in $URLS; do
+            e=$(python3 -c "import sys,urllib.parse as p;print(p.quote(sys.argv[1],safe=':/?=&%'))" "$u")
+            r=$(curl -s -o /dev/null -L -A 'Mozilla/5.0' -w '%{http_code} %{content_type} %{size_download}' "$e")
+            echo "::notice::$r $u"
+          done
