@@ -334,7 +334,7 @@
   function resultCard(e) {
     const hasVideo = e.videoId || e.related.length;
     return `
-      <a class="card" href="#/e/${encodeURIComponent(e.id)}">
+      <a class="card${e.setlist ? ' card-concert' : ''}" href="#/e/${encodeURIComponent(e.id)}">
         <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${upcoming(e)}${hasVideo ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}</span>
         <span class="card-title">${esc(e.title)}</span>
         ${songsLine(e)}

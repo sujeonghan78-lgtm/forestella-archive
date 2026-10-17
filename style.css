@@ -432,3 +432,4 @@ body.sheet-open { overflow: hidden; }
 .sl-yt svg { width: 17px; height: 17px; stroke: var(--muted); fill: none; stroke-width: 1.7; stroke-linejoin: round; }
 .sl-yt svg .fill { fill: var(--muted); stroke: none; }
 .tour-shows + .find-row { margin-top: 2px; }
+.card-concert { background: linear-gradient(135deg, #F6FCEA 0%, #EEFAF4 50%, #EEF6FE 100%); border-color: #DCEFE4; }
