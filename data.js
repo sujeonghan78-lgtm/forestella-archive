@@ -256,7 +256,7 @@
     })));
     // 음반 정보 (시트 "음반 정보" 탭)
     const albums = toObjects(raw.albums || '').filter(a => a['앨범명']).map(a => ({
-      name: a['앨범명'], kind: a['종류'], date: normDate(a['발매일']) || a['발매일'], title: a['타이틀곡'],
+      name: a['앨범명'], member: a['멤버'] || '', kind: a['종류'], date: normDate(a['발매일']) || a['발매일'], title: a['타이틀곡'],
       tracks: (a['수록곡'] || '').split(' / ').map(t => t.trim()).filter(Boolean), credit: a['타이틀 작사·작곡'],
       label: a['기획사·유통사'], rel: a['음반 이야기 이름'], img: a['사진'],
       src: [a['출처1'], a['출처2']].filter(u => /^https?:/.test(u || '')), ok: a['확인'] !== '확인 중', note: a['비고'],
