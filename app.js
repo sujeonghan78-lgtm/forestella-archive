@@ -234,6 +234,15 @@
       </section>`;
   }
 
+  function homeConcerts() {
+    if (!data.tours.length) return '';
+    return `
+      <section class="block">
+        <div class="block-head"><h2 class="h2">콘서트 셋리스트</h2><a class="more" href="#/concerts">전체 보기</a></div>
+        <div class="chips">${data.tours.slice().reverse().map(t => `<a class="pill" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>
+      </section>`;
+  }
+
   function homeSearchBox() {
     return `
       <form class="searchbox" role="search" id="home-search">
@@ -750,9 +759,10 @@
       ${header()}
       ${homeSearchBox()}
       ${homeRandom()}
+      ${homePrograms()}
+      ${homeConcerts()}
       ${homeAgo()}
-      ${homeMonth()}
-      ${homePrograms()}`,
+      ${homeMonth()}`,
     search: searchView,
     program: programView,
     songs: songsView,
