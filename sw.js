@@ -1,7 +1,7 @@
 // 한 번 연 화면 파일을 저장해 두고, 다음부터 빨리 열거나 인터넷이 없을 때 써요.
 // 시트 데이터는 data.js가 따로 저장하니까 여기서는 사이트 파일만 다뤄요.
-const CACHE = 'soopbyeol-v33';
-const SHELL = ['./', 'index.html', 'style.css?v=33', 'config.js?v=33', 'data.js?v=33', 'app.js?v=33', 'lib/fuse.min.js', 'manifest.webmanifest', 'icons/icon-192.png'];
+const CACHE = 'soopbyeol-v34';
+const SHELL = ['./', 'index.html', 'style.css?v=34', 'config.js?v=34', 'data.js?v=34', 'app.js?v=34', 'lib/fuse.min.js', 'manifest.webmanifest', 'icons/icon-192.png'];
 
 self.addEventListener('install', ev => {
   ev.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

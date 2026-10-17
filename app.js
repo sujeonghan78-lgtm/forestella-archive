@@ -207,7 +207,7 @@
     });
     if (!byYear.size) return '';
     const score = e => (e.videoId ? 2 : 0) + (e.songs.length ? 1 : 0) - (['유튜브', '생일', '네이버TV'].includes(e.category) ? 4 : 0);
-    const rows = [...byYear.keys()].sort().map(y => {
+    const rows = [...byYear.keys()].sort().slice(-3).map(y => {
       const e = byYear.get(y).slice().sort((a, b) => score(b) - score(a) || a.date.localeCompare(b.date))[0];
       const sub = e.songs.length && e.songSource !== '참고'
         ? `${e.songs[0]}${e.songs.length > 1 ? ' 외' : ''}` : (e.place || e.category);
@@ -232,6 +232,18 @@
         <h2 class="h2">프로그램별로 보기</h2>
         <div class="chips">${PROGRAMS.map(p => `<a class="pill" href="#/program/${encodeURIComponent(p)}">${p}</a>`).join('')}</div>
       </section>`;
+  }
+
+  function homeShortcuts() {
+    const tile = (href, icon, label, sub) =>
+      `<a class="sc" href="${href}">${menuIcon(icon)}<span class="sc-l">${label}</span><span class="sc-s">${sub}</span></a>`;
+    return `
+      <nav class="shortcuts" aria-label="바로가기">
+        ${tile('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별', '방송 모아보기')}
+        ${tile('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '셋리스트', `콘서트 ${data.tours.length}개`)}
+        ${tile('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 활동', '개인 무대')}
+        ${tile('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
+      </nav>`;
   }
 
   function homeConcerts() {
@@ -758,9 +770,8 @@
     home: () => `
       ${header()}
       ${homeSearchBox()}
+      ${homeShortcuts()}
       ${homeRandom()}
-      ${homePrograms()}
-      ${homeConcerts()}
       ${homeAgo()}
       ${homeMonth()}`,
     search: searchView,
