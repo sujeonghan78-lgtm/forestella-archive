@@ -8,10 +8,10 @@ sys.path.insert(0, 'tools')
 CATS = [
     ('생일', r'HBD|생일|가장빛나던날|Happy\s?\w*\s?Day'),
     ('일정 후기', r'완료|종료|마쳤|무사히|함께해\s?주신'),
-    ('음반·컴백', r'COMEBACK|NEWSONG|앨범|정규\s?\d|미니\s?\d|선공개|발매|음원|티저|트랙\s?리스트|Lyric Video|M/?V'),
+    ('투표·이벤트', r'투표|후보|EVENT|이벤트|포요고사|퀴즈|응모|추첨'),
+    ('음반·컴백', r'COMEBACK|NEWSONG|앨범|정규\s?\d|미니\s?\d|선공개곡|PocaAlbum|포카앨범|발매|음원|티저|트랙\s?리스트|Lyric Video|\bM/?V\b'),
     ('영상', r'VIDEO|youtu|직캠|Fancam|포레미파솔|비하인드|LIVE CLIP|라이브 클립'),
-    ('투표·이벤트', r'투표|후보|수상|시상|EVENT|이벤트|포요고사|퀴즈|응모|추첨'),
-    ('공지·안내', r'NOTICE|안내|공지|명단|인원 체크|티켓|예매|팬클럽|응원봉|굿즈|MD|입금|환불|일정|멤버십|멤버쉽|fromm'),
+    ('공지·안내', r'NOTICE|안내|공지|명단|인원 체크|티켓|예매|팬클럽|응원봉|굿즈|MD|입금|환불|일정|멤버십|멤버쉽|fromm|판매'),
     ('기사', r'NEWS|naver\.me|기사|인터뷰|화보|매거진|Magazine'),
 ]
 MEMBERS = {'배두훈': r'두훈|DOOHOON', '강형호': r'형호|HYUNGHO', '조민규': r'민규|MINGYU', '고우림': r'우림|WOORIM'}
@@ -31,6 +31,7 @@ def near_event(date, text, byday, evs):
     return ''
 
 def classify(text, ev=''):
+    text = re.sub(r'(https?://\s?[\w.]+)\S*', r'\1', text)  # 링크 뒤 영상 ID(…MvB…)가 낱말로 잡히지 않게
     cat = next((c for c, rx in CATS[:7] if re.search(rx, text, re.I)), '')
     if not cat and (ev or re.search(STAGE, text, re.I)):
         cat = '일정 현장'
