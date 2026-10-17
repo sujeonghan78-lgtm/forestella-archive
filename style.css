@@ -490,3 +490,24 @@ h1:has(> .help), h2:has(> .help) { position: relative; }
 .album-head .album-img, .tour-poster { height: 200px; max-height: none; width: 100%; object-fit: contain; background: rgba(255,255,255,.55); }
 /* 곡 정보가 있는 곡은 밑줄 대신 초록 글씨 */
 .setlist-list .sl-title a { color: var(--green); text-decoration: none; font-weight: 500; }
+/* 곡 목록: 앨범 썸네일 + 곡명 + 무대·콘서트 수 */
+.song-thumb { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #E3F2E6, #DDEBF5); display: block; }
+.song-name small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-n b { color: var(--green); font-weight: 500; }
+.setlist-list .sl-title a.plain { color: var(--ink); font-weight: 400; }
+/* 곡 화면: 수록 음반 */
+.song-albums { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 6px; }
+.song-album { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.6); color: var(--ink); }
+.song-album img, .song-album > span:first-child { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex: none; background: #EEF3EF; }
+.song-album b { display: block; font-size: 13px; font-weight: 500; }
+.song-album small { display: block; font-size: 11px; color: var(--muted); }
+/* 무대 목록 연도별 */
+.year-group { margin: 0 0 10px; }
+.year-group summary { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px; font-size: 13px; font-weight: 500; cursor: pointer; list-style: none; border-bottom: 1px solid #EAF1EC; }
+.year-group summary::-webkit-details-marker { display: none; }
+.year-group summary::after { content: '▾'; color: var(--muted); margin-left: 8px; }
+.year-group[open] summary::after { content: '▴'; }
+.year-group .stack { margin-top: 10px; }
+.yg-year { flex: 1; }
+.song-search { margin: 4px 0 12px; }
+.song-item[hidden] { display: none; }

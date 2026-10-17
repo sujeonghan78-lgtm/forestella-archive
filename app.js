@@ -473,33 +473,55 @@
     return ha !== hb ? (ha ? -1 : 1) : koCollator.compare(a, b);
   };
   let songSort = 'name';
+  let songFilter = '';
+  const SONG_FILTERS = [['', '전체'], ['video', '무대 영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
+  const playCount = so => so.events.length + so.tours.length;
 
   function songsView() {
-    const list = [...data.songs.values()].sort((a, b) =>
-      songSort === 'first' ? a.first.date.localeCompare(b.first.date) || hangulFirst(a.name, b.name) : hangulFirst(a.name, b.name));
+    const pass = so => !songFilter || (songFilter === 'video' ? so.events.length : songFilter === 'album' ? so.albums.length : so.tours.length);
+    const list = [...data.songs.values()].filter(pass).sort((a, b) =>
+      songSort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
+        : songSort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
+          : hangulFirst(a.name, b.name));
+    const chip = (attr, val, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-${attr}="${val}" aria-pressed="${on}">${label}</button>`;
     return `
       <div class="page-head">
-        <h1 class="h1">곡 아카이브${help('영상으로 확인된 무대만 모았어요. 영상이 없는 무대는 빠져 있을 수 있어요.')}</h1>
-        <p class="sub">한 곡을 누르면 그 곡이 확인된 무대가 모두 나와요</p>
+        <h1 class="h1">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. 초록 숫자는 영상으로 확인된 무대 수예요.')}</h1>
+        <p class="sub">한 곡을 누르면 무대, 음반, 콘서트가 모두 나와요 · ${list.length}곡</p>
       </div>
+      <form class="searchbox song-search" role="search" onsubmit="return false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="song-q" aria-label="곡 이름 찾기" placeholder="곡 이름 찾기 · 초성도 OK" autocomplete="off">
+      </form>
       <div class="chips" id="song-sort">
-        <button type="button" class="chip${songSort === 'name' ? ' on' : ''}" data-sort="name" aria-pressed="${songSort === 'name'}">가나다순</button>
-        <button type="button" class="chip${songSort === 'first' ? ' on' : ''}" data-sort="first" aria-pressed="${songSort === 'first'}">처음 확인된 순</button>
+        ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}
       </div>
+      <div class="chips" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v)).join('')}</div>
       <div>
-        ${list.map(so => `
-          <a class="song-item" href="#/song/${encodeURIComponent(so.key)}">
-            <span class="song-name">${esc(so.name)}</span>
-            ${songSort === 'first' ? `<span class="song-first">${fmtDate(so.first.date, false)}</span>` : ''}
-            <span class="song-n">${so.events.length}개 ›</span>
-          </a>`).join('')}
+        ${list.map(so => {
+          const al = so.albums[0];
+          const meta = [so.events.length ? `<b>무대 ${so.events.length}</b>` : '', so.tours.length ? `콘서트 ${so.tours.length}` : '', so.titleOf.length ? '타이틀' : ''].filter(Boolean).join(' · ');
+          return `
+          <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(so.name + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(so.name))}">
+            ${al && al.img ? `<img class="song-thumb" src="${esc(imgSize(al.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
+            <span class="song-name">${esc(so.name)}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
+            ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}
+            <span class="song-n">${meta} ›</span>
+          </a>`;
+        }).join('')}
       </div>`;
   }
   function bindSongs() {
-    document.querySelectorAll('#song-sort .chip').forEach(b => b.onclick = () => {
-      songSort = b.dataset.sort;
-      renderBase('songs');
-    });
+    document.querySelectorAll('#song-sort .chip').forEach(b => b.onclick = () => { songSort = b.dataset.sort; renderBase('songs'); });
+    document.querySelectorAll('#song-filter .chip').forEach(b => b.onclick = () => { songFilter = b.dataset.filter; renderBase('songs'); });
+    // 곡 이름 찾기: 다시 그리지 않고 목록에서 숨기기만 해요 (입력 중 자판이 닫히지 않게)
+    const q = document.getElementById('song-q');
+    if (q) q.oninput = () => {
+      const v = norm(q.value), c = q.value.replace(/\s/g, '');
+      document.querySelectorAll('.song-item').forEach(a => {
+        a.hidden = !!v && !a.dataset.n.includes(v) && !(isChosungOnly(c) && a.dataset.c.includes(c));
+      });
+    };
   }
 
   function songView() {
@@ -517,24 +539,39 @@
     const rx = new RegExp('(^|[^a-z])' + words.join('[^a-z0-9]*') + '($|[^a-z])');
     const hit = p => hangul ? flat(p.raw).includes(nm) : rx.test(p.raw.toLowerCase());
     const xs = nm.length >= (hangul ? 2 : 4) ? (data.xFeed || []).filter(hit) : [];
+    // 수록 음반 (표지 + 음반 이야기 링크)
+    const albumRow = so.albums.length ? `<div class="song-albums">${so.albums.map(a => `
+      <a class="song-album" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
+        ${a.img ? `<img src="${esc(imgSize(a.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '<span></span>'}
+        <span><b>${esc(a.name)}</b><small>${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.slice(0, 4))} · ${esc(a.kind || '')}${so.titleOf.includes(a) ? ' · 타이틀곡' : ''}</small></span>
+      </a>`).join('')}</div>` : '';
+    // 무대 목록은 연도별로 묶고, 가장 최근 해만 펼쳐 둬요
+    const byYear = new Map();
+    stages.forEach(e => { const y = e.date.slice(0, 4); if (!byYear.has(y)) byYear.set(y, []); byYear.get(y).push(e); });
+    const yearBlocks = [...byYear.entries()].map(([y, list], i) => `
+      <details class="year-group"${i === 0 ? ' open' : ''}>
+        <summary><span class="yg-year">${y}년</span><span class="song-count">${list.length}개</span></summary>
+        <div class="stack">${list.map(resultCard).join('')}</div>
+      </details>`).join('');
     return `
       <a class="back" href="#/songs">‹ 곡 아카이브</a>
       <section class="song-hero">
-        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1>${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</div>
-        <span class="count-pill">확인된 무대 ${so.events.length}개</span>
-        <div class="facts">
+        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1>${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</div>
+        <span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>
+        ${albumRow}
+        ${so.first ? `<div class="facts">
           <div class="fact"><b>처음 확인</b><span>${fmtDate(so.first.date, false)} · ${esc(so.first.title)}</span></div>
           ${so.events.length > 1 ? `<div class="fact"><b>최근 확인</b><span>${fmtDate(so.last.date, false)} · ${esc(so.last.title)}</span></div>` : ''}
-        </div>
+        </div>` : ''}
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
       </section>
       <h2 class="h3 list-title">무대 목록${help('영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.')}</h2>
-      <div class="stack">${stages.map(resultCard).join('')}</div>
+      ${stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', title: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>`}
       ${so.tours.length ? `
       <hr class="divider">
       <h2 class="h3 list-title">이 곡을 부른 콘서트${help('콘서트 셋리스트 기준이에요. 위 무대 목록과 달리 영상으로 확인한 건 아니에요.')}</h2>
-      <div class="tour-chips">${so.tours.map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : ''}
+      <div class="tour-chips">${so.tours.slice().sort((a, b) => (a.dates[0] < b.dates[0] ? 1 : -1)).map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : ''}
       ${xs.length ? `
       <hr class="divider">
       <h2 class="h3 list-title">공식 X에서 이 곡${help('포레스텔라 공식 X 글 중 곡 이름이 들어간 글이에요.')}</h2>
@@ -868,7 +905,7 @@
   function setlistSong(title) {
     return title.split(' / ').map(part => {
       const so = data.songs.get(window.DATA.songKey(window.DATA.setlistName(part)));
-      return so ? `<a href="#/song/${encodeURIComponent(so.key)}">${esc(part)}</a>` : esc(part);
+      return so ? `<a${so.events.length ? '' : ' class="plain"'} href="#/song/${encodeURIComponent(so.key)}">${esc(part)}</a>` : esc(part);
     }).join(' / ');
   }
 
@@ -945,7 +982,7 @@
         ${a.tracks.length ? `<h2 class="h3 list-title">수록곡</h2><ol class="setlist-list">${a.tracks.map(t => {
           const so = data.songs.get(window.DATA.songKey(t));
           const isTitle = a.title && a.title.split(/[,/]/).some(x => x.trim() && window.DATA.songKey(x) === window.DATA.songKey(t));
-          return `<li><span class="sl-title">${so ? `<a href="#/song/${encodeURIComponent(so.key)}">${esc(t)}</a>` : esc(t)}</span>${isTitle ? '<span class="sl-note">타이틀</span>' : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent((a.member || '포레스텔라') + ' ' + t)}" target="_blank" rel="noopener" aria-label="${esc(t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`;
+          return `<li><span class="sl-title">${so ? `<a${so.events.length ? '' : ' class="plain"'} href="#/song/${encodeURIComponent(so.key)}">${esc(t)}</a>` : esc(t)}</span>${isTitle ? '<span class="sl-note">타이틀</span>' : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent((a.member || '포레스텔라') + ' ' + t)}" target="_blank" rel="noopener" aria-label="${esc(t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`;
         }).join('')}</ol>` : ''}
         ${a.note ? `<p class="src-note">${esc(a.note)}</p>` : ''}
         ${a.src.length ? `<p class="src-note">출처: ${a.src.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">${i + 1}</a>`).join(' · ')}</p>` : ''}

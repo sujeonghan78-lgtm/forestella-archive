@@ -275,6 +275,39 @@
       };
     }).sort((a, b) => (a.from < b.from ? 1 : -1));
     concerts.forEach(c => { c.tour = tours.find(t => t.id === c.id); if (c.tour) c.tour.info = c; });
+    // 무대 영상이 없어도 음반 수록곡·셋리스트 곡은 곡 목록에 넣어요.
+    // 띄어쓰기·기호만 다른 이름(곤드레 만드레 / 곤드레만드레)은 같은 곡으로 봐요. 반주(Inst·MR)는 빼요.
+    const loose = k => k.replace(/[^0-9a-z가-힣]/g, '');
+    const byLoose = new Map([...songs.keys()].map(k => [loose(k), k]));
+    const addSong = name => {
+      if (/\b(inst\.?|instrumental|mr)\b/i.test(name)) return null;
+      let key = songKey(name);
+      if (!key) return null;
+      if (!songs.has(key) && byLoose.has(loose(key))) key = byLoose.get(loose(key));
+      byLoose.set(loose(key), key);
+      if (!songs.has(key)) songs.set(key, { key, name: songBase(name), names: {}, events: [], tours: [], albums: [], titleOf: [] });
+      return songs.get(key);
+    };
+    tours.forEach(t => t.songs.forEach(s => s.t.split(' / ').forEach(part => {
+      const so = addSong(setlistName(part));
+      if (so && !so.tours.includes(t)) so.tours.push(t);
+    })));
+    songs.forEach(so => { so.albums = []; so.titleOf = []; });
+    albums.slice().reverse().forEach(a => {
+      const titles = (a.title || '').split(/[,/]/).map(x => songKey(x)).filter(Boolean);
+      a.tracks.forEach(t => {
+        const so = addSong(t);
+        if (!so) return;
+        if (!so.albums.includes(a)) so.albums.push(a);
+        if (titles.includes(so.key) && !so.titleOf.includes(a)) so.titleOf.push(a);
+      });
+    });
+    // 처음 만난 날: 무대·콘서트·음반 중 가장 이른 날
+    songs.forEach(so => {
+      so.albums = so.albums || []; so.titleOf = so.titleOf || [];
+      const ds = [so.first && so.first.date, ...so.tours.map(t => t.dates[0]), ...so.albums.map(a => a.date)].filter(Boolean).sort();
+      so.since = ds[0] || '';
+    });
     return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, savedAt: raw.savedAt };
   }
 
