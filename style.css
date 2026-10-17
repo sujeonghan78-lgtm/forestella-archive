@@ -457,3 +457,9 @@ body.sheet-open { overflow: hidden; }
 .tour-foot { margin-top: 14px; }
 .divider + .list-title { margin-top: 18px; }
 .tl .month ~ .month { border-top: 1px solid #E3EDE7; padding-top: 14px; margin-top: 18px; }
+h1:has(> .help), h2:has(> .help) { position: relative; }
+.help { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 6px; padding: 0; border-radius: 50%; border: 1px solid #C9DDD1; background: #FFFFFF; color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1; vertical-align: 3px; cursor: pointer; }
+.help[aria-expanded="true"] { background: var(--green-2); border-color: var(--green-2); color: #FFFFFF; }
+.help-pop { position: absolute; left: 0; top: calc(100% + 6px); z-index: 30; width: max-content; max-width: min(300px, calc(100vw - 40px)); padding: 10px 12px; border-radius: 12px; background: #FFFFFF; border: 1px solid #DCEBE2; box-shadow: 0 8px 24px rgba(28, 74, 56, 0.14); font-size: 12px; font-weight: 400; line-height: 1.55; letter-spacing: 0; color: var(--ink); white-space: normal; }
+.help-pop a { color: var(--green); }
+.report-links { font-size: 12px; }

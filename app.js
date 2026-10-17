@@ -99,7 +99,20 @@
     shareMenu(text, url);
   }
 
+  // 덜 중요한 설명은 제목 옆 (?) 버튼을 눌러야 보여요
+  const help = html => `<button type="button" class="help" aria-label="설명 보기" aria-expanded="false">?</button><span class="help-pop" hidden>${html}</span>`;
+
   document.addEventListener('click', ev => {
+    const h = ev.target.closest('.help');
+    document.querySelectorAll('.help[aria-expanded="true"]').forEach(b => {
+      if (b === h) return;
+      b.setAttribute('aria-expanded', 'false'); b.nextElementSibling.hidden = true;
+    });
+    if (h) {
+      const open = h.getAttribute('aria-expanded') !== 'true';
+      h.setAttribute('aria-expanded', String(open)); h.nextElementSibling.hidden = !open;
+      return;
+    }
     const s = ev.target.closest('[data-share]');
     if (s) { ev.preventDefault(); share(s.dataset.text, s.dataset.url); return; }
     const c = ev.target.closest('[data-copy]');
@@ -463,10 +476,9 @@
       songSort === 'first' ? a.first.date.localeCompare(b.first.date) || hangulFirst(a.name, b.name) : hangulFirst(a.name, b.name));
     return `
       <div class="page-head">
-        <h1 class="h1">곡 아카이브</h1>
+        <h1 class="h1">곡 아카이브${help('영상으로 확인된 무대만 모았어요. 영상이 없는 무대는 빠져 있을 수 있어요.')}</h1>
         <p class="sub">한 곡을 누르면 그 곡이 확인된 무대가 모두 나와요</p>
       </div>
-      <div class="notice">영상으로 확인된 무대만 모았어요. 영상이 없는 무대는 빠져 있을 수 있어요.</div>
       <div class="chips" id="song-sort">
         <button type="button" class="chip${songSort === 'name' ? ' on' : ''}" data-sort="name" aria-pressed="${songSort === 'name'}">가나다순</button>
         <button type="button" class="chip${songSort === 'first' ? ' on' : ''}" data-sort="first" aria-pressed="${songSort === 'first'}">처음 확인된 순</button>
@@ -505,14 +517,12 @@
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
       </section>
-      <h2 class="h3 list-title">무대 목록</h2>
+      <h2 class="h3 list-title">무대 목록${help('영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.')}</h2>
       <div class="stack">${stages.map(resultCard).join('')}</div>
-      <p class="src-note foot">영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.</p>
       ${so.tours.length ? `
       <hr class="divider">
-      <h2 class="h3 list-title">이 곡을 부른 콘서트</h2>
-      <div class="tour-chips">${so.tours.map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>
-      <p class="src-note">콘서트 셋리스트 기준이에요. 위 무대 목록과 달리 영상으로 확인한 건 아니에요.</p>` : ''}`;
+      <h2 class="h3 list-title">이 곡을 부른 콘서트${help('콘서트 셋리스트 기준이에요. 위 무대 목록과 달리 영상으로 확인한 건 아니에요.')}</h2>
+      <div class="tour-chips">${so.tours.map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : ''}`;
   }
 
   // ---------- 연표 ----------
@@ -631,7 +641,7 @@
     return `
       <div class="prog-top">
         <a class="back" href="#/">‹ 홈</a>
-        <div class="block-head"><h1 class="h1">프로그램별 모아보기</h1>${shareBtn('이 프로그램 모음 공유하기', `포레스텔라 ${prog} 무대 몰아보기 ▶▶\n\n${TAGS}`, link('#/program/' + encodeURIComponent(prog)))}</div>
+        <div class="block-head"><h1 class="h1">프로그램별 모아보기${help(`공식 팬카페 캘린더에 등록된 출연만 있어요.${prog === '음악방송' ? ' 뮤직뱅크 · 음악중심 · 엠카운트다운 · 인기가요 · 쇼챔피언 · 더쇼를 모았어요.' : ''} 빠진 회차는 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.`)}</h1>${shareBtn('이 프로그램 모음 공유하기', `포레스텔라 ${prog} 무대 몰아보기 ▶▶\n\n${TAGS}`, link('#/program/' + encodeURIComponent(prog)))}</div>
         <div class="chips">${PROGRAMS.map(p => `<a class="chip${p === prog ? ' on' : ''}" href="#/program/${encodeURIComponent(p)}"${p === prog ? ' aria-current="true"' : ''}>${p}</a>`).join('')}</div>
       </div>
       ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>${esc(prog)} 무대 이어보기</a>` : ''}
@@ -651,7 +661,7 @@
             </a>`;
         }).join('') || '<p class="empty">아직 기록이 없어요.</p>'}
       </div>
-      <p class="src-note foot">공식 팬카페 캘린더에 등록된 출연만 있어요.${prog === '음악방송' ? ' 뮤직뱅크 · 음악중심 · 엠카운트다운 · 인기가요 · 쇼챔피언 · 더쇼를 모았어요.' : ''} 빠진 회차는 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`;
+`;
   }
 
   // ---------- 더보기 ----------
@@ -679,8 +689,7 @@
   function membersView() {
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">멤버 개인 활동</h1>
-      <p class="sub">일정명에 멤버 이름이 표시된 기록만 모았어요. 완전체 무대는 빠져요.</p>
+      <h1 class="h1 page-title">멤버 개인 활동${help('일정명에 멤버 이름이 표시된 기록만 모았어요. 완전체 무대는 빠져요.')}</h1>
       <nav class="member-list">
         ${MEMBER_LIST.map(m => {
           const n = data.events.filter(e => e.members.includes(m)).length;
@@ -853,7 +862,7 @@
     const tours = data.tours.slice().reverse();
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">콘서트 셋리스트</h1>
+      <h1 class="h1 page-title">콘서트 셋리스트${help('나무위키·setlist.fm·뉴스 기사를 모아 정리했어요. 틀린 곳이 있으면 제보해 주세요.')}</h1>
       <p class="sub">단독 콘서트와 투어에서 부른 곡을 순서대로 모았어요.</p>
       <div class="stack tour-list">
         ${tours.map(t => `
@@ -861,8 +870,7 @@
             <span class="card-title">${esc(t.name)}</span>
             <span class="row-sub">${tourRange(t)} · ${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
           </a>`).join('')}
-      </div>
-      <p class="src-note foot">나무위키·setlist.fm·뉴스 기사를 모아 정리했어요. 틀린 곳이 있으면 제보해 주세요.</p>`;
+      </div>`;
   }
 
   function tourView() {
@@ -884,7 +892,7 @@
     return `
       <a class="back" href="#/concerts">‹ 콘서트 셋리스트</a>
       <section class="song-hero">
-        <div class="block-head"><h1 class="song-title">${esc(t.name)}</h1>${shareBtn('이 셋리스트 공유하기', `포레스텔라 ${t.name} 셋리스트 🎤\n${top} …\n\n${TAGS}`, link('#/tour/' + encodeURIComponent(t.id)))}</div>
+        <div class="block-head"><h1 class="song-title">${esc(t.name)}${help('곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.')}</h1>${shareBtn('이 셋리스트 공유하기', `포레스텔라 ${t.name} 셋리스트 🎤\n${top} …\n\n${TAGS}`, link('#/tour/' + encodeURIComponent(t.id)))}</div>
         <span class="count-pill">${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
         <p class="sub">${tourRange(t)}</p>
         ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
@@ -898,7 +906,6 @@
         </ol>`).join('')}
       <hr class="divider">
       <div class="tour-foot">
-        <p class="src-note">곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.</p>
         ${t.caution ? `<p class="src-note">${esc(t.caution)}</p>` : ''}
         <p class="src-note"><a href="${esc(t.source.url)}" target="_blank" rel="noopener nofollow">${esc(t.source.name)}</a> 기준이라 틀릴 수 있어요. <a href="${formUrl({ type: '틀린 정보', title: t.name + ' 셋리스트' })}" target="_blank" rel="noopener">틀린 곳 알려주기 ›</a></p>
       </div>`;
@@ -977,11 +984,10 @@
         ${findRow(findQuery(e.title))}
         <hr class="divider">
         <section class="d-block">
-          <div class="block-head"><h2 class="h3">영상으로 확인된 곡</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
+          <div class="block-head"><h2 class="h3">영상으로 확인된 곡${help('영상이 남아 있는 곡만 표시돼요. 실제로는 더 불렀을 수 있어요.')}</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
           ${songs}
           ${e.videoMemo && e.songSource !== '참고' ? `<p class="src-note">${esc(e.videoMemo)}</p>` : ''}
-          <div class="notice notice-col">
-            <span>영상이 남아 있는 곡만 표시돼요. 실제로는 더 불렀을 수 있어요.</span>
+          <div class="report-links">
             <span class="notice-links">
               <a href="${formUrl({ type: '빠진 곡', date: e.date, title: e.title })}" target="_blank" rel="noopener">빠진 곡 제보 ›</a>
               <a href="${formUrl({ type: '틀린 정보', date: e.date, title: e.title })}" target="_blank" rel="noopener">틀린 정보 알려주기 ›</a>
