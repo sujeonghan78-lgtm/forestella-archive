@@ -829,12 +829,17 @@
     const t = data.tours.find(x => x.id === id);
     if (!t) return `<p class="empty">이 콘서트를 찾지 못했어요. <a href="#/concerts">콘서트 목록으로 ›</a></p>`;
     const ok = t.songs.filter(x => x.ok).length;
-    const shows = groupRuns(t.events).map(run => {
-      const e = run[0];
+    // 같은 장소는 한 줄로 모아요 (띄어쓰기만 다른 장소 이름도 같은 곳으로 봐요)
+    const places = new Map();
+    t.events.forEach(e => {
       const city = (e.title.match(/\bin\s+([^}\]]+?)\s*[}\]]?$/i) || [])[1];
       const label = e.place || city || (/encore|앙코르|앵콜/i.test(e.title) ? '앙코르' : e.title);
-      return `<div class="tour-show"><span class="tour-place">${esc(label)}</span><span class="ev-days">${run.map(x => `<a class="ev-day" href="#/e/${encodeURIComponent(x.id)}">${x.date.slice(5).replace('-', '.')}</a>`).join('')}</span></div>`;
-    }).join('');
+      const key = label.replace(/\s+/g, '');
+      if (!places.has(key)) places.set(key, { label, list: [] });
+      places.get(key).list.push(e);
+    });
+    const shows = [...places.values()].map(({ label, list }) =>
+      `<div class="tour-show"><span class="tour-place">${esc(label)}</span><span class="ev-days">${list.map(x => `<a class="ev-day" href="#/e/${encodeURIComponent(x.id)}">${x.date.slice(5).replace('-', '.')}</a>`).join('')}</span></div>`).join('');
     const top = t.songs.slice(0, 3).map(x => x.t).join(', ');
     return `
       <a class="back" href="#/concerts">‹ 콘서트 셋리스트</a>
