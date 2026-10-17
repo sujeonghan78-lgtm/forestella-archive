@@ -1016,14 +1016,28 @@
     const id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const t = data.tours.find(x => x.id === id);
     const info = (data.concerts || []).find(x => x.id === id);
-    if (!t && info) return `
+    if (!t && info) {
+      // 셋리스트가 없는 공연도 같은 초록 카드로 보여줘요. 일정은 "날짜 도시 공연장" 글에서 나눠요.
+      const shows = info.shows.map(x => {
+        const m = x.match(/^(\d{4})-(\d\d)-(\d\d)(?:~(?:(\d\d)-)?(\d\d))?\s*(.*)$/);
+        if (!m) return `<div class="tour-show"><span class="tour-place">${esc(x)}</span></div>`;
+        const day = `${m[2]}.${m[3]}${m[5] ? ' ~ ' + (m[4] ? m[4] + '.' : '') + m[5] : ''}`;
+        return `<div class="tour-show"><span class="tour-place">${esc(m[6])}</span><span class="ev-days"><span class="ev-day">${day}</span></span></div>`;
+      }).join('');
+      return `
       <a class="back" href="#/concerts">‹ 콘서트</a>
-      <section class="album-head">
-        <div class="block-head"><h1 class="h1">${esc(info.name)}</h1></div>
-        ${concertInfo(info)}
+      <section class="song-hero">
+        <div class="block-head"><h1 class="song-title">${esc(info.name)}</h1></div>
+        ${info.img ? `<a href="${esc(info.imgPost || info.img)}" target="_blank" rel="noopener"><img class="album-img tour-poster" src="${esc(imgSize(info.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
+        <span class="count-pill">셋리스트 준비 중</span>
+        <p class="sub">${concertRange(info)}${info.ok ? '' : ' <span class="tag">확인 중</span>'}</p>
+        ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
         ${findRow('포레스텔라 ' + info.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
-      <p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. <a href="${formUrl({ type: '틀린 정보', title: info.name })}" target="_blank" rel="noopener">알고 있는 곡 알려주기 ›</a></p>`;
+      <section class="album-head tour-info">${concertInfo(info, true)}</section>
+      <hr class="divider">
+      <div class="tour-foot"><p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. <a href="${formUrl({ type: '틀린 정보', title: info.name })}" target="_blank" rel="noopener">알고 있는 곡 알려주기 ›</a></p></div>`;
+    }
     if (!t) return `<p class="empty">이 콘서트를 찾지 못했어요. <a href="#/concerts">콘서트 목록으로 ›</a></p>`;
     // 같은 장소는 한 줄로 모아요 (띄어쓰기만 다른 장소 이름도 같은 곳으로 봐요)
     const places = new Map();
@@ -1043,7 +1057,7 @@
         <div class="block-head"><h1 class="song-title">${esc(t.name)}${help('곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.')}</h1>${shareBtn('이 셋리스트 공유하기', `포레스텔라 ${t.name} 셋리스트 🎤\n${top} …\n\n${TAGS}`, link('#/tour/' + encodeURIComponent(t.id)))}</div>
         ${t.info && t.info.img ? `<a href="${esc(t.info.imgPost || t.info.img)}" target="_blank" rel="noopener"><img class="album-img tour-poster" src="${esc(imgSize(t.info.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
         <span class="count-pill">${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
-        <p class="sub">${tourRange(t)}</p>
+        <p class="sub">${tourRange(t)}${t.info && !t.info.ok ? ' <span class="tag">확인 중</span>' : ''}</p>
         ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
         ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
