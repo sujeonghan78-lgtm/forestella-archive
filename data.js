@@ -138,7 +138,7 @@
 
   async function fetchAll() {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, x] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -146,7 +146,7 @@
       fetchText('setlists.json').catch(() => ''),
       fetchText(s.x).catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, x, savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, savedAt: Date.now() };
   }
 
   function readCache() {
@@ -194,7 +194,7 @@
       const body = t.replace(/^\[[^\]]*\]\s*/, '').replace(/#\S+/g, '').replace(/https?:\/\/\s?\S+/g, '').replace('더보기', '').replace(/\s+/g, ' ').trim();
       return (body || (t.match(/#(\S+)/g) || []).map(h => h.slice(1)).filter(h => !/^(포레스텔라|forestella)$/i.test(h)).join(' ')).slice(0, 120);
     };
-    const xFeed = toObjects(raw.x || '').filter(r => r['링크']).map(r => ({
+    const xFeed = toObjects(raw.xsheet || '').filter(r => r['링크']).map(r => ({
       id: r['링크'].split('/').pop(),
       url: r['링크'],
       date: normDate(r['날짜']) || r['날짜'],
@@ -245,7 +245,7 @@
   // onUpdate는 새 데이터가 도착했을 때 다시 그리라고 불러요.
   async function load(onUpdate) {
     const cached = readCache();
-    const fresh = cached && 'x' in cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'xsheet' in cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
