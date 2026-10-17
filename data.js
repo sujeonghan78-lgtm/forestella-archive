@@ -194,7 +194,9 @@
     try { xd = JSON.parse(raw.x || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
     events.forEach(e => {
       const pid = (xd.events || {})[e.id], p = pid && (xd.posts || {})[pid];
-      if (p) e.xPost = { url: 'https://x.com/official_fore/status/' + pid, date: p[0], text: p[1], img: p[2] };
+      const mk = id => { const q = (xd.posts || {})[id]; return q && { url: 'https://x.com/official_fore/status/' + id, date: q[0], text: q[1], img: q[2] }; };
+      if (p) e.xPost = mk(pid);
+      e.xBehind = ((xd.behind || {})[e.id] || []).map(mk).filter(Boolean);
     });
     videos.forEach(v => { const e = byId.get(v.eventId); if (e) e.related.push(v); });
     // 곡별로 확인된 무대 모으기 (이름은 가장 많이 쓰인 표기로)

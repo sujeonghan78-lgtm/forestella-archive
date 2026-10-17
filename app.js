@@ -961,15 +961,18 @@
   }
 
   // 공식 X 대표 글: 사진 + 글 앞부분 카드 하나, 누르면 X로
-  function xBlock(e) {
-    const p = e.xPost;
-    if (!p) return '';
+  function xCard(p, label) {
     const img = p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+    return `<a class="x-card${img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">${img}
+        <span class="x-text"><span class="x-date">${label} · ${esc(p.date.replace(/-/g, '.'))}</span>${esc(p.text)}</span>
+      </a>`;
+  }
+  function xBlock(e) {
+    const b = e.xBehind || [];
+    if (!e.xPost && !b.length) return '';
     return `<hr class="divider"><section class="d-block">
-      <div class="block-head"><h2 class="h3">공식 X${help('포레스텔라 공식 X 계정이 이 일정 뒤에 올린 글이에요. 날짜와 글 내용으로 골라서 가끔 다른 글일 수 있어요.')}</h2></div>
-      <a class="x-card${img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">${img}
-        <span class="x-text"><span class="x-date">@official_fore · ${esc(p.date.replace(/-/g, '.'))}</span>${esc(p.text)}</span>
-      </a>
+      <div class="block-head"><h2 class="h3">공식 X${help('포레스텔라 공식 X 계정이 이 일정 뒤에 올린 글과 비하인드예요. 날짜와 글 내용으로 골라서 가끔 다른 글일 수 있어요.')}</h2></div>
+      <div class="stack x-list">${e.xPost ? xCard(e.xPost, '후기') : ''}${b.map(p => xCard(p, '비하인드')).join('')}</div>
     </section>`;
   }
 
