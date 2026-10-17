@@ -167,16 +167,15 @@
     const { e, song } = randomPick;
     return `
       <section class="block" id="random">
-        <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2>${shareBtn('랜덤 무대 공유하기', `오늘의 포레스텔라 랜덤 무대 🎲\n${fmtDate(e.date, false)} ${e.title} · ${song}\n\n나도 뽑아보기 👉 ${SITE}\n${TAGS}`, '')}</div>
+        <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2><span class="head-side"><button type="button" class="reroll" id="reroll"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>다시 뽑기</button>${shareBtn('랜덤 무대 공유하기', `오늘의 포레스텔라 랜덤 무대 🎲\n${fmtDate(e.date, false)} ${e.title} · ${song}\n\n나도 뽑아보기 👉 ${SITE}\n${TAGS}`, '')}</span></div>
         <div class="dice-card">
           <a class="dice-link" href="#/e/${encodeURIComponent(e.id)}">
-            <span class="dice" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="15" r="1"/><circle cx="15" cy="9" r="1"/><circle cx="9" cy="15" r="1"/></svg></span>
+            <span class="dice-thumb" aria-hidden="true"><img src="https://i.ytimg.com/vi/${encodeURIComponent(e.videoId)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="dice-play"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></span>
             <span class="dice-text">
               <span class="sub">${fmtDate(e.date, false)} · ${esc(e.title)}</span>
               <span class="dice-song">${esc(song)}</span>
             </span>
           </a>
-          <button type="button" class="btn" id="reroll">다시 뽑기</button>
         </div>
       </section>`;
   }

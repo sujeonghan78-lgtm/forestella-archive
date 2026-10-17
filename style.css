@@ -108,11 +108,14 @@ button { font-family: inherit; }
 
 .dice-card { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 20px; border: 1.5px dashed #A9D9C1; }
 .dice-link { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; color: var(--ink); }
-.dice { width: 44px; height: 44px; border-radius: 13px; flex: none; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #C6EC6B, #62D3A1 55%, #72BCF3); }
-.dice svg { width: 24px; height: 24px; stroke: #FFFFFF; fill: none; stroke-width: 1.7; }
+.dice-thumb { position: relative; flex: none; width: 112px; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: linear-gradient(135deg, #C6EC6B, #62D3A1 55%, #72BCF3); }
+.dice-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dice-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 14px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 3px 8px rgba(20, 40, 30, 0.25); display: flex; align-items: center; justify-content: center; }
+.dice-play svg { width: 12px; height: 12px; fill: var(--green-2); margin-left: 2px; }
 .dice-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .dice-text .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dice-card .btn { flex: none; min-height: 36px; height: 36px; padding: 0 12px; font-size: 12px; border-radius: 10px; }
+.reroll { display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px; border: 0; border-radius: 17px; background: var(--ink); color: #FFFFFF; font-size: 12px; font-weight: 700; }
+.reroll svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .dice-song { font-size: 14px; font-weight: 700; overflow-wrap: break-word; line-height: 1.35; }
 
 .row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 4px; border-bottom: 1px solid #EAF1EC; color: var(--ink); }
