@@ -14,8 +14,9 @@ for (const r of rows) {
   try {
     const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=album&country=kr&limit=10`);
     const body = await res.text();
-    if (!res.ok || !body.startsWith('{')) { console.log(`::notice::${res.status} ${body.slice(0, 120)}`); }
+    if (!res.ok || !body.trim().startsWith('{')) { console.log(`::notice::${res.status} ${body.slice(0, 120)}`); }
     const list = JSON.parse(body).results || [];
+    if (r === rows[0] || r === rows[30]) console.log(`::notice::${term} → ${list.length}개 ${list.slice(0, 3).map(a => a.collectionName + ' ' + (a.releaseDate || '').slice(0, 10)).join(' | ')}`);
     const pick = list.find(a => (a.releaseDate || '').slice(0, 10) === r.date)
       || list.find(a => flat(a.collectionName).includes(flat(r.album)) || flat(r.album).includes(flat(a.collectionName)));
     out[r.album] = pick ? pick.artworkUrl100.replace('100x100bb', '600x600bb') : '';
