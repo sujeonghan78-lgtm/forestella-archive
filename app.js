@@ -507,6 +507,15 @@
     if (!so) return `<p class="empty">이 곡을 찾지 못했어요. <a href="#/songs">곡 목록으로 ›</a></p>`;
     const stages = so.events.slice().reverse();
     const play = playAllUrl(stages);
+    // 곡 이름이 나온 공식 X 글 (짧은 이름은 엉뚱한 글이 섞여서 한글 2자·영문 4자 이상만)
+    const flat = t => t.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+    const nm = flat(so.name);
+    const hangul = /[가-힣]/.test(nm);
+    // 영어 곡은 낱말 경계로 (Angel이 Los Angeles에 걸리지 않게)
+    const words = so.name.toLowerCase().match(/[0-9a-z]+/g) || [];
+    const rx = new RegExp('(^|[^a-z])' + words.join('[^a-z0-9]*') + '($|[^a-z])');
+    const hit = p => hangul ? flat(p.raw).includes(nm) : rx.test(p.raw.toLowerCase());
+    const xs = nm.length >= (hangul ? 2 : 4) ? (data.xFeed || []).filter(hit) : [];
     return `
       <a class="back" href="#/songs">‹ 곡 아카이브</a>
       <section class="song-hero">
@@ -524,7 +533,12 @@
       ${so.tours.length ? `
       <hr class="divider">
       <h2 class="h3 list-title">이 곡을 부른 콘서트${help('콘서트 셋리스트 기준이에요. 위 무대 목록과 달리 영상으로 확인한 건 아니에요.')}</h2>
-      <div class="tour-chips">${so.tours.map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : ''}`;
+      <div class="tour-chips">${so.tours.map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : ''}
+      ${xs.length ? `
+      <hr class="divider">
+      <h2 class="h3 list-title">공식 X에서 이 곡${help('포레스텔라 공식 X 글 중 곡 이름이 들어간 글이에요.')}</h2>
+      <div class="stack x-list">${xs.slice(0, 10).map(p => xCard(p, p.cat)).join('')}</div>
+      ${xs.length > 10 ? `<p class="src-note">최근 글 10개만 보여요. 전체 ${xs.length}개</p>` : ''}` : ''}`;
   }
 
   // ---------- 연표 ----------

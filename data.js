@@ -201,6 +201,7 @@
       cat: r['종류'] || '사진·일상',
       m: (r['멤버'] || '').split(',').map(x => x.trim()).filter(Boolean),
       text: xClean(r['글'] || ''),
+      raw: r['글'] || '',
       img: r['사진'] || '',
       after: r['후기 일정ID'] || '',
       behind: r['비하인드 일정ID'] || '',
