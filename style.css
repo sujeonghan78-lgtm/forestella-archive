@@ -28,8 +28,7 @@ body {
   overflow-wrap: anywhere;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, .hero-title, .card-title, .d-title, .song-title, .brand-name, .dice-card .btn { flex: none; min-height: 36px; height: 36px; padding: 0 12px; font-size: 12px; border-radius: 10px; }
-.dice-song { letter-spacing: -0.025em; }
+h1, h2, h3, .hero-title, .card-title, .d-title, .song-title, .brand-name, .dice-song { letter-spacing: -0.025em; }
 a { color: var(--green); text-decoration: none; }
 button { font-family: inherit; }
 
