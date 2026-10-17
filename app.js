@@ -934,7 +934,7 @@
     if (!a) return `<a class="back" href="#/releases">‹ 음반 이야기</a><h1 class="h1 page-title">${esc(rel)}</h1><p class="sub">티저부터 발매·이벤트까지 공식 X 글을 순서대로 모았어요.</p>`;
     return `<a class="back" href="#/releases${a.member ? '?m=' + encodeURIComponent(a.member) : ''}">‹ 음반 이야기</a>
       <section class="album-head">
-        ${a.img ? `<img class="album-img" src="${esc(a.img)}?name=medium" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+        ${a.img ? `<img class="album-img" src="${esc(imgSize(a.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
         <h1 class="h1">${esc(a.name)}</h1>
         <p class="sub">${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.replace(/-/g, '.'))} 발매 · ${esc(a.kind)}${a.ok ? '' : ' · <span class="tag">확인 중</span>'}</p>
         <div class="facts">
@@ -965,7 +965,7 @@
       ${(data.albums || []).some(a => a.member) ? `<div class="chips tl-cats">${['', ...MEMBER_LIST.filter(m => data.albums.some(a => a.member === m))].map(m => `<a class="chip${m === who ? ' on' : ''}" href="#/releases${m ? '?m=' + encodeURIComponent(m) : ''}">${m ? m + ' 솔로' : '포레스텔라'}</a>`).join('')}</div>` : ''}
       <div class="stack x-list">${items.map(r => `
         <a class="x-card${r.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
-          ${r.img ? `<img src="${esc(r.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+          ${r.img ? `<img src="${esc(imgSize(r.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
           <span class="x-text"><span class="x-date">${esc(r.sub)}${r.n ? ` · 공식 X ${r.n}개` : ''}</span><b>${esc(r.name)}</b></span>
         </a>`).join('')}</div>`;
   }
@@ -983,11 +983,14 @@
       <div class="stack x-list">
         ${list.map(c => `
           <a class="x-card${c.img ? '' : ' no-img'}" href="#/tour/${encodeURIComponent(c.id)}">
-            ${c.img ? `<img src="${esc(c.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+            ${c.img ? `<img src="${esc(imgSize(c.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${esc(c.sub)}</span><b>${esc(c.name)}</b></span>
           </a>`).join('')}
       </div>`;
   }
+
+  // X 사진만 크기를 골라 받을 수 있어요. 다른 곳 사진은 주소 그대로 써요.
+  function imgSize(u, size) { return /pbs\.twimg\.com/.test(u) ? `${u}?name=${size}` : u; }
 
   const concertRange = c => {
     const a = c.from, b = c.to;
@@ -998,7 +1001,7 @@
   // 콘서트 정보 (시트): 포스터, 기간·회차·주최, 공연 일정, 특징, 출처
   function concertInfo(c, short) {
     return `
-      ${c.img ? `<a href="${esc(c.imgPost || c.img)}" target="_blank" rel="noopener"><img class="album-img" src="${esc(c.img)}?name=medium" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
+      ${c.img ? `<a href="${esc(c.imgPost || c.img)}" target="_blank" rel="noopener"><img class="album-img" src="${esc(imgSize(c.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
       <div class="facts">
         ${short ? '' : `<div class="fact"><b>기간</b><span>${esc(concertRange(c))}${c.ok ? '' : ' <span class="tag">확인 중</span>'}</span></div>`}
         ${c.count ? `<div class="fact"><b>회차</b><span>${esc(/^\d+$/.test(c.count) ? c.count + '회' : c.count)}</span></div>` : ''}
