@@ -471,3 +471,5 @@ h1:has(> .help), h2:has(> .help) { position: relative; }
 .x-list{gap:10px}
 #xfeed > .sub{margin:12px 0 8px}
 .find-btn { background: linear-gradient(135deg, #F6FCEA 0%, #EEFAF4 50%, #EEF6FE 100%); border-color: #DCEFE4; }
+.hero.hero-pic { position: relative; padding-right: 108px; min-height: 108px; }
+.hero-img { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 82px; height: 82px; object-fit: cover; border-radius: 12px; background: #EEF3EF; }

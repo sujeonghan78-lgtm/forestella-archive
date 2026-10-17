@@ -149,8 +149,10 @@
     // 그날 기록이 여러 해에 걸쳐 있으면 '지난 오늘'로 묶고, 카드마다 몇 년 전인지 붙여요
     const multi = new Set(hits.map(yearsOf)).size > 1;
     const title = multi ? (exact ? '지난 오늘' : '지난 이맘때') : exact ? `${years}년 전 오늘` : `${years}년 전 이맘때`;
+    const xImg = e => (e.xPost && e.xPost.img) || ((e.xBehind || []).find(p => p.img) || {}).img || '';
     const cards = hits.map(e => `
-      <a class="hero" href="#/e/${encodeURIComponent(e.id)}">
+      <a class="hero${xImg(e) ? ' hero-pic' : ''}" href="#/e/${encodeURIComponent(e.id)}">
+        ${xImg(e) ? `<img class="hero-img" src="${esc(xImg(e))}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hero-pic');this.remove()">` : ''}
         <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${multi ? ` · ${yearsOf(e)}년 전` : ''}</span></span>
         <span class="hero-title">${esc(e.title)}</span>
         <span class="hero-foot">${songsLine(e)}${playBadge(e)}</span>
