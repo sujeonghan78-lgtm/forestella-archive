@@ -916,24 +916,17 @@
     return data.reports.filter(r => r.date === e.date && (!r.title || t.includes(norm(r.title)) || norm(r.title).includes(t)));
   }
 
-  // 공식 X 글: 앞의 2개는 X 카드로, 나머지는 링크로
+  // 공식 X 대표 글: 사진 + 글 앞부분 카드 하나, 누르면 X로
   function xBlock(e) {
-    if (!e.xPosts || !e.xPosts.length) return '';
-    const cards = e.xPosts.slice(0, 2).map(u => `<blockquote class="twitter-tweet" data-dnt="true" data-conversation="none" lang="ko"><a href="${esc(u.replace('x.com', 'twitter.com'))}" target="_blank" rel="noopener">X에서 글 보기 ›</a></blockquote>`).join('');
-    const more = e.xPosts.slice(2).map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">글 ${i + 3}</a>`).join('');
-    return `<hr class="divider"><section class="d-block x-block">
-      <div class="block-head"><h2 class="h3">공식 X${help('포레스텔라 공식 X 계정에 그날 올라온 글이에요. 날짜와 글 내용으로 맞춘 거라 가끔 다른 글이 섞일 수 있어요.')}</h2><span class="tag">${e.xPosts.length}개</span></div>
-      ${cards}
-      ${more ? `<p class="x-more">${more}</p>` : ''}
+    const p = e.xPost;
+    if (!p) return '';
+    const img = p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+    return `<hr class="divider"><section class="d-block">
+      <div class="block-head"><h2 class="h3">공식 X${help('포레스텔라 공식 X 계정이 이 일정 뒤에 올린 글이에요. 날짜와 글 내용으로 골라서 가끔 다른 글일 수 있어요.')}</h2></div>
+      <a class="x-card${img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">${img}
+        <span class="x-text"><span class="x-date">@official_fore · ${esc(p.date.replace(/-/g, '.'))}</span>${esc(p.text)}</span>
+      </a>
     </section>`;
-  }
-  function loadX(box) {
-    if (!box.querySelector('.twitter-tweet')) return;
-    if (window.twttr && window.twttr.widgets) { window.twttr.widgets.load(box); return; }
-    if (document.getElementById('x-widgets')) return;
-    const sc = document.createElement('script');
-    sc.id = 'x-widgets'; sc.async = true; sc.src = 'https://platform.twitter.com/widgets.js';
-    document.head.appendChild(sc);
   }
 
   function detailView(e) {
@@ -1002,6 +995,7 @@
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
         ${findRow(findQuery(e.title))}
+        ${xBlock(e)}
         <hr class="divider">
         <section class="d-block">
           <div class="block-head"><h2 class="h3">영상으로 확인된 곡${help('영상이 남아 있는 곡만 표시돼요. 실제로는 더 불렀을 수 있어요.')}</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
@@ -1016,7 +1010,6 @@
         </section>
         ${reportList}
         ${related}
-        ${xBlock(e)}
         <a class="same-time" href="#/timeline?ym=${ym}"><span class="sub">같은 시기의 기록</span><span>${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5))}월 연표에서 보기 ›</span></a>
       </div>`;
   }
@@ -1044,7 +1037,6 @@
     sheet.hidden = false;
     document.body.classList.add('sheet-open');
     box.scrollTop = 0;
-    loadX(box);
     const c = document.getElementById('sheet-close');
     if (c) c.onclick = closeSheet;
     box.focus({ preventScroll: true });

@@ -189,10 +189,13 @@
       const t = tours.find(x => x.dates.includes(e.date));
       if (t) { e.setlist = t; t.events.push(e); }
     });
-    // 공식 X 글 (tools/x_match.py 로 일정 ID에 맞춰 둔 것)
-    let xPosts = {};
-    try { xPosts = JSON.parse(raw.x || '{}').events || {}; } catch (err) { /* 없으면 넘어가요 */ }
-    events.forEach(e => { e.xPosts = xPosts[e.id] || []; });
+    // 공식 X 대표 글 (tools/x_match.py 로 일정마다 1개 골라 둔 것)
+    let xd = {};
+    try { xd = JSON.parse(raw.x || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
+    events.forEach(e => {
+      const pid = (xd.events || {})[e.id], p = pid && (xd.posts || {})[pid];
+      if (p) e.xPost = { url: 'https://x.com/official_fore/status/' + pid, date: p[0], text: p[1], img: p[2] };
+    });
     videos.forEach(v => { const e = byId.get(v.eventId); if (e) e.related.push(v); });
     // 곡별로 확인된 무대 모으기 (이름은 가장 많이 쓰인 표기로)
     const songs = new Map();
