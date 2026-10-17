@@ -838,7 +838,6 @@
     const id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const t = data.tours.find(x => x.id === id);
     if (!t) return `<p class="empty">이 콘서트를 찾지 못했어요. <a href="#/concerts">콘서트 목록으로 ›</a></p>`;
-    const ok = t.songs.filter(x => x.ok).length;
     // 같은 장소는 한 줄로 모아요 (띄어쓰기만 다른 장소 이름도 같은 곳으로 봐요)
     const places = new Map();
     t.events.forEach(e => {
@@ -858,14 +857,15 @@
         <span class="count-pill">${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
         <p class="sub">${tourRange(t)}</p>
         ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
+        ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
       ${setlistSections(t.songs).map(sec => `
         ${sec.name ? `<h2 class="h3 list-title">${sec.name}</h2>` : ''}
         <ol class="setlist-list" start="${sec.items[0].n}">
-          ${sec.items.map(s => `<li><span class="sl-title">${setlistSong(s.t)}</span>${s.ok ? '<span class="sl-ok" title="기사나 직캠으로 확인">✓</span>' : ''}${s.note ? `<span class="sl-note">${esc(s.note)}</span>` : ''}</li>`).join('')}
+          ${sec.items.map(s => `<li><span class="sl-title">${setlistSong(s.t)}</span>${s.note ? `<span class="sl-note">${esc(s.note)}</span>` : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent('포레스텔라 ' + window.DATA.setlistName(s.t.split(' / ')[0]) + ' ' + t.name.replace(/^[\d-]+\s*/, ''))}" target="_blank" rel="noopener" aria-label="${esc(s.t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`).join('')}
         </ol>`).join('')}
       <div class="tour-foot">
-        <p class="src-note">✓ 표시는 뉴스 기사나 날짜가 적힌 직캠으로 한 번 더 확인한 곡이에요 (${ok}/${t.songs.length}곡).</p>
+        <p class="src-note">곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.</p>
         ${t.caution ? `<p class="src-note">${esc(t.caution)}</p>` : ''}
         <p class="src-note"><a href="${esc(t.source.url)}" target="_blank" rel="noopener nofollow">${esc(t.source.name)}</a> 기준이라 틀릴 수 있어요. <a href="${formUrl({ type: '틀린 정보', title: t.name + ' 셋리스트' })}" target="_blank" rel="noopener">틀린 곳 알려주기 ›</a></p>
       </div>`;
