@@ -397,3 +397,27 @@ body.sheet-open { overflow: hidden; }
 .tl-legend { display: flex; gap: 14px; margin-top: 10px; font-size: 11px; color: var(--muted); }
 .tl-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .tl-legend .dot { width: 8px; height: 8px; margin: 0; box-shadow: none; }
+.setlist summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 46px; padding: 0 14px; border-radius: 12px; background: var(--soft); cursor: pointer; list-style: none; }
+.setlist summary::-webkit-details-marker { display: none; }
+.setlist summary .sub::after { content: ' ›'; }
+.setlist[open] summary .sub::after { content: ' ⌄'; }
+.setlist-list { margin: 10px 0 8px; padding: 0 0 0 26px; display: flex; flex-direction: column; gap: 7px; font-size: 12px; }
+.setlist-list li { padding-left: 2px; }
+.setlist-list li::marker { color: var(--muted); font-size: 11px; }
+.sl-title a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line, #ccc); text-underline-offset: 3px; }
+.sl-note { display: inline-block; margin-left: 6px; font-size: 11px; color: var(--muted); }
+.setlist .src-note a { color: inherit; text-decoration: underline; }
+.sl-ok { margin-left: 5px; font-size: 11px; color: var(--green-2); font-weight: 700; }
+.setlist-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; margin-top: 14px; padding: 10px 14px; border-radius: 12px; background: var(--grad-soft); color: var(--ink); font-size: 12px; font-weight: 600; }
+.setlist-link .sub { font-weight: 500; flex: none; }
+.setlist-link span:last-child { text-align: right; }
+.tour-card { display: flex; flex-direction: column; gap: 4px; }
+.tour-shows { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; border-top: 1px solid rgba(28,122,94,.12); }
+.tour-show { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; }
+.tour-place { color: var(--ink); min-width: 0; }
+.tour-show .ev-days { flex-wrap: wrap; justify-content: flex-end; }
+.tour-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.tour-chips .chip { height: 32px; }
+.tour-foot { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; }
+.tour-foot a, .setlist-list a { color: inherit; }
+.tour-list { margin-top: 14px; }

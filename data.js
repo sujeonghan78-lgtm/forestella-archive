@@ -138,13 +138,14 @@
 
   async function fetchAll() {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe] = await Promise.all([
+    const [events, videos, reports, cafe, setlists] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
       fetchText('cafe.json').catch(() => ''),
+      fetchText('setlists.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, savedAt: Date.now() };
   }
 
   function readCache() {
@@ -167,6 +168,9 @@
     }));
   }
 
+  // 셋리스트 곡 이름에서 "메들리:"와 도시 표시를 떼어 곡 페이지와 맞춰요
+  const setlistName = part => part.replace(/^메들리:\s*/, '').replace(/\s*\((서울|대구|부산|고양|앙코르|LA\/[^)]*|Dallas\/[^)]*)\)$/, '');
+
   function build(raw) {
     const sheetRows = toObjects(raw.events);
     const events = buildEvents(sheetRows).concat(raw.cafe ? buildCafe(raw.cafe, sheetRows) : [])
@@ -175,6 +179,15 @@
     const reports = raw.reports ? buildReports(toObjects(raw.reports)) : [];
     const byId = new Map(events.map(e => [e.id, e]));
     events.forEach(e => { e.related = []; });
+    // 콘서트 셋리스트 (나무위키·기사 기준) 붙이기
+    let tours = [];
+    try { tours = JSON.parse(raw.setlists || '{}').tours || []; } catch (err) { /* 없으면 넘어가요 */ }
+    tours.forEach(t => { t.events = []; });
+    events.forEach(e => {
+      if (e.category !== '공연') return;
+      const t = tours.find(x => x.dates.includes(e.date));
+      if (t) { e.setlist = t; t.events.push(e); }
+    });
     videos.forEach(v => { const e = byId.get(v.eventId); if (e) e.related.push(v); });
     // 곡별로 확인된 무대 모으기 (이름은 가장 많이 쓰인 표기로)
     const songs = new Map();
@@ -195,14 +208,20 @@
       so.first = so.events[0];
       so.last = so.events[so.events.length - 1];
     });
-    return { events, videos, reports, byId, songs, savedAt: raw.savedAt };
+    // 곡마다 셋리스트에 들어 있는 투어 ("A / B"처럼 날마다 달랐던 곡은 각각 셈)
+    songs.forEach(so => { so.tours = []; });
+    tours.forEach(t => t.songs.forEach(s => s.t.split(' / ').forEach(part => {
+      const so = songs.get(songKey(setlistName(part)));
+      if (so && !so.tours.includes(t)) so.tours.push(t);
+    })));
+    return { events, videos, reports, byId, songs, tours, savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
   // onUpdate는 새 데이터가 도착했을 때 다시 그리라고 불러요.
   async function load(onUpdate) {
     const cached = readCache();
-    const fresh = cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'setlists' in cached && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
@@ -214,5 +233,5 @@
     return build(raw);
   }
 
-  window.DATA = { load, parseCSV, normDate, songKey };
+  window.DATA = { load, parseCSV, normDate, songKey, setlistName };
 })();

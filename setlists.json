@@ -1,0 +1,1867 @@
+{
+ "note": "공연 셋리스트. 나무위키·뉴스 기사 기준이라 틀릴 수 있어요.",
+ "tours": [
+  {
+   "tour": "2018 포레스텔라 전국투어 콘서트 Evolution",
+   "dates": [
+    "2018-05-12"
+   ],
+   "complete": true,
+   "source": {
+    "name": "setlist.fm",
+    "url": "https://www.setlist.fm/setlist/forestella/2018/hyundai-arts-center-ulsan-south-korea-2bede8c6.html"
+   },
+   "caution": "울산 공연(5/12) 기준이에요. 곡 이름은 setlist.fm에 영어로 적힌 그대로예요.",
+   "songs": [
+    {
+     "t": "I'm Coming Now",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Dell'amore non si sa",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Il mirto e la rosa",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Crane",
+     "note": "우림",
+     "ok": false
+    },
+    {
+     "t": "Amapola",
+     "note": "민규",
+     "ok": false
+    },
+    {
+     "t": "Close Your Eyes",
+     "note": "민규, 우림",
+     "ok": false
+    },
+    {
+     "t": "Time Travel (시간여행)",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "L'immensità",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Gashiri (가시리)",
+     "note": "민규, 두훈",
+     "ok": false
+    },
+    {
+     "t": "Thorn Bird",
+     "note": "형호",
+     "ok": false
+    },
+    {
+     "t": "My Eden",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Gethsemane",
+     "note": "두훈",
+     "ok": false
+    },
+    {
+     "t": "Amor fati (아모르 파티)",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Wrongful Encounter (잘못된 만남)",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Holding Out for a Hero",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "You Change My World",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "You Are My Star",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Dream a Little Dream of Me",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "The Prayer",
+     "note": "민규, 우림",
+     "ok": false
+    },
+    {
+     "t": "The Journey of Love",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Primula",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Sweet Dreams",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Come un eterno addio",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "In un'altra vita",
+     "note": "",
+     "ok": false
+    }
+   ],
+   "id": "2018-evolution",
+   "name": "2018 Evolution"
+  },
+  {
+   "tour": "2021 넬라 판타지아: 시간여행",
+   "dates": [
+    "2021-03-13",
+    "2021-03-14",
+    "2021-03-26",
+    "2021-03-27"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/%EB%84%AC%EB%9D%BC%20%ED%8C%90%ED%83%80%EC%A7%80%EC%95%84%20%EC%8B%9C%EA%B0%84%EC%97%AC%ED%96%89"
+   },
+   "caution": "이 공연은 곡을 확인할 기사를 찾지 못했어요.",
+   "songs": [
+    {
+     "t": "넬라 판타지아",
+     "note": "1부",
+     "ok": false
+    },
+    {
+     "t": "I'm coming now",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "시간여행",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Dell'amore non si sa",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "달하 노피곰 도다샤",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "야상곡",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "My Favorite Things",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "나 가거든",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Parla Piu Piano",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "신라의 달밤",
+     "note": "1부 마지막",
+     "ok": false
+    },
+    {
+     "t": "Time In A Bottle",
+     "note": "2부",
+     "ok": false
+    },
+    {
+     "t": "Say Something",
+     "note": "두훈 솔로",
+     "ok": false
+    },
+    {
+     "t": "Universe",
+     "note": "형호 솔로",
+     "ok": false
+    },
+    {
+     "t": "디즈니 메들리",
+     "note": "민규 솔로",
+     "ok": false
+    },
+    {
+     "t": "Change on the Rise",
+     "note": "우림 솔로",
+     "ok": false
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "전설 속의 누군가처럼",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Champions",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "연",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Angel",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "곤드레 만드레 (고양) / Shape of You (서울)",
+     "note": "앵콜 · 도시별로 다름",
+     "ok": false
+    },
+    {
+     "t": "In un'altra vita",
+     "note": "앵콜",
+     "ok": false
+    }
+   ],
+   "id": "2021-time-travel",
+   "name": "2021 넬라 판타지아: 시간여행"
+  },
+  {
+   "tour": "더 포레스텔라 2021",
+   "dates": [
+    "2021-09-04",
+    "2021-09-05",
+    "2021-09-18",
+    "2021-09-19",
+    "2021-10-16",
+    "2021-10-17"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/The%20Forestella%202021"
+   },
+   "caution": "2021년 투어 전체 기준 셋리스트예요.",
+   "songs": [
+    {
+     "t": "Inner Universe",
+     "note": "1부",
+     "ok": false
+    },
+    {
+     "t": "Scarborough Fair",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "The Sky and the Dawn and the Sun",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "바람이 건네준 말",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "My heart will go on",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "당신이 듣던",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "눈물 속에 홀로",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "달의 아들 (Hijo de la luna)",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "전설 속의 누군가처럼",
+     "note": "1부 마지막",
+     "ok": false
+    },
+    {
+     "t": "Shape of you",
+     "note": "2부",
+     "ok": false
+    },
+    {
+     "t": "Into the Unknown",
+     "note": "민규 솔로",
+     "ok": false
+    },
+    {
+     "t": "Lay Me Down",
+     "note": "두훈 솔로",
+     "ok": true
+    },
+    {
+     "t": "Paranoid Android",
+     "note": "형호 솔로",
+     "ok": false
+    },
+    {
+     "t": "Revival",
+     "note": "우림 솔로",
+     "ok": false
+    },
+    {
+     "t": "Thriller",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Smooth Criminal",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "We are the champions",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Champions",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "One Love",
+     "note": "앵콜",
+     "ok": false
+    },
+    {
+     "t": "In un'altra vita",
+     "note": "앵콜",
+     "ok": false
+    }
+   ],
+   "id": "2021-the-forestella",
+   "name": "2021 The Forestella"
+  },
+  {
+   "tour": "2021-22 Forestella Concert - The Royal",
+   "dates": [
+    "2021-12-18",
+    "2021-12-19",
+    "2022-01-22",
+    "2022-01-23",
+    "2022-02-19",
+    "2022-02-20"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/The%20Royal(2021%EB%85%84%20%EC%BD%98%EC%84%9C%ED%8A%B8)"
+   },
+   "caution": "2월 서울 앙코르 공연에서는 Lazenca, Save Us를 부른 직캠이 있어요.",
+   "songs": [
+    {
+     "t": "In un'altra vita",
+     "note": "1부",
+     "ok": true
+    },
+    {
+     "t": "달하 노피곰 도다샤",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Scarborough Fair",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "달의 아들 (Hijo de la luna)",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "넬라 판타지아",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Angel",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "The Sound of Silence",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "L'immensità",
+     "note": "민규, 우림",
+     "ok": true
+    },
+    {
+     "t": "Parla piu piano",
+     "note": "1부 마지막",
+     "ok": false
+    },
+    {
+     "t": "The Greatest Show",
+     "note": "2부",
+     "ok": true
+    },
+    {
+     "t": "전설 속의 누군가처럼",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Time In A Bottle",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Warriors",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "The Phoenix",
+     "note": "두훈, 형호",
+     "ok": true
+    },
+    {
+     "t": "살다가 (서울) / Shape of You (대구)",
+     "note": "도시별로 다름",
+     "ok": true
+    },
+    {
+     "t": "멀어지지 말아주세요",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "We are the champions",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Shape of You (서울) / Lazenca, Save Us (대구)",
+     "note": "앵콜 · 도시별로 다름",
+     "ok": true
+    },
+    {
+     "t": "Champions",
+     "note": "앵콜",
+     "ok": false
+    }
+   ],
+   "id": "2021-the-royal",
+   "name": "2021-22 The Royal"
+  },
+  {
+   "tour": "2022 포레스텔라 전국투어 콘서트 The Beginning: World Tree",
+   "dates": [
+    "2022-06-04",
+    "2022-06-05",
+    "2022-06-18",
+    "2022-06-19",
+    "2022-07-02",
+    "2022-07-03",
+    "2022-07-16",
+    "2022-07-17",
+    "2022-08-06",
+    "2022-08-07",
+    "2022-08-13",
+    "2022-08-14",
+    "2022-08-27",
+    "2022-08-28"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/The%20Beginning%20World%20Tree"
+   },
+   "caution": "서울 공연 기사에서는 바람의 노래를 본공연에서, 숲의 노래를 마지막에 불렀다고 해요. Champions는 출처에 두 번 적혀 있어요.",
+   "songs": [
+    {
+     "t": "Inner Universe",
+     "note": "1부",
+     "ok": true
+    },
+    {
+     "t": "The Voice",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Angel",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "For Life",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "멀어지지 말아주세요",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Moonlight",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "나 가거든",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Parla Piu Piano",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Save Our Lives",
+     "note": "1부 마지막",
+     "ok": true
+    },
+    {
+     "t": "내 마음에 주단을 깔고",
+     "note": "2부",
+     "ok": true
+    },
+    {
+     "t": "Remember",
+     "note": "우림 솔로",
+     "ok": true
+    },
+    {
+     "t": "All the King's Horses",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Smooth Criminal",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "There's Nothing Holdin' Me Back",
+     "note": "두훈 솔로",
+     "ok": true
+    },
+    {
+     "t": "Teeth",
+     "note": "형호 솔로",
+     "ok": true
+    },
+    {
+     "t": "Shape of you",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Waka Waka",
+     "note": "민규 솔로",
+     "ok": true
+    },
+    {
+     "t": "Bad",
+     "note": "우림 솔로 · 앙코르 공연만",
+     "ok": true
+    },
+    {
+     "t": "Bad Romance",
+     "note": "앙코르 공연만",
+     "ok": true
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Lazenca, Save Us",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Champions",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Champions",
+     "note": "앵콜 (출처에 두 번 적혀 있음)",
+     "ok": false
+    },
+    {
+     "t": "숲의 노래",
+     "note": "앵콜",
+     "ok": true
+    },
+    {
+     "t": "In un'altra vita",
+     "note": "앵콜 · 앙코르 공연만",
+     "ok": false
+    },
+    {
+     "t": "바람의 노래",
+     "note": "앵콜",
+     "ok": true
+    }
+   ],
+   "id": "2022-world-tree",
+   "name": "2022 The Beginning: World Tree"
+  },
+  {
+   "tour": "2022 포레스텔라 페스티벌",
+   "dates": [
+    "2022-10-09",
+    "2022-10-10"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/2022%20%ED%8F%AC%EB%A0%88%EC%8A%A4%ED%85%94%EB%9D%BC%20%ED%8E%98%EC%8A%A4%ED%8B%B0%EB%B2%8C"
+   },
+   "caution": "이 공연은 곡을 확인할 기사가 거의 없어서 대부분 확인되지 않았어요.",
+   "songs": [
+    {
+     "t": "The Voice",
+     "note": "1부",
+     "ok": false
+    },
+    {
+     "t": "전설속의 누군가처럼",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Angel",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "For Life",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Moonlight",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Scarborough Fair",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Parla Piu Piano",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Save Our Lives",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "La Ultima Noche",
+     "note": "민규, 우림",
+     "ok": false
+    },
+    {
+     "t": "There's Nothing Holdin' Me Back",
+     "note": "두훈",
+     "ok": false
+    },
+    {
+     "t": "Teeth",
+     "note": "형호",
+     "ok": false
+    },
+    {
+     "t": "Bad",
+     "note": "우림",
+     "ok": false
+    },
+    {
+     "t": "The Phoenix",
+     "note": "두훈, 형호",
+     "ok": false
+    },
+    {
+     "t": "Waka Waka",
+     "note": "민규",
+     "ok": false
+    },
+    {
+     "t": "Shape of you",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Smooth Criminal",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Viva La Vida",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Champions",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Bad Romance",
+     "note": "앵콜",
+     "ok": false
+    },
+    {
+     "t": "Lazenca, Save Us",
+     "note": "앵콜",
+     "ok": true
+    },
+    {
+     "t": "Sweet Dreams",
+     "note": "앵콜",
+     "ok": false
+    },
+    {
+     "t": "곤드레 만드레",
+     "note": "앵콜",
+     "ok": false
+    },
+    {
+     "t": "We are the Champions",
+     "note": "앵콜",
+     "ok": false
+    }
+   ],
+   "id": "2022-festival",
+   "name": "2022 포레스텔라 페스티벌"
+  },
+  {
+   "tour": "22-23 The Royal",
+   "dates": [
+    "2022-12-24",
+    "2022-12-25",
+    "2023-01-07",
+    "2023-01-08",
+    "2023-01-14",
+    "2023-01-15",
+    "2023-02-25",
+    "2023-02-26"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/The%20Royal(2022%EB%85%84%20%EC%BD%98%EC%84%9C%ED%8A%B8)"
+   },
+   "caution": "부산 공연 기사에서는 MAMA와 Shape of You가 2부 본공연이었고 앵콜은 In un'altra vita였다고 해요. 2부 곡 순서도 조금 달라요.",
+   "songs": [
+    {
+     "t": "Dell'amore Non Si Sa",
+     "note": "1부",
+     "ok": true
+    },
+    {
+     "t": "Scarborough Fair",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "아직도 기억하고 있어요",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "사랑의 맹세(Till)",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Moonlight / Prelude de la Luna + 달의 아들",
+     "note": "뒤쪽 곡은 앙코르 공연",
+     "ok": true
+    },
+    {
+     "t": "달의 아들 / Parla Piu Piano",
+     "note": "뒤쪽 곡은 앙코르 공연",
+     "ok": true
+    },
+    {
+     "t": "Angel",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "For Life",
+     "note": "1부 마지막",
+     "ok": true
+    },
+    {
+     "t": "My Favorite Things",
+     "note": "2부",
+     "ok": true
+    },
+    {
+     "t": "Viva La Vida",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Radioactive",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Time In A Bottle",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Come Un Eterno Addio",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Champions",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Lotus (인트로)",
+     "note": "UTOPIA 인트로",
+     "ok": true
+    },
+    {
+     "t": "UTOPIA",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Bad Romance",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Lazenca, Save Us",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Save Our Lives",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "MAMA / Smooth Criminal",
+     "note": "앵콜 · 뒤쪽 곡은 앙코르 공연",
+     "ok": true
+    },
+    {
+     "t": "Shape of You",
+     "note": "앵콜",
+     "ok": true
+    },
+    {
+     "t": "Sweet Dreams",
+     "note": "앵콜 · 1/15 공연만",
+     "ok": false
+    },
+    {
+     "t": "In un'altra vita",
+     "note": "앵콜",
+     "ok": true
+    }
+   ],
+   "id": "2022-the-royal",
+   "name": "2022-23 The Royal"
+  },
+  {
+   "tour": "FORESTELLA N.AMERICA TOUR 2023",
+   "dates": [
+    "2023-01-20",
+    "2023-01-26",
+    "2023-01-29",
+    "2023-02-03",
+    "2023-02-05"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.moe/w/FORESTELLA%20N.AMERICA%20TOUR"
+   },
+   "caution": "",
+   "songs": [
+    {
+     "t": "Champions",
+     "note": "1부",
+     "ok": true
+    },
+    {
+     "t": "전설속의 누군가처럼",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Scarborough fair",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Hijo de la luna",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Nella fantasia",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Parla piu piano",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "나 가거든 (LA/Vancouver/New York) / Moonlight (Dallas/Atlanta)",
+     "note": "도시별로 다름",
+     "ok": true
+    },
+    {
+     "t": "Save our lives",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "My favorite things",
+     "note": "2부",
+     "ok": false
+    },
+    {
+     "t": "Be my love",
+     "note": "민규 솔로",
+     "ok": true
+    },
+    {
+     "t": "Remember",
+     "note": "우림 솔로",
+     "ok": true
+    },
+    {
+     "t": "Gethsemane",
+     "note": "두훈 솔로",
+     "ok": true
+    },
+    {
+     "t": "Phantom of the Opera",
+     "note": "형호 솔로",
+     "ok": true
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Shape of you",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Utopia",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "MAMA (LA/Vancouver/New York) / 바람의 노래 (Dallas/Atlanta)",
+     "note": "앵콜 · 도시별로 다름",
+     "ok": true
+    },
+    {
+     "t": "For life",
+     "note": "앵콜",
+     "ok": true
+    }
+   ],
+   "id": "2023-north-america",
+   "name": "2023 N.AMERICA TOUR"
+  },
+  {
+   "tour": "2023 포레스텔라 전국투어 콘서트 The Light",
+   "dates": [
+    "2023-06-17",
+    "2023-06-18",
+    "2023-07-08",
+    "2023-07-09",
+    "2023-07-15",
+    "2023-07-16",
+    "2023-07-29",
+    "2023-07-30",
+    "2023-08-12",
+    "2023-08-13",
+    "2023-08-19",
+    "2023-08-20",
+    "2023-09-02",
+    "2023-09-03",
+    "2023-09-16",
+    "2023-09-17"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/The%20Light(%ED%8F%AC%EB%A0%88%EC%8A%A4%ED%85%94%EB%9D%BC)"
+   },
+   "caution": "도시마다 셋리스트가 조금씩 달랐다는 기사가 있어요. 표시된 건 투어 전체 기준이에요.",
+   "songs": [
+    {
+     "t": "Save Our Lives",
+     "note": "1부",
+     "ok": true
+    },
+    {
+     "t": "White Night",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "For Life",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "아직도 기억하고 있어요",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Scarborough Fair",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Arabian Nights",
+     "note": "우림",
+     "ok": false
+    },
+    {
+     "t": "내 마음에 주단을 깔고",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Parla Piu Piano",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Je suis malade",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Nella Fantasia",
+     "note": "1부 마지막",
+     "ok": false
+    },
+    {
+     "t": "Inner Universe",
+     "note": "2부",
+     "ok": false
+    },
+    {
+     "t": "Shape of You",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Téir Abhaile Riú",
+     "note": "민규",
+     "ok": false
+    },
+    {
+     "t": "Counting Stars",
+     "note": "두훈",
+     "ok": false
+    },
+    {
+     "t": "RISE",
+     "note": "형호",
+     "ok": false
+    },
+    {
+     "t": "Love Runs Out",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Sweet Dreams",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Legends Never Die / Despacito",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "In un'altra vita",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "UTOPIA",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "함께라는 이유",
+     "note": "앵콜",
+     "ok": false
+    },
+    {
+     "t": "We are the Champions",
+     "note": "앵콜",
+     "ok": false
+    }
+   ],
+   "id": "2023-the-light",
+   "name": "2023 The Light"
+  },
+  {
+   "tour": "2023 포레스텔라 페스티벌",
+   "dates": [
+    "2023-10-14",
+    "2023-10-15"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/2023%20%ED%8F%AC%EB%A0%88%EC%8A%A4%ED%85%94%EB%9D%BC%20%ED%8E%98%EC%8A%A4%ED%8B%B0%EB%B2%8C"
+   },
+   "caution": "이 공연은 곡을 확인할 기사를 찾지 못했어요.",
+   "songs": [
+    {
+     "t": "Save Our Lives",
+     "note": "1부",
+     "ok": false
+    },
+    {
+     "t": "White Night",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "There's Nothing Holdin' Me Back",
+     "note": "두훈",
+     "ok": false
+    },
+    {
+     "t": "Bad",
+     "note": "우림",
+     "ok": false
+    },
+    {
+     "t": "Shape of You",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Viva La Vida",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Waka Waka",
+     "note": "2부 · 민규",
+     "ok": false
+    },
+    {
+     "t": "Arabian Nights",
+     "note": "우림",
+     "ok": false
+    },
+    {
+     "t": "Teeth",
+     "note": "형호",
+     "ok": false
+    },
+    {
+     "t": "Rise",
+     "note": "형호",
+     "ok": false
+    },
+    {
+     "t": "Love Runs Out",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Sweet Dreams",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Despacito",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Square",
+     "note": "3부 · 민규",
+     "ok": false
+    },
+    {
+     "t": "Sign of the Times",
+     "note": "두훈",
+     "ok": false
+    },
+    {
+     "t": "Angel",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Hijo de la luna",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Bad Romance",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Lazenca, Save Us",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "UTOPIA",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "KOOL",
+     "note": "4부",
+     "ok": false
+    },
+    {
+     "t": "Smooth Criminal",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "함께라는 이유",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "In un'altra vita",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Chagall's Dream",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Champions",
+     "note": "",
+     "ok": false
+    }
+   ],
+   "id": "2023-festival",
+   "name": "2023 포레스텔라 페스티벌"
+  },
+  {
+   "tour": "2024 THE ILLUSIONIST",
+   "dates": [
+    "2024-11-02",
+    "2024-11-03",
+    "2024-12-28",
+    "2024-12-29"
+   ],
+   "complete": false,
+   "source": {
+    "name": "뉴스 기사",
+    "url": "https://www.seattlen.com/ent/11028"
+   },
+   "caution": "11월 장충체육관 공연 기사에 나온 곡만 모았어요. 순서와 12월 앙코르 공연 곡은 다를 수 있어요.",
+   "songs": [
+    {
+     "t": "My Favorite Things",
+     "note": "오프닝",
+     "ok": true
+    },
+    {
+     "t": "딴따라 블루스",
+     "note": "오프닝",
+     "ok": true
+    },
+    {
+     "t": "달의 아들",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "화이트 나이트 (백야)",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "세이브 아워 라이브즈",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Love Runs Out",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Sweet Dreams",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "The Show Must Go On",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Apocalypse",
+     "note": "2부 첫 곡",
+     "ok": true
+    },
+    {
+     "t": "Nella Fantasia",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "슬픔보다 더 슬픈 이야기",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "피아노맨",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "샤갈스 드림",
+     "note": "본공연 마지막 곡",
+     "ok": false
+    }
+   ],
+   "id": "2024-the-illusionist",
+   "name": "2024 THE ILLUSIONIST"
+  },
+  {
+   "tour": "2025 THE WAVE",
+   "dates": [
+    "2025-07-26",
+    "2025-07-27",
+    "2025-08-09",
+    "2025-08-10",
+    "2025-08-23",
+    "2025-08-24",
+    "2025-09-13",
+    "2025-09-14"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/THE%20WAVE"
+   },
+   "caution": "서울 공연 기사에서는 HandClap을 1부 Everything 다음에 불렀다고 해요.",
+   "songs": [
+    {
+     "t": "White Night",
+     "note": "1부",
+     "ok": true
+    },
+    {
+     "t": "The Sky and the Dawn and the Sun",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Angel",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Dell'amore Non Si Sa",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Scarborough Fair",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Hijo de la luna",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Chosen One",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "In un'altra vita",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Everything",
+     "note": "1부 마지막",
+     "ok": true
+    },
+    {
+     "t": "UTOPIA",
+     "note": "2부",
+     "ok": true
+    },
+    {
+     "t": "Snow Globe",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Athena",
+     "note": "가제",
+     "ok": false
+    },
+    {
+     "t": "Abracadabra",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Bad Romance",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Shape of You",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Despacito",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Hand Clap",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "메들리: 달하 노피곰 도다샤 (서울) / 아직도 기억하고 있어요 (부산) / Je suis malade (대구) / 야상곡 (앙코르)",
+     "note": "도시별로 다름",
+     "ok": true
+    },
+    {
+     "t": "꽃병",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Piano Man",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "The Show Must Go On",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Champions",
+     "note": "앵콜",
+     "ok": true
+    },
+    {
+     "t": "그리고 봄",
+     "note": "앵콜",
+     "ok": true
+    }
+   ],
+   "id": "2025-the-wave",
+   "name": "2025 THE WAVE"
+  },
+  {
+   "tour": "2025-26 THE LEGACY",
+   "dates": [
+    "2025-12-27",
+    "2025-12-28",
+    "2026-01-17",
+    "2026-01-18",
+    "2026-02-07",
+    "2026-02-08"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/THE%20LEGACY(%EC%BD%98%EC%84%9C%ED%8A%B8)"
+   },
+   "caution": "도시마다 곡이 조금씩 달랐다는 기사가 있어요. 대구에서 Nella Notte를 처음 라이브로 불렀고, 부산 마지막 공연에서는 Etude를 불렀다고 해요. 서울 공연 기사에서는 Still Here가 For Life보다 먼저였어요.",
+   "songs": [
+    {
+     "t": "Intro : Runes",
+     "note": "1부 · 서울",
+     "ok": true
+    },
+    {
+     "t": "Now we are free",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Hijo de la luna",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Save our lives",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Deliver us",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "My Favorite Things",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Piano Man",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "딴따라블루스",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Viva la Vida",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Despacito",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "UTOPIA",
+     "note": "1부 마지막",
+     "ok": true
+    },
+    {
+     "t": "Snow Globe",
+     "note": "2부",
+     "ok": true
+    },
+    {
+     "t": "The sound of silence",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Parla Piu Piano",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Bohemian Rhapsody",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Apocalypse",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Lazenca, Save Us",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Nella Fantasia",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "For Life",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Still Here",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "In Un'altra Vita",
+     "note": "앵콜",
+     "ok": true
+    },
+    {
+     "t": "We are the Champions",
+     "note": "앵콜",
+     "ok": true
+    }
+   ],
+   "id": "2025-the-legacy",
+   "name": "2025-26 THE LEGACY"
+  },
+  {
+   "tour": "2026 정규 4집 투어 THE LEGACY: SYMPHONY",
+   "dates": [
+    "2026-04-25",
+    "2026-04-26",
+    "2026-05-09",
+    "2026-05-10",
+    "2026-06-06",
+    "2026-06-07",
+    "2026-07-04",
+    "2026-07-05",
+    "2026-07-25",
+    "2026-07-26"
+   ],
+   "complete": true,
+   "source": {
+    "name": "나무위키",
+    "url": "https://namu.wiki/w/THE%20LEGACY:%20SYMPHONY"
+   },
+   "caution": "공연마다 곡이 달랐을 수 있어요. 서울 공연은 OVERTURE로 시작했다는 기사가 있고, 서울 앙코르(7/25~26)에서는 창귀, Sweet Dreams, Viva La Vida, Piano Man이 추가됐다고 해요.",
+   "songs": [
+    {
+     "t": "OVERTURE",
+     "note": "1부 · 서울",
+     "ok": true
+    },
+    {
+     "t": "White Night",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Now We Are Free",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Deliver us",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Scarborough fair",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Still Here",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "꽃병",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Angel",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "Hijo de la Luna",
+     "note": "",
+     "ok": false
+    },
+    {
+     "t": "나 가거든",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Parla Piu Piano",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Champions",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "UTOPIA",
+     "note": "2부",
+     "ok": true
+    },
+    {
+     "t": "딴따라 블루스",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Ultima noche",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "The Phoenix",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Abracadabra",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Etude",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Snow Globe",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "The Show Must Go On",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Armageddon",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "너에게 / 그리고 봄",
+     "note": "앵콜 · 날마다 번갈아",
+     "ok": true
+    },
+    {
+     "t": "In Un'Altra Vita",
+     "note": "앵콜",
+     "ok": true
+    },
+    {
+     "t": "함께라는 이유",
+     "note": "앵콜 · 떼창",
+     "ok": false
+    },
+    {
+     "t": "Nella Notte",
+     "note": "앵콜",
+     "ok": true
+    }
+   ],
+   "id": "2026-symphony",
+   "name": "2026 THE LEGACY: SYMPHONY"
+  }
+ ]
+}

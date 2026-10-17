@@ -482,7 +482,11 @@
       </section>
       <h2 class="h3 list-title">무대 목록</h2>
       <div class="stack">${stages.map(resultCard).join('')}</div>
-      <p class="src-note foot">영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.</p>`;
+      <p class="src-note foot">영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.</p>
+      ${so.tours.length ? `
+      <h2 class="h3 list-title">이 곡을 부른 콘서트</h2>
+      <div class="tour-chips">${so.tours.map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>
+      <p class="src-note">콘서트 셋리스트 기준이에요. 위 무대 목록과 달리 영상으로 확인한 건 아니에요.</p>` : ''}`;
   }
 
   // ---------- 연표 ----------
@@ -633,6 +637,7 @@
       </a>
       <nav aria-label="더보기 메뉴">
         ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
+        ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트 셋리스트', data.tours.length + '개')}
         ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
         ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
         ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
@@ -756,6 +761,8 @@
     members: membersView,
     about: aboutView,
     install: installView,
+    concerts: concertsView,
+    tour: tourView,
   };
 
   // ---------- 일정 상세 (아래에서 올라오는 시트) ----------
@@ -772,6 +779,88 @@
     const so = data.songs.get(window.DATA.songKey(name));
     if (!so) return `<div class="song-row"><span>${esc(name)}</span></div>`;
     return `<a class="song-row" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(name)}</span><span class="song-count">확인된 무대 ${so.events.length}개 ›</span></a>`;
+  }
+
+  // ---------- 콘서트 셋리스트 ----------
+  // 셋리스트 한 줄: "A / B"처럼 날마다 달랐던 곡은 각각 곡 페이지로 이어요
+  function setlistSong(title) {
+    return title.split(' / ').map(part => {
+      const so = data.songs.get(window.DATA.songKey(window.DATA.setlistName(part)));
+      return so ? `<a href="#/song/${encodeURIComponent(so.key)}">${esc(part)}</a>` : esc(part);
+    }).join(' / ');
+  }
+
+  // 메모 맨 앞의 "1부·2부·앵콜"을 소제목으로 바꿔요
+  function setlistSections(songs) {
+    const secs = [];
+    songs.forEach((s, i) => {
+      const m = (s.note || '').match(/^(1부|2부|3부|4부|앵콜)(\s*마지막)?(\s*·\s*)?/);
+      const name = m ? m[1] : '';
+      const note = m ? s.note.slice(m[0].length) : s.note;
+      if (!secs.length || (name && name !== secs[secs.length - 1].name)) secs.push({ name, items: [] });
+      secs[secs.length - 1].items.push({ ...s, n: i + 1, note });
+    });
+    return secs;
+  }
+
+  const tourRange = t => {
+    const a = t.dates[0], b = t.dates[t.dates.length - 1];
+    return a === b ? fmtDate(a, false) : `${fmtDate(a, false)} ~ ${a.slice(0, 4) === b.slice(0, 4) ? b.slice(5).replace('-', '.') : fmtDate(b, false)}`;
+  };
+
+  function concertsView() {
+    const tours = data.tours.slice().reverse();
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">콘서트 셋리스트</h1>
+      <p class="sub">단독 콘서트와 투어에서 부른 곡을 순서대로 모았어요.</p>
+      <div class="stack tour-list">
+        ${tours.map(t => `
+          <a class="card tour-card" href="#/tour/${encodeURIComponent(t.id)}">
+            <span class="card-title">${esc(t.name)}</span>
+            <span class="row-sub">${tourRange(t)} · ${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
+          </a>`).join('')}
+      </div>
+      <p class="src-note foot">나무위키·setlist.fm·뉴스 기사를 모아 정리했어요. 틀린 곳이 있으면 제보해 주세요.</p>`;
+  }
+
+  function tourView() {
+    const id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
+    const t = data.tours.find(x => x.id === id);
+    if (!t) return `<p class="empty">이 콘서트를 찾지 못했어요. <a href="#/concerts">콘서트 목록으로 ›</a></p>`;
+    const ok = t.songs.filter(x => x.ok).length;
+    const shows = groupRuns(t.events).map(run => {
+      const e = run[0];
+      const city = (e.title.match(/\bin\s+([^}\]]+?)\s*[}\]]?$/i) || [])[1];
+      const label = e.place || city || (/encore|앙코르|앵콜/i.test(e.title) ? '앙코르' : e.title);
+      return `<div class="tour-show"><span class="tour-place">${esc(label)}</span><span class="ev-days">${run.map(x => `<a class="ev-day" href="#/e/${encodeURIComponent(x.id)}">${x.date.slice(5).replace('-', '.')}</a>`).join('')}</span></div>`;
+    }).join('');
+    const top = t.songs.slice(0, 3).map(x => x.t).join(', ');
+    return `
+      <a class="back" href="#/concerts">‹ 콘서트 셋리스트</a>
+      <section class="song-hero">
+        <div class="block-head"><h1 class="song-title">${esc(t.name)}</h1>${shareBtn('이 셋리스트 공유하기', `포레스텔라 ${t.name} 셋리스트 🎤\n${top} …\n\n${TAGS}`, link('#/tour/' + encodeURIComponent(t.id)))}</div>
+        <span class="count-pill">${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
+        <p class="sub">${tourRange(t)}</p>
+        ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
+      </section>
+      ${setlistSections(t.songs).map(sec => `
+        ${sec.name ? `<h2 class="h3 list-title">${sec.name}</h2>` : ''}
+        <ol class="setlist-list" start="${sec.items[0].n}">
+          ${sec.items.map(s => `<li><span class="sl-title">${setlistSong(s.t)}</span>${s.ok ? '<span class="sl-ok" title="기사나 직캠으로 확인">✓</span>' : ''}${s.note ? `<span class="sl-note">${esc(s.note)}</span>` : ''}</li>`).join('')}
+        </ol>`).join('')}
+      <div class="tour-foot">
+        <p class="src-note">✓ 표시는 뉴스 기사나 날짜가 적힌 직캠으로 한 번 더 확인한 곡이에요 (${ok}/${t.songs.length}곡).</p>
+        ${t.caution ? `<p class="src-note">${esc(t.caution)}</p>` : ''}
+        <p class="src-note"><a href="${esc(t.source.url)}" target="_blank" rel="noopener nofollow">${esc(t.source.name)}</a> 기준이라 틀릴 수 있어요. <a href="${formUrl({ type: '틀린 정보', title: t.name + ' 셋리스트' })}" target="_blank" rel="noopener">틀린 곳 알려주기 ›</a></p>
+      </div>`;
+  }
+
+  function setlistBlock(e) {
+    const t = e.setlist;
+    if (!t) return '';
+    return `
+      <a class="setlist-link" href="#/tour/${encodeURIComponent(t.id)}"><span class="sub">이 공연 셋리스트</span><span>${esc(t.name)} · ${t.songs.length}곡 보기 ›</span></a>`;
   }
 
   function reportsFor(e) {
@@ -854,6 +943,7 @@
             </span>
           </div>
         </section>
+        ${setlistBlock(e)}
         ${reportList}
         ${related}
         <a class="same-time" href="#/timeline?ym=${ym}"><span class="sub">같은 시기의 기록</span><span>${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5))}월 연표에서 보기 ›</span></a>
@@ -898,7 +988,7 @@
   }
 
   function setTabs(name) {
-    const tabName = { song: 'songs', program: 'home', members: 'more', about: 'more', install: 'more' }[name] || name;
+    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
