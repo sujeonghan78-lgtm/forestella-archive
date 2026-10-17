@@ -486,3 +486,5 @@ h1:has(> .help), h2:has(> .help) { position: relative; }
 .show-list li, .fact-list li { font-size: 13px; line-height: 1.6; }
 .tour-info { margin-top: 18px; }
 .tour-poster { width: 100%; max-height: 420px; object-fit: contain; border-radius: 14px; margin: 8px 0 12px; background: rgba(255,255,255,.5); display: block; }
+/* 표지·포스터는 같은 크기 상자에 통째로 보이게 (긴 포스터도 화면을 덮지 않게) */
+.album-head .album-img, .tour-poster { height: 200px; max-height: none; width: 100%; object-fit: contain; background: rgba(255,255,255,.55); }
