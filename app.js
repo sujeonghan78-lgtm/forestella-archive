@@ -152,7 +152,7 @@
     return `${years}년 전 오늘의 포레스텔라 🌲\n${e.title}${song}\n\n${TAGS}`;
   }
 
-  // 랜덤 무대 후보: 곡이 확인된 모든 일정의 (일정, 곡) 한 쌍씩. 일정이 아니라 곡 단위로 뽑아서
+  // 랜덤 무대 후보: 곡이 확인되고 볼 수 있는 영상이 있는 일정의 (일정, 곡) 한 쌍씩. 일정이 아니라 곡 단위로 뽑아서
   // 곡이 많은 공연도, 한 곡만 부른 방송도 고르게 나와요. 최근에 나온 것들은 한동안 다시 안 나와요.
   let pickCount = 0;
   let randomPick = null;
@@ -163,7 +163,7 @@
   function homeRandom() {
     const pool = [];
     data.events.forEach(e => {
-      if (e.songSource === '참고') return;
+      if (e.songSource === '참고' || !(e.videoId || e.related.length)) return;
       e.songs.forEach(song => { if (window.DATA.songKey(song)) pool.push({ e, song }); });
     });
     if (!pool.length) return '';
