@@ -705,6 +705,7 @@
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
       </section>
+      <div class="view-row">${albumBtn()}</div>
       ${paneTabs([
         { label: '무대', n: stages.length, html: stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', title: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>` },
         { label: '유튜브', n: so.official.length, html: ytList(so.official) },
@@ -876,8 +877,24 @@
       </nav>`;
   }
 
-  // 멤버 화면 앨범 보기: 사진만 바둑판으로 (기억해 둬요)
-  const albumMode = () => { try { return localStorage.getItem('memAlbum') === '1'; } catch (err) { return false; } };
+  // 앨범 보기: 목록을 사진만 바둑판으로 (사이트 전체, 기억해 둬요). 사진 목록이 없는 칸에선 버튼이 회색
+  let albumOn = false;
+  try { albumOn = localStorage.getItem('albumMode') === '1' || localStorage.getItem('memAlbum') === '1'; } catch (err) { /* 괜찮아요 */ }
+  document.documentElement.classList.toggle('album-on', albumOn);
+  const albumBtn = () => `<button type="button" class="chip view-tog${albumOn ? ' on' : ''}" onclick="toggleAlbum()">${albumOn ? '목록으로 보기' : '앨범으로 보기'}</button>`;
+  window.toggleAlbum = () => {
+    albumOn = !albumOn;
+    document.documentElement.classList.toggle('album-on', albumOn);
+    try { localStorage.setItem('albumMode', albumOn ? '1' : ''); } catch (err) { /* 괜찮아요 */ }
+    document.querySelectorAll('.view-tog').forEach(b => { b.classList.toggle('on', albumOn); b.textContent = albumOn ? '목록으로 보기' : '앨범으로 보기'; });
+  };
+  let syncT = 0;
+  const viewEl = document.getElementById('view');
+  if (viewEl) new MutationObserver(() => { clearTimeout(syncT); syncT = setTimeout(() => window.syncAlbum(), 60); }).observe(viewEl, { childList: true, subtree: true });
+  window.syncAlbum = () => {
+    const ok = [...document.querySelectorAll('#view .x-list')].some(l => l.offsetParent && l.querySelector('.x-card img, .card-thumb img'));
+    document.querySelectorAll('.view-tog').forEach(b => { b.classList.toggle('dis', !ok); b.disabled = !ok; });
+  };
   function membersView() {
     const m = new URLSearchParams(location.hash.split('?')[1] || '').get('m') || MEMBER_LIST[0];
     const evs = data.events.filter(e => e.members.includes(m)).sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -893,8 +910,8 @@
       <div class="seg-wrap" role="tablist">${MEMBER_LIST.map(x => `<a class="seg${x === m ? ' on' : ''}" href="#/members?m=${encodeURIComponent(x)}" role="tab" aria-selected="${x === m}">${x}</a>`).join('')}</div>
       ${pics.length ? `<div class="member-x"><div class="x-strip">${pics.map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div></div>` : ''}
       ${bday ? `<a class="chip" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${q}">🎂 생일 축하 글 ${bday}개 ›</a>` : ''}
-      <div class="view-row"><button type="button" class="chip view-tog${albumMode() ? ' on' : ''}" onclick="const b=this.parentNode.nextElementSibling,on=b.classList.toggle('album');this.classList.toggle('on',on);this.textContent=on?'목록으로 보기':'앨범으로 보기';try{localStorage.setItem('memAlbum',on?'1':'')}catch(e){}">${albumMode() ? '목록으로 보기' : '앨범으로 보기'}</button></div>
-      <div class="mem-body${albumMode() ? ' album' : ''}">
+      <div class="view-row">${albumBtn()}</div>
+      <div class="mem-body">
       ${paneTabs([
         { label: '유튜브', n: vs.length, html: vs.length ? `${ytList(vs)}<a class="more mem-all" href="#/yt?m=${q}">유튜브 탭에서 보기 ›</a>` : '' },
         { label: 'X', n: xs.length, html: xList(xs) },
@@ -1099,7 +1116,7 @@
       <div class="chips tl-cats">${chip(!yr, href(kind, '', mem), '전체 연도')}${[...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(kind, y, mem), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(kind, yr, ''), '멤버 전체')}${MEMBER_LIST.map(m => chip(m === mem, href(kind, yr, m), m.slice(1))).join('')}</div>
       </div>
-      <p class="sub">${list.length}개</p>
+      <div class="view-row"><p class="sub">${list.length}개</p>${albumBtn()}</div>
       ${list.length ? moreList(list.map(ytCard), 20) : '<p class="empty">해당하는 영상이 없어요.</p>'}`;
   }
   function bindYt() {
@@ -1137,7 +1154,7 @@
             <span class="x-text"><span class="x-date">${esc(p.date.replace(/-/g, '.'))} · ${esc(p.cat)}</span>${esc(p.text || '(글 없음)')}</span>
           </a>`;
       if (!list.length) { box.innerHTML = `<p class="empty">${data.xPending ? '공식 X 글 불러오는 중…' : rel ? '이 음반에 묶인 공식 X 글이 없어요.' : '해당하는 글이 없어요.'}</p>`; return; }
-      box.innerHTML = `<p class="sub">${list.length}개</p><div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
+      box.innerHTML = `<div class="view-row"><p class="sub">${list.length}개</p>${rel ? '' : albumBtn()}</div><div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
       const more = () => {
         box.querySelector('.x-list').insertAdjacentHTML('beforeend', list.slice(n, n + 40).map(card).join(''));
         n += 40;
@@ -1154,7 +1171,7 @@
       if (q) q.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { xQuery = q.value; n = 0; fill(); }, 200); };
     });
     return `
-      ${rel ? albumHead(rel) + '<hr class="divider">' + paneTabs([
+      ${rel ? albumHead(rel) + '<hr class="divider"><div class="view-row">' + albumBtn() + '</div>' + paneTabs([
         { label: '유튜브', n: (data.official || []).filter(v => v.rel === rel).length, html: ytList((data.official || []).filter(v => v.rel === rel)) },
         { label: '공식 X', n: (data.xFeed || []).filter(p => p.rel === rel).length, html: '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' },
         { label: '수록곡', html: albumTracks(rel) },
@@ -1343,6 +1360,7 @@
       </section>
       ${t.info ? `<section class="album-head tour-info">${concertInfo(t.info, true)}</section>` : ''}
       <hr class="divider">
+      <div class="view-row">${albumBtn()}</div>
       ${paneTabs([
         { label: '셋리스트', n: t.songs.length, html: tourSetlist(t) },
         { label: '유튜브', n: (data.official || []).filter(v => v.tour === t.id).length, html: ytList((data.official || []).filter(v => v.tour === t.id)) },
@@ -1379,7 +1397,7 @@
   function paneTabs(panes) {
     panes = panes.filter(p => p.html);
     if (panes.length < 2) return panes.map(p => p.html).join('');
-    const click = "const b=this,bar=b.parentNode,ps=bar.parentNode.querySelectorAll(':scope>.pane');[...bar.children].forEach((x,i)=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);ps[i].hidden=!on});const t=bar.getBoundingClientRect().top;if(t<0)bar.scrollIntoView()";
+    const click = "const b=this,bar=b.parentNode,ps=bar.parentNode.querySelectorAll(':scope>.pane');[...bar.children].forEach((x,i)=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);ps[i].hidden=!on});const t=bar.getBoundingClientRect().top;if(t<0)bar.scrollIntoView();syncAlbum()";
     return `<div class="pane-wrap"><div class="pane-tabs" role="tablist">${panes.map((p, i) => `<button type="button" role="tab" class="${i ? '' : 'on'}" aria-selected="${!i}" onclick="${click}">${p.label}${p.n ? ` <b>${p.n}</b>` : ''}</button>`).join('')}</div>
       ${panes.map((p, i) => `<div class="pane"${i ? ' hidden' : ''}>${p.html}</div>`).join('')}</div>`;
   }
@@ -1390,7 +1408,7 @@
     list.forEach(x => { const k = key(x) || '기타'; cnt.set(k, (cnt.get(k) || 0) + 1); });
     if (cnt.size < 2) return moreList(list.map(card), 10);
     const ks = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]);
-    const click = "const w=this.closest('.cat-wrap');w.querySelectorAll(':scope>.chips>.chip').forEach(c=>c.classList.toggle('on',c===this));w.querySelectorAll(':scope>.cat-block').forEach((b,i)=>b.hidden=i!==+this.dataset.i)";
+    const click = "const w=this.closest('.cat-wrap');w.querySelectorAll(':scope>.chips>.chip').forEach(c=>c.classList.toggle('on',c===this));w.querySelectorAll(':scope>.cat-block').forEach((b,i)=>b.hidden=i!==+this.dataset.i);syncAlbum()";
     return `<div class="cat-wrap"><div class="chips cat-chips">${['전체', ...ks].map((k, i) => `<button type="button" class="chip${i ? '' : ' on'}" data-i="${i}" onclick="${click}">${esc(k)}${i ? ` ${cnt.get(k)}` : ''}</button>`).join('')}</div>
       ${[list, ...ks.map(k => list.filter(x => (key(x) || '기타') === k))].map((l, i) => `<div class="cat-block"${i ? ' hidden' : ''}>${moreList(l.map(card), 10)}</div>`).join('')}</div>`;
   }
