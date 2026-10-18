@@ -263,8 +263,10 @@
       <section class="block">
         <div class="block-head"><h2 class="h2">멤버별 활동</h2><a class="more" href="#/members">전체 보기</a></div>
         <nav class="mem-row">${MEMBER_LIST.map(m => {
-          const n = (data.official || []).filter(v => v.members.includes(m)).length + (data.xFeed || []).filter(p => p.m.includes(m)).length;
-          return `<a href="#/members?m=${encodeURIComponent(m)}"><b>${m}</b><span>자료 ${n}</span></a>`;
+          // 그 멤버만 나온 최근 공식 X 사진을 얼굴 칸으로, 아래엔 가장 최근 소식 날짜
+          const pic = (data.xFeed || []).find(p => p.img && p.m.length === 1 && p.m[0] === m);
+          const last = [...(data.official || []).filter(v => v.members.includes(m)), ...(data.xFeed || []).filter(p => p.m.includes(m))].map(x => x.date).sort().pop();
+          return `<a href="#/members?m=${encodeURIComponent(m)}"><span class="mem-pic">${pic ? `<img src="${esc(pic.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span><b>${m}</b>${last ? `<span>최근 ${last.slice(2).replace(/-/g, '.')}</span>` : ''}</a>`;
         }).join('')}</nav>
       </section>`;
   }
