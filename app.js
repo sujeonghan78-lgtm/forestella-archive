@@ -1004,7 +1004,8 @@
     const m = t.match(d[2]);
     if (!m || m.index > 0) return t || title;
     const rest = t.slice(m[0].length).replace(/^[\s\-–:·]+/, '').trim();
-    return rest || t;
+    // "(6/28 녹화분)"처럼 괄호만 남으면 "방송 (6/28 녹화분)"으로
+    return !rest ? t : rest.startsWith('(') ? `방송 ${rest}` : rest;
   }
 
   function programView() {
@@ -1016,11 +1017,33 @@
   function programIndex() {
     const list = programList();
     const byType = PROGRAM_TYPES.map(t => [t, list.filter(p => p.type === t)]).filter(x => x[1].length);
-    const card = p => `<a class="prog-card" href="${progHref(p.name)}"><b>${esc(p.name)}</b><span>${[p.events.length && `출연 ${p.events.length}`, p.videos.length && `영상 ${p.videos.length}`, p.songs.length && `곡 ${p.songs.length}`].filter(Boolean).join(' · ')}</span></a>`;
+    const counts = p => [p.events.length && `출연 ${p.events.length}`, p.videos.length && `영상 ${p.videos.length}`, p.songs.length && `곡 ${p.songs.length}`].filter(Boolean).join(' · ');
+    const thumb = p => { const v = progCover(p); return v ? `<img src="${ytThumbUrl(v)}" alt="" loading="lazy" onerror="this.remove()">` : ''; };
+    // 많이 나온 프로그램은 큰 썸네일 카드, 나머지는 종류별 한 줄 목록
+    const top = list.filter(p => p.name !== OTHER_PROG && p.name !== MIX_PROG && progCover(p)).slice(0, 4);
+    const topSet = new Set(top);
+    const card = p => `<a class="prog-card" href="${progHref(p.name)}"><span class="prog-thumb">${thumb(p)}</span><b>${esc(p.name)}</b><span class="prog-meta">${counts(p)}</span>${progSpan(p) ? `<span class="prog-meta">${progSpan(p)}</span>` : ''}</a>`;
+    const row = p => `<a class="prog-row" href="${progHref(p.name)}"><span class="prog-rthumb">${thumb(p)}</span><span class="prog-rbody"><b>${esc(p.name)}</b><span>${counts(p)}${progSpan(p) ? ` · ${progSpan(p)}` : ''}</span></span><span class="prog-chev" aria-hidden="true">›</span></a>`;
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">프로그램별 모아보기${help('팬카페 일정에 등록된 출연과 방송사 공식 유튜브 영상을 프로그램별로 묶었어요. 프로그램 이름은 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
-      ${byType.map(([t, ps]) => `<h2 class="h3 list-title">${esc(t)}</h2><div class="prog-grid">${ps.map(card).join('')}</div>`).join('')}`;
+      ${top.length ? `<h2 class="h3 list-title">많이 나온 프로그램</h2><div class="prog-grid">${top.map(card).join('')}</div>` : ''}
+      ${byType.map(([t, ps]) => [t, ps.filter(p => !topSet.has(p))]).filter(x => x[1].length).map(([t, ps]) => `<h2 class="h3 list-title">${esc(t)}</h2><div class="prog-rows">${ps.map(row).join('')}</div>`).join('')}`;
+  }
+
+  // 프로그램 대표 썸네일: 가장 최근 무대 영상 → 최근 영상 → 영상 있는 최근 출연
+  function progCover(p) {
+    const v = p.videos.find(x => ['무대', '라이브'].includes(x.kind)) || p.videos[0];
+    if (v) return v.id;
+    const e = p.events.find(x => x.videoId || x.ytMain);
+    return e ? (e.videoId || e.ytMain.id) : '';
+  }
+  // 활동 기간: "2018~2026" (한 해면 "2026")
+  function progSpan(p) {
+    const ds = p.events.map(e => e.date).concat(p.videos.map(v => v.date)).filter(Boolean).sort();
+    if (!ds.length) return '';
+    const a = ds[0].slice(0, 4), b = ds[ds.length - 1].slice(0, 4);
+    return a === b ? a : `${a}~${b}`;
   }
 
   function programDetail(p) {
@@ -1044,10 +1067,10 @@
     return `
       <a class="back" href="#/program">‹ 프로그램</a>
       <h1 class="h1 page-title">${esc(p.name)}</h1>
-      <p class="sub">${esc(p.type)} · ${[p.events.length && `출연 ${p.events.length}번`, p.videos.length && `영상 ${p.videos.length}개`, p.songs.length && `부른 곡 ${p.songs.length}곡`].filter(Boolean).join(' · ')}</p>
+      <p class="sub">${esc(p.type)}${progSpan(p) ? ` · ${progSpan(p)}` : ''}</p>
       ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>${esc(p.name)} 무대 이어보기</a>` : ''}
       ${paneTabs([
-        { label: '출연', n: p.events.length, html: p.events.length ? moreList(p.events.map(ep), 15).replace('stack x-list', 'stack ep-list') : '' },
+        { label: '출연', n: p.events.length, html: p.events.length ? moreList(p.events.map((e, i) => (i === 0 || p.events[i - 1].date.slice(0, 4) !== e.date.slice(0, 4) ? `<h3 class="ep-year">${e.date.slice(0, 4)}</h3>` : '') + ep(e)), 15).replace('stack x-list', 'stack ep-list') : '' },
         { label: '영상', n: p.videos.length, html: p.videos.length ? ytList(p.videos) : '' },
         { label: '곡', n: p.songs.length, html: p.songs.length ? `<p class="src-note">이 프로그램에서 부른 날 수 순서예요.</p><div>${p.songs.map(songRow).join('')}</div>` : '' },
       ]) || '<p class="empty">아직 기록이 없어요.</p>'}
