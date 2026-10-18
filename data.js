@@ -324,6 +324,39 @@
         if (so && !seen.has(so)) { seen.add(so); so.official.push(v); }
       });
     });
+    // 영상 → 멤버·음반·콘서트·일정 (제목 기준, 자동이라 가끔 틀릴 수 있어요)
+    const flat = t => String(t).normalize('NFKC').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+    const ENG = { 배두훈: /baedoohoon|doohoon/i, 강형호: /kanghyungho|hyungho/i, 조민규: /chomingyu|mingyu/i, 고우림: /kowoorim|woorim/i };
+    const GENERIC = new Set(['포레스텔라', 'forestella', '콘서트', '공연', '비하인드', '기념', '축하무대', '촬영', '현장', '특집', '단독', '초청', '함께하는', '시민과', '행사', '축제', '페스티벌', '열린음악회', 'kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'festival', 'concert', 'live', 'behind', 'part', 'feat']);
+    const words = t => (String(t).normalize('NFKC').match(/[0-9A-Za-z가-힣]{2,}/g) || []).map(w => w.toLowerCase()).filter(w => !GENERIC.has(w) && !/^\d+$|^\d+주년$/.test(w) && !/^포레미파솔/.test(w));
+    const evWords = events.filter(e => !e.auto || e.title).map(e => ({ e, w: new Set(words(e.title)) }));
+    const concertKeys = [...tours.map(t => ({ id: t.id, key: flat(t.name.replace(/^[\d-]+\s*/, '')), from: t.dates[0], to: t.dates[t.dates.length - 1] })),
+      ...concerts.filter(c => !tours.some(t => t.id === c.id) && c.from).map(c => ({ id: c.id, key: flat(c.name.replace(/\(.*\)|[\d-]{4,}|포레스텔라|전국투어|콘서트|forestella|concert|show|\+\s*encore/gi, '')), from: c.from, to: c.to || c.from }))];
+    const days = (a, b) => (new Date(a) - new Date(b)) / 864e5;
+    official.forEach(v => {
+      const t = v.title, ft = flat(t);
+      v.members = MEMBERS.filter(m => t.includes(m) || t.includes(m.slice(1)) || ENG[m].test(t));
+      if (v.members.length === 4) v.members = [];
+      const hit = RELEASES.find(([, rx]) => rx.test(t.normalize('NFKC').toLowerCase()));
+      v.rel = hit && v.kind !== '쇼츠' ? hit[0] : '';
+      const cs = concertKeys.filter(c => c.key.length >= 4 && ft.includes(c.key) && days(v.date, c.from) >= -90)
+        .sort((a, b) => b.key.length - a.key.length || Math.abs(days(v.date, a.to)) - Math.abs(days(v.date, b.to)));
+      v.tour = cs[0] && !/m\/v|teaser|lyric|highlight medley|jacket|album|앨범|coming soon/i.test(t) ? cs[0].id : '';
+      v.event = null;
+      if (v.kind === '비하인드' && !v.tour && !/m\/v|jacket|making|shooting/i.test(t)) {
+        const yymmdd = (t.match(/\b(\d{2})(\d{2})(\d{2})\b/) || []);
+        const vw = words(t);
+        let best = null, score = 0;
+        evWords.forEach(({ e, w }) => {
+          const gap = days(v.date, e.date);
+          if (gap < 0 || gap > 400) return;
+          let sc = vw.filter(x => w.has(x)).reduce((n, x) => n + x.length, 0);
+          if (yymmdd[0] && e.date === `20${yymmdd[1]}-${yymmdd[2]}-${yymmdd[3]}`) sc += 10;
+          if (sc > score || (sc === score && best && gap < days(v.date, best.date))) { if (sc) { score = sc; best = e; } }
+        });
+        if (best && score >= 3) { v.event = best; (best.ytBehind = best.ytBehind || []).push(v); }
+      }
+    });
     return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, savedAt: raw.savedAt };
   }
 
