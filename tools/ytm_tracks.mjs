@@ -20,15 +20,28 @@ for (const [name, member] of ARTISTS) {
 }
 const ids = [], chOf = {};
 for (const [id, c] of chans) {
-  const ch = (await api('channels', { part: 'contentDetails', id })).items[0];
-  const up = ch?.contentDetails?.relatedPlaylists?.uploads;
-  if (!up) continue;
-  let page = '';
+  const add = v => { if (!chOf[v]) { chOf[v] = c; ids.push(v); } };
+  // 음원 앨범은 Topic 채널의 재생목록(OLAK…)이에요. 없으면 채널 영상 검색으로 대신해요
+  let page = '', lists = [];
+  try {
+    do {
+      const d = await api('playlists', { part: 'id', channelId: id, maxResults: 50, ...(page && { pageToken: page }) });
+      lists.push(...d.items.map(i => i.id)); page = d.nextPageToken;
+    } while (page);
+  } catch (e) { lists = []; }
+  for (const pl of lists) {
+    page = '';
+    do {
+      const d = await api('playlistItems', { part: 'contentDetails', playlistId: pl, maxResults: 50, ...(page && { pageToken: page }) }).catch(() => ({ items: [] }));
+      d.items.forEach(i => add(i.contentDetails.videoId)); page = d.nextPageToken;
+    } while (page);
+  }
+  page = '';
   do {
-    const d = await api('playlistItems', { part: 'contentDetails', playlistId: up, maxResults: 50, ...(page && { pageToken: page }) });
-    d.items.forEach(i => { const v = i.contentDetails.videoId; if (!chOf[v]) { chOf[v] = c; ids.push(v); } });
-    page = d.nextPageToken;
+    const d = await api('search', { part: 'id', type: 'video', channelId: id, maxResults: 50, ...(page && { pageToken: page }) });
+    d.items.forEach(i => add(i.id.videoId)); page = d.nextPageToken;
   } while (page);
+  console.log(`::notice::${c.title}: 재생목록 ${lists.length}개, 영상 ${ids.length}개까지`);
 }
 const tracks = [];
 for (let i = 0; i < ids.length; i += 50) {
