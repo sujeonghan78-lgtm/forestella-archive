@@ -2085,9 +2085,36 @@
     });
   }
 
+  // 탭 맨 아래 작은 "마지막 업데이트" (자동으로 가져오는 작업이 마지막으로 성공한 시각)
+  const SYNC_OF = { home: ['cafe-sync.yml'], yt: ['yt-sync.yml', 'yt-bc.yml'], xfeed: ['x-sync.yml'] };
+  const syncCache = {};
+  function lastSync(f) {
+    const key = 'sb-sync-' + f;
+    try { const c = JSON.parse(sessionStorage.getItem(key) || 'null'); if (c && Date.now() - c.at < 10 * 60e3) return Promise.resolve(c.t); } catch (err) { /* 없으면 새로 받아요 */ }
+    return syncCache[f] = syncCache[f] || fetch(`https://api.github.com/repos/sujeonghan78-lgtm/forestella-archive/actions/workflows/${f}/runs?per_page=1&status=success&exclude_pull_requests=true`)
+      .then(r => r.ok ? r.json() : Promise.reject()).then(j => {
+        const t = ((j.workflow_runs || [])[0] || {}).updated_at || '';
+        try { sessionStorage.setItem(key, JSON.stringify({ at: Date.now(), t })); } catch (err) { /* 괜찮아요 */ }
+        return t;
+      }).catch(() => '');
+  }
+  function fillSyncNote(name) {
+    const files = SYNC_OF[name];
+    if (!files) return;
+    Promise.all(files.map(lastSync)).then(ts => {
+      const t = ts.filter(Boolean).sort().pop();
+      if (!t || currentRoute() !== name) return;
+      view.querySelectorAll('.sync-note').forEach(x => x.remove());
+      const el = document.createElement('p');
+      el.className = 'sync-note';
+      el.textContent = '마지막 업데이트 ' + new Date(t).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      view.appendChild(el);
+    });
+  }
   function renderBase(name) {
     setTabs(name);
     view.innerHTML = routes[name]();
+    fillSyncNote(name);
     if (name === 'home') bindHome();
     if (name === 'search') bindSearch();
     if (name === 'songs') bindSongs();
