@@ -651,7 +651,7 @@
   };
   let songSort = 'name';
   let songFilter = '';
-  const SONG_FILTERS = [['', '전체'], ['video', '무대 영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
+  const SONG_FILTERS = [['', '전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
   const playCount = so => so.events.length + so.tours.length;
 
   // 곡 이름이 나온 공식 X 글 (짧은 이름은 엉뚱한 글이 섞여서 한글 2자·영문 4자 이상만)
@@ -698,7 +698,7 @@
   }
 
   function songsView() {
-    const pass = so => !songFilter || (songFilter === 'video' ? so.events.length : songFilter === 'album' ? so.albums.length : so.tours.length);
+    const pass = so => !songFilter || (songFilter === 'video' ? so.events.length || (so.official || []).length : songFilter === 'album' ? so.albums.length : so.tours.length);
     const list = [...data.songs.values()].filter(pass).sort((a, b) =>
       songSort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
         : songSort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
@@ -720,7 +720,7 @@
       <div>
         ${list.map(so => {
           const al = so.albums[0];
-          const meta = [so.events.length ? `<b>무대 ${so.events.length}</b>` : '', so.tours.length ? `콘서트 ${so.tours.length}` : '', so.titleOf.length ? '타이틀' : ''].filter(Boolean).join(' · ');
+          const meta = [so.events.length ? `<b>무대 ${so.events.length}</b>` : '', (so.official || []).length ? `영상 ${so.official.length}` : '', so.tours.length ? `콘서트 ${so.tours.length}` : '', so.titleOf.length ? '타이틀' : ''].filter(Boolean).join(' · ');
           return `
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(songText(so) + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(songText(so)))}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
