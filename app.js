@@ -876,6 +876,8 @@
       </nav>`;
   }
 
+  // 멤버 화면 앨범 보기: 사진만 바둑판으로 (기억해 둬요)
+  const albumMode = () => { try { return localStorage.getItem('memAlbum') === '1'; } catch (err) { return false; } };
   function membersView() {
     const m = new URLSearchParams(location.hash.split('?')[1] || '').get('m') || MEMBER_LIST[0];
     const evs = data.events.filter(e => e.members.includes(m)).sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -891,6 +893,8 @@
       <div class="seg-wrap" role="tablist">${MEMBER_LIST.map(x => `<a class="seg${x === m ? ' on' : ''}" href="#/members?m=${encodeURIComponent(x)}" role="tab" aria-selected="${x === m}">${x}</a>`).join('')}</div>
       ${pics.length ? `<div class="member-x"><div class="x-strip">${pics.map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div></div>` : ''}
       ${bday ? `<a class="chip" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${q}">🎂 생일 축하 글 ${bday}개 ›</a>` : ''}
+      <div class="view-row"><button type="button" class="chip view-tog${albumMode() ? ' on' : ''}" onclick="const b=this.parentNode.nextElementSibling,on=b.classList.toggle('album');this.classList.toggle('on',on);this.textContent=on?'목록으로 보기':'앨범으로 보기';try{localStorage.setItem('memAlbum',on?'1':'')}catch(e){}">${albumMode() ? '목록으로 보기' : '앨범으로 보기'}</button></div>
+      <div class="mem-body${albumMode() ? ' album' : ''}">
       ${paneTabs([
         { label: '유튜브', n: vs.length, html: vs.length ? `${ytList(vs)}<a class="more mem-all" href="#/yt?m=${q}">유튜브 탭에서 보기 ›</a>` : '' },
         { label: 'X', n: xs.length, html: xList(xs) },
@@ -900,7 +904,8 @@
             ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${nw(`${a.date.replace(/-/g, '.')} · ${a.kind}`)}</span><b>${esc(a.name)}</b></span>
           </a>`).join('')}</div>` : '' },
-      ])}`;
+      ])}
+      </div>`;
   }
 
   function aboutView() {

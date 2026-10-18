@@ -605,3 +605,14 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .stick .searchbox { height: 42px; min-height: 0; padding: 0 14px; box-shadow: none; }
 .stick .tl-cats .chip { height: 28px; font-size: 12px; padding: 0 11px; }
 .stick .tl-cats { margin-bottom: 5px; }
+/* 멤버 화면 앨범 보기 */
+.view-row { display: flex; justify-content: flex-end; margin: 6px 0 -2px; }
+.view-tog { font-size: 12px; height: 30px; }
+.mem-body.album .x-list:has(.x-card) { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.mem-body.album .x-list .x-wrap { display: contents; }
+.mem-body.album .x-list .x-links, .mem-body.album .x-list .x-text, .mem-body.album .x-list .no-img { display: none; }
+.mem-body.album .x-list .x-card { padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: #EEF3EF; }
+.mem-body.album .x-list .x-card img { width: 100%; height: auto; aspect-ratio: 1; border-radius: 0; }
+.mem-body.album .x-list .yt-card img { aspect-ratio: 16 / 10; }
+.mem-body.album .x-list:has(.yt-card) { grid-template-columns: repeat(3, 1fr); }
+.mem-body.album .x-card[hidden], .mem-body.album .x-wrap[hidden] { display: none; }
