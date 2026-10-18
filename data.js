@@ -458,7 +458,7 @@
         so.first = so.events[0]; so.last = so.events[so.events.length - 1];
       }
     });
-    // 유튜브 뮤직 공식 음원 → 곡 무대 목록 (앨범의 그 곡 링크, 연주곡은 빼요)
+    // 유튜브 뮤직 공식 음원 → 곡의 '음원' 칸 (앨범의 그 곡 링크, 연주곡은 빼요)
     let ytm = [];
     try { ytm = JSON.parse(raw.ytm || '{}').tracks || []; } catch (err) { /* 없으면 넘어가요 */ }
     const looseKey = k => k.replace(/[^0-9a-z가-힣]/g, '');
@@ -468,11 +468,11 @@
       const clean = t.title.replace(/[`’]/g, "'").replace(/\s+-\s+.*$/, '');
       const k = songKey(clean);
       const so = songs.get(k) || songLoose.get(looseKey(k));
-      if (!so || so.events.some(x => x.ytm && x.album === t.album)) return;
-      so.events.push({ id: 'ytm-' + t.id, ytOnly: true, ytm: true, link: 'https://music.youtube.com/watch?v=' + t.id, album: t.album, date: t.date, category: '음원', title: t.album, place: 'YouTube Music', songs: [so.name], songKeys: [so.key], related: [], members: t.member ? [t.member] : [], videoId: t.id });
-      so.events.sort((a, b) => a.date.localeCompare(b.date));
-      so.first = so.events[0]; so.last = so.events[so.events.length - 1];
+      if (!so) return;
+      so.tracks = so.tracks || [];
+      if (!so.tracks.some(x => x.album === t.album)) so.tracks.push(t);
     });
+    songs.forEach(so => { so.tracks = (so.tracks || []).sort((a, b) => a.date.localeCompare(b.date)); });
     // 공식 X 글 → 콘서트: 공연 일정에 붙은 글 + 글에 콘서트 이름이 나오고 공연 앞 120일~뒤 60일 안의 글
     const tourOfEv = new Map();
     tours.forEach(t => (t.events || []).forEach(e => tourOfEv.set(e.id, t.id)));

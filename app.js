@@ -662,7 +662,7 @@
     const two = so.name.match(/^(.+?)\s*\(([^)]+)\)$/);
     const names = so.key === 'mama' ? ['MAMA'] : [...new Set([so.match || so.name, ...(two && /[가-힣]/.test(two[1]) ? [two[1], two[2]] : [])])];
     // 멤버 솔로 음반에만 있는 곡은 그 멤버 글에서만
-    const solo = !so.events.some(e => !e.ytm) && !so.tours.length && so.albums.length && so.albums.every(al => al.member) ? so.albums[0].member : '';
+    const solo = !so.events.length && !so.tours.length && so.albums.length && so.albums.every(al => al.member) ? so.albums[0].member : '';
     const tests = names.map(name => {
       const nm = flat(name);
       const hangul = /[가-힣]/.test(nm);
@@ -742,6 +742,21 @@
     };
   }
 
+  // 곡의 음원: 유튜브 뮤직 공식 음원(앨범의 그 곡) + 다른 음원 사이트 검색 바로가기
+  const MUSIC_SITES = [['멜론', 'https://www.melon.com/search/total/index.htm?q='], ['지니', 'https://www.genie.co.kr/search/searchMain?query='], ['벅스', 'https://music.bugs.co.kr/search/integrated?q='],
+    ['플로', 'https://www.music-flo.com/search/all?keyword='], ['바이브', 'https://vibe.naver.com/search?query='], ['스포티파이', 'https://open.spotify.com/search/'], ['애플뮤직', 'https://music.apple.com/kr/search?term='], ['유튜브 뮤직', 'https://music.youtube.com/search?q=']];
+  function songTracks(so) {
+    const artist = (so.albums[0] && so.albums[0].member) || '포레스텔라';
+    const q = encodeURIComponent(artist + ' ' + (so.match || so.name).replace(/\s*\([^)]*\)\s*$/, ''));
+    const cards = so.tracks.map(t => `
+      <a class="card has-thumb" href="https://music.youtube.com/watch?v=${encodeURIComponent(t.id)}" target="_blank" rel="noopener">
+        <span class="card-body"><span class="meta">${tag('유튜브 뮤직')}<span>${fmtDate(t.date)}</span></span><span class="card-title">${esc(t.album)}</span><span class="sub">${esc(t.title)}</span></span>
+        <span class="card-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(t.id)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span></span>
+      </a>`).join('');
+    return `${cards ? `<div class="stack">${cards}</div>` : ''}
+      <p class="src-note">다른 음원 사이트에서 찾기</p>
+      <div class="chips wrap">${MUSIC_SITES.map(([n, u]) => `<a class="chip" href="${u}${q}" target="_blank" rel="noopener">${n} ↗</a>`).join('')}</div>`;
+  }
   function songView() {
     const key = decodeURIComponent(location.hash.split('/')[2] || '');
     const so = data.songs.get(key);
@@ -780,6 +795,7 @@
       ${paneTabs([
         { label: '무대', n: stages.length, html: stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', title: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>` },
         { label: '유튜브', n: so.official.length, html: ytList(so.official) },
+        { label: '음원', n: so.tracks.length, html: so.tracks.length || so.albums.length ? songTracks(so) : '' },
         { label: '콘서트', n: so.tours.length, html: so.tours.length ? `<p class="src-note">콘서트 셋리스트 기준이에요. 무대 목록과 달리 영상으로 확인한 건 아니에요.</p><div class="tour-chips">${so.tours.slice().sort((a, b) => (a.dates[0] < b.dates[0] ? 1 : -1)).map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : '' },
         { label: '공식 X', n: xs.length, html: xList(xs) },
       ])}`;
