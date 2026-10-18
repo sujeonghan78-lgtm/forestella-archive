@@ -487,6 +487,7 @@
       '새야 새야 파랑새야 (녹두꽃 OST Part.1)': 'nokdu-ost1', '춘향난봉가 OST (AUX)': 'chunhyang-ost', 'Melody In Sad Love (JG 하모니)': 'melody-in-sad-love',
       '후니제이 (Huni.J) The First Mini Album': 'hunij-mini1', 'Sizzle 너와 나 사이 (이주원)': 'sizzle-between', '연후애': 'yeonhooae', '가슴으로': 'gaseumeuro',
       'VANTA BLACK (벤타블랙 X PITTA) OST': 'vanta-black-ost', '조립식 가족 OST Part 2': 'assembled-family-ost2', '감사합니다 OST Part 1': 'thank-you-ost1', '이 노래': 'i-norae', '해무 (feat. 박다울)': 'haemu',
+      '디 엠파이어: 법의 제국 OST Part 3': 'the-empire-ost3', '오페라 콜라주 카사노바 길들이기': 'taming-casanova',
     };
     albums.forEach(al => { if (!al.img && LOCAL_COVERS[al.name]) al.img = 'covers/' + LOCAL_COVERS[al.name] + '.jpg'; });
     // 시트에 표지가 없는 음반은 유튜브 뮤직 공식 음원 썸네일(앨범 아트)로 채워요. 발매일이 가장 가까운 음원으로
