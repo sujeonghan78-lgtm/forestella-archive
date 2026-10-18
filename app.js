@@ -662,8 +662,8 @@
       ${xs.length ? `
       <hr class="divider">
       <h2 class="h3 list-title">공식 X에서 이 곡${help('포레스텔라 공식 X 글 중 곡 이름이 들어간 글이에요.')}</h2>
-      <div class="stack x-list">${xs.slice(0, 10).map(p => xCard(p, p.cat)).join('')}</div>
-      ${xs.length > 10 ? `<p class="src-note">최근 글 10개만 보여요. 전체 ${xs.length}개</p>` : ''}` : ''}`;
+      <div class="stack x-list">${xs.map((p, i) => i < 10 ? xCard(p, p.cat) : xCard(p, p.cat).replace('<a ', '<a hidden ')).join('')}</div>
+      ${xs.length > 10 ? `<button type="button" class="more-btn" onclick="const h=[...this.previousElementSibling.querySelectorAll('a[hidden]')];h.slice(0,10).forEach(a=>a.hidden=false);this.textContent='더 보기 ('+(h.length-10>0?h.length-10:0)+'개 남음)';if(h.length<=10)this.remove()">더 보기 (${xs.length - 10}개 남음)</button>` : ''}` : ''}`;
   }
 
   // ---------- 연표 ----------
