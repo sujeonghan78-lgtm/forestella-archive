@@ -1730,8 +1730,8 @@
           </div>`).join('')}
       </section>` : '';
 
-    // 공식 유튜브 줄에 썸네일로 나오는 영상은 관련 영상 목록에서 빼요
-    const shownYt = new Set((e.ytBehind || []).map(v => v.id));
+    // 비하인드·방송 영상 줄에 썸네일로 나오는 영상은 관련 영상 목록에서 빼요 (중복)
+    const shownYt = new Set([...(e.ytBehind || []), ...(e.ytStage || [])].map(v => v.id));
     const rels = e.related.filter(v => !shownYt.has(v.videoId));
     const related = rels.length ? `
       <hr class="divider">
