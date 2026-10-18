@@ -320,7 +320,11 @@
     })).sort((a, b) => (a.date < b.date ? 1 : -1));
     // 콘서트 정보 (시트 "콘서트 정보" 탭). 투어ID가 셋리스트와 같으면 서로 이어 붙여요.
     const urls = t => (t || '').split(/[\s;]+/).filter(u => /^https?:/.test(u));
-    const concerts = toObjects(raw.concerts || '').filter(c => c['투어ID'] && c['공연명']).map(c => {
+    // 보충 콘서트(extra.concerts, 시트 열 이름 그대로): 시트에 없는 투어ID만 얹고, concertFix는 확인된 칸만 고쳐요
+    const conRows = toObjects(raw.concerts || '');
+    (extra.concerts || []).forEach(r => { if (!conRows.some(c => c['투어ID'] === r['투어ID'])) conRows.push(r); });
+    conRows.forEach(c => Object.assign(c, (extra.concertFix || {})[c['투어ID']] || {}));
+    const concerts = conRows.filter(c => c['투어ID'] && c['공연명']).map(c => {
       const [from, to] = (c['기간'] || '').split('~').map(x => x.trim());
       return {
         id: c['투어ID'], name: c['공연명'], from, to: to || from, count: c['회차'], org: c['주최·기획'],
