@@ -1238,7 +1238,7 @@
     const careerHtml = groups.length ? `${groups.map(([t, list]) => `
         <h3 class="car-h">${esc(CAREER_LABEL[t] || t)} <b>${list.length}</b></h3>
         <div class="car-list">${list.map(carRow).join('')}</div>`).join('')}
-        <p class="src-note">나무위키 멤버 문서에서 모았어요. 빠진 활동이 있을 수 있어요.</p>` : '';
+        <p class="src-note">나무위키 · 더뮤지컬 · 소속사 프로필 · 기사에서 모았어요.</p>` : '';
     const first = evs.length ? evs[evs.length - 1].date.slice(0, 4) : '';
     const stat = [['일정', evs.length], ['영상', vs.length], ['음반', als.length + carDisc.length], ['활동 이력', car.length]].filter(x => x[1]);
     return `
