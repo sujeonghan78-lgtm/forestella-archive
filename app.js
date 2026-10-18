@@ -1164,18 +1164,28 @@
     return a === b ? fmtDate(a, false) : `${fmtDate(a, false)} ~ ${a.slice(0, 4) === b.slice(0, 4) ? b.slice(5).replace('-', '.') : fmtDate(b, false)}`;
   };
 
+  // 필터 여러 개 고르기: 주소에 쉼표로 이어 써요 (같은 줄 안에서는 '또는', 다른 줄끼리는 '그리고')
+  // '전체'가 기본, 누르면 켜고 다시 누르면 꺼요. 다 끄면 '전체'로 돌아가요
+  const multiOf = (qs, k) => (qs.get(k) || '').split(',').filter(Boolean);
+  function multiChips(base, state, key, values, allLabel, label = v => v) {
+    const sel = state[key];
+    const link = next => { const s = new URLSearchParams(Object.entries({ ...state, [key]: next }).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v]).filter(x => x[1])).toString(); return s ? base + '?' + s : base; };
+    const a = (on, h, t) => `<a class="chip${on ? ' on' : ''}" href="${h}">${esc(t)}</a>`;
+    return `<div class="chips tl-cats">${a(!sel.length, link([]), allLabel)}${values.map(v => a(sel.includes(v), link(sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]), label(v))).join('')}</div>`;
+  }
+
   // ---------- 공식 유튜브 모아보기 ----------
   const YT_KINDS = ['M/V', '무대', '직캠', '라이브', '클립', '가사 영상', '비하인드', '티저', '쇼츠', '영상'];
   function ytView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-    const kind = qs.get('kind') || '', yr = qs.get('y') || '', mem = qs.get('m') || '', q = qs.get('q') || '', chn = qs.get('ch') || '';
+    const q = qs.get('q') || '';
+    const st = { ch: multiOf(qs, 'ch'), kind: multiOf(qs, 'kind'), y: multiOf(qs, 'y'), m: multiOf(qs, 'm'), q };
     const all = data.official || [];
-    const href = (k, y, m, c = chn) => '#/yt?' + new URLSearchParams(Object.entries({ ch: c, kind: k, y, m, q }).filter(x => x[1])).toString();
     const chans = [...MEMBER_LIST.filter(m => all.some(v => v.ch === m)), ...(all.some(v => v.bc) ? ['방송사'] : [])];
     const CH_NAMES = { 강형호: '[PITTA]강형호 & 이용우', 조민규: '조민규 ChoMinGyu', 고우림: 'Official KOWOORIM' };
-    const chip = (on, h, label) => `<a class="chip${on ? ' on' : ''}" href="${h}">${label}</a>`;
     const nq = norm(q);
-    const list = all.filter(v => (!chn || (chn === '포레스텔라' ? !v.ch && !v.bc : chn === '방송사' ? v.bc : v.ch === chn)) && (!kind || v.kind === kind) && (!yr || v.date.startsWith(yr)) && (!mem || v.members.includes(mem)) && (!nq || norm(v.title).includes(nq)));
+    const chOk = v => !st.ch.length || st.ch.some(c => c === '포레스텔라' ? !v.ch && !v.bc : c === '방송사' ? v.bc : v.ch === c);
+    const list = all.filter(v => chOk(v) && (!st.kind.length || st.kind.includes(v.kind)) && (!st.y.length || st.y.includes(v.date.slice(0, 4))) && (!st.m.length || st.m.some(m => v.members.includes(m))) && (!nq || norm(v.title).includes(nq)));
     return `
       <h1 class="h1 page-title">공식 유튜브${help('포레스텔라 공식 유튜브 채널(@officialforestella)과 강형호·조민규·고우림 공식 채널, 그리고 KBS·MBC·JTBC·Mnet 같은 방송사 공식 채널에 올라온 포레스텔라 영상(조회수 1만 이상)을 매일 자동으로 모아요. 종류와 멤버는 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       <div class="stick">
@@ -1183,10 +1193,10 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="yt-q" value="${esc(q)}" placeholder="영상 제목 찾기" aria-label="공식 영상 찾기">
       </form>
-      ${chans.length ? `<div class="chips tl-cats">${chip(!chn, href(kind, yr, mem, ''), '모든 채널')}${['포레스텔라', ...chans].map(c => chip(c === chn, href(kind, yr, mem, c), c === '포레스텔라' || c === '방송사' ? c : CH_NAMES[c] || c + ' 채널')).join('')}</div>` : ''}
-      <div class="chips tl-cats">${chip(!kind, href('', yr, mem), '전체')}${YT_KINDS.filter(k => all.some(v => v.kind === k)).map(k => chip(k === kind, href(k, yr, mem), k)).join('')}</div>
-      <div class="chips tl-cats">${chip(!yr, href(kind, '', mem), '전체 연도')}${[...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(kind, y, mem), y)).join('')}</div>
-      <div class="chips tl-cats">${chip(!mem, href(kind, yr, ''), '멤버 전체')}${MEMBER_LIST.map(m => chip(m === mem, href(kind, yr, m), m.slice(1))).join('')}</div>
+      ${chans.length ? multiChips('#/yt', st, 'ch', ['포레스텔라', ...chans], '모든 채널', c => c === '포레스텔라' || c === '방송사' ? c : CH_NAMES[c] || c + ' 채널') : ''}
+      ${multiChips('#/yt', st, 'kind', YT_KINDS.filter(k => all.some(v => v.kind === k)), '전체')}
+      ${multiChips('#/yt', st, 'y', [...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse(), '전체 연도')}
+      ${multiChips('#/yt', st, 'm', MEMBER_LIST, '멤버 전체', m => m.slice(1))}
       <div class="view-row"><p class="sub">${list.length.toLocaleString()}개</p>${chipsBtn()}${albumBtn()}</div>
       </div>
       ${list.length ? moreList(list.map(ytCard), 20) : '<p class="empty">해당하는 영상이 없어요.</p>'}`;
@@ -1209,16 +1219,15 @@
   let xQuery = '';
   function xfeedView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-    const cat = qs.get('cat') || '', mem = qs.get('m') || '', rel = qs.get('rel') || '', yr = qs.get('y') || '';
+    const rel = qs.get('rel') || '';
+    const st = { cat: multiOf(qs, 'cat'), m: multiOf(qs, 'm'), y: multiOf(qs, 'y') };
     if (qs.has('q')) xQuery = qs.get('q');  // 통합 검색에서 넘어온 검색어
     let n = 0;
-    const href = (c, m, y = yr) => '#/xfeed?' + new URLSearchParams(Object.entries({ cat: c, m, y }).filter(x => x[1])).toString();
-    const chip = (on, h, label) => `<a class="chip${on ? ' on' : ''}" href="${h}">${label}</a>`;
     const fill = () => {
       const box = document.getElementById('xfeed');
       if (!box) return;
       const nq = rel ? '' : norm(xQuery);
-      let list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)) && (!rel || p.rel === rel) && (!yr || p.date.startsWith(yr)) && (!nq || norm(p.raw).includes(nq)));
+      let list = (data.xFeed || []).filter(p => (rel || ((!st.cat.length || st.cat.includes(p.cat)) && (!st.m.length || st.m.some(m => p.m.includes(m))) && (!st.y.length || st.y.includes(p.date.slice(0, 4))))) && (!rel || p.rel === rel) && (!nq || norm(p.raw).includes(nq)));
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => xGroup(p, xLinks(p) ? `<div class="x-wrap">${card0(p)}${xLinks(p)}</div>` : card0(p));
       const card0 = p => `
@@ -1258,9 +1267,9 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="xq" aria-label="공식 X 글 찾기" placeholder="공식 X 글 찾기 · 곡명, 프로그램" value="${esc(xQuery)}" autocomplete="off">
       </form>
-      <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
-      <div class="chips tl-cats">${chip(!yr, href(cat, mem, ''), '전체 연도')}${[...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(cat, mem, y), y)).join('')}</div>
-      <div class="chips tl-cats">${chip(!mem, href(cat, ''), '멤버 전체')}${X_MEMBERS.map(m => chip(m === mem, href(cat, m), m.slice(1))).join('')}</div>
+      ${multiChips('#/xfeed', st, 'cat', X_CATS, '전체')}
+      ${multiChips('#/xfeed', st, 'y', [...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse(), '전체 연도')}
+      ${multiChips('#/xfeed', st, 'm', X_MEMBERS, '멤버 전체', m => m.slice(1))}
       <div class="view-row"><p class="sub" id="xcount"></p>${chipsBtn()}${albumBtn()}</div>
       </div>
       <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
