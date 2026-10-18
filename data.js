@@ -351,18 +351,23 @@
       const k = so.key, eng = !/[가-힣]/.test(k), words = k.match(/[0-9a-z']+/g) || [];
       if (eng ? words.length < 2 || k.length < 8 : k.replace(/[^가-힣0-9]/g, '').length < 4) return null;
       const body = eng ? words.map(w => w.replace(/'/g, "['’`]?")).join("[^0-9a-z]+") : k.replace(/[^가-힣0-9]/g, '').split('').join('\\s*');
-      return [new RegExp(eng ? `(^|[^0-9a-z])${body}($|[^0-9a-z])` : body, 'i'), so];
+      return [new RegExp(eng ? `(^|[^0-9a-z])${body}($|[^0-9a-z])` : `(?<![가-힣])${body}`, 'i'), so];
     }).filter(Boolean);
     official.forEach(v => {
       v.kind = v.bc && /직캠|fancam|focus|페이스캠/i.test(v.title) ? '직캠' : /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /포레미파솔|behind|비하인드/i.test(v.title) ? '비하인드' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : v.bc && !/모음|몰아보기|compilation|레전드 무대|댓글/i.test(v.title) && / - |무대|stage/i.test(v.title) ? '무대' : '영상';
       const seen = new Set();
       // 따옴표 안 이름 (In un'altra vita처럼 글자 사이 '는 건너뛰어요)
-      [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[|]+?)\s*(?=\(|\[|\||$)/g)].map(m => `'${m[1]}'`), ...[...v.title.matchAll(/^([^\-\[|]+?)\s+-\s+(?:포레스텔라|forestella)/gi)].map(m => `'${m[1]}'`)].forEach(q => {
+      [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[\]|]+?)\s*(?=\(|\[|\]|\||$)/g)].map(m => `'${m[1]}'`), ...[...v.title.matchAll(/^([^\-\[|]+?)\s+-\s+(?:포레스텔라|forestella)/gi)].map(m => `'${m[1]}'`)].forEach(q => {
         const so = songByLoose.get(songKey(q.slice(1, -1).replace(/\s*\([^)]*\)\s*$/, '')).replace(/[^0-9a-z가-힣]/g, ''));
         if (so && !seen.has(so)) { seen.add(so); so.official.push(v); }
       });
       // 따옴표·'- 곡명' 꼴이 없으면 제목 속 곡 이름을 그대로 찾아요 (두 낱말 이상 영어 곡, 네 글자 이상 한글 곡만)
-      if (!seen.size) songScan.forEach(([rx, so]) => { if (!seen.has(so) && rx.test(v.title)) { seen.add(so); so.official.push(v); } });
+      if (!seen.size) songScan.forEach(([rx, so]) => {
+        // 멤버 솔로 곡은 그 멤버 채널이거나 제목에 그 멤버 이름이 있을 때만 (엠카운트다운 → 카운트다운 같은 오연결 막기)
+        const solo = !so.events.length && !so.tours.length && so.albums.length && so.albums.every(a => a.member) ? so.albums[0].member : '';
+        if (solo && v.ch !== solo && !v.title.includes(solo.slice(1))) return;
+        if (!seen.has(so) && rx.test(v.title)) { seen.add(so); so.official.push(v); }
+      });
     });
     // 영상 → 멤버·음반·콘서트·일정 (제목 기준, 자동이라 가끔 틀릴 수 있어요)
     const flat = t => String(t).normalize('NFKC').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
