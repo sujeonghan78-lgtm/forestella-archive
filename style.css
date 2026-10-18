@@ -750,3 +750,7 @@ img[src*="i.ytimg.com"].album-img { width: 200px; height: 200px; margin-left: au
 b > .help { vertical-align: 2px; }
 b > .help-pop { position: static; display: block; width: auto; max-width: none; margin-top: 6px; }
 b > .help-pop[hidden] { display: none; }
+.tour-more summary { list-style: none; cursor: pointer; padding: 10px 0 4px; color: var(--green); font-size: 14px; font-weight: 600; }
+.tour-more summary::-webkit-details-marker { display: none; }
+.tour-more summary::after { content: ' ›'; }
+.tour-more[open] summary { display: none; }

@@ -1727,6 +1727,12 @@
 
   const tourX = id => (data.xFeed || []).filter(p => p.tour === id);
   // 콘서트 정보의 공연 일정("날짜 도시 공연장")을 한 줄씩. 그날 일정이 있으면 날짜를 그 일정으로 이어요.
+  // 공연 장소가 많으면 앞 5줄만 보이고 나머지는 '전체 일정 보기'로 펼쳐요
+  const foldShows = html => {
+    const rows = html.split(/(?=<div class="tour-show">)/).filter(Boolean);
+    if (rows.length <= 6) return html;
+    return rows.slice(0, 5).join('') + `<details class="tour-more"><summary>전체 일정 보기 (${rows.length}곳)</summary>${rows.slice(5).join('')}</details>`;
+  };
   function infoShows(info, events) {
     const rows = new Map();  // 같은 장소는 한 줄로
     info.shows.forEach(x => {
@@ -1757,7 +1763,7 @@
         ${info.img ? `<a href="${esc(info.imgPost || info.img)}" target="_blank" rel="noopener"><img class="album-img tour-poster" src="${esc(imgSize(info.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
         <span class="count-pill">셋리스트 준비 중</span>
         <p class="sub">${concertRange(info)}${info.ok ? '' : ' <span class="tag">확인 중</span>'}</p>
-        ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
+        ${shows ? `<div class="tour-shows">${foldShows(shows)}</div>` : ''}
         ${findRow('포레스텔라 ' + info.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
       <section class="album-head tour-info">${concertInfo(info, true)}</section>
@@ -1788,7 +1794,7 @@
         ${t.info && t.info.img ? `<a href="${esc(t.info.imgPost || t.info.img)}" target="_blank" rel="noopener"><img class="album-img tour-poster" src="${esc(imgSize(t.info.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
         <span class="count-pill">${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
         <p class="sub">${t.info ? concertRange(t.info) : tourRange(t)}${t.info && !t.info.ok ? ' <span class="tag">확인 중</span>' : ''}</p>
-        ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
+        ${shows ? `<div class="tour-shows">${foldShows(shows)}</div>` : ''}
         ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
       ${t.info ? `<section class="album-head tour-info">${concertInfo(t.info, true)}</section>` : ''}
