@@ -619,3 +619,4 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .album-on .x-list .card-thumb { width: 100%; height: auto; aspect-ratio: 16 / 10; border-radius: 0; }
 .album-on .x-list .x-card[hidden], .album-on .x-list .x-wrap[hidden], .album-on .x-list .card[hidden], .album-on .x-list .card-wrap[hidden] { display: none; }
 .stick .view-row { margin: 6px 0 0; }
+.more-btn[hidden] { display: none; }

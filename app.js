@@ -1393,7 +1393,7 @@
   function moreList(cards, n = 10) {
     if (cards.length <= n) return `<div class="stack x-list">${cards.join('')}</div>`;
     return `<div class="stack x-list">${cards.map((c, i) => i < n ? c : c.replace(/^(\s*<\w+)/, '$1 hidden')).join('')}</div>
-      <button type="button" class="more-btn" onclick="const h=[...this.previousElementSibling.querySelectorAll(':scope>[hidden]')];h.slice(0,${n}).forEach(a=>a.hidden=false);this.textContent='더 보기 ('+Math.max(h.length-${n},0)+'개 남음)';if(h.length<=${n})this.remove()">더 보기 (${cards.length - n}개 남음)</button>`;
+      <button type="button" class="more-btn" onclick="const h=[...this.previousElementSibling.querySelectorAll(':scope>[hidden]')];let k=0,i=0;for(;i<h.length&&k<${n};i++){h[i].hidden=false;if(h[i].offsetParent)k++}const r=h.length-i;if(!r)this.remove();else this.textContent='더 보기 ('+r+'개 남음)'">더 보기 (${cards.length - n}개 남음)</button>`;
   }
   // 상세 화면 탭: 한 번에 한 칸만 보여서 화면이 길어지지 않게 (내용 없는 칸은 빼요)
   function paneTabs(panes) {
