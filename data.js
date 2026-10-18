@@ -132,7 +132,8 @@
       const k = Object.keys(r).find(k => k.includes(word));
       return k ? r[k] : '';
     };
-    return rows.map(r => ({
+    // 공식 X 링크 올리기로 들어온 줄(일정명 "공식X …")은 제보가 아니라서 빼요
+    return rows.filter(r => !/^공식X\s/.test(pick(r, '일정'))).map(r => ({
       time: pick(r, '타임스탬프'),
       type: pick(r, '종류'),
       date: normDate(pick(r, '날짜')),

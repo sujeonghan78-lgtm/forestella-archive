@@ -758,3 +758,9 @@ b > .help-pop[hidden] { display: none; }
 .sync-row { display: flex; justify-content: space-between; gap: 8px; }
 .sync-row a { color: inherit; }
 .sync-bad, .sync-bad a { color: #C0392B; font-weight: 600; }
+.x-add { margin: 0 0 10px; font-size: 13px; }
+.x-add summary { cursor: pointer; color: var(--green); font-weight: 600; list-style: none; }
+.x-add summary::-webkit-details-marker { display: none; }
+.x-add-form { display: flex; gap: 6px; margin-top: 8px; }
+.x-add-form input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+.x-add-msg:empty { display: none; }

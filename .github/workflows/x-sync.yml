@@ -1,8 +1,8 @@
-# 공식 X 최근 글 자동 가져오기 (1시간마다). 막히면 실패로 끝나 깃허브가 메일을 보내요
+# 공식 X 최근 글 자동 가져오기 (15분마다). 막히면 실패로 끝나 깃허브가 메일을 보내요
 name: x-sync
 on:
   schedule:
-    - cron: '37 * * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 permissions:
   contents: write

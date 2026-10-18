@@ -1552,6 +1552,17 @@
   const X_CATS = ['일정 후기', '일정 현장', '비하인드·직캠', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사', '생일', '투표·이벤트'];
   const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
   let xQuery = '';
+  // 공식 X 새 글 링크 올리기: 제보 폼 응답(일정명 "공식X 링크")으로 보내고, 이 기기엔 바로 보여줘요.
+  // 다른 사람 화면엔 자동 작업(x-sync)이 공식 계정 글인지 확인한 뒤에 떠요.
+  const X_ADD = 'sb-x-added';
+  const xAdded = () => { try { return JSON.parse(localStorage.getItem(X_ADD) || '[]'); } catch (err) { return []; } };
+  const xIdOf = u => ((u || '').match(/(?:x|twitter)\.com\/official_fore\/status(?:es)?\/(\d{15,20})/i) || [])[1];
+  const xIdDate = id => { try { return new Date(Number(BigInt(id) >> 22n) + 1288834974657 + 9 * 3600e3).toISOString().slice(0, 10); } catch (e) { return ''; } };
+  function sendXLink(id) {
+    const f = window.CONFIG.form;
+    const body = new URLSearchParams({ [f.fields.type]: '새 기록', [f.fields.date]: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), [f.fields.title]: '공식X https://x.com/official_fore/status/' + id, [f.fields.song]: '공식X' });
+    return fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body });
+  }
   function xfeedView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     const rel = qs.get('rel') || '';
@@ -1562,7 +1573,9 @@
       const box = document.getElementById('xfeed');
       if (!box) return;
       const qm = rel ? null : matcher(xQuery);
-      let list = (data.xFeed || []).filter(p => (rel || ((!st.cat.length || st.cat.includes(p.cat)) && (!st.m.length || st.m.some(m => p.m.includes(m))) && (!st.y.length || st.y.includes(p.date.slice(0, 4))))) && (!rel || p.rel === rel) && (!qm || qm(p.raw)));
+      const have = new Set((data.xFeed || []).map(p => p.id));
+      const mine = rel ? [] : xAdded().filter(id => !have.has(id)).map(id => ({ id, url: 'https://x.com/official_fore/status/' + id, date: xIdDate(id), cat: '새 글', m: [], text: '공식 X에 새 글이 올라왔어요', raw: '', img: '', imgs: [] }));
+      let list = mine.concat(data.xFeed || []).filter(p => p.cat === '새 글' || (rel || ((!st.cat.length || st.cat.includes(p.cat)) && (!st.m.length || st.m.some(m => p.m.includes(m))) && (!st.y.length || st.y.includes(p.date.slice(0, 4))))) && (!rel || p.rel === rel) && (!qm || qm(p.raw)));
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => xGroup(p, xLinks(p) ? `<div class="x-wrap">${card0(p)}${xLinks(p)}</div>` : card0(p));
       const card0 = p => `
@@ -1589,6 +1602,19 @@
       const q = document.getElementById('xq');
       let timer;
       if (q) q.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { xQuery = q.value; n = 0; fill(); }, 200); };
+      const add = document.getElementById('x-add-form');
+      if (add) add.onsubmit = ev => {
+        ev.preventDefault();
+        const inp = document.getElementById('x-add-url'), msg = document.getElementById('x-add-msg');
+        const id = xIdOf(inp.value);
+        if (!id) { msg.textContent = '포레스텔라 공식 X(@official_fore) 글 링크를 넣어 주세요.'; return; }
+        if ((data.xFeed || []).some(p => p.id === id) || xAdded().includes(id)) { msg.textContent = '이미 있는 글이에요.'; return; }
+        msg.textContent = '올리는 중…';
+        sendXLink(id).then(() => {
+          try { localStorage.setItem(X_ADD, JSON.stringify([id, ...xAdded()].slice(0, 50))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
+          inp.value = ''; msg.textContent = '올렸어요! 다른 분들 화면에는 잠시 뒤에 보여요.'; n = 0; fill();
+        }).catch(() => { msg.textContent = '못 올렸어요. 인터넷 연결을 확인해 주세요.'; });
+      };
     });
     return `
       ${rel ? albumHead(rel) + '<hr class="divider"><div class="view-row">' + albumBtn() + '</div>' + paneTabs([
@@ -1597,6 +1623,10 @@
         { label: '공식 X', n: (data.xFeed || []).filter(p => p.rel === rel).length, html: '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' },
       ]) : ''}
       ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
+      <details class="x-add"><summary>＋ 새 글 링크 올리기</summary>
+        <form id="x-add-form" class="x-add-form"><input id="x-add-url" type="url" inputmode="url" placeholder="https://x.com/official_fore/status/…" aria-label="공식 X 글 링크" autocomplete="off"><button type="submit" class="chip">올리기</button></form>
+        <p class="x-add-msg sub" id="x-add-msg"></p>
+      </details>
       <div class="stick">
       <form class="searchbox song-search" role="search" onsubmit="return false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>

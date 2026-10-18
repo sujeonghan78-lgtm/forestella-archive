@@ -56,17 +56,20 @@ const getTweet = async id => {
   const t = await r.json();
   return t.created_at ? { ...t, id_str: id, full_text: t.text } : null;
 };
-try {
-  const sheetUrl = fs.readFileSync('config.js', 'utf8').match(/x:\s*'([^']+)'/)[1];
-  const [head, ...rows] = csvRows(await (await fetch(sheetUrl)).text());
-  const L = head.indexOf('링크'), G = head.indexOf('글');
-  const want = rows.filter(r => r[L] && !(r[G] || '').trim()).map(r => (r[L].match(/status(?:es)?\/(\d{15,20})/) || [])[1]).filter(id => id && !byId.has(id));
-  for (const id of want) {
-    try { const t = await getTweet(id); if (t) tweets.set(id, t); } catch (e) { why.push(`시트 글 ${id} ${e.message}`); }
-    await new Promise(r => setTimeout(r, 500));
-  }
-  if (want.length) console.log(`::notice::시트에 링크만 있는 글 ${want.length}개`);
-} catch (e) { why.push('시트 ' + e.message); }
+// 사이트의 "새 글 링크 올리기"로 들어온 링크(제보 탭, 일정명 "공식X 링크")도 같이 받아요. 공식 계정 글만 남겨요
+const cfg = fs.readFileSync('config.js', 'utf8');
+const want = new Set();
+for (const [key, pick] of [['x', (h, r) => !(r[h.indexOf('글')] || '').trim() ? r[h.indexOf('링크')] : ''], ['reports', (h, r) => r[h.findIndex(c => c.includes('일정'))] || '']]) {
+  try {
+    const [head, ...rows] = csvRows(await (await fetch(cfg.match(new RegExp(key + ":\\s*'([^']+)'"))[1])).text());
+    rows.forEach(r => { const v = pick(head, r) || ''; if (key === 'reports' && !/^공식X\s/.test(v)) return; const id = (v.match(/status(?:es)?\/(\d{15,20})/) || [])[1]; if (id && !byId.has(id)) want.add(id); });
+  } catch (e) { why.push(`시트 ${key} ${e.message}`); }
+}
+for (const id of want) {
+  try { const t = await getTweet(id); if (t) tweets.set(id, t); } catch (e) { why.push(`시트 글 ${id} ${e.message}`); }
+  await new Promise(r => setTimeout(r, 500));
+}
+if (want.size) console.log(`::notice::시트·사이트에서 들어온 링크 ${want.size}개`);
 
 let timelineOk = false;
 // 1) X 임베드 타임라인 (최근 글 20개쯤). 깃허브 서버에서는 자주 막혀요(429)
