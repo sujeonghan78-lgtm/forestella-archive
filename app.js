@@ -693,7 +693,10 @@
       const qrx = hangul && nm.length <= 4 && new RegExp(`(?:#|\\s[-–—]\\s*)${nameRx}|(?:[‘'"“<《「『〈\\[]|&lt;)\\s*${nameRx}\\s*(?:[’'"”>》」』〉\\]]|&gt;)|${nameRx}\\s+(?:무대|라이브|음원|뮤비|m\\/v|커버|직캠)`, 'i');
       return p => qrx ? qrx.test(p.raw) : hangul ? (p._flat || (p._flat = flat(p.raw))).includes(nm) : rx.test(p._low || (p._low = p.raw.toLowerCase()));
     }).filter(Boolean);
-    const hit = p => (!solo || p.m.includes(solo) || p.raw.includes(solo.slice(1))) && tests.some(t => t(p));
+    const skip = window.DATA_LINK_SKIP || new Set();
+    const hit = p => (!solo || p.m.includes(solo) || p.raw.includes(solo.slice(1))) && !skip.has(`x:${p.id}>song:${so.key}`) && tests.some(t => t(p));
+    // 흔한 영어 낱말 이름(Angel·Everything 같은)으로만 찾는 곡은 점검 화면에 올려요
+    so._xLoose = names.every(n => !/[가-힣]/.test(n) && (n.match(/[0-9a-z]+/gi) || []).length < 2 && /^(angel|moonlight|universe|rise|everything|champions|warriors|paradox|mama|stay|together|home|dream|love|forever|memories|alone|hero|believe|time|tonight|hallelujah|requiem)$/i.test(n.trim()));
     so._xFeed = data.xFeed;
     so._x = tests.length ? (data.xFeed || []).filter(hit) : [];
     return so._x;
@@ -1037,6 +1040,67 @@
       ${others.length ? `<h2 class="h3 list-title">다른 프로그램</h2><div class="chips">${others.map(n => `<a class="chip" href="${progHref(n)}">${esc(n)}</a>`).join('')}<a class="chip" href="#/program">전체 ›</a></div>` : ''}`;
   }
 
+  // ---------- 자동 연결 점검 (관리용) ----------
+  // 애매한 자동 연결만 모아서 맞아요/틀려요. 맞아요는 이 기기에만, 틀려요는 목록을 복사해서 보내면 data.js LINK_SKIP에 넣어요
+  const CHK_OK = 'soopbyeol-check-ok', CHK_BAD = 'soopbyeol-check-bad';
+  const chkGet = k => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch (err) { return []; } };
+  const chkSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (err) { /* 괜찮아요 */ } };
+  function checkItems() {
+    const evT = e => `${fmtDate(e.date, false)} ${e.title}`;
+    const ev = [], song = [], x = [];
+    (data.official || []).forEach(v => {
+      if (v.event && (v.evWhy || []).length) [v.event, ...(v.evMore || [])].forEach(e => ev.push({ k: `${v.id}>ev:${e.id}`, img: ytThumbUrl(v.id), url: ytWatch(v.id), title: v.title, sub: `${v.bc || (v.ch ? v.ch + ' 채널' : '공식')} · ${v.date}`, to: evT(e), why: v.evWhy.join(' · ') }));
+      (v.loose || []).forEach(key => { const so = data.songs.get(key); if (so) song.push({ k: `${v.id}>song:${key}`, img: ytThumbUrl(v.id), url: ytWatch(v.id), title: v.title, sub: `${v.bc || (v.ch ? v.ch + ' 채널' : '공식')} · ${v.date}`, to: so.name, why: '제목에 따옴표 없이 곡 이름이 들어 있음' }); });
+    });
+    data.songs.forEach(so => { const ps = songX(so); if (so._xLoose) ps.forEach(p => x.push({ k: `x:${p.id}>song:${so.key}`, img: p.img ? p.img + '?name=thumb' : '', url: p.url, title: p.text || p.raw, sub: `공식 X · ${p.date}`, to: so.name, why: '짧은 곡 이름으로 찾음' })); });
+    return { ev, song, x };
+  }
+  function checkView() {
+    const ok = new Set(chkGet(CHK_OK)), bad = chkGet(CHK_BAD), badK = new Set(bad.map(b => b.k));
+    const its = checkItems();
+    const left = l => l.filter(i => !ok.has(i.k) && !badK.has(i.k));
+    const row = i => `
+      <div class="chk" data-k="${esc(i.k)}" data-d="${esc(i.to + ' ← ' + i.title)}">
+        <a class="chk-media" href="${esc(i.url)}" target="_blank" rel="noopener">${i.img ? `<img src="${esc(i.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</a>
+        <div class="chk-body">
+          <span class="chk-sub">${esc(i.sub)}</span>
+          <a class="chk-title" href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>
+          <span class="chk-to">→ ${esc(i.to)}</span>
+          <span class="chk-why">${esc(i.why)}</span>
+          <span class="chk-btns"><button type="button" class="chip" data-chk="ok">맞아요</button><button type="button" class="chip chk-bad" data-chk="bad">틀려요</button></span>
+        </div>
+      </div>`;
+    const pane = l => { const r = left(l); return r.length ? moreList(r.map(row), 15).replace(/stack x-list/g, 'stack chk-list') : '<p class="empty">다 확인했어요!</p>'; };
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">자동 연결 점검${help('영상·공식 X가 제목만 보고 자동으로 붙은 것 중 애매한 것만 모았어요. 맞으면 [맞아요], 틀리면 [틀려요]를 누르고, 틀린 목록을 복사해서 보내 주시면 사이트에서 빼요. [맞아요]는 이 기기에만 기억돼요.')}</h1>
+      <div class="chk-bar">
+        <span>틀린 연결 <b>${bad.length}</b>개</span>
+        <button type="button" class="chip" id="chk-copy"${bad.length ? '' : ' disabled'}>목록 복사</button>
+        <button type="button" class="link-btn" id="chk-reset">처음부터 다시</button>
+      </div>
+      ${paneTabs([
+        { label: '영상 → 일정', n: left(its.ev).length, html: pane(its.ev) },
+        { label: '영상 → 곡', n: left(its.song).length, html: pane(its.song) },
+        { label: '공식 X → 곡', n: left(its.x).length, html: pane(its.x) },
+      ])}`;
+  }
+  function bindCheck() {
+    const v = document.getElementById('view') || document.body;
+    v.querySelectorAll('[data-chk]').forEach(b => b.onclick = () => {
+      const box = b.closest('.chk'), k = box.dataset.k;
+      if (b.dataset.chk === 'ok') chkSet(CHK_OK, [...new Set([...chkGet(CHK_OK), k])]);
+      else chkSet(CHK_BAD, [...chkGet(CHK_BAD).filter(x => x.k !== k), { k, d: box.dataset.d }]);
+      box.remove();
+      const n = document.querySelector('.chk-bar b'); if (n) n.textContent = chkGet(CHK_BAD).length;
+      const c = document.getElementById('chk-copy'); if (c) c.disabled = !chkGet(CHK_BAD).length;
+    });
+    const c = document.getElementById('chk-copy');
+    if (c) c.onclick = () => copyText('자동 연결 틀린 것\n' + chkGet(CHK_BAD).map(x => `${x.k} | ${x.d}`).join('\n'));
+    const r = document.getElementById('chk-reset');
+    if (r) r.onclick = () => { if (confirm('맞아요·틀려요 표시를 모두 지울까요?')) { chkSet(CHK_OK, []); chkSet(CHK_BAD, []); renderBase('check'); } };
+  }
+
   // ---------- 더보기 ----------
   const menuIcon = d => `<span class="mi-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg></span>`;
   function moreView() {
@@ -1058,7 +1122,8 @@
         ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
         ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기', '')}
         ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해', '')}
-      </nav>`;
+      </nav>
+      <a class="check-link" href="#/check">자동 연결 점검 (관리용) ›</a>`;
   }
 
   // 앨범 보기: 목록을 사진만 바둑판으로 (사이트 전체, 기억해 둬요). 사진 목록이 없는 칸에선 버튼이 회색
@@ -1241,6 +1306,7 @@
     xfeed: xfeedView,
     yt: ytView,
     releases: releasesView,
+    check: checkView,
   };
 
   // ---------- 일정 상세 (아래에서 올라오는 시트) ----------
@@ -1839,6 +1905,7 @@
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
     if (name === 'install') bindInstall();
+    if (name === 'check') bindCheck();
   }
 
   // 반환값: 바탕 화면을 새로 그렸는지 (스크롤을 맨 위로 올릴지)

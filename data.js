@@ -67,6 +67,9 @@
     'bird, bird, blue bird': '새야 새야 파랑새야', 'words from the wind': '바람이 건네준 말', together: '함께라는 이유', ties: '연', '연(緣)': '연',
     'alone with tears': '눈물 속에 홀로', 'the innocent macho': '순정마초', 'i still remember': '아직도 기억하고 있어요', stay: '멀어지지 말아주세요',
     'the forest song': '숲의 노래', 'your song': '당신이 듣던', 'close your eyes': '눈을 감아도', 'the journey of love': '사랑의 여정' };
+  // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
+  const LINK_SKIP = new Set([
+  ]);
   const songKey = name => { const k = songBase(name).toLowerCase().replace(/\s+/g, ' '); return SONG_SAME[k] || k; };
 
   // 일정명 앞의 [강형호], [두훈/우림] 같은 표시에서 멤버 뽑기
@@ -359,14 +362,14 @@
       // 따옴표 안 이름 (In un'altra vita처럼 글자 사이 '는 건너뛰어요)
       [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[\]|]+?)\s*(?=\(|\[|\]|\||$)/g)].map(m => `'${m[1]}'`), ...[...v.title.matchAll(/^([^\-\[|]+?)\s+-\s+(?:포레스텔라|forestella)/gi)].map(m => `'${m[1]}'`)].forEach(q => {
         const so = songByLoose.get(songKey(q.slice(1, -1).replace(/\s*\([^)]*\)\s*$/, '')).replace(/[^0-9a-z가-힣]/g, ''));
-        if (so && !seen.has(so)) { seen.add(so); so.official.push(v); }
+        if (so && !seen.has(so) && !LINK_SKIP.has(`${v.id}>song:${so.key}`)) { seen.add(so); so.official.push(v); }
       });
       // 따옴표·'- 곡명' 꼴이 없으면 제목 속 곡 이름을 그대로 찾아요 (두 낱말 이상 영어 곡, 네 글자 이상 한글 곡만)
       if (!seen.size) songScan.forEach(([rx, so]) => {
         // 멤버 솔로 곡은 그 멤버 채널이거나 제목에 그 멤버 이름이 있을 때만 (엠카운트다운 → 카운트다운 같은 오연결 막기)
         const solo = !so.events.length && !so.tours.length && so.albums.length && so.albums.every(a => a.member) ? so.albums[0].member : '';
         if (solo && v.ch !== solo && !v.title.includes(solo.slice(1))) return;
-        if (!seen.has(so) && rx.test(v.title)) { seen.add(so); so.official.push(v); }
+        if (!seen.has(so) && rx.test(v.title) && !LINK_SKIP.has(`${v.id}>song:${so.key}`)) { seen.add(so); so.official.push(v); (v.loose = v.loose || []).push(so.key); }
       });
     });
     // 영상 → 멤버·음반·콘서트·일정 (제목 기준, 자동이라 가끔 틀릴 수 있어요)
@@ -401,14 +404,17 @@
         if (v.tour || !(behind || stage) || /모음|몰아보기|compilation|댓글|리액션/i.test(v.title)) return;
         const fv = flat(v.title) + ' ' + Object.entries(PROG_ALIAS).filter(([, rx]) => rx.test(v.title)).map(([k]) => k).join(' ');
         let best = null, score = 0, bgap = 1e9;
+        const cand = [];
         events.forEach(e => {
-          if (e.category === '공연') return;
+          if (e.category === '공연' || LINK_SKIP.has(`${v.id}>ev:${e.id}`)) return;
           const gap = days(v.date, e.date);
           if (gap < -1 || gap > (behind ? 400 : 14)) return;
           const sc = progWords(e.title).filter(w => fv.includes(w)).reduce((n, w) => n + w.length, 0);
+          if (sc >= 2) cand.push({ sc, gap: Math.abs(gap) });
           if (sc >= 2 && (sc > score || (sc === score && Math.abs(gap) < bgap))) { best = e; score = sc; bgap = Math.abs(gap); }
         });
-        if (best) { v.event = best; (behind ? (best.ytBehind = best.ytBehind || []) : (best.ytStage = best.ytStage || [])).push(v); }
+        if (best) { v.event = best; const tie = cand.filter(c => c.sc >= score && Math.abs(c.gap - bgap) <= 2).length - 1;
+          v.evWhy = [bgap >= 3 && `날짜 ${Math.round(bgap)}일 차이`, tie > 0 && `비슷한 일정 ${tie + 1}개 중 하나`].filter(Boolean); (behind ? (best.ytBehind = best.ytBehind || []) : (best.ytStage = best.ytStage || [])).push(v); }
         return;
       }
       if (!v.tour && (behind || stage)) {
@@ -417,6 +423,7 @@
         let best = null, score = 0;
         const cands = [];
         evWords.forEach(({ e, w }) => {
+          if (LINK_SKIP.has(`${v.id}>ev:${e.id}`)) return;
           const gap = days(v.date, e.date);
           if (gap < 0 || gap > (behind ? 400 : 60)) return;
           let sc = vw.filter(x => w.has(x)).reduce((n, x) => n + x.length, 0);
@@ -426,8 +433,11 @@
         });
         if (best && score >= (behind ? 3 : 4)) {
           v.event = best;
+          const g = days(v.date, best.date);
+          v.evWhy = [!behind && g >= 7 && `날짜 ${Math.round(g)}일 차이`, score < 6 && '제목 낱말이 조금만 겹침'].filter(Boolean);
           // "연예대상, 연기대상"처럼 한 영상에 행사가 여럿이면 가까운 날(30일 안) 비슷하게 맞는 일정에도 붙여요
           const more = cands.filter(c => c.e !== best && c.sc >= 3 && c.sc >= score * 0.6 && Math.abs(days(c.e.date, best.date)) <= 30).map(c => c.e).slice(0, 3);
+          if (more.length) { v.evMore = more; v.evWhy.push(`일정 ${more.length + 1}곳에 같이 붙음`); }
           [best, ...more].forEach(e => {
             if (behind) (e.ytBehind = e.ytBehind || []).push(v);
             else (e.ytStage = e.ytStage || []).push(v);
@@ -542,5 +552,6 @@
     return Object.assign(build(raw), { xPending: true });
   }
 
+  window.DATA_LINK_SKIP = LINK_SKIP;
   window.DATA = { load, parseCSV, normDate, songKey, setlistName };
 })();

@@ -701,3 +701,19 @@ img[src*="i.ytimg.com"].album-img { width: 200px; height: 200px; margin-left: au
 .day-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .day-thumb .thumb-play { width: 26px; height: 26px; border-radius: 13px; display: flex; align-items: center; justify-content: center; }
 .day-thumb .thumb-play svg { width: 11px; height: 11px; margin-left: 2px; }
+/* 자동 연결 점검 */
+.check-link { display: block; margin: 18px 0 6px; font-size: 12px; color: var(--muted); text-align: center; }
+.chk-bar { display: flex; align-items: center; gap: 10px; margin: 4px 0 12px; font-size: 13px; }
+.chk-bar .link-btn { margin-left: auto; font-size: 12px; }
+.chk-list { gap: 0; }
+.chk { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #EAF1EC; }
+.chk-media { flex: none; width: 96px; height: 54px; border-radius: 8px; overflow: hidden; background: #EEF3EF; }
+.chk-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.chk-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.chk-sub, .chk-why { font-size: 11px; color: var(--muted); }
+.chk-why { color: #B0742A; }
+.chk-title { font-size: 13px; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.chk-to { font-size: 13px; font-weight: 700; color: var(--green); word-break: keep-all; }
+.chk-btns { display: flex; gap: 6px; margin-top: 4px; }
+.chk-btns .chip { height: 30px; font-size: 12px; }
+.chk-btns .chk-bad { color: #C0392B; }
