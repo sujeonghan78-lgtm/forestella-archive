@@ -351,17 +351,23 @@
         const yymmdd = (t.match(/\b(\d{2})(\d{2})(\d{2})\b/) || []);
         const vw = words(t);
         let best = null, score = 0;
+        const cands = [];
         evWords.forEach(({ e, w }) => {
           const gap = days(v.date, e.date);
           if (gap < 0 || gap > (behind ? 400 : 60)) return;
           let sc = vw.filter(x => w.has(x)).reduce((n, x) => n + x.length, 0);
           if (yymmdd[0] && e.date === `20${yymmdd[1]}-${yymmdd[2]}-${yymmdd[3]}`) sc += 10;
+          if (sc) cands.push({ e, sc });
           if (sc > score || (sc === score && best && gap < days(v.date, best.date))) { if (sc) { score = sc; best = e; } }
         });
         if (best && score >= (behind ? 3 : 4)) {
           v.event = best;
-          if (behind) (best.ytBehind = best.ytBehind || []).push(v);
-          else (best.ytStage = best.ytStage || []).push(v);
+          // "연예대상, 연기대상"처럼 한 영상에 행사가 여럿이면 가까운 날(30일 안) 비슷하게 맞는 일정에도 붙여요
+          const more = cands.filter(c => c.e !== best && c.sc >= 3 && c.sc >= score * 0.6 && Math.abs(days(c.e.date, best.date)) <= 30).map(c => c.e).slice(0, 3);
+          [best, ...more].forEach(e => {
+            if (behind) (e.ytBehind = e.ytBehind || []).push(v);
+            else (e.ytStage = e.ytStage || []).push(v);
+          });
         }
       }
     });

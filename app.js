@@ -1404,11 +1404,14 @@
           </div>`).join('')}
       </section>` : '';
 
-    const related = e.related.length ? `
+    // 공식 유튜브 줄에 썸네일로 나오는 영상은 관련 영상 목록에서 빼요
+    const shownYt = new Set((e.ytBehind || []).map(v => v.id));
+    const rels = e.related.filter(v => !shownYt.has(v.videoId));
+    const related = rels.length ? `
       <hr class="divider">
       <section class="d-block">
         <h2 class="h3">관련 영상</h2>
-        ${e.related.map(v => `
+        ${rels.map(v => `
           <a class="rel" href="${ytWatch(v.videoId)}" target="_blank" rel="noopener">
             <span class="tag">${esc(v.source || '영상')}</span>
             <span class="rel-body"><span>${esc(v.title)}</span>${v.note ? `<span class="row-sub">${esc(v.note)}</span>` : ''}</span>
