@@ -102,6 +102,9 @@
   // 덜 중요한 설명은 제목 옆 (?) 버튼을 눌러야 보여요
   const help = html => `<button type="button" class="help" aria-label="설명 보기" aria-expanded="false">?</button><span class="help-pop" hidden>${html}</span>`;
 
+  // 확실하지 않은 항목: 이름 옆 동그라미 ? (누르면 이유가 잠깐 떠요)
+  const unsure = t => t ? help(esc(t)) : '';
+
   document.addEventListener('click', ev => {
     const h = ev.target.closest('.help');
     document.querySelectorAll('.help[aria-expanded="true"]').forEach(b => {
@@ -111,6 +114,7 @@
     if (h) {
       const open = h.getAttribute('aria-expanded') !== 'true';
       h.setAttribute('aria-expanded', String(open)); h.nextElementSibling.hidden = !open;
+      ev.preventDefault();  // 카드 링크 안에 있어도 이동하지 않게
       return;
     }
     const s = ev.target.closest('[data-share]');
@@ -791,7 +795,7 @@
     const albumRow = so.albums.length ? `<div class="song-albums">${so.albums.map(a => `
       <a class="song-album" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
         ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createElement('span'))">` : '<span></span>'}
-        <span><b>${esc(a.name)}</b><small>${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.slice(0, 4))} · ${esc(a.kind || '')}${so.titleOf.includes(a) ? ' · 타이틀곡' : ''}</small></span>
+        <span><b>${esc(a.name)}${unsure(a.unsure)}</b><small>${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.slice(0, 4))} · ${esc(a.kind || '')}${so.titleOf.includes(a) ? ' · 타이틀곡' : ''}</small></span>
       </a>`).join('')}</div>` : '';
     // 무대 목록은 연도별로 묶고, 가장 최근 해만 펼쳐 둬요
     const byYear = new Map();
@@ -1218,7 +1222,7 @@
     // 활동 이력: 시트 음반 정보에 이미 있는 음반은 음반 탭에서 보여서 빼요
     const alNames = new Set(als.map(a => a.name.toLowerCase().replace(/\s+/g, '')));
     const car = (data.career || []).filter(c => c.member === m && !(c.type === '음반' && alNames.has(c.title.toLowerCase().replace(/\s+/g, ''))));
-    const carRow = c => `<div class="car-row"><span class="car-date">${esc(careerDate(c.date))}</span><span class="car-body"><b>${esc(c.title)}</b>${[c.note, c.where].filter(Boolean).length ? `<span>${esc([c.note, c.where].filter(Boolean).join(' · '))}</span>` : ''}</span></div>`;
+    const carRow = c => `<div class="car-row"><span class="car-date">${esc(careerDate(c.date))}</span><span class="car-body"><b>${esc(c.title)}${unsure(c.unsure)}</b>${[c.note, c.where].filter(Boolean).length ? `<span>${esc([c.note, c.where].filter(Boolean).join(' · '))}</span>` : ''}</span></div>`;
     // 음반 탭에도 솔로 참여곡·OST를 같이 (시트 음반 아래)
     // 발매일이 가까운(±5일) 시트 음반이 있으면 그 음반 카드에 곡 이름만 붙이고, 없으면 따로 목록으로
     const dayN = d => Date.parse(d.slice(0, 10)) / 864e5;
@@ -1226,7 +1230,8 @@
     const carDisc = car.filter(c => c.type === '음반' || c.type === 'OST').filter(c => {
       if (c.date.length < 10) return true;
       const near = als.filter(a => a.date && Math.abs(dayN(a.date) - dayN(c.date)) <= 5);
-      const a = near.find(a => (c.type === 'OST') === /OST/i.test(a.kind + a.name)) || near[0];
+      const same = x => x.name.replace(/\s+/g, '').toLowerCase() === c.title.replace(/\s+/g, '').toLowerCase();
+      const a = near.find(same) || near.find(a => (c.type === 'OST') === /OST/i.test(a.kind + a.name)) || near[0];
       // 시트 비고에서 '제외'라고 적어 둔 곡은 그 음반에 붙이지 않아요
       if (!a) return true;
       if (a.name.replace(/\s+/g, '').toLowerCase() === c.title.replace(/\s+/g, '').toLowerCase()) return false;
@@ -1261,7 +1266,7 @@
         { label: '음반', n: als.length + carDisc.length, html: als.length + carDisc.length ? `<div class="stack x-list">${als.map(a => `
           <a class="x-card${a.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
             ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
-            <span class="x-text"><span class="x-date">${nw(`${a.date.replace(/-/g, '.')} · ${a.kind}`)}</span><b>${esc(a.name)}</b>${albSongs.has(a) ? `<span class="x-date">${esc(m)} 노래 · ${esc(albSongs.get(a).join(', '))}</span>` : ''}</span>
+            <span class="x-text"><span class="x-date">${nw(`${a.date.replace(/-/g, '.')} · ${a.kind}`)}</span><b>${esc(a.name)}${unsure(a.unsure)}</b>${albSongs.has(a) ? `<span class="x-date">${esc(m)} 노래 · ${esc(albSongs.get(a).join(', '))}</span>` : ''}</span>
           </a>`).join('')}</div>${carDisc.length ? `<h3 class="car-h">그 밖의 참여곡 · OST <b>${carDisc.length}</b></h3><div class="car-list">${carDisc.map(carRow).join('')}</div>` : ''}` : '' },
         { label: '유튜브', n: vs.length, html: vs.length ? `<div class="view-row">${albumBtn()}</div>${ytList(vs)}<a class="more mem-all" href="#/yt?m=${q}">유튜브 탭에서 보기 ›</a>` : '' },
         { label: 'X', n: xs.length, html: xList(xs) },
@@ -1572,7 +1577,7 @@
         <div class="ah-top">
           ${a.img ? `<img class="ah-img" src="${esc(imgSize(a.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
           <div class="ah-info">
-            <h1 class="h1">${esc(a.name)}</h1>
+            <h1 class="h1">${esc(a.name)}${unsure(a.unsure)}</h1>
             <p class="sub">${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.replace(/-/g, '.'))}<br>${esc(a.kind)}${a.ok ? '' : ' · <span class="tag">확인 중</span>'}</p>
           </div>
         </div>

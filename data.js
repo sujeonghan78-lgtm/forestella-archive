@@ -316,7 +316,7 @@
       name: a['앨범명'], member: a['멤버'] || '', kind: a['종류'], date: normDate(a['발매일']) || a['발매일'], title: a['타이틀곡'],
       tracks: (a['수록곡'] || '').split(' / ').map(t => t.trim()).filter(Boolean), credit: a['타이틀 작사·작곡'],
       label: a['기획사·유통사'], rel: a['음반 이야기 이름'], img: a['사진'],
-      src: [a['출처1'], a['출처2']].filter(u => /^https?:/.test(u || '')), ok: a['확인'] !== '확인 중', note: a['비고'],
+      src: [a['출처1'], a['출처2']].filter(u => /^https?:/.test(u || '')), ok: a['확인'] !== '확인 중', note: a['비고'], unsure: a['불확실'] || '',
     })).sort((a, b) => (a.date < b.date ? 1 : -1));
     // 콘서트 정보 (시트 "콘서트 정보" 탭). 투어ID가 셋리스트와 같으면 서로 이어 붙여요.
     const urls = t => (t || '').split(/[\s;]+/).filter(u => /^https?:/.test(u));

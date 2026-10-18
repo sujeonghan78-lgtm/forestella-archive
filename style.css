@@ -747,3 +747,6 @@ img[src*="i.ytimg.com"].album-img { width: 200px; height: 200px; margin-left: au
 .car-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .car-body b { font-size: 13px; font-weight: 600; line-height: 1.4; word-break: keep-all; }
 .car-body span { font-size: 11px; color: var(--muted); line-height: 1.4; }
+b > .help { vertical-align: 2px; }
+b > .help-pop { position: static; display: block; width: auto; max-width: none; margin-top: 6px; }
+b > .help-pop[hidden] { display: none; }
