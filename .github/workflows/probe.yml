@@ -1,9 +1,0 @@
-# 다른 데이터 출처 시험 (직접 실행)
-name: probe
-on: workflow_dispatch
-jobs:
-  probe:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: python3 tools/probe.py
