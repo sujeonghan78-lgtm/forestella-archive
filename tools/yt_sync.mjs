@@ -3,7 +3,7 @@
 import fs from 'fs';
 const KEY = process.env.YOUTUBE_API_KEY;
 if (!KEY) { console.log('::error::YOUTUBE_API_KEY 비밀값이 없어요'); process.exit(1); }
-const CHANNEL = 'UCTBf-j9GoCHfqjNHT42ta3Q';
+const HANDLE = '@forestella';
 const OUT = 'data/yt_videos.json';
 const api = async (path, q) => {
   const r = await fetch(`https://www.googleapis.com/youtube/v3/${path}?${new URLSearchParams({ ...q, key: KEY })}`);
@@ -15,10 +15,14 @@ process.on('unhandledRejection', e => { console.log(`::error::${e.message}`); pr
 const old = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')).videos : [];
 const known = new Set(old.map(v => v.id));
 const full = process.argv.includes('--full') || !old.length;
+const ch = (await api('channels', { part: 'contentDetails,snippet', forHandle: HANDLE })).items?.[0];
+if (!ch) throw new Error(`채널 ${HANDLE} 을 못 찾았어요`);
+console.log(`::notice::채널 ${ch.snippet.title} ${ch.id}`);
+const CHANNEL = ch.id;
 const ids = [];
 let page = '';
 do {
-  const d = await api('playlistItems', { part: 'contentDetails', playlistId: 'UU' + CHANNEL.slice(2), maxResults: 50, ...(page && { pageToken: page }) });
+  const d = await api('playlistItems', { part: 'contentDetails', playlistId: ch.contentDetails.relatedPlaylists.uploads, maxResults: 50, ...(page && { pageToken: page }) });
   const got = d.items.map(i => i.contentDetails.videoId);
   const fresh = got.filter(id => !known.has(id));
   ids.push(...fresh);
