@@ -377,6 +377,9 @@
     baseHash = location.hash;
   }
 
+  // 한글로 친 영어 이름 (레거시 → legacy). 공연·음반·곡 이름에 자주 나오는 것만
+  const KO_EN = { 레거시: 'legacy', 웨이브: 'wave', 일루셔니스트: 'illusionist', 로열: 'royal', 로얄: 'royal', 비기닝: 'beginning', 월드트리: 'world tree', 라이트: 'light', 페스티벌: 'festival', 미스틱: 'mystique', 에볼루션: 'evolution', 메모리즈: 'memories', 윈터스토리: 'winter story', 윈터: 'winter', 심포니: 'symphony', 비욘드: 'beyond', 에튀드: 'etude', 에뛰드: 'etude', 아마겟돈: 'armageddon', 챔피언스: 'champions', 데스파시토: 'despacito', 스윗: 'sweet', 스위트: 'sweet', 이스케이프: 'escape', 러브인서울: 'love in seoul', 넥스트투유: 'next to you', 판타지아: 'fantasia', 넬라: 'nella', 노떼: 'notte', 포레스텔라: 'forestella', 투어: 'tour', 콘서트: 'concert', 팬미팅: 'fan meeting', 피타: 'pitta' };
+  const aliasOf = q => { const s = q.replace(/\s+/g, ''); let out = s, hit = false; Object.keys(KO_EN).sort((x, y) => y.length - x.length).forEach(k => { if (out.includes(k)) { out = out.split(k).join(KO_EN[k]); hit = true; } }); return hit ? out : ''; };
   function runSearch(p) {
     const { items, fuse } = getIndex();
     const q = p.q.trim();
@@ -387,6 +390,8 @@
     else {
       const nq = norm(q);
       list = items.filter(i => i.text.includes(nq)).map(i => i.e);
+      const alt = aliasOf(q);
+      if (!list.length && alt) list = items.filter(i => i.text.includes(norm(alt))).map(i => i.e);
       if (!list.length && fuse) { list = fuse.search(q).map(r => r.item); fuzzy = list.length > 0; }
     }
     list = list.filter(e =>
@@ -439,7 +444,7 @@
     (data.albums || []).filter(a => hit(a.name)).slice(0, 3)
       .forEach(a => out.push({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, img: a.img && imgSize(a.img, 'thumb') }));
     (data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).slice(0, 3)
-      .forEach(c => out.push({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, img: c.img ? imgSize(c.img, 'thumb') : tourPic(c.tour || c) }));
+      .forEach(c => out.push({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, img: c.img ? imgSize(c.img, 'thumb') : (c.tour ? tourPic(c.tour) : c.events ? tourPic(c) : '') }));
     if (!out.length) return '';
     return `<div class="shortcut-row">${out.map(x => `
       <a class="shortcut-card" href="${x.href}">
@@ -453,12 +458,13 @@
   function searchHits(p) {
     const nq = norm(p.q), cho = isChosungOnly(p.q);
     const ok = nq && (cho || nq.length >= 2);
-    const hit = name => ok && (cho ? chosung(name).includes(nq) : norm(name).includes(nq));
+    const alt = aliasOf(p.q), na = alt && norm(alt);
+    const hit = name => ok && (cho ? chosung(name).includes(nq) : norm(name).includes(nq) || (na && norm(name).includes(na)));
     const songs = [...data.songs.values()].filter(so => hit(so.name)).sort((a, b) => playCount(b) - playCount(a));
     const vids = (data.official || []).filter(v => hit(v.title) && (!p.member || v.members.includes(p.member)) && (!p.year || v.date.startsWith(p.year)));
     const rels = [
       ...(data.albums || []).filter(a => hit(a.name) && (!p.member || a.member === p.member)).map(a => ({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, sub: a.date.replace(/-/g, '.'), img: a.img && imgSize(a.img, 'thumb') })),
-      ...(data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).map(c => ({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, sub: c.from ? c.from.replace(/-/g, '.') : '', img: c.img ? imgSize(c.img, 'thumb') : tourPic(c.tour || c) })),
+      ...(data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).map(c => ({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, sub: c.from ? c.from.replace(/-/g, '.') : '', img: c.img ? imgSize(c.img, 'thumb') : c.tour ? tourPic(c.tour) : c.events ? tourPic(c) : '' })),
       ...PROGRAMS.filter(hit).map(pg => ({ href: '#/program/' + encodeURIComponent(pg), kind: '프로그램', name: pg + ' 모아보기', sub: '' })),
     ];
     return { songs, vids, rels };
@@ -473,17 +479,20 @@
   const songCard = so => relCard({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', sub: `무대 ${so.events.length}번`, name: so.name, img: songPic(so) });
   function searchAll(p) {
     const h = searchHits(p);
-    const { list } = runSearch(p);
-    const head = searchTabs(p, list.length);
+    const { list, fuzzy } = runSearch(p);
+    // 비슷한 결과(정확히 맞는 게 없을 때)는 다른 종류가 있으면 빼요
+    const others = h.songs.length + h.vids.length + h.rels.length;
+    const evs = fuzzy && others ? [] : list;
+    const head = searchTabs(p, evs.length);
     const more = (t, n, unit) => n ? `<a class="more s-more" href="#" data-t="${t}">${n.toLocaleString()}${unit} 모두 보기 ›</a>` : '';
     if (p.t === 'song') return head + (h.songs.length ? moreList(h.songs.map(songCard), 20) : '<p class="empty">찾는 곡이 없어요.</p>');
     if (p.t === 'yt') return head + (h.vids.length ? `<div class="view-row"><p class="sub">${h.vids.length.toLocaleString()}개</p>${albumBtn()}</div>${ytList(h.vids)}` : '<p class="empty">찾는 영상이 없어요.</p>');
     if (p.t === 'rel') return head + (h.rels.length ? `<div class="stack x-list">${h.rels.map(relCard).join('')}</div>` : '<p class="empty">찾는 음반·콘서트가 없어요.</p>');
     const sec = (title, n, body, t, unit) => n ? `<section class="s-sec"><div class="block-head"><h2 class="h3">${title} <span class="song-count">${n.toLocaleString()}</span></h2>${more(t, n, unit)}</div>${body}</section>` : '';
-    const any = list.length || h.songs.length || h.vids.length || h.rels.length;
+    const any = evs.length || others;
     return head + (any ? [
       sec('곡', h.songs.length, `<div class="stack x-list">${h.songs.slice(0, 3).map(songCard).join('')}</div>`, 'song', '곡'),
-      sec('일정', list.length, `<div class="stack">${list.slice(0, 4).map(resultCard).join('')}</div>`, 'ev', '건'),
+      sec(fuzzy ? '비슷한 일정' : '일정', evs.length, `<div class="stack">${evs.slice(0, 4).map(resultCard).join('')}</div>`, 'ev', '건'),
       sec('공식 유튜브', h.vids.length, ytStrip(h.vids.slice(0, 8)), 'yt', '개'),
       sec('음반·콘서트', h.rels.length, `<div class="stack x-list">${h.rels.slice(0, 3).map(relCard).join('')}</div>`, 'rel', '개'),
     ].join('') : `<p class="empty">찾는 기록이 없어요. 혹시 빠진 기록이라면 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`);
