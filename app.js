@@ -1136,20 +1136,25 @@
         <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라 그 이전 기록은 비어 있어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요. 카페에 새 일정이 올라오면 하루 몇 번 자동으로 확인해서 여기에도 추가돼요.</p>
       </section>
       <section class="sec">
-        <h2 class="h3">곡 정보는 이렇게 적었어요</h2>
-        <p>영상으로 확인된 곡만 적었어요. <b>실제로는 더 불렀을 수 있어요.</b></p>
+        <h2 class="h3">영상과 곡은 어디서 오나요?</h2>
+        <p>아래 채널의 영상을 매일 자동으로 모아서, 제목을 보고 곡 · 일정 · 음반 · 콘서트 · 프로그램에 붙여요. 제목으로 붙이는 거라 가끔 틀릴 수 있어요.</p>
+        <ul class="about-list">
+          <li><b>포레스텔라 공식 유튜브</b>와 멤버 공식 채널 (강형호 · 조민규 · 고우림)</li>
+          <li><b>방송사 공식 유튜브 20개</b> (KBS · MBC · JTBC · Mnet 등). 조회수 1만 이상이고 제목에 포레스텔라나 멤버 이름이 있는 영상만</li>
+          <li><b>유튜브 뮤직 공식 음원</b> (곡 페이지의 음원 칸)</li>
+          <li><b>공식 X</b> (@official_fore) 글</li>
+          <li><b>콘서트 셋리스트</b>는 나무위키 · setlist.fm · 뉴스 기사를 모았어요</li>
+        </ul>
+      </section>
+      <section class="sec">
+        <h2 class="h3">일정의 '이날 부른 곡'</h2>
+        <p>영상으로 확인된 곡만 적어요. 영상이 없는 곡은 빠져 있을 수 있어요. 출처는 이렇게 표시해요.</p>
         <div class="badges">
           ${badge('bd-tv', '방송사 영상', '방송사 공식 채널 영상으로 확인')}
           ${badge('bd-official', '공식채널', '포레스텔라 공식 유튜브로 확인')}
-          ${badge('bd-press', '언론사 영상', '언론사 공식 채널 영상으로 확인')}
-          ${badge('bd-fan', '팬 영상', '팬이 올린 영상 제목 기준이라 틀릴 수 있어요')}
-          ${badge('bd-ref', '참고', '녹화일 · 연속 방송이라 곡을 확정하지 않고 관련 방송 영상만 연결')}
-          ${badge('bd-report', '팬 제보 · 미확인', '제보 폼으로 들어온 내용이에요. 아직 확인 전이에요')}
+          ${badge('bd-fan', '팬 영상', '팬 영상 제목 기준이라 틀릴 수 있어요. 링크는 걸지 않아요')}
+          ${badge('bd-ref', '참고', '녹화일 · 연속 방송이라 곡을 정하지 않았어요')}
         </div>
-      </section>
-      <section class="sec">
-        <h2 class="h3">영상 링크</h2>
-        <p>방송사 · 공식 채널 · 언론사 영상만 연결해요. 팬 영상은 링크를 걸지 않아요.</p>
       </section>
       <section class="sec">
         <h2 class="h3">빠지거나 틀린 게 있다면</h2>
@@ -1240,10 +1245,10 @@
 
   // ---------- 일정 상세 (아래에서 올라오는 시트) ----------
   const SOURCE_NOTE = {
-    '방송사 영상': '방송사 공식 채널 영상으로 확인했어요.',
-    '공식채널': '포레스텔라 공식 유튜브로 확인했어요.',
-    '언론사 영상': '언론사 공식 채널 영상으로 확인했어요.',
-    '팬 영상': '팬 영상 제목 기준이라 틀릴 수 있어요. 팬 영상 링크는 걸지 않아요.',
+    '방송사 영상': '출처 · 방송사 공식 영상',
+    '공식채널': '출처 · 포레스텔라 공식 유튜브',
+    '언론사 영상': '출처 · 언론사 공식 영상',
+    '팬 영상': '출처 · 팬 영상 (제목 기준이라 틀릴 수 있어요)',
   };
   // 유튜브·X에서 바로 찾아보기 (검색어가 미리 써진 화면을 열어요)
   const findRow = q => `
@@ -1257,10 +1262,13 @@
   const ytWatch = id => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
   const ytThumb = id => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`;
 
-  function songRow(name) {
+  // 일정 상세 '이날 부른 곡' 한 줄: 곡 요약 + 그날 무대 영상이 있으면 ▶
+  function songRow(name, e) {
     const so = data.songs.get(window.DATA.songKey(name));
-    if (!so) return `<div class="song-row"><span>${esc(name)}</span></div>`;
-    return `<a class="song-row" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(name)}</span><span class="song-count">확인된 무대 ${so.events.length}개 ›</span></a>`;
+    if (!so) return `<div class="day-song"><span class="day-song-name">${esc(name)}</span></div>`;
+    const day = e && ((so.official || []).find(v => v.event === e) || (so.official || []).find(v => v.date === e.date && ['무대', '직캠', '라이브'].includes(v.kind)));
+    const vid = day ? day.id : e && e.videoId && e.songs.length === 1 ? e.videoId : '';
+    return `<div class="day-song"><a class="day-song-name" href="#/song/${encodeURIComponent(so.key)}"><b>${esc(name)}</b><small>${songMeta(so, true) || '기록 없음'} ›</small></a>${vid ? `<a class="sl-yt day-play" href="${ytWatch(vid)}" target="_blank" rel="noopener" aria-label="${esc(name)} 이날 영상 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a>` : ''}</div>`;
   }
 
   // ---------- 콘서트 셋리스트 ----------
@@ -1706,14 +1714,14 @@
       songs = `
         <div class="notice">
           <span class="src-badge">참고</span>
-          <span>녹화일이거나 연속 방송 회차라서 이 일정의 곡은 확정하지 않았어요.${e.videoMemo ? ' ' + esc(e.videoMemo) : ''}</span>
+          <span>녹화·연속 방송이라 이날 곡은 정하지 않았어요.${e.videoMemo ? ' ' + esc(e.videoMemo) : ''}</span>
         </div>`;
     } else if (e.songs.length) {
       songs = `
-        ${e.songs.map(songRow).join('')}
+        <div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>
         ${SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
     } else {
-      songs = `<p class="src-note">아직 영상으로 확인된 곡이 없어요.</p>`;
+      songs = `<p class="src-note">아직 확인된 곡이 없어요.</p>`;
     }
 
     const reports = reportsFor(e);
@@ -1761,7 +1769,7 @@
         ${related}
         <hr class="divider">
         <section class="d-block">
-          <div class="block-head"><h2 class="h3">영상으로 확인된 곡${help('영상이 남아 있는 곡만 표시돼요. 실제로는 더 불렀을 수 있어요.')}</h2>${e.songSource && e.songSource !== '참고' ? `<span class="tag">${esc(e.songSource)}</span>` : ''}</div>
+          <div class="block-head"><h2 class="h3">이날 부른 곡${e.songSource !== '참고' && e.songs.length ? ` <span class="song-count">${e.songs.length}</span>` : ''}${help('방송·공식 영상으로 확인된 곡이에요. 영상이 없는 곡은 빠져 있을 수 있어요. ▶를 누르면 그날 영상이 열려요.')}</h2></div>
           ${songs}
           ${e.videoMemo && e.songSource !== '참고' ? `<p class="src-note">${esc(e.videoMemo)}</p>` : ''}
           <div class="report-links">
