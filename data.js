@@ -167,7 +167,7 @@
       fetchText('data/x_links.json').catch(() => ''),
       fetchText('data/x_photos.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, sheets: JSON.stringify(s), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -537,7 +537,7 @@
   async function load(onUpdate) {
     const cached = readCache();
     // 시트 주소가 바뀌었으면(새 탭 연결 등) 저장본을 버려요.
-    const fresh = cached && 'ytml' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'ytml' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) + (window.CONFIG.dataVer || '') && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
