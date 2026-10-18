@@ -864,7 +864,8 @@
 
     const gapText = year < CALENDAR_START.slice(0, 4) ? `${year}년` :
       year === CALENDAR_START.slice(0, 4) ? `${year}년 1~${Number(CALENDAR_START.slice(5)) - 1}월` : '';
-    const gap = gapText ? `
+    const gapHas = yearEvents.some(e => e.date.slice(0, 7) < CALENDAR_START);
+    const gap = gapText && !gapHas ? `
       <div class="gap-card">
         <b>${gapText}</b>
         <span>이 시기 기록은 아직 비어 있어요. 기억나는 무대가 있다면 알려주세요.</span>
@@ -941,8 +942,13 @@
     ['유 퀴즈 온 더 블럭', '예능', /유\s?퀴즈(\s?온\s?더\s?블럭)?/],
     ['전현무계획', '예능', /전현무\s?계획\s?\d*/],
     ['숲속의 포레시피', '웹 콘텐츠', /포레시피/],
+    ['포레미파솔', '웹 콘텐츠', /[포퍼]레\s?미\s?파\s?솔/],
+    ['포레 라이브', '웹 콘텐츠', /official\s?live|포레\s?live|숲\s?속\s?라이브|live\s?clip/i],
   ];
-  const PROGRAM_TYPES = ['음악 경연', '음악쇼', '음악방송', '연말 · 시상식', '예능', '라디오', '웹 콘텐츠', '특집 · 행사'];
+  // 자료를 더 모은 다음에 보여줄 프로그램 (목록에서 숨겨요)
+  const HIDDEN_PROGS = new Set(['팬텀싱어']);
+  const MIX_PROG = '모음 · 미분류 영상';
+  const PROGRAM_TYPES = ['음악 경연', '음악쇼', '음악방송', '연말 · 시상식', '예능', '라디오', '웹 콘텐츠', '특집 · 행사', '모음'];
   const OTHER_PROG = '특집 · 행사 무대';
   // 예전 주소(#/program/불후의 명곡 등)는 그대로 열려요
   let progCache = null;
@@ -961,11 +967,13 @@
     // 다른 방송(연예 뉴스 등)이 프로그램 이름만 언급한 영상은 빼요 ([연예가 헤드라인] … '팬텀싱어' 같은)
     const MENTION_ONLY = /^\s*\[(연예가|연중|뉴스|news|연예\s?뉴스|스타\s?뉴스)/i;
     const defOfVideo = t => MENTION_ONLY.test(t) ? null : defOf(t);
+    // 방송사 영상은 방송 프로그램에, 공식·멤버 채널 영상은 웹 콘텐츠에만 붙여요
     (data.official || []).forEach(v => {
-      if (!v.bc) return;
       const d = defOfVideo(v.title);
-      if (d) get(d[0], d[1]).videos.push(v);
+      if (!v.bc) { if (d && d[1] === '웹 콘텐츠') get(d[0], d[1]).videos.push(v); return; }
+      if (d && d[1] !== '웹 콘텐츠') get(d[0], d[1]).videos.push(v);
       else if (v.event && map.has(OTHER_PROG) && map.get(OTHER_PROG).events.includes(v.event)) map.get(OTHER_PROG).videos.push(v);
+      else if (!v.event) get(MIX_PROG, '모음').videos.push(v);
     });
     map.forEach(p => {
       p.events.sort((a, b) => b.date.localeCompare(a.date));
@@ -982,8 +990,8 @@
     progCache = { src: data, map };
     return map;
   }
-  const programList = () => [...programs().values()].filter(p => p.size).sort((a, b) => b.events.length - a.events.length || b.videos.length - a.videos.length);
-  const PROGRAMS_TOP = () => programList().filter(p => p.name !== OTHER_PROG).slice(0, 6).map(p => p.name);
+  const programList = () => [...programs().values()].filter(p => p.size && !HIDDEN_PROGS.has(p.name)).sort((a, b) => b.events.length - a.events.length || b.videos.length - a.videos.length);
+  const PROGRAMS_TOP = () => programList().filter(p => p.name !== OTHER_PROG && p.name !== MIX_PROG).slice(0, 6).map(p => p.name);
   const progHref = name => '#/program/' + encodeURIComponent(name);
 
   // 회차 이름: "[KBS2] 불후의 명곡 - 2021 왕중왕전" → "2021 왕중왕전". 프로그램 이름이 맨 앞에 있을 때만 떼고, 남는 게 없으면 원래 제목
@@ -1001,7 +1009,7 @@
 
   function programView() {
     const name = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
-    const p = name && programs().get(name);
+    const p = name && !HIDDEN_PROGS.has(name) && programs().get(name);
     return p ? programDetail(p) : programIndex();
   }
 
@@ -1204,7 +1212,7 @@
       </div>
       <section class="sec">
         <h2 class="h3">일정은 어디서 왔나요?</h2>
-        <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라 그 이전 기록은 비어 있어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요. 카페에 새 일정이 올라오면 하루 몇 번 자동으로 확인해서 여기에도 추가돼요.</p>
+        <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라, 그 이전(2017~2021년 7월)은 나무위키와 방송사 유튜브 영상 날짜로 따로 채웠어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요. 카페에 새 일정이 올라오면 하루 몇 번 자동으로 확인해서 여기에도 추가돼요.</p>
       </section>
       <section class="sec">
         <h2 class="h3">영상과 곡은 어디서 오나요?</h2>
