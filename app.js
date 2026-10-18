@@ -489,13 +489,17 @@
       ...(data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).map(c => ({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, sub: c.from ? c.from.replace(/-/g, '.') : '', img: c.img ? imgSize(c.img, 'thumb') : c.tour ? tourPic(c.tour) : c.events ? tourPic(c) : '' })),
       ...PROGRAMS.filter(hit).map(pg => ({ href: '#/program/' + encodeURIComponent(pg), kind: '프로그램', name: pg + ' 모아보기', sub: '' })),
     ];
-    return { songs, vids, rels };
+    // 공식 X: 글에 검색어가 있거나, 찾은 곡이 나온 글
+    const xset = new Set((data.xFeed || []).filter(x => hit(x.raw)));
+    songs.forEach(so => songX(so).forEach(x => xset.add(x)));
+    const xs = [...xset].filter(x => (!p.member || x.m.includes(p.member)) && (!p.year || x.date.startsWith(p.year))).sort((a, b) => b.date.localeCompare(a.date));
+    return { songs, vids, rels, xs };
   }
+  const xMini = x => `<a class="x-card${x.img ? '' : ' no-img'}" href="${esc(x.url)}" target="_blank" rel="noopener">${x.img ? `<img src="${esc(x.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="x-text"><span class="x-date">${esc(x.date.replace(/-/g, '.'))} · ${esc(x.cat)}</span>${esc(x.text || '(글 없음)')}</span></a>`;
   function searchTabs(p, evN) {
     const h = searchHits(p);
-    const tabs = [['', '전체'], ['ev', '일정', evN], ['song', '곡', h.songs.length], ['yt', '유튜브', h.vids.length], ['rel', '음반·콘서트', h.rels.length]];
-    return `<div class="chips s-tabs">${tabs.filter(([t, , n]) => n !== 0 || (p.t || '') === t).map(([t, l, n]) => `<a class="chip${(p.t || '') === t ? ' on' : ''}" href="#" data-t="${t}">${l}${n != null ? ` <b>${n.toLocaleString()}</b>` : ''}</a>`).join('')}
-      <a class="chip s-xlink" href="#/xfeed?q=${encodeURIComponent(p.q)}">공식 X에서 찾기 ›</a></div>`;
+    const tabs = [['', '전체'], ['ev', '일정', evN], ['song', '곡', h.songs.length], ['yt', '유튜브', h.vids.length], ['rel', '음반·콘서트', h.rels.length], ['x', '공식 X', h.xs.length]];
+    return `<div class="chips s-tabs">${tabs.filter(([t, , n]) => n !== 0 || (p.t || '') === t).map(([t, l, n]) => `<a class="chip${(p.t || '') === t ? ' on' : ''}" href="#" data-t="${t}">${l}${n != null ? ` <b>${n.toLocaleString()}</b>` : ''}</a>`).join('')}</div>`;
   }
   const relCard = x => `<a class="x-card${x.img ? '' : ' no-img'}" href="${x.href}">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="x-text"><span class="x-date">${esc(x.kind)}${x.sub ? ' · ' + esc(x.sub) : ''}</span><b>${esc(x.name)}</b></span></a>`;
   const songCard = so => relCard({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', sub: `무대 ${so.events.length}번`, name: so.name, img: songPic(so) });
@@ -503,12 +507,13 @@
     const h = searchHits(p);
     const { list, fuzzy } = runSearch(p);
     // 비슷한 결과(정확히 맞는 게 없을 때)는 다른 종류가 있으면 빼요
-    const others = h.songs.length + h.vids.length + h.rels.length;
+    const others = h.songs.length + h.vids.length + h.rels.length + h.xs.length;
     const evs = fuzzy && others ? [] : list;
     const head = searchTabs(p, evs.length);
     const more = (t, n, unit) => n ? `<a class="more s-more" href="#" data-t="${t}">${n.toLocaleString()}${unit} 모두 보기 ›</a>` : '';
     if (p.t === 'song') return head + (h.songs.length ? moreList(h.songs.map(songCard), 20) : '<p class="empty">찾는 곡이 없어요.</p>');
     if (p.t === 'yt') return head + (h.vids.length ? `<div class="view-row"><p class="sub">${h.vids.length.toLocaleString()}개</p>${albumBtn()}</div>${ytList(h.vids)}` : '<p class="empty">찾는 영상이 없어요.</p>');
+    if (p.t === 'x') return head + (h.xs.length ? moreList(h.xs.map(xMini), 20) : '<p class="empty">찾는 공식 X 글이 없어요.</p>');
     if (p.t === 'rel') return head + (h.rels.length ? `<div class="stack x-list">${h.rels.map(relCard).join('')}</div>` : '<p class="empty">찾는 음반·콘서트가 없어요.</p>');
     const sec = (title, n, body, t, unit) => n ? `<section class="s-sec"><div class="block-head"><h2 class="h3">${title} <span class="song-count">${n.toLocaleString()}</span></h2>${more(t, n, unit)}</div>${body}</section>` : '';
     const any = evs.length || others;
@@ -517,6 +522,7 @@
       sec(fuzzy ? '비슷한 일정' : '일정', evs.length, `<div class="stack">${evs.slice(0, 4).map(resultCard).join('')}</div>`, 'ev', '건'),
       sec('공식 유튜브', h.vids.length, ytStrip(h.vids.slice(0, 8)), 'yt', '개'),
       sec('음반·콘서트', h.rels.length, `<div class="stack x-list">${h.rels.slice(0, 3).map(relCard).join('')}</div>`, 'rel', '개'),
+      sec('공식 X', h.xs.length, `<div class="stack x-list">${h.xs.slice(0, 3).map(xMini).join('')}</div>`, 'x', '개'),
     ].join('') : `<p class="empty">찾는 기록이 없어요. 혹시 빠진 기록이라면 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`);
   }
   function searchVideos(q) {
