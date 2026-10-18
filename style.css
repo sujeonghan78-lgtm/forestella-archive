@@ -717,3 +717,4 @@ img[src*="i.ytimg.com"].album-img { width: 200px; height: 200px; margin-left: au
 .chk-btns { display: flex; gap: 6px; margin-top: 4px; }
 .chk-btns .chip { height: 30px; font-size: 12px; }
 .chk-btns .chk-bad { color: #C0392B; }
+.ep-thumb { margin: 0; }

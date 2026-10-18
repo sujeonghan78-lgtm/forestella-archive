@@ -1019,7 +1019,7 @@
     const play = playAllUrl(p.events);
     const ep = e => {
       const ref = e.songSource === '참고';
-      const hasVideo = e.videoId || e.related.length || (e.ytStage || []).length;
+      const vid = e.videoId || (e.ytMain && e.ytMain.id) || ((e.ytStage || [])[0] || {}).id || (e.related[0] || {}).videoId;
       return `
         <a class="ep" href="#/e/${encodeURIComponent(e.id)}">
           <span class="ep-body">
@@ -1028,7 +1028,7 @@
             ${ref ? `<span class="ep-ref">참고${e.videoMemo ? ' · ' + esc(e.videoMemo.replace(/^참고:\s*/, '')) : ''}</span>` :
               e.songs.length ? `<span class="ep-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
           </span>
-          ${hasVideo && !ref ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}
+          ${vid && !ref ? `<span class="day-thumb ep-thumb"><img src="${ytThumbUrl(vid)}" alt="" loading="lazy" onerror="this.remove()"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></span>` : ''}
         </a>`;
     };
     const songRow = x => `<a class="song-item" href="#/song/${encodeURIComponent(x.so.key)}">${songPic(x.so) ? `<img class="song-thumb" src="${esc(songPic(x.so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}<span class="song-name">${esc(x.so.name)}</span><span class="song-n"><b>${x.n}번</b> ›</span></a>`;
