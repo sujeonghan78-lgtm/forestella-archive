@@ -42,7 +42,7 @@ const sec = s => { const m = (s || '').match(/(\d+)H|(\d+)M|(\d+)S/g) || []; ret
 const kst = iso => new Date(new Date(iso).getTime() + 9 * 3600e3).toISOString().slice(0, 10);
 // 방송 날짜: 제목의 "220101 방송", "2022.01.01" 같은 날짜 (재업로드 영상이 많아서 올린 날보다 이게 정확해요)
 const aired = (t, up) => {
-  let m = t.match(/(\d{2})(\d{2})(\d{2})\s*방송/) || t.match(/\b(20\d{2})[.\-/](\d{1,2})[.\-/](\d{1,2})\b/);
+  const m = t.match(/(\d{2})(\d{2})(\d{2})\s*방송/) || t.match(/(?:KBS|MBC|SBS|JTBC|Mnet|MBN|TV)\s*(\d{2})(\d{2})(\d{2})(?!\d)/) || t.match(/(?<!\d)(20\d{2})[.\-/]?(\d{2})[.\-/]?(\d{2})(?!\d)/);
   if (!m) return '';
   const y = m[1].length === 2 ? '20' + m[1] : m[1], d = `${y}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
   return d >= '2017-01-01' && d <= up && !isNaN(new Date(d)) ? d : '';

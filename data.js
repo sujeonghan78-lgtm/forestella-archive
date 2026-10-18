@@ -139,7 +139,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, xlinks, xphotos] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, xlinks, xphotos] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -149,10 +149,11 @@
       s.albums ? fetchText(s.albums).catch(() => '') : '',
       s.concerts ? fetchText(s.concerts).catch(() => '') : '',
       fetchText('data/yt_videos.json').catch(() => ''),
+      fetchText('data/yt_bc.json').catch(() => ''),
       fetchText('data/x_links.json').catch(() => ''),
       fetchText('data/x_photos.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, xlinks, xphotos, sheets: JSON.stringify(s), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, xlinks, xphotos, sheets: JSON.stringify(s), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -331,13 +332,15 @@
     // 공식 유튜브 (data/yt_videos.json, 매일 자동): 제목의 '곡 이름'으로 곡에 붙여요
     let official = [];
     try { official = JSON.parse(raw.yt || '{}').videos || []; } catch (err) { /* 없으면 넘어가요 */ }
+    // 방송사 공식 채널 영상 (data/yt_bc.json, 매일 자동): v.bc = 채널 이름, 날짜는 방송일
+    try { const seenId = new Set(official.map(v => v.id)); official = official.concat((JSON.parse(raw.ytbc || '{}').videos || []).filter(v => !seenId.has(v.id))).sort((a, b) => b.date.localeCompare(a.date)); } catch (err) { /* 없으면 넘어가요 */ }
     const songByLoose = new Map([...songs.values()].map(so => [so.key.replace(/[^0-9a-z가-힣]/g, ''), so]));
     songs.forEach(so => { so.official = []; });
     official.forEach(v => {
-      v.kind = /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /포레미파솔|behind|비하인드/i.test(v.title) ? '비하인드' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : '영상';
+      v.kind = v.bc && /직캠|fancam|focus|페이스캠/i.test(v.title) ? '직캠' : /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /포레미파솔|behind|비하인드/i.test(v.title) ? '비하인드' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : v.bc && / - |무대|stage/i.test(v.title) ? '무대' : '영상';
       const seen = new Set();
       // 따옴표 안 이름 (In un'altra vita처럼 글자 사이 '는 건너뛰어요)
-      [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[|]+?)\s*(?=\(|\[|\||$)/g)].map(m => `'${m[1]}'`)].forEach(q => {
+      [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[|]+?)\s*(?=\(|\[|\||$)/g)].map(m => `'${m[1]}'`), ...[...v.title.matchAll(/^([^\-\[|]+?)\s+-\s+(?:포레스텔라|forestella)/gi)].map(m => `'${m[1]}'`)].forEach(q => {
         const so = songByLoose.get(songKey(q.slice(1, -1).replace(/\s*\([^)]*\)\s*$/, '')).replace(/[^0-9a-z가-힣]/g, ''));
         if (so && !seen.has(so)) { seen.add(so); so.official.push(v); }
       });
@@ -364,7 +367,7 @@
       v.event = null;
       // 비하인드는 행사 뒤 400일까지, 무대·클립 영상은 60일까지 (쇼츠·M/V·가사·티저는 빼요)
       const behind = v.kind === '비하인드' && !/m\/v|jacket|making|shooting/i.test(t);
-      const stage = ['라이브', '클립', '영상'].includes(v.kind) && !/recap|인사|greeting|예고|preview|d-\d|exhibition|메이킹|making/i.test(t);
+      const stage = ['라이브', '클립', '영상', '무대', '직캠'].includes(v.kind) && !/recap|인사|greeting|예고|preview|d-\d|exhibition|메이킹|making/i.test(t);
       if (!v.tour && (behind || stage)) {
         const yymmdd = (t.match(/\b(\d{2})(\d{2})(\d{2})\b/) || []);
         const vw = words(t);
@@ -414,7 +417,7 @@
   async function load(onUpdate) {
     const cached = readCache();
     // 시트 주소가 바뀌었으면(새 탭 연결 등) 저장본을 버려요.
-    const fresh = cached && 'xphotos' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'ytbc' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
