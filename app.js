@@ -1249,12 +1249,12 @@
     const car = (data.career || []).filter(c => c.member === m && !(c.type === '음반' && alNames.has(c.title.toLowerCase().replace(/\s+/g, ''))));
     const carRow = c => `<div class="car-row"><span class="car-date">${esc(careerDate(c.date))}</span><span class="car-body"><b>${esc(c.title)}${unsure(c.unsure)}</b>${[c.note, c.where].filter(Boolean).length ? `<span>${esc([c.note, c.where].filter(Boolean).join(' · '))}</span>` : ''}</span></div>`;
     // 음반 탭에도 솔로 참여곡·OST를 같이 (시트 음반 아래)
-    // 발매일이 가까운(±5일) 시트 음반이 있으면 그 음반 카드에 곡 이름만 붙이고, 없으면 따로 목록으로
+    // 발매일이 같은(±1일) 시트 음반이 있으면 그 음반 카드에 곡 이름만 붙이고, 없으면 따로 목록으로
     const dayN = d => Date.parse(d.slice(0, 10)) / 864e5;
     const albSongs = new Map();
     const carDisc = car.filter(c => c.type === '음반' || c.type === 'OST').filter(c => {
       if (c.date.length < 10) return true;
-      const near = als.filter(a => a.date && Math.abs(dayN(a.date) - dayN(c.date)) <= 5);
+      const near = als.filter(a => a.date && Math.abs(dayN(a.date) - dayN(c.date)) <= 1);
       const same = x => x.name.replace(/\s+/g, '').toLowerCase() === c.title.replace(/\s+/g, '').toLowerCase();
       const a = near.find(same) || near.find(a => (c.type === 'OST') === /OST/i.test(a.kind + a.name)) || near[0];
       // 시트 비고에서 '제외'라고 적어 둔 곡은 그 음반에 붙이지 않아요
