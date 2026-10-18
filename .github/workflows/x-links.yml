@@ -13,6 +13,7 @@ jobs:
         with:
           node-version: 20
       - run: node tools/x_links.mjs
+      - run: node tools/x_short.mjs
       - run: |
           git config user.name "숲별 기록장 봇"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

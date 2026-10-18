@@ -204,7 +204,9 @@
     try { xLinks = JSON.parse(raw.xlinks || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
     const linksOf = (id, text) => {
       const seen = new Set();
+      const short = xLinks._short || {};
       return [...(text.match(/https?:\/\/\s?[^\s…]+/g) || []).map(u => u.replace(/\s/g, '')), ...(xLinks[id] || [])]
+        .map(u => short[u.replace(/^https?:\/\//, '')] || u)
         .filter(u => !/\/\/t\.co\//.test(u) && /^https?:\/\/[^/]+\.[a-z]{2,}/i.test(u) && !/(twitter|x)\.com\/[^/]+\/status/.test(u))
         .filter(u => !seen.has(u) && seen.add(u));
     };
