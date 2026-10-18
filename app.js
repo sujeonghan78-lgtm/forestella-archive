@@ -1264,13 +1264,15 @@
       albSongs.set(a, [...(albSongs.get(a) || []), c.title]);
       return false;
     }).sort((a, b) => b.date.localeCompare(a.date));
-    const groups = CAREER_ORDER.map(t => [t, car.filter(c => (CAREER_ORDER.includes(c.type) ? c.type : '기타') === t).sort((a, b) => b.date.localeCompare(a.date))]).filter(g => g[1].length);
+    // 활동 이력 탭: 음반·OST는 음반 탭에, 방송은 팬텀싱어만 남겨요
+    const carShow = car.filter(c => !['음반', 'OST'].includes(c.type) && (c.type !== '방송' || /팬텀싱어/.test(c.title)));
+    const groups = CAREER_ORDER.map(t => [t, carShow.filter(c => (CAREER_ORDER.includes(c.type) ? c.type : '기타') === t).sort((a, b) => b.date.localeCompare(a.date))]).filter(g => g[1].length);
     const careerHtml = groups.length ? `${groups.map(([t, list]) => `
         <h3 class="car-h">${esc(CAREER_LABEL[t] || t)} <b>${list.length}</b></h3>
         <div class="car-list">${list.map(carRow).join('')}</div>`).join('')}
         <p class="src-note">나무위키 · 더뮤지컬 · 소속사 프로필 · 기사에서 모았어요.</p>` : '';
     const first = evs.length ? evs[evs.length - 1].date.slice(0, 4) : '';
-    const stat = [['일정', evs.length], ['영상', vs.length], ['음반', als.length + carDisc.length], ['활동 이력', car.length]].filter(x => x[1]);
+    const stat = [['일정', evs.length], ['영상', vs.length], ['음반', als.length + carDisc.length], ['활동 이력', carShow.length]].filter(x => x[1]);
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 영상·공식 X는 제목이나 글에 멤버 이름이 나온 것만 모았어요. 활동 이력은 나무위키 멤버 문서에서 가져왔어요.')}</h1>
@@ -1286,7 +1288,7 @@
       ${pics.length > 1 ? `<div class="member-x"><div class="x-strip">${pics.slice(1).map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div></div>` : ''}
       <div class="mem-body">
       ${paneTabs([
-        { label: '활동 이력', n: car.length, html: careerHtml },
+        { label: '활동 이력', n: carShow.length, html: careerHtml },
         { label: '일정', n: evs.length, html: evs.length ? `${moreList(evs.map(resultCard), 10)}<a class="more mem-all" href="#/search?member=${q}">검색에서 걸러 보기 ›</a>` : '' },
         { label: '음반', n: als.length + carDisc.length, html: als.length + carDisc.length ? `<div class="stack x-list">${als.map(a => `
           <a class="x-card${a.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
