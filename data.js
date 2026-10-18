@@ -482,6 +482,12 @@
       if (!so.tracks.some(x => x.album === t.album)) so.tracks.push(t);
     });
     songs.forEach(so => { so.tracks = (so.tracks || []).sort((a, b) => a.date.localeCompare(b.date)); });
+    // 수정 님이 올려 준 표지 (저장소 covers/ 폴더). 시트 "사진" 칸이 비어 있을 때 써요
+    const LOCAL_COVERS = {
+      '새야 새야 파랑새야 (녹두꽃 OST Part.1)': 'nokdu-ost1', '춘향난봉가 OST (AUX)': 'chunhyang-ost', 'Melody In Sad Love (JG 하모니)': 'melody-in-sad-love',
+      '후니제이 (Huni.J) The First Mini Album': 'hunij-mini1', 'Sizzle 너와 나 사이 (이주원)': 'sizzle-between', '연후애': 'yeonhooae', '가슴으로': 'gaseumeuro',
+    };
+    albums.forEach(al => { if (!al.img && LOCAL_COVERS[al.name]) al.img = 'covers/' + LOCAL_COVERS[al.name] + '.jpg'; });
     // 시트에 표지가 없는 음반은 유튜브 뮤직 공식 음원 썸네일(앨범 아트)로 채워요. 발매일이 가장 가까운 음원으로
     albums.forEach(al => {
       if (al.img) return;
