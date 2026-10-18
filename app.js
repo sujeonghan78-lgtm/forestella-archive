@@ -655,7 +655,7 @@
     // 수록 음반 (표지 + 음반 이야기 링크)
     const albumRow = so.albums.length ? `<div class="song-albums">${so.albums.map(a => `
       <a class="song-album" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
-        ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '<span></span>'}
+        ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createElement('span'))">` : '<span></span>'}
         <span><b>${esc(a.name)}</b><small>${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.slice(0, 4))} · ${esc(a.kind || '')}${so.titleOf.includes(a) ? ' · 타이틀곡' : ''}</small></span>
       </a>`).join('')}</div>` : '';
     // 무대 목록은 연도별로 묶고, 가장 최근 해만 펼쳐 둬요
@@ -679,17 +679,12 @@
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
       </section>
-      <h2 class="h3 list-title">무대 목록${help('영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.')}</h2>
-      ${stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', title: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>`}
-      ${ytSection(so.official, '공식 유튜브', '포레스텔라 공식 유튜브 채널 영상 중 제목에 이 곡이 들어간 영상이에요. 매일 자동으로 새 영상을 확인해요.')}
-      ${so.tours.length ? `
-      <hr class="divider">
-      <h2 class="h3 list-title">이 곡을 부른 콘서트${help('콘서트 셋리스트 기준이에요. 위 무대 목록과 달리 영상으로 확인한 건 아니에요.')}</h2>
-      <div class="tour-chips">${so.tours.slice().sort((a, b) => (a.dates[0] < b.dates[0] ? 1 : -1)).map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : ''}
-      ${xs.length ? `
-      <hr class="divider">
-      <h2 class="h3 list-title">공식 X에서 이 곡${help('포레스텔라 공식 X 글 중 곡 이름이 들어간 글이에요.')}</h2>
-      ${moreList(xs.map(p => xCard(p, p.cat)))}` : ''}`;
+      ${paneTabs([
+        { label: '무대', n: stages.length, html: stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', title: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>` },
+        { label: '유튜브', n: so.official.length, html: ytList(so.official) },
+        { label: '콘서트', n: so.tours.length, html: so.tours.length ? `<p class="src-note">콘서트 셋리스트 기준이에요. 무대 목록과 달리 영상으로 확인한 건 아니에요.</p><div class="tour-chips">${so.tours.slice().sort((a, b) => (a.dates[0] < b.dates[0] ? 1 : -1)).map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : '' },
+        { label: '공식 X', n: xs.length, html: xs.length ? moreList(xs.map(p => xCard(p, p.cat))) : '' },
+      ])}`;
   }
 
   // ---------- 연표 ----------
@@ -1125,7 +1120,11 @@
       if (q) q.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { xQuery = q.value; n = 0; fill(); }, 200); };
     });
     return `
-      ${rel ? albumHead(rel) + relVideos(rel) + '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' : ''}
+      ${rel ? albumHead(rel) + '<hr class="divider">' + paneTabs([
+        { label: '공식 X', n: (data.xFeed || []).filter(p => p.rel === rel).length, html: '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' },
+        { label: '유튜브', n: (data.official || []).filter(v => v.rel === rel).length, html: ytList((data.official || []).filter(v => v.rel === rel)) },
+        { label: '수록곡', html: albumTracks(rel) },
+      ]) : ''}
       ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
       <form class="searchbox song-search" role="search" onsubmit="return false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -1137,10 +1136,6 @@
       <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
   }
 
-  function relVideos(rel) {
-    const vs = (data.official || []).filter(v => v.rel === rel);
-    return vs.length ? ytSection(vs, '공식 유튜브', 'M/V·티저·가사 영상처럼 제목에 이 음반 이름이 들어간 공식 영상이에요.') + '<hr class="divider"><h2 class="h3 list-title">공식 X</h2>' : '';
-  }
   function albumHead(rel) {
     const a = (data.albums || []).find(x => (x.rel || x.name) === rel);
     if (!a) return `<a class="back" href="#/releases">‹ 음반 이야기</a><h1 class="h1 page-title">${esc(rel)}</h1><p class="sub">티저부터 발매·이벤트까지 공식 X 글을 순서대로 모았어요.</p>`;
@@ -1154,16 +1149,18 @@
           ${a.credit ? `<div class="fact"><b>작사·작곡</b><span>${esc(a.credit)}</span></div>` : ''}
           ${a.label ? `<div class="fact"><b>기획·유통</b><span>${esc(a.label)}</span></div>` : ''}
         </div>
-        ${a.tracks.length ? `<h2 class="h3 list-title">수록곡</h2><ol class="setlist-list">${a.tracks.map(t => {
+        ${a.note ? `<p class="src-note">${esc(a.note)}</p>` : ''}
+        ${a.src.length ? `<p class="src-note">출처: ${a.src.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">${i + 1}</a>`).join(' · ')}</p>` : ''}
+      </section>`;
+  }
+  function albumTracks(rel) {
+    const a = (data.albums || []).find(x => (x.rel || x.name) === rel);
+    if (!a || !a.tracks.length) return '';
+    return `<ol class="setlist-list">${a.tracks.map(t => {
           const so = data.songs.get(window.DATA.songKey(t));
           const isTitle = a.title && a.title.split(/[,/]/).some(x => x.trim() && window.DATA.songKey(x) === window.DATA.songKey(t));
           return `<li><span class="sl-title">${so ? `<a${so.events.length ? '' : ' class="plain"'} href="#/song/${encodeURIComponent(so.key)}">${esc(t)}</a>` : esc(t)}</span>${isTitle ? '<span class="sl-note">타이틀</span>' : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent((a.member || '포레스텔라') + ' ' + t)}" target="_blank" rel="noopener" aria-label="${esc(t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`;
-        }).join('')}</ol>` : ''}
-        ${a.note ? `<p class="src-note">${esc(a.note)}</p>` : ''}
-        ${a.src.length ? `<p class="src-note">출처: ${a.src.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">${i + 1}</a>`).join(' · ')}</p>` : ''}
-      </section>
-      <hr class="divider">
-      <h2 class="h3 list-title">공식 X로 보는 이야기</h2>`;
+        }).join('')}</ol>`;
   }
 
   function releasesView() {
@@ -1237,6 +1234,16 @@
       ${c.src.length ? `<p class="src-note">출처: ${c.src.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener nofollow">${i + 1}</a>`).join(' · ')}</p>` : ''}`;
   }
 
+  function tourSetlist(t) {
+    return `
+      ${setlistSections(t.songs).map((sec, i) => `
+        ${i ? '<hr class="divider">' : ''}
+        ${sec.name ? `<h2 class="h3 list-title">${sec.name}</h2>` : ''}
+        <ol class="setlist-list" start="${sec.items[0].n}">
+          ${sec.items.map(s => `<li><span class="sl-title">${setlistSong(s.t)}</span>${s.note ? `<span class="sl-note">${esc(s.note)}</span>` : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent('포레스텔라 ' + window.DATA.setlistName(s.t.split(' / ')[0]) + ' ' + t.name.replace(/^[\d-]+\s*/, ''))}" target="_blank" rel="noopener" aria-label="${esc(s.t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`).join('')}
+        </ol>`).join('')}`;
+  }
+
   function tourView() {
     const id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const t = data.tours.find(x => x.id === id);
@@ -1287,14 +1294,12 @@
         ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
         ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
-      ${t.info ? `<section class="album-head tour-info">${concertInfo(t.info, true)}</section><hr class="divider"><h2 class="h3 list-title">셋리스트</h2>` : ''}
-      ${setlistSections(t.songs).map((sec, i) => `
-        ${i ? '<hr class="divider">' : ''}
-        ${sec.name ? `<h2 class="h3 list-title">${sec.name}</h2>` : ''}
-        <ol class="setlist-list" start="${sec.items[0].n}">
-          ${sec.items.map(s => `<li><span class="sl-title">${setlistSong(s.t)}</span>${s.note ? `<span class="sl-note">${esc(s.note)}</span>` : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent('포레스텔라 ' + window.DATA.setlistName(s.t.split(' / ')[0]) + ' ' + t.name.replace(/^[\d-]+\s*/, ''))}" target="_blank" rel="noopener" aria-label="${esc(s.t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`).join('')}
-        </ol>`).join('')}
-      ${ytSection((data.official || []).filter(v => v.tour === t.id), '공식 유튜브', '공연 Recap·라이브 클립·비하인드처럼 제목에 이 콘서트 이름이 들어간 공식 영상이에요.')}
+      ${t.info ? `<section class="album-head tour-info">${concertInfo(t.info, true)}</section>` : ''}
+      <hr class="divider">
+      ${paneTabs([
+        { label: '셋리스트', n: t.songs.length, html: tourSetlist(t) },
+        { label: '유튜브', n: (data.official || []).filter(v => v.tour === t.id).length, html: ytList((data.official || []).filter(v => v.tour === t.id)) },
+      ])}
       <hr class="divider">
       <div class="tour-foot">
         ${t.caution ? `<p class="src-note">${esc(t.caution)}</p>` : ''}
@@ -1322,6 +1327,16 @@
     return `<div class="stack x-list">${cards.map((c, i) => i < n ? c : c.replace('<a ', '<a hidden ')).join('')}</div>
       <button type="button" class="more-btn" onclick="const h=[...this.previousElementSibling.querySelectorAll('a[hidden]')];h.slice(0,${n}).forEach(a=>a.hidden=false);this.textContent='더 보기 ('+Math.max(h.length-${n},0)+'개 남음)';if(h.length<=${n})this.remove()">더 보기 (${cards.length - n}개 남음)</button>`;
   }
+  // 상세 화면 탭: 한 번에 한 칸만 보여서 화면이 길어지지 않게 (내용 없는 칸은 빼요)
+  function paneTabs(panes) {
+    panes = panes.filter(p => p.html);
+    if (panes.length < 2) return panes.map(p => p.html).join('');
+    const click = "const b=this,bar=b.parentNode,ps=bar.parentNode.querySelectorAll(':scope>.pane');[...bar.children].forEach((x,i)=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);ps[i].hidden=!on});const t=bar.getBoundingClientRect().top;if(t<0)bar.scrollIntoView()";
+    return `<div class="pane-wrap"><div class="pane-tabs" role="tablist">${panes.map((p, i) => `<button type="button" role="tab" class="${i ? '' : 'on'}" aria-selected="${!i}" onclick="${click}">${p.label}${p.n ? ` <b>${p.n}</b>` : ''}</button>`).join('')}</div>
+      ${panes.map((p, i) => `<div class="pane"${i ? ' hidden' : ''}>${p.html}</div>`).join('')}</div>`;
+  }
+  const ytList = list => list.length ? moreList(list.map(ytCard), 10) : '';
+
   // 가로로 넘기는 영상 줄
   function ytStrip(list) {
     return `<div class="yt-strip">${list.map(v => `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()"><span>${esc(ytTitle(v.title))}</span></a>`).join('')}</div>`;
@@ -1413,7 +1428,7 @@
         </div>
         ${findRow(findQuery(e.title))}
         ${xBlock(e)}
-        ${ytSection(e.ytBehind || [], '공식 유튜브 비하인드', '공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}
+        ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
         ${related}
         <hr class="divider">
         <section class="d-block">

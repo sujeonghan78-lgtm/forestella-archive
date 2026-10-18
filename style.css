@@ -553,3 +553,10 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .yt-strip span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 5px; font-size: 12px; line-height: 1.35; }
 .yt-ago { margin-top: 12px; }
 .search-yt { margin: 4px 0 14px; }
+/* 상세 화면 탭 */
+.pane-tabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 5px; margin: 4px -20px 12px; padding: 8px 20px; background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border-bottom: 1px solid #E3EDE7; overflow-x: auto; scrollbar-width: none; }
+.pane-tabs::-webkit-scrollbar { display: none; }
+.pane-tabs button { flex: 1 0 auto; min-height: 36px; padding: 0 9px; border: 1px solid #DCE8E0; border-radius: 18px; background: #fff; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; }
+.pane-tabs button b { font-weight: 600; color: var(--green); margin-left: 2px; }
+.pane-tabs button.on { background: linear-gradient(120deg, #C6EC6B, #62D3A1 55%, #72BCF3); color: #0F2A22; border-color: transparent; font-weight: 700; }
+.pane-tabs button.on b { color: inherit; }
