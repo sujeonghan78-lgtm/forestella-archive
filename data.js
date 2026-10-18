@@ -482,6 +482,14 @@
       if (!so.tracks.some(x => x.album === t.album)) so.tracks.push(t);
     });
     songs.forEach(so => { so.tracks = (so.tracks || []).sort((a, b) => a.date.localeCompare(b.date)); });
+    // 시트에 표지가 없는 음반은 유튜브 뮤직 공식 음원 썸네일(앨범 아트)로 채워요. 발매일이 가장 가까운 음원으로
+    albums.forEach(al => {
+      if (al.img) return;
+      const day = s => Date.parse(s || '') || 0;
+      const cand = (al.tracks || []).flatMap(t => { const so = songs.get(songKey(t)); return so ? so.tracks || [] : []; });
+      const best = cand.sort((x, y) => Math.abs(day(x.date) - day(al.date)) - Math.abs(day(y.date) - day(al.date)))[0];
+      if (best) { al.img = `https://i.ytimg.com/vi/${best.id}/hqdefault.jpg`; al.imgYt = true; }
+    });
     // 공식 X 글 → 콘서트: 공연 일정에 붙은 글 + 글에 콘서트 이름이 나오고 공연 앞 120일~뒤 60일 안의 글
     const tourOfEv = new Map();
     tours.forEach(t => (t.events || []).forEach(e => tourOfEv.set(e.id, t.id)));
