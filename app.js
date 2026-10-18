@@ -1016,10 +1016,10 @@
       ${homeSearchBox()}
       <hr class="divider">
       ${homeRandom()}
-      ${homeShortcuts()}
+      ${homeMembers()}
       <hr class="divider">
       ${homeVideos()}
-      ${homeMembers()}
+      ${homeShortcuts()}
       ${homePrograms()}
       <hr class="divider">
       ${homeAgo()}
@@ -1115,8 +1115,8 @@
       <div class="chips tl-cats">${chip(!kind, href('', yr, mem), '전체')}${YT_KINDS.filter(k => all.some(v => v.kind === k)).map(k => chip(k === kind, href(k, yr, mem), k)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(kind, '', mem), '전체 연도')}${[...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(kind, y, mem), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(kind, yr, ''), '멤버 전체')}${MEMBER_LIST.map(m => chip(m === mem, href(kind, yr, m), m.slice(1))).join('')}</div>
-      </div>
       <div class="view-row"><p class="sub">${list.length}개</p>${albumBtn()}</div>
+      </div>
       ${list.length ? moreList(list.map(ytCard), 20) : '<p class="empty">해당하는 영상이 없어요.</p>'}`;
   }
   function bindYt() {
@@ -1154,7 +1154,8 @@
             <span class="x-text"><span class="x-date">${esc(p.date.replace(/-/g, '.'))} · ${esc(p.cat)}</span>${esc(p.text || '(글 없음)')}</span>
           </a>`;
       if (!list.length) { box.innerHTML = `<p class="empty">${data.xPending ? '공식 X 글 불러오는 중…' : rel ? '이 음반에 묶인 공식 X 글이 없어요.' : '해당하는 글이 없어요.'}</p>`; return; }
-      box.innerHTML = `<div class="view-row"><p class="sub">${list.length}개</p>${rel ? '' : albumBtn()}</div><div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
+      const cnt = document.getElementById('xcount'); if (cnt) cnt.textContent = list.length + '개';
+      box.innerHTML = `${rel ? `<p class="sub">${list.length}개</p>` : ''}<div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
       const more = () => {
         box.querySelector('.x-list').insertAdjacentHTML('beforeend', list.slice(n, n + 40).map(card).join(''));
         n += 40;
@@ -1185,6 +1186,7 @@
       <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(cat, mem, ''), '전체 연도')}${[...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(cat, mem, y), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(cat, ''), '멤버 전체')}${X_MEMBERS.map(m => chip(m === mem, href(cat, m), m.slice(1))).join('')}</div>
+      <div class="view-row"><p class="sub" id="xcount"></p>${albumBtn()}</div>
       </div>
       <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
   }
