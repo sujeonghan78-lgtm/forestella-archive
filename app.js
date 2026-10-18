@@ -686,11 +686,13 @@
     const al = so.albums.find(a => a.img);
     if (al) return imgSize(al.img, 'thumb');
     for (let i = so.events.length - 1; i >= 0; i--) {
-      const e = so.events[i], vid = e.videoId || (e.related[0] || {}).videoId;
+      const e = so.events[i], vid = e.videoId || (e.related[0] || {}).videoId || (e.ytMain && e.ytMain.id);
       if (vid) return `https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg`;
     }
     const ov = (so.official || []).find(v => v.kind !== '쇼츠');
     if (ov) return `https://i.ytimg.com/vi/${encodeURIComponent(ov.id)}/mqdefault.jpg`;
+    const tr = (so.tracks || [])[0];
+    if (tr) return `https://i.ytimg.com/vi/${encodeURIComponent(tr.id)}/mqdefault.jpg`;
     const xp = songX(so).find(p => p.img);
     return xp ? imgSize(xp.img, 'thumb') : '';
   }
