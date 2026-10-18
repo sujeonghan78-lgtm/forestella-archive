@@ -256,8 +256,24 @@
       <nav class="shortcuts" aria-label="바로가기">
         ${tile('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범·싱글별')}
         ${tile('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', `공연 ${(data.concerts || []).length || data.tours.length}개`)}
-        ${tile('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '불후·열린음악회')}
       </nav>`;
+  }
+  function homeMembers() {
+    return `
+      <section class="block">
+        <div class="block-head"><h2 class="h2">멤버별 활동</h2><a class="more" href="#/members">전체 보기</a></div>
+        <nav class="mem-row">${MEMBER_LIST.map(m => {
+          const n = (data.official || []).filter(v => v.members.includes(m)).length + (data.xFeed || []).filter(p => p.m.includes(m)).length;
+          return `<a href="#/members?m=${encodeURIComponent(m)}"><b>${m}</b><span>자료 ${n}</span></a>`;
+        }).join('')}</nav>
+      </section>`;
+  }
+  function homePrograms() {
+    return `
+      <section class="block prog-mini">
+        <h2 class="h3">프로그램별 모아보기</h2>
+        <div class="chips">${PROGRAMS.map(p => `<a class="chip" href="#/program/${encodeURIComponent(p)}">${esc(p)} ›</a>`).join('')}</div>
+      </section>`;
   }
 
   // 홈: 공식 유튜브 새 영상 (+ 몇 년 전 오늘 올라온 영상)
@@ -972,8 +988,11 @@
       ${homeRandom()}
       ${homeShortcuts()}
       <hr class="divider">
-      ${homeAgo()}
       ${homeVideos()}
+      ${homeMembers()}
+      ${homePrograms()}
+      <hr class="divider">
+      ${homeAgo()}
       ${homeMonth()}`,
     search: searchView,
     program: programView,
