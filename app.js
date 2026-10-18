@@ -892,8 +892,11 @@
   const viewEl = document.getElementById('view');
   if (viewEl) new MutationObserver(() => { clearTimeout(syncT); syncT = setTimeout(() => window.syncAlbum(), 60); }).observe(viewEl, { childList: true, subtree: true });
   window.syncAlbum = () => {
-    const ok = [...document.querySelectorAll('#view .x-list')].some(l => l.offsetParent && l.querySelector('.x-card img, .card-thumb img'));
-    document.querySelectorAll('.view-tog').forEach(b => { b.classList.toggle('dis', !ok); b.disabled = !ok; });
+    // 화면(#view)과 일정 상세 창(.sheet-wrap)을 따로 봐요
+    document.querySelectorAll('#view, .sheet-wrap').forEach(box => {
+      const ok = [...box.querySelectorAll('.x-list')].some(l => l.offsetParent && l.querySelector('.x-card img, .card-thumb img'));
+      box.querySelectorAll('.view-tog').forEach(b => { b.classList.toggle('dis', !ok); b.disabled = !ok; });
+    });
   };
   function membersView() {
     const m = new URLSearchParams(location.hash.split('?')[1] || '').get('m') || MEMBER_LIST[0];
@@ -1354,7 +1357,7 @@
       </section>
       <section class="album-head tour-info">${concertInfo(info, true)}</section>
       ${ytSection((data.official || []).filter(v => v.tour === info.id), '공식 유튜브', '공연 Recap·라이브 클립·비하인드처럼 제목에 이 콘서트 이름이 들어간 공식 영상이에요.')}
-      ${tourX(info.id).length ? `<hr class="divider"><h2 class="h3 list-title">공식 X</h2>${xList(tourX(info.id))}` : ''}
+      ${tourX(info.id).length ? `<hr class="divider"><div class="block-head"><h2 class="h3 list-title">공식 X</h2>${albumBtn()}</div>${xList(tourX(info.id))}` : ''}
       <hr class="divider">
       <div class="tour-foot"><p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. <a href="${formUrl({ type: '틀린 정보', title: info.name })}" target="_blank" rel="noopener">알고 있는 곡 알려주기 ›</a></p></div>`;
     }
@@ -1436,7 +1439,8 @@
       ${[list, ...ks.map(k => list.filter(x => (key(x) || '기타') === k))].map((l, i) => `<div class="cat-block"${i ? ' hidden' : ''}>${moreList(l.map(card), 10)}</div>`).join('')}</div>`;
   }
   const ytList = list => catList(list, v => v.kind, ytCard);
-  const xList = list => catList(list, p => p.cat, p => xCard(p, p.cat));
+  const xCount = list => { const pics = list.reduce((s, p) => s + ((p.imgs || []).length || (p.img ? 1 : 0)), 0); return `글 ${list.length}개${pics ? ` · 사진 ${pics}장` : ''}`; };
+  const xList = list => list.length ? `<p class="sub x-count">${xCount(list)}</p>${catList(list, p => p.cat, p => xCard(p, p.cat))}` : '';
 
   // 가로로 넘기는 영상 줄
   function ytStrip(list) {
@@ -1476,7 +1480,7 @@
     const b = e.xBehind || [];
     if (!e.xPost && !b.length) return '';
     return `<hr class="divider"><section class="d-block">
-      <div class="block-head"><h2 class="h3">공식 X${help('포레스텔라 공식 X 계정이 이 일정 뒤에 올린 글과 비하인드예요. 날짜와 글 내용으로 골라서 가끔 다른 글일 수 있어요.')}</h2></div>
+      <div class="block-head"><h2 class="h3">공식 X${help('포레스텔라 공식 X 계정이 이 일정 뒤에 올린 글과 비하인드예요. 날짜와 글 내용으로 골라서 가끔 다른 글일 수 있어요.')}</h2>${albumBtn()}</div>
       ${moreList([...(e.xPost ? [xCard(e.xPost, '후기')] : []), ...b.map(p => xCard(p, /직캠|fancam|choreo/i.test(p.text) ? '직캠' : /포레미파솔/.test(p.text) ? '포레미파솔' : '비하인드'))], 3)}
     </section>`;
   }
@@ -1571,6 +1575,7 @@
 
   const sheet = document.createElement('div');
   sheet.className = 'sheet-wrap';
+  new MutationObserver(() => { clearTimeout(syncT); syncT = setTimeout(() => window.syncAlbum(), 60); }).observe(sheet, { childList: true, subtree: true });
   sheet.hidden = true;
   sheet.innerHTML = '<div class="sheet-backdrop"></div><section class="sheet" role="dialog" aria-modal="true" aria-label="일정 상세" tabindex="-1"></section>';
   document.querySelector('.app').appendChild(sheet);

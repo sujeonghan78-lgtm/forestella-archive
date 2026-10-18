@@ -610,14 +610,14 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .view-row .sub { margin: 0 auto 0 0; }
 .view-tog { font-size: 12px; height: 30px; }
 .view-tog.dis { opacity: .4; filter: grayscale(1); pointer-events: none; }
-.album-on .x-list:has(.x-card, .card-thumb) { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.album-on .x-list .x-wrap, .album-on .x-list .card-wrap { display: contents; }
-.album-on .x-list .x-links, .album-on .x-list .x-text, .album-on .x-list .no-img, .album-on .x-list .card-body, .album-on .x-list .card-sl, .album-on .x-list .card:not(.has-thumb) { display: none; }
-.album-on .x-list .x-card, .album-on .x-list .card { padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: #EEF3EF; box-shadow: none; }
-.album-on .x-list .x-card img { width: 100%; height: auto; aspect-ratio: 1; border-radius: 0; }
-.album-on .x-list .yt-card img { aspect-ratio: 16 / 10; }
-.album-on .x-list .card-thumb { width: 100%; height: auto; aspect-ratio: 16 / 10; border-radius: 0; }
-.album-on .x-list .x-card[hidden], .album-on .x-list .x-wrap[hidden], .album-on .x-list .card[hidden], .album-on .x-list .card-wrap[hidden] { display: none; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list:has(.x-card, .card-thumb) { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-wrap, .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .card-wrap { display: contents; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-links, .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-text, .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .no-img, .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .card-body, .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .card-sl, .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .card:not(.has-thumb) { display: none; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-card, .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .card { padding: 0; border: 0; border-radius: 8px; overflow: hidden; background: #EEF3EF; box-shadow: none; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-card img { width: 100%; height: auto; aspect-ratio: 1; border-radius: 0; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .yt-card img { aspect-ratio: 16 / 10; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .card-thumb { width: 100%; height: auto; aspect-ratio: 16 / 10; border-radius: 0; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-card[hidden], .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-wrap[hidden], .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .card[hidden], .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .card-wrap[hidden] { display: none; }
 .stick .view-row { margin: 6px 0 0; }
 .more-btn[hidden] { display: none; }
 /* 음반 이야기 목록: 연도별 표지 바둑판 */
@@ -644,6 +644,7 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 /* 앨범 보기: 글 하나의 사진 전부 */
 .x-extra { display: none; }
 .x-group[hidden] { display: none; }
-.album-on .x-list .x-group { display: contents; }
-.album-on .x-list .x-group[hidden] { display: none; }
-.album-on .x-list .x-extra { display: block; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-group { display: contents; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-group[hidden] { display: none; }
+.album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-extra { display: block; }
+.x-count { margin: 0 0 8px; }
