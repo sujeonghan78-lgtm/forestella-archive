@@ -33,7 +33,7 @@ for (let i = 0; i < ids.length; i += 50) {
   const d = await api('videos', { part: 'snippet,contentDetails', id: ids.slice(i, i + 50).join(','), maxResults: 50 });
   for (const v of d.items) {
     const kst = new Date(new Date(v.snippet.publishedAt).getTime() + 9 * 3600e3).toISOString().slice(0, 10);
-    add.push({ id: v.id, date: kst, title: v.snippet.title, sec: sec(v.contentDetails.duration), desc: (v.snippet.description || '').slice(0, 300) });
+    add.push({ id: v.id, date: kst, title: v.snippet.title, sec: sec(v.contentDetails.duration) });
   }
 }
 const all = [...old.filter(v => !add.some(a => a.id === v.id)), ...add].sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));

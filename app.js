@@ -568,6 +568,8 @@
       const e = so.events[i], vid = e.videoId || (e.related[0] || {}).videoId;
       if (vid) return `https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg`;
     }
+    const ov = (so.official || []).find(v => v.kind !== '쇼츠');
+    if (ov) return `https://i.ytimg.com/vi/${encodeURIComponent(ov.id)}/mqdefault.jpg`;
     const xp = songX(so).find(p => p.img);
     return xp ? imgSize(xp.img, 'thumb') : '';
   }
@@ -655,6 +657,14 @@
       </section>
       <h2 class="h3 list-title">무대 목록${help('영상으로 확인된 무대만 있어요. 빠진 무대는 일정 상세에서 제보해 주세요.')}</h2>
       ${stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', title: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>`}
+      ${so.official.length ? `
+      <hr class="divider">
+      <h2 class="h3 list-title">공식 유튜브${help('포레스텔라 공식 유튜브 채널 영상 중 제목에 이 곡이 들어간 영상이에요. 매일 자동으로 새 영상을 확인해요.')}</h2>
+      <div class="stack x-list">${so.official.map(v => `
+        <a class="x-card yt-card" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener">
+          <img src="https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">
+          <span class="x-text"><span class="x-date">${esc(v.kind)} · ${esc(v.date.replace(/-/g, '.'))}</span>${esc(v.title.replace(/^포레스텔라\s*\(Forestella\)\s*/i, ''))}</span>
+        </a>`).join('')}</div>` : ''}
       ${so.tours.length ? `
       <hr class="divider">
       <h2 class="h3 list-title">이 곡을 부른 콘서트${help('콘서트 셋리스트 기준이에요. 위 무대 목록과 달리 영상으로 확인한 건 아니에요.')}</h2>

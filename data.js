@@ -139,7 +139,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -148,8 +148,9 @@
       withX ? fetchText(s.x).catch(() => '') : '',
       s.albums ? fetchText(s.albums).catch(() => '') : '',
       s.concerts ? fetchText(s.concerts).catch(() => '') : '',
+      fetchText('data/yt_videos.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, sheets: JSON.stringify(s), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, sheets: JSON.stringify(s), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -309,7 +310,21 @@
       const ds = [so.first && so.first.date, ...so.tours.map(t => t.dates[0]), ...so.albums.map(a => a.date)].filter(Boolean).sort();
       so.since = ds[0] || '';
     });
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, savedAt: raw.savedAt };
+    // 공식 유튜브 (data/yt_videos.json, 매일 자동): 제목의 '곡 이름'으로 곡에 붙여요
+    let official = [];
+    try { official = JSON.parse(raw.yt || '{}').videos || []; } catch (err) { /* 없으면 넘어가요 */ }
+    const songByLoose = new Map([...songs.values()].map(so => [so.key.replace(/[^0-9a-z가-힣]/g, ''), so]));
+    songs.forEach(so => { so.official = []; });
+    official.forEach(v => {
+      v.kind = /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : '영상';
+      const seen = new Set();
+      // 따옴표 안 이름 (In un'altra vita처럼 글자 사이 '는 건너뛰어요)
+      [...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]).forEach(q => {
+        const so = songByLoose.get(songKey(q.slice(1, -1).replace(/\s*\([^)]*\)\s*$/, '')).replace(/[^0-9a-z가-힣]/g, ''));
+        if (so && !seen.has(so)) { seen.add(so); so.official.push(v); }
+      });
+    });
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
