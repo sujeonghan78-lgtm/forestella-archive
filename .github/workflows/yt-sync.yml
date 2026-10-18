@@ -3,7 +3,7 @@ name: yt-sync
 on:
   workflow_dispatch:
   schedule:
-    - cron: '20 21 * * *'
+    - cron: '17 19 * * *'
 permissions:
   contents: write
 jobs:

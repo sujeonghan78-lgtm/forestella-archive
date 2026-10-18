@@ -7,7 +7,7 @@ on:
         description: '처음부터 전부 다시 찾기 (yes)'
         required: false
   schedule:
-    - cron: '40 21 * * *'
+    - cron: '43 19 * * *'
 permissions:
   contents: write
 jobs:
