@@ -648,3 +648,11 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-group[hidden] { display: none; }
 .album-on :is(#view, .sheet-wrap):has(.view-tog) .x-list .x-extra { display: block; }
 .x-count { margin: 0 0 8px; }
+/* 통합 검색 */
+.s-tabs { margin: 4px 0 12px; }
+.s-tabs .chip b { font-weight: 600; color: var(--green); margin-left: 2px; }
+.s-tabs .chip.on b { color: inherit; }
+.s-xlink { border-style: dashed; color: var(--green); }
+.s-sec { margin: 6px 0 18px; }
+.s-sec .block-head { margin-bottom: 8px; }
+#filters[hidden] { display: none; }

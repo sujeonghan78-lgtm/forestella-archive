@@ -313,7 +313,7 @@
       <form class="searchbox" role="search" id="home-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소 · 초성 OK" autocomplete="off">
-        <a class="adv-btn" href="#/search">상세 검색</a>
+        <a class="adv-btn" href="#/search">통합 검색</a>
       </form>`;
   }
 
@@ -361,7 +361,7 @@
 
   function readParams() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-    return { q: qs.get('q') || '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: qs.get('member') || '', video: qs.get('video') === '1', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
+    return { q: qs.get('q') || '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: qs.get('member') || '', video: qs.get('video') === '1', t: qs.get('t') || '', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
   }
   function writeParams(p) {
     const qs = new URLSearchParams();
@@ -370,6 +370,7 @@
     if (p.year) qs.set('year', p.year);
     if (p.member) qs.set('member', p.member);
     if (p.video) qs.set('video', '1');
+    if (p.t) qs.set('t', p.t);
     if (p.sort === 'old') qs.set('sort', 'old');
     const s = qs.toString();
     history.replaceState(null, '', '#/search' + (s ? '?' + s : ''));
@@ -448,6 +449,45 @@
   }
 
   // 검색어가 제목에 들어간 공식 유튜브 영상 (몇 개만, 나머지는 공식 유튜브 화면으로)
+  // 통합 검색: 종류별 탭 (전체 · 일정 · 곡 · 유튜브 · 음반·콘서트) + 공식 X는 X 탭으로 연결
+  function searchHits(p) {
+    const nq = norm(p.q), cho = isChosungOnly(p.q);
+    const ok = nq && (cho || nq.length >= 2);
+    const hit = name => ok && (cho ? chosung(name).includes(nq) : norm(name).includes(nq));
+    const songs = [...data.songs.values()].filter(so => hit(so.name)).sort((a, b) => playCount(b) - playCount(a));
+    const vids = (data.official || []).filter(v => hit(v.title) && (!p.member || v.members.includes(p.member)) && (!p.year || v.date.startsWith(p.year)));
+    const rels = [
+      ...(data.albums || []).filter(a => hit(a.name) && (!p.member || a.member === p.member)).map(a => ({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, sub: a.date.replace(/-/g, '.'), img: a.img && imgSize(a.img, 'thumb') })),
+      ...(data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).map(c => ({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, sub: c.from ? c.from.replace(/-/g, '.') : '', img: c.img ? imgSize(c.img, 'thumb') : tourPic(c.tour || c) })),
+      ...PROGRAMS.filter(hit).map(pg => ({ href: '#/program/' + encodeURIComponent(pg), kind: '프로그램', name: pg + ' 모아보기', sub: '' })),
+    ];
+    return { songs, vids, rels };
+  }
+  function searchTabs(p, evN) {
+    const h = searchHits(p);
+    const tabs = [['', '전체'], ['ev', '일정', evN], ['song', '곡', h.songs.length], ['yt', '유튜브', h.vids.length], ['rel', '음반·콘서트', h.rels.length]];
+    return `<div class="chips s-tabs">${tabs.filter(([t, , n]) => n !== 0 || (p.t || '') === t).map(([t, l, n]) => `<a class="chip${(p.t || '') === t ? ' on' : ''}" href="#" data-t="${t}">${l}${n != null ? ` <b>${n.toLocaleString()}</b>` : ''}</a>`).join('')}
+      <a class="chip s-xlink" href="#/xfeed?q=${encodeURIComponent(p.q)}">공식 X에서 찾기 ›</a></div>`;
+  }
+  const relCard = x => `<a class="x-card${x.img ? '' : ' no-img'}" href="${x.href}">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="x-text"><span class="x-date">${esc(x.kind)}${x.sub ? ' · ' + esc(x.sub) : ''}</span><b>${esc(x.name)}</b></span></a>`;
+  const songCard = so => relCard({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', sub: `무대 ${so.events.length}번`, name: so.name, img: songPic(so) });
+  function searchAll(p) {
+    const h = searchHits(p);
+    const { list } = runSearch(p);
+    const head = searchTabs(p, list.length);
+    const more = (t, n, unit) => n ? `<a class="more s-more" href="#" data-t="${t}">${n.toLocaleString()}${unit} 모두 보기 ›</a>` : '';
+    if (p.t === 'song') return head + (h.songs.length ? moreList(h.songs.map(songCard), 20) : '<p class="empty">찾는 곡이 없어요.</p>');
+    if (p.t === 'yt') return head + (h.vids.length ? `<div class="view-row"><p class="sub">${h.vids.length.toLocaleString()}개</p>${albumBtn()}</div>${ytList(h.vids)}` : '<p class="empty">찾는 영상이 없어요.</p>');
+    if (p.t === 'rel') return head + (h.rels.length ? `<div class="stack x-list">${h.rels.map(relCard).join('')}</div>` : '<p class="empty">찾는 음반·콘서트가 없어요.</p>');
+    const sec = (title, n, body, t, unit) => n ? `<section class="s-sec"><div class="block-head"><h2 class="h3">${title} <span class="song-count">${n.toLocaleString()}</span></h2>${more(t, n, unit)}</div>${body}</section>` : '';
+    const any = list.length || h.songs.length || h.vids.length || h.rels.length;
+    return head + (any ? [
+      sec('곡', h.songs.length, `<div class="stack x-list">${h.songs.slice(0, 3).map(songCard).join('')}</div>`, 'song', '곡'),
+      sec('일정', list.length, `<div class="stack">${list.slice(0, 4).map(resultCard).join('')}</div>`, 'ev', '건'),
+      sec('공식 유튜브', h.vids.length, ytStrip(h.vids.slice(0, 8)), 'yt', '개'),
+      sec('음반·콘서트', h.rels.length, `<div class="stack x-list">${h.rels.slice(0, 3).map(relCard).join('')}</div>`, 'rel', '개'),
+    ].join('') : `<p class="empty">찾는 기록이 없어요. 혹시 빠진 기록이라면 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`);
+  }
   function searchVideos(q) {
     const nq = norm(q);
     if (nq.length < 2) return '';
@@ -480,6 +520,7 @@
   let showAll = false;
   function searchResults(p) {
     if (!p.q && !p.cat && !p.year && !p.member && !p.video && !showAll) return searchHome();
+    if (p.q && p.t !== 'ev') return searchAll(p);
     const { list, fuzzy } = runSearch(p);
     const desc = [p.q && `'${p.q}'`, p.cat, p.year && `${p.year}년`, p.member, p.video && '영상 있음'].filter(Boolean).join(' · ');
     const play = playAllUrl(list);
@@ -497,7 +538,7 @@
         </details>`).join('');
     }
     return `
-      ${p.q ? searchShortcuts(p.q) + searchVideos(p.q) : ''}
+      ${p.q ? searchTabs(p, list.length) : ''}
       <div class="result-head">
         <span>${desc ? esc(desc) + ' · ' : ''}<b>${list.length}건</b>${fuzzy ? ' · 비슷한 결과' : ''}</span>
         <button type="button" class="link-btn" id="sort">${p.sort === 'old' ? '오래된순' : '최신순'} ▾</button>
@@ -518,13 +559,13 @@
         <a class="back" href="#/">‹ 홈</a>
         <form class="searchbox" role="search" id="search-form">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-          <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소 · 초성도 OK" value="${esc(p.q)}" autocomplete="off">
+          <input type="search" name="q" aria-label="검색어" placeholder="곡·방송·장소·영상·음반 다 찾아요 · 초성 OK" value="${esc(p.q)}" autocomplete="off">
         </form>
-        <div class="chips" id="filters">
-          ${cats.map(c => chip('cat', c, c, p.cat === c)).join('')}
+        <div class="chips" id="filters"${p.q && p.t !== 'ev' ? ' hidden' : ''}>
+          ${chip('video', '1', '▶ 영상 있음', p.video)}${cats.map(c => chip('cat', c, c, p.cat === c)).join('')}
         </div>
         <div class="chips" id="filters2">
-          ${chip('video', '1', '▶ 영상 있음', p.video)}${MEMBER_LIST.map(m => chip('member', m, m.slice(1), p.member === m)).join('')}
+          ${MEMBER_LIST.map(m => chip('member', m, m.slice(1), p.member === m)).join('')}
         </div>
         <div class="chips" id="filters3">${years.map(y => chip('year', y, y, p.year === y)).join('')}</div>
       </div>
@@ -539,6 +580,7 @@
       writeParams(p);
       if (resetShown) shown = 50;
       document.getElementById('results').innerHTML = searchResults(p);
+      document.getElementById('filters').hidden = !!p.q && p.t !== 'ev';
       bindResults();
     };
     const bindResults = () => {
@@ -551,6 +593,7 @@
       const clr = document.getElementById('clear-recent');
       if (clr) clr.onclick = () => { try { localStorage.removeItem(RECENT_Q); } catch (err) { /* 괜찮아요 */ } update({}); };
       document.querySelectorAll('#results .chip[data-q]').forEach(b => b.onclick = () => { input.value = b.dataset.q; update({ q: b.dataset.q }); });
+      document.querySelectorAll('#results [data-t]').forEach(b => b.onclick = ev => { ev.preventDefault(); update({ t: b.dataset.t }); window.scrollTo(0, 0); });
       // 결과를 누르면 그 검색어를 최근 검색어로 남겨요
       document.getElementById('results').onclick = ev => { if (ev.target.closest('a')) saveQuery(readParams().q); };
     };
@@ -562,7 +605,7 @@
       update({ cat: p.cat === b.dataset.cat ? '' : b.dataset.cat });
       document.querySelectorAll('#filters .chip[data-cat]').forEach(x => { const on = x.dataset.cat === readParams().cat; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     });
-    const v = document.querySelector('#filters2 .chip[data-video]');
+    const v = document.querySelector('#filters .chip[data-video]');
     v.onclick = () => { const on = !readParams().video; update({ video: on }); v.classList.toggle('on', on); v.setAttribute('aria-pressed', on); };
     // 연도·멤버 칩: 한 번 더 누르면 풀려요
     ['year', 'member'].forEach(k => document.querySelectorAll(`.chip[data-${k}]`).forEach(b => b.onclick = () => {
@@ -1141,6 +1184,7 @@
   function xfeedView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     const cat = qs.get('cat') || '', mem = qs.get('m') || '', rel = qs.get('rel') || '', yr = qs.get('y') || '';
+    if (qs.has('q')) xQuery = qs.get('q');  // 통합 검색에서 넘어온 검색어
     let n = 0;
     const href = (c, m, y = yr) => '#/xfeed?' + new URLSearchParams(Object.entries({ cat: c, m, y }).filter(x => x[1])).toString();
     const chip = (on, h, label) => `<a class="chip${on ? ' on' : ''}" href="${h}">${label}</a>`;
