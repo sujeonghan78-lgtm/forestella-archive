@@ -14,15 +14,8 @@ process.on('unhandledRejection', e => { console.log(`::error::${e.message}`); pr
 const old = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')).videos : [];
 const known = new Set(old.map(v => v.id));
 const full = process.argv.includes('--full') || !old.length;
-// 이름이 포레스텔라인 채널 중 구독자가 가장 많은 곳을 공식 채널로 봐요
-const found = await api('search', { part: 'snippet', type: 'channel', q: '포레스텔라 Forestella', maxResults: 10 });
-const cands = (await api('channels', { part: 'contentDetails,snippet,statistics', id: found.items.map(i => i.snippet.channelId).join(',') })).items
-  .filter(c => /포레스텔라|forestella/i.test(c.snippet.title))
-  .sort((a, b) => Number(b.statistics.subscriberCount || 0) - Number(a.statistics.subscriberCount || 0));
-console.log(`::notice::후보 ${cands.slice(0, 5).map(c => `${c.snippet.title}(${c.snippet.customUrl}) 구독${c.statistics.subscriberCount} 영상${c.statistics.videoCount}`).join(' | ')}`);
-const ch = cands[0];
-if (!ch) throw new Error('공식 채널을 못 찾았어요');
-console.log(`::notice::채널 ${ch.snippet.title} ${ch.id}`);
+// 공식 채널 @officialforestella (2026-10-18 검색으로 확인)
+const ch = (await api('channels', { part: 'contentDetails', id: 'UCb_gdTMC2xeuO1p8lKkZHHQ' })).items[0];
 const CHANNEL = ch.id;
 const ids = [];
 let page = '';
