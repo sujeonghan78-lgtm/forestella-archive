@@ -374,7 +374,7 @@
 
   function resultCard(e) {
     // 영상이 있으면 오른쪽에 썸네일을 보여줘요 (못 불러오면 ▶ 동그라미로)
-    const vid = e.videoId || (e.related[0] || {}).videoId;
+    const vid = e.videoId || (e.related[0] || {}).videoId || (e.ytMain && e.ytMain.id);
     const thumb = vid ? `<span class="card-thumb" aria-label="영상 있음"><img src="https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span></span>` : '';
     const card = `
       <a class="card${e.setlist ? ' card-concert' : ''}${vid ? ' has-thumb' : ''}" href="#/e/${encodeURIComponent(e.id)}">
@@ -1367,11 +1367,12 @@
   function detailView(e) {
     const time = !e.start || e.start === '종일' ? '' : ` · ${esc(e.start)}${e.end && e.end !== e.start ? '~' + esc(e.end) : ''}`;
     const period = e.endDate && e.endDate !== e.date ? ` ~ ${fmtDate(e.endDate, false)}` : '';
-    const thumb = e.videoId ? `
-      <a class="thumb" href="${ytWatch(e.videoId)}" target="_blank" rel="noopener" aria-label="유튜브에서 영상 보기">
-        <img src="${ytThumb(e.videoId)}" alt="" loading="lazy">
+    const mainVid = e.videoId || (e.ytMain && e.ytMain.id);
+    const thumb = mainVid ? `
+      <a class="thumb" href="${ytWatch(mainVid)}" target="_blank" rel="noopener" aria-label="유튜브에서 영상 보기">
+        <img src="${ytThumb(mainVid)}" alt="" loading="lazy">
         <span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span>
-        <span class="thumb-cap">${e.songSource === '참고' ? '참고 영상 · ' : ''}유튜브에서 열기</span>
+        <span class="thumb-cap">${e.videoId ? (e.songSource === '참고' ? '참고 영상 · ' : '') : (e.ytMain.kind === '비하인드' ? '공식 비하인드 · ' : '공식 영상 · ')}유튜브에서 열기</span>
       </a>` : '';
 
     let songs;

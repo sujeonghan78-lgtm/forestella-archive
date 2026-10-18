@@ -316,7 +316,7 @@
     const songByLoose = new Map([...songs.values()].map(so => [so.key.replace(/[^0-9a-z가-힣]/g, ''), so]));
     songs.forEach(so => { so.official = []; });
     official.forEach(v => {
-      v.kind = /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : '영상';
+      v.kind = /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /포레미파솔|behind|비하인드/i.test(v.title) ? '비하인드' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : '영상';
       const seen = new Set();
       // 따옴표 안 이름 (In un'altra vita처럼 글자 사이 '는 건너뛰어요)
       [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[|]+?)\s*(?=\(|\[|\||$)/g)].map(m => `'${m[1]}'`)].forEach(q => {
@@ -327,7 +327,7 @@
     // 영상 → 멤버·음반·콘서트·일정 (제목 기준, 자동이라 가끔 틀릴 수 있어요)
     const flat = t => String(t).normalize('NFKC').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
     const ENG = { 배두훈: /baedoohoon|doohoon/i, 강형호: /kanghyungho|hyungho/i, 조민규: /chomingyu|mingyu/i, 고우림: /kowoorim|woorim/i };
-    const GENERIC = new Set(['포레스텔라', 'forestella', '콘서트', '공연', '비하인드', '기념', '축하무대', '촬영', '현장', '특집', '단독', '초청', '함께하는', '시민과', '행사', '축제', '페스티벌', '열린음악회', 'kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'festival', 'concert', 'live', 'behind', 'part', 'feat']);
+    const GENERIC = new Set(['포레스텔라', 'forestella', '콘서트', '공연', '비하인드', '기념', '축하무대', '촬영', '현장', '특집', '단독', '초청', '함께하는', '시민과', '행사', '축제', '페스티벌', '열린음악회', 'kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'festival', 'concert', 'live', 'behind', 'part', 'feat', '생일', '축하해']);
     const words = t => (String(t).normalize('NFKC').match(/[0-9A-Za-z가-힣]{2,}/g) || []).map(w => w.toLowerCase()).filter(w => !GENERIC.has(w) && !/^\d+$|^\d+주년$/.test(w) && !/^포레미파솔/.test(w));
     const evWords = events.filter(e => !e.auto || e.title).map(e => ({ e, w: new Set(words(e.title)) }));
     const concertKeys = [...tours.map(t => ({ id: t.id, key: flat(t.name.replace(/^[\d-]+\s*/, '')), from: t.dates[0], to: t.dates[t.dates.length - 1] })),
@@ -344,19 +344,32 @@
         .sort((a, b) => b.key.length - a.key.length || Math.abs(days(v.date, a.to)) - Math.abs(days(v.date, b.to)));
       v.tour = cs[0] && !/m\/v|teaser|lyric|highlight medley|jacket|album|앨범|coming soon/i.test(t) ? cs[0].id : '';
       v.event = null;
-      if (v.kind === '비하인드' && !v.tour && !/m\/v|jacket|making|shooting/i.test(t)) {
+      // 비하인드는 행사 뒤 400일까지, 무대·클립 영상은 60일까지 (쇼츠·M/V·가사·티저는 빼요)
+      const behind = v.kind === '비하인드' && !/m\/v|jacket|making|shooting/i.test(t);
+      const stage = ['라이브', '클립', '영상'].includes(v.kind) && !/recap|인사|greeting|예고|preview|d-\d|exhibition|메이킹|making/i.test(t);
+      if (!v.tour && (behind || stage)) {
         const yymmdd = (t.match(/\b(\d{2})(\d{2})(\d{2})\b/) || []);
         const vw = words(t);
         let best = null, score = 0;
         evWords.forEach(({ e, w }) => {
           const gap = days(v.date, e.date);
-          if (gap < 0 || gap > 400) return;
+          if (gap < 0 || gap > (behind ? 400 : 60)) return;
           let sc = vw.filter(x => w.has(x)).reduce((n, x) => n + x.length, 0);
           if (yymmdd[0] && e.date === `20${yymmdd[1]}-${yymmdd[2]}-${yymmdd[3]}`) sc += 10;
           if (sc > score || (sc === score && best && gap < days(v.date, best.date))) { if (sc) { score = sc; best = e; } }
         });
-        if (best && score >= 3) { v.event = best; (best.ytBehind = best.ytBehind || []).push(v); }
+        if (best && score >= (behind ? 3 : 4)) {
+          v.event = best;
+          if (behind) (best.ytBehind = best.ytBehind || []).push(v);
+          else (best.ytStage = best.ytStage || []).push(v);
+        }
       }
+    });
+    // 일정 대표 영상: 시트 영상ID가 없으면 공식 무대 영상 → 공식 비하인드 순으로
+    events.forEach(e => {
+      if (e.videoId) return;
+      const v = (e.ytStage || [])[0] || (e.ytBehind || [])[0];
+      if (v) e.ytMain = v;
     });
     return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, savedAt: raw.savedAt };
   }
