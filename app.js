@@ -1177,7 +1177,8 @@
   function setlistSong(title) {
     return title.split(' / ').map(part => {
       const so = data.songs.get(window.DATA.songKey(window.DATA.setlistName(part)));
-      return so ? `<a${so.events.length ? '' : ' class="plain"'} href="#/song/${encodeURIComponent(so.key)}">${esc(part)}</a>` : esc(part);
+      const cls = so && [so.events.length ? '' : 'plain', (so.official || []).length ? 'has-vid' : ''].filter(Boolean).join(' ');
+      return so ? `<a${cls ? ` class="${cls}"` : ''} href="#/song/${encodeURIComponent(so.key)}">${esc(part)}</a>` : esc(part);
     }).join(' / ');
   }
 

@@ -488,8 +488,9 @@ h1:has(> .help), h2:has(> .help) { position: relative; }
 .tour-poster { width: 100%; max-height: 420px; object-fit: contain; border-radius: 14px; margin: 8px 0 12px; background: rgba(255,255,255,.5); display: block; }
 /* 표지·포스터는 같은 크기 상자에 통째로 보이게 (긴 포스터도 화면을 덮지 않게) */
 .album-head .album-img, .tour-poster { height: 200px; max-height: none; width: 100%; object-fit: contain; background: rgba(255,255,255,.55); }
-/* 곡 정보가 있는 곡은 밑줄 대신 초록 글씨 */
-.setlist-list .sl-title a { color: var(--green); text-decoration: none; font-weight: 500; }
+/* 셋리스트: 곡 링크는 밑줄 없이, 유튜브 영상이 있는 곡만 초록 글씨 */
+.setlist-list .sl-title a { color: var(--ink); text-decoration: none; font-weight: 500; }
+.setlist-list .sl-title a.has-vid { color: var(--green); }
 /* 곡 목록: 앨범 썸네일 + 곡명 + 무대·콘서트 수 */
 .song-thumb { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #E3F2E6, #DDEBF5); display: block; }
 .song-name small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
