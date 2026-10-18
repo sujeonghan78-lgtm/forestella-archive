@@ -408,7 +408,7 @@
     const vid = e.videoId || (e.related[0] || {}).videoId || (e.ytMain && e.ytMain.id);
     const thumb = vid ? `<span class="card-thumb" aria-label="영상 있음"><img src="https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span></span>` : '';
     const card = `
-      <a class="card${e.setlist ? ' card-concert' : ''}${vid ? ' has-thumb' : ''}" href="#/e/${encodeURIComponent(e.id)}">
+      <a class="card${e.setlist ? ' card-concert' : ''}${vid ? ' has-thumb' : ''}" href="${e.ytOnly ? 'https://www.youtube.com/watch?v=' + encodeURIComponent(e.videoId) + '" target="_blank" rel="noopener' : '#/e/' + encodeURIComponent(e.id)}">
         <span class="card-body">
           <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${upcoming(e)}</span>
           <span class="card-title">${esc(e.title)}</span>

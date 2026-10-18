@@ -398,6 +398,31 @@
       const v = (e.ytStage || [])[0] || (e.ytBehind || [])[0];
       if (v) e.ytMain = v;
     });
+    // 방송사 무대 영상 → 곡 무대 목록: 이어진 일정(또는 같은 날 방송 일정)이 있으면 그 일정에 곡을 붙이고, 없으면 영상만으로 무대 한 줄을 만들어요
+    const tvByDate = new Map();
+    events.forEach(e => { if (e.category !== '공연') (tvByDate.get(e.date) || tvByDate.set(e.date, []).get(e.date)).push(e); });
+    const ytStages = new Map();
+    songs.forEach(so => {
+      let added = false;
+      so.official.filter(v => v.bc && ['무대', '직캠', '라이브'].includes(v.kind)).sort((a, b) => (a.kind === '직캠') - (b.kind === '직캠')).forEach(v => {
+        const e = v.event || (tvByDate.get(v.date) || [])[0];
+        if (e) {
+          if (!so.events.includes(e)) { so.events.push(e); added = true; }
+          if (!e.songKeys.includes(so.key)) { e.songs.push(so.name); e.songKeys.push(so.key); }
+          if (!e.videoId && !e.ytMain) e.ytMain = v;
+          return;
+        }
+        if (so.events.some(x => x.date === v.date)) return;  // 같은 날 직캠·풀버전은 한 줄만
+        const prog = ((v.title.match(/\[([^\]]+)\]/g) || []).map(s => s.slice(1, -1).split(/[/,|]/)[0].trim()).find(s => !/직캠|focus|4k|eng|페이스캠|가로|세로|fancam/i.test(s)) || v.bc).replace(/\s*EP\.?\s*\d+.*$/i, '');
+        const st = { id: 'yt-' + v.id, ytOnly: v, date: v.date, category: 'TV', title: prog, place: v.bc, songs: [so.name], songKeys: [so.key], related: [], members: v.members || [], videoId: v.id };
+        so.events.push(st); added = true;
+        ytStages.set(st.id, st);
+      });
+      if (added) {
+        so.events.sort((a, b) => a.date.localeCompare(b.date));
+        so.first = so.events[0]; so.last = so.events[so.events.length - 1];
+      }
+    });
     // 공식 X 글 → 콘서트: 공연 일정에 붙은 글 + 글에 콘서트 이름이 나오고 공연 앞 120일~뒤 60일 안의 글
     const tourOfEv = new Map();
     tours.forEach(t => (t.events || []).forEach(e => tourOfEv.set(e.id, t.id)));
