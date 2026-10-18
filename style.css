@@ -597,3 +597,11 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .shortcuts .sc-l { font-size: 13px; white-space: nowrap; }
 .shortcuts .sc-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-head { margin-bottom: 0; }
+/* 검색창~필터 위에 고정 (엑셀 틀 고정처럼) */
+.stick { position: sticky; top: 0; z-index: 6; margin: 0 -20px 8px; padding: 8px 20px 8px; background: rgba(255,255,255,.96); backdrop-filter: blur(6px); border-bottom: 1px solid #E3EDE7; }
+.stick .searchbox { margin-bottom: 8px; }
+.stick .tl-cats { margin: 0 0 6px; }
+.stick .tl-cats:last-child { margin-bottom: 0; }
+.stick .searchbox { height: 42px; min-height: 0; padding: 0 14px; box-shadow: none; }
+.stick .tl-cats .chip { height: 28px; font-size: 12px; padding: 0 11px; }
+.stick .tl-cats { margin-bottom: 5px; }
