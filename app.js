@@ -1173,9 +1173,9 @@
     });
     return `
       ${rel ? albumHead(rel) + '<hr class="divider"><div class="view-row">' + albumBtn() + '</div>' + paneTabs([
+        { label: '수록곡', html: albumTracks(rel) },
         { label: '유튜브', n: (data.official || []).filter(v => v.rel === rel).length, html: ytList((data.official || []).filter(v => v.rel === rel)) },
         { label: '공식 X', n: (data.xFeed || []).filter(p => p.rel === rel).length, html: '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' },
-        { label: '수록곡', html: albumTracks(rel) },
       ]) : ''}
       ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
       <div class="stick">
@@ -1194,20 +1194,32 @@
   function albumHead(rel) {
     const a = (data.albums || []).find(x => (x.rel || x.name) === rel);
     if (!a) return `<a class="back" href="#/releases">‹ 음반 이야기</a><h1 class="h1 page-title">${esc(rel)}</h1><p class="sub">티저부터 발매·이벤트까지 공식 X 글을 순서대로 모았어요.</p>`;
+    // 같은 가수(그룹/멤버) 음반 안에서 이전·다음
+    const same = data.albums.filter(x => (x.member || '') === (a.member || '')).sort((x, y) => (x.date < y.date ? -1 : 1));
+    const k = same.indexOf(a), prev = same[k - 1], next = same[k + 1];
+    const go = (x, label) => x ? `<a href="#/xfeed?rel=${encodeURIComponent(x.rel || x.name)}"><span>${label}</span><b>${esc(x.name)}</b></a>` : '<span></span>';
+    const SRC = [[/namu/, '나무위키'], [/wikipedia/, '위키백과'], [/melon/, '멜론'], [/genie/, '지니'], [/bugs/, '벅스'], [/apple/, '애플뮤직'], [/spotify/, '스포티파이'], [/vibe|naver/, '네이버'], [/youtu/, '유튜브'], [/x\.com|twitter/, '공식 X'], [/daum/, '다음']];
+    const host = u => { let h = ''; try { h = new URL(u).hostname; } catch (e) { /* 넘어가요 */ } return (SRC.find(([rx]) => rx.test(h)) || [])[1] || '기사'; };
     return `<a class="back" href="#/releases${a.member ? '?m=' + encodeURIComponent(a.member) : ''}">‹ 음반 이야기</a>
-      <section class="album-head">
-        ${a.img ? `<img class="album-img" src="${esc(imgSize(a.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
-        <h1 class="h1">${esc(a.name)}</h1>
-        <p class="sub">${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.replace(/-/g, '.'))} 발매 · ${esc(a.kind)}${a.ok ? '' : ' · <span class="tag">확인 중</span>'}</p>
-        <div class="facts">
-          ${a.title ? `<div class="fact"><b>타이틀</b><span>${esc(a.title)}</span></div>` : ''}
-          ${a.credit ? `<div class="fact"><b>작사·작곡</b><span>${esc(a.credit)}</span></div>` : ''}
-          ${a.label ? `<div class="fact"><b>기획·유통</b><span>${esc(a.label)}</span></div>` : ''}
+      <section class="album-head ah2">
+        <div class="ah-top">
+          ${a.img ? `<img class="ah-img" src="${esc(imgSize(a.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+          <div class="ah-info">
+            <h1 class="h1">${esc(a.name)}</h1>
+            <p class="sub">${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.replace(/-/g, '.'))}<br>${esc(a.kind)}${a.ok ? '' : ' · <span class="tag">확인 중</span>'}</p>
+          </div>
         </div>
-        ${a.note ? `<p class="src-note">${esc(a.note)}</p>` : ''}
-        ${a.src.length ? `<p class="src-note">출처: ${a.src.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">${i + 1}</a>`).join(' · ')}</p>` : ''}
+        <dl class="ah-facts">
+          ${a.title ? `<dt>타이틀</dt><dd>${esc(a.title)}</dd>` : ''}
+          ${a.credit ? `<dt>작사·작곡</dt><dd>${esc(a.credit)}</dd>` : ''}
+          ${a.label ? `<dt>기획·유통</dt><dd>${esc(a.label)}</dd>` : ''}
+        </dl>
+        ${a.note ? `<p class="ah-note">${esc(a.note)}</p>` : ''}
+        ${a.src.length ? `<p class="src-note">정보 출처: ${a.src.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(host(u))} ↗</a>`).join(' · ')}</p>` : ''}
+        <nav class="ah-nav">${go(prev, '‹ 이전 음반')}${go(next, '다음 음반 ›')}</nav>
       </section>`;
   }
+
   function albumTracks(rel) {
     const a = (data.albums || []).find(x => (x.rel || x.name) === rel);
     if (!a || !a.tracks.length) return '';
@@ -1227,15 +1239,22 @@
       ? data.albums.filter(a => (a.member || '') === who).map(a => { const ps = map.get(a.rel) || []; return { key: a.rel || a.name, name: a.name, sub: `${a.date.replace(/-/g, '.')} · ${a.kind}`, img: a.img || (ps.find(p => p.img) || {}).img, n: ps.length }; })
       : [...map.entries()].map(([name, ps]) => ({ key: name, name, sub: `${ps[ps.length - 1].date.replace(/-/g, '.')}부터`, img: (ps.find(p => p.img) || {}).img, n: ps.length, d: ps[ps.length - 1].date }))
         .sort((a, b) => (a.d < b.d ? 1 : -1));
+    // 연도별로 묶어 표지 2칸 바둑판
+    const byYear = new Map();
+    items.forEach(r => { const y = (r.sub.match(/^\d{4}/) || ['기타'])[0]; if (!byYear.has(y)) byYear.set(y, []); byYear.get(y).push(r); });
+    const kindOf = r => (r.sub.split(' · ')[1] || '').replace(/\s*\(.*\)/, '');
     return `
+      <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">음반 이야기${help('앨범 정보는 음원 사이트·위키·기사에서 두 곳 이상 맞는 것만 적었어요. 공식 X 글은 앨범·싱글별로 묶었어요.')}</h1>
-      <p class="sub">앨범·싱글마다 정보와 티저부터 발매까지의 공식 X 글을 모았어요.</p>
       ${(data.albums || []).some(a => a.member) ? `<div class="chips tl-cats">${['', ...MEMBER_LIST.filter(m => data.albums.some(a => a.member === m))].map(m => `<a class="chip${m === who ? ' on' : ''}" href="#/releases${m ? '?m=' + encodeURIComponent(m) : ''}">${m || '포레스텔라'}</a>`).join('')}</div>` : ''}
-      <div class="stack x-list">${items.map(r => `
-        <a class="x-card${r.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
-          ${r.img ? `<img src="${esc(imgSize(r.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
-          <span class="x-text"><span class="x-date">${nw(r.sub + (r.n ? ` · 공식 X ${r.n}개` : ''))}</span><b>${esc(r.name)}</b></span>
-        </a>`).join('')}</div>`;
+      ${[...byYear.entries()].map(([y, rs]) => `
+        <h2 class="rel-year">${y}</h2>
+        <div class="rel-grid">${rs.map(r => `
+          <a class="rel-tile" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
+            <span class="rel-cover">${r.img ? `<img src="${esc(imgSize(r.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
+            <b>${esc(r.name)}</b>
+            <span class="rel-sub">${esc(kindOf(r))}${r.n ? ` · X ${r.n}` : ''}</span>
+          </a>`).join('')}</div>`).join('')}`;
   }
 
 
@@ -1583,7 +1602,7 @@
   }
 
   function setTabs(name) {
-    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);

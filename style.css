@@ -620,3 +620,24 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .album-on .x-list .x-card[hidden], .album-on .x-list .x-wrap[hidden], .album-on .x-list .card[hidden], .album-on .x-list .card-wrap[hidden] { display: none; }
 .stick .view-row { margin: 6px 0 0; }
 .more-btn[hidden] { display: none; }
+/* 음반 이야기 목록: 연도별 표지 바둑판 */
+.rel-year { font-size: 13px; font-weight: 700; color: var(--muted); margin: 18px 0 8px; }
+.rel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 8px; }
+.rel-tile { display: flex; flex-direction: column; gap: 2px; color: var(--ink); min-width: 0; }
+.rel-cover { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #C6EC6B, #62D3A1 55%, #72BCF3); margin-bottom: 6px; }
+.rel-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rel-tile b { font-size: 12px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.rel-sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 음반 상세 머리 */
+.ah2 .ah-top { display: flex; gap: 14px; align-items: center; margin: 6px 0 12px; }
+.ah2 .ah-img { width: 120px; height: 120px; object-fit: cover; border-radius: 14px; flex: none; background: #EEF3EF; box-shadow: 0 4px 14px rgba(20,40,30,.12); }
+.ah2 .ah-info .h1 { font-size: 20px; line-height: 1.3; margin-bottom: 4px; }
+.ah2 .ah-info .sub { line-height: 1.5; }
+.ah-facts { display: grid; grid-template-columns: 64px 1fr; gap: 6px 10px; margin: 0 0 10px; font-size: 12px; }
+.ah-facts dt { color: var(--muted); }
+.ah-facts dd { margin: 0; color: #33443C; }
+.ah-note { font-size: 12px; line-height: 1.6; color: #4C5C54; background: #F4F8F5; border-radius: 12px; padding: 10px 12px; margin: 0 0 8px; }
+.ah-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.ah-nav a { display: flex; flex-direction: column; max-width: 48%; font-size: 11px; color: var(--muted); }
+.ah-nav a:last-child { text-align: right; margin-left: auto; }
+.ah-nav b { font-size: 12px; color: var(--green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
