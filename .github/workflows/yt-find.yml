@@ -1,0 +1,20 @@
+# 유튜브 채널 후보 찾기 (직접 실행)
+name: yt-find
+on:
+  workflow_dispatch:
+    inputs:
+      names:
+        description: '찾을 이름 (쉼표로 구분)'
+        required: true
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/yt_find.mjs "${{ inputs.names }}" 2>err.txt || { echo "::error::$(grep -m3 -i 'error' err.txt | tr '\n' ' ' | cut -c1-400)"; exit 1; }
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
