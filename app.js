@@ -1227,8 +1227,11 @@
       if (c.date.length < 10) return true;
       const near = als.filter(a => a.date && Math.abs(dayN(a.date) - dayN(c.date)) <= 5);
       const a = near.find(a => (c.type === 'OST') === /OST/i.test(a.kind + a.name)) || near[0];
+      // 시트 비고에서 '제외'라고 적어 둔 곡은 그 음반에 붙이지 않아요
       if (!a) return true;
-      if (a.name.replace(/\s+/g, '').toLowerCase() !== c.title.replace(/\s+/g, '').toLowerCase()) albSongs.set(a, [...(albSongs.get(a) || []), c.title]);
+      if (a.name.replace(/\s+/g, '').toLowerCase() === c.title.replace(/\s+/g, '').toLowerCase()) return false;
+      if (c.title.split('/').some(t => (a.note || '').includes(t.trim()))) return true;
+      albSongs.set(a, [...(albSongs.get(a) || []), c.title]);
       return false;
     }).sort((a, b) => b.date.localeCompare(a.date));
     const groups = CAREER_ORDER.map(t => [t, car.filter(c => (CAREER_ORDER.includes(c.type) ? c.type : '기타') === t).sort((a, b) => b.date.localeCompare(a.date))]).filter(g => g[1].length);
