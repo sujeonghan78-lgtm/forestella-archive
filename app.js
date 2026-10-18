@@ -386,6 +386,20 @@
   const songText = so => [...new Set([so.name, so.match || so.name, koOf(so.match || so.name), koOf(so.name)])].join(' ');
   Object.entries(SONG_KO).forEach(([en, ko]) => ko.split(' ').forEach(k => { if (k.length >= 2 && !KO_EN[k]) KO_EN[k] = en; }));
   const aliasOf = q => { const s = q.replace(/\s+/g, ''); let out = s, hit = false; Object.keys(KO_EN).sort((x, y) => y.length - x.length).forEach(k => { if (out.includes(k)) { out = out.split(k).join(KO_EN[k]); hit = true; } }); return hit ? out : ''; };
+  // 모든 검색창 공통 규칙: 띄어쓰기 무시, 초성만 치면 초성으로, 한글 표기(웨이브→wave)도 같이
+  const matcher = q => {
+    const nq = norm(q);
+    if (!nq) return null;
+    if (isChosungOnly(q)) return t => chosung(t).includes(nq);
+    const alt = aliasOf(q), na = alt && norm(alt);
+    return t => { const s = norm(t); return s.includes(nq) || (!!na && s.includes(na)); };
+  };
+  // 영상 제목 + 붙은 곡의 한국어 이름 (영어 제목 영상도 한글·초성으로 찾게)
+  let vidTextMap = null;
+  const vidText = v => {
+    if (!vidTextMap) { vidTextMap = new Map(); data.songs.forEach(so => (so.official || []).forEach(x => vidTextMap.set(x, (vidTextMap.get(x) || '') + ' ' + songText(so)))); }
+    return v.title + (vidTextMap.get(v) || '');
+  };
   function runSearch(p) {
     const { items, fuse } = getIndex();
     const q = p.q.trim();
@@ -395,9 +409,8 @@
     else if (isChosungOnly(q)) { const cq = q.replace(/\s+/g, ''); list = items.filter(i => i.cho.includes(cq)).map(i => i.e); }
     else {
       const nq = norm(q);
-      list = items.filter(i => i.text.includes(nq)).map(i => i.e);
-      const alt = aliasOf(q);
-      if (!list.length && alt) list = items.filter(i => i.text.includes(norm(alt))).map(i => i.e);
+      const alt = aliasOf(q), na = alt && norm(alt);
+      list = items.filter(i => i.text.includes(nq) || (na && i.text.includes(na))).map(i => i.e);
       if (!list.length && fuse) { list = fuse.search(q).map(r => r.item); fuzzy = list.length > 0; }
     }
     list = list.filter(e =>
@@ -442,7 +455,7 @@
   function searchShortcuts(q) {
     const nq = norm(q), cho = isChosungOnly(q);
     if (!nq || (!cho && nq.length < 2)) return '';
-    const hit = name => cho ? chosung(name).includes(nq) : norm(name).includes(nq);
+    const hit = matcher(q);
     const out = [];
     PROGRAMS.filter(hit).forEach(pg => out.push({ href: '#/program/' + encodeURIComponent(pg), kind: '프로그램', name: pg + ' 모아보기' }));
     [...data.songs.values()].filter(so => hit(songText(so))).sort((a, b) => playCount(b) - playCount(a)).slice(0, 4)
@@ -464,13 +477,10 @@
   function searchHits(p) {
     const nq = norm(p.q), cho = isChosungOnly(p.q);
     const ok = nq && (cho || nq.length >= 2);
-    const alt = aliasOf(p.q), na = alt && norm(alt);
-    const hit = name => ok && (cho ? chosung(name).includes(nq) : norm(name).includes(nq) || (na && norm(name).includes(na)));
+    const m = ok && matcher(p.q);
+    const hit = name => !!m && m(name);
     const songs = [...data.songs.values()].filter(so => hit(songText(so))).sort((a, b) => playCount(b) - playCount(a));
-    // 영상 제목이 영어여도 붙은 곡의 한국어 이름·초성으로 찾게
-    const vk = new Map();
-    data.songs.forEach(so => (so.official || []).forEach(v => vk.set(v, (vk.get(v) || '') + ' ' + songText(so))));
-    const vids = (data.official || []).filter(v => hit(v.title + (vk.get(v) || '')) && (!p.member || v.members.includes(p.member)) && (!p.year || v.date.startsWith(p.year)));
+    const vids = (data.official || []).filter(v => hit(vidText(v)) && (!p.member || v.members.includes(p.member)) && (!p.year || v.date.startsWith(p.year)));
     const rels = [
       ...(data.albums || []).filter(a => hit(a.name) && (!p.member || a.member === p.member)).map(a => ({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, sub: a.date.replace(/-/g, '.'), img: a.img && imgSize(a.img, 'thumb') })),
       ...(data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).map(c => ({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, sub: c.from ? c.from.replace(/-/g, '.') : '', img: c.img ? imgSize(c.img, 'thumb') : c.tour ? tourPic(c.tour) : c.events ? tourPic(c) : '' })),
@@ -509,7 +519,8 @@
   function searchVideos(q) {
     const nq = norm(q);
     if (nq.length < 2) return '';
-    const vs = (data.official || []).filter(v => norm(v.title).includes(nq));
+    const m = matcher(q);
+    const vs = (data.official || []).filter(v => m(vidText(v)));
     if (!vs.length) return '';
     return `<div class="search-yt"><div class="block-head"><h2 class="h3">공식 유튜브</h2><a class="more" href="#/yt?q=${encodeURIComponent(q)}">${vs.length}개 ›</a></div>${ytStrip(vs.slice(0, 8))}</div>`;
   }
@@ -740,9 +751,9 @@
     // 곡 이름 찾기: 다시 그리지 않고 목록에서 숨기기만 해요 (입력 중 자판이 닫히지 않게)
     const q = document.getElementById('song-q');
     if (q) q.oninput = () => {
-      const v = norm(q.value), c = q.value.replace(/\s/g, '');
+      const v = norm(q.value), c = q.value.replace(/\s/g, ''), alt = aliasOf(q.value), na = alt && norm(alt);
       document.querySelectorAll('.song-item').forEach(a => {
-        a.hidden = !!v && !a.dataset.n.includes(v) && !(isChosungOnly(c) && a.dataset.c.includes(c));
+        a.hidden = !!v && (isChosungOnly(c) ? !a.dataset.c.includes(c) : !a.dataset.n.includes(v) && !(na && a.dataset.n.includes(na)));
       });
     };
   }
@@ -1219,9 +1230,9 @@
     const all = data.official || [];
     const chans = [...MEMBER_LIST.filter(m => all.some(v => v.ch === m)), ...(all.some(v => v.bc) ? ['방송사'] : [])];
     const CH_NAMES = { 강형호: '[PITTA]강형호 & 이용우', 조민규: '조민규 ChoMinGyu', 고우림: 'Official KOWOORIM' };
-    const nq = norm(q);
+    const qm = matcher(q);
     const chOk = v => !st.ch.length || st.ch.some(c => c === '포레스텔라' ? !v.ch && !v.bc : c === '방송사' ? v.bc : v.ch === c);
-    const list = all.filter(v => chOk(v) && (!st.kind.length || st.kind.includes(v.kind)) && (!st.y.length || st.y.includes(v.date.slice(0, 4))) && (!st.m.length || st.m.some(m => v.members.includes(m))) && (!nq || norm(v.title).includes(nq)));
+    const list = all.filter(v => chOk(v) && (!st.kind.length || st.kind.includes(v.kind)) && (!st.y.length || st.y.includes(v.date.slice(0, 4))) && (!st.m.length || st.m.some(m => v.members.includes(m))) && (!qm || qm(vidText(v))));
     return `
       <h1 class="h1 page-title">공식 유튜브${help('포레스텔라 공식 유튜브 채널(@officialforestella)과 강형호·조민규·고우림 공식 채널, 그리고 KBS·MBC·JTBC·Mnet 같은 방송사 공식 채널에 올라온 포레스텔라 영상(조회수 1만 이상)을 매일 자동으로 모아요. 종류와 멤버는 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       <div class="stick">
@@ -1262,8 +1273,8 @@
     const fill = () => {
       const box = document.getElementById('xfeed');
       if (!box) return;
-      const nq = rel ? '' : norm(xQuery);
-      let list = (data.xFeed || []).filter(p => (rel || ((!st.cat.length || st.cat.includes(p.cat)) && (!st.m.length || st.m.some(m => p.m.includes(m))) && (!st.y.length || st.y.includes(p.date.slice(0, 4))))) && (!rel || p.rel === rel) && (!nq || norm(p.raw).includes(nq)));
+      const qm = rel ? null : matcher(xQuery);
+      let list = (data.xFeed || []).filter(p => (rel || ((!st.cat.length || st.cat.includes(p.cat)) && (!st.m.length || st.m.some(m => p.m.includes(m))) && (!st.y.length || st.y.includes(p.date.slice(0, 4))))) && (!rel || p.rel === rel) && (!qm || qm(p.raw)));
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => xGroup(p, xLinks(p) ? `<div class="x-wrap">${card0(p)}${xLinks(p)}</div>` : card0(p));
       const card0 = p => `
