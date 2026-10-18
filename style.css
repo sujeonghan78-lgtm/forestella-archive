@@ -641,3 +641,9 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .ah-nav a { display: flex; flex-direction: column; max-width: 48%; font-size: 11px; color: var(--muted); }
 .ah-nav a:last-child { text-align: right; margin-left: auto; }
 .ah-nav b { font-size: 12px; color: var(--green); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 앨범 보기: 글 하나의 사진 전부 */
+.x-extra { display: none; }
+.x-group[hidden] { display: none; }
+.album-on .x-list .x-group { display: contents; }
+.album-on .x-list .x-group[hidden] { display: none; }
+.album-on .x-list .x-extra { display: block; }

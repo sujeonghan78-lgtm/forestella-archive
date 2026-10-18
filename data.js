@@ -139,7 +139,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, xlinks] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, xlinks, xphotos] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -150,8 +150,9 @@
       s.concerts ? fetchText(s.concerts).catch(() => '') : '',
       fetchText('data/yt_videos.json').catch(() => ''),
       fetchText('data/x_links.json').catch(() => ''),
+      fetchText('data/x_photos.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, xlinks, sheets: JSON.stringify(s), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, xlinks, xphotos, sheets: JSON.stringify(s), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -202,6 +203,9 @@
     // 글 속 링크: 본문에 보이는 주소 + t.co를 풀어둔 주소(data/x_links.json)
     let xLinks = {};
     try { xLinks = JSON.parse(raw.xlinks || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
+    // 글마다 사진 전부 (앨범 보기에서 써요)
+    let xPhotos = {};
+    try { xPhotos = JSON.parse(raw.xphotos || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
     const linksOf = (id, text) => {
       const seen = new Set();
       const short = xLinks._short || {};
@@ -220,6 +224,7 @@
       raw: r['글'] || '',
       links: linksOf(r['링크'].split('/').pop(), r['글'] || ''),
       img: r['사진'] || '',
+      imgs: xPhotos[r['링크'].split('/').pop()] || [],
       after: r['후기 일정ID'] || '',
       behind: r['비하인드 일정ID'] || '',
       rel: r['음반'] || '',

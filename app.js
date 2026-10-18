@@ -1147,7 +1147,7 @@
       const nq = rel ? '' : norm(xQuery);
       let list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)) && (!rel || p.rel === rel) && (!yr || p.date.startsWith(yr)) && (!nq || norm(p.raw).includes(nq)));
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
-      const card = p => xLinks(p) ? `<div class="x-wrap">${card0(p)}${xLinks(p)}</div>` : card0(p);
+      const card = p => xGroup(p, xLinks(p) ? `<div class="x-wrap">${card0(p)}${xLinks(p)}</div>` : card0(p));
       const card0 = p => `
           <a class="x-card${p.img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">
             ${p.img ? `<img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
@@ -1458,6 +1458,9 @@
     }).join('')}</div>`;
   }
 
+  // 앨범 보기용: 대표 사진 말고 나머지 사진들 (목록에선 숨겨요)
+  const xExtras = p => (p.imgs || []).filter(u => u !== p.img).map(u => `<a class="x-card x-extra" href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(u)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('');
+  const xGroup = (p, html) => { const ex = xExtras(p); return ex ? `<div class="x-group">${html}${ex}</div>` : html; };
   // 공식 X 대표 글: 사진 + 글 앞부분 카드 하나, 누르면 X로
   function xCard(p, label) {
     const img = p.img ? `<img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
@@ -1465,7 +1468,7 @@
         <span class="x-text"><span class="x-date">${label} · ${esc(p.date.replace(/-/g, '.'))}</span>${esc(p.text)}</span>
       </a>`;
     const ln = xLinks(p);
-    return ln ? `<div class="x-wrap">${card}${ln}</div>` : card;
+    return xGroup(p, ln ? `<div class="x-wrap">${card}${ln}</div>` : card);
   }
   function xBlock(e) {
     const b = e.xBehind || [];
