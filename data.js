@@ -151,7 +151,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, extra] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -166,8 +166,9 @@
       fetchText('data/ytm_links.json').catch(() => ''),
       fetchText('data/x_links.json').catch(() => ''),
       fetchText('data/x_photos.json').catch(() => ''),
+      fetchText('data/extra_events.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, extra, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -195,8 +196,18 @@
 
   function build(raw) {
     const sheetRows = toObjects(raw.events);
-    const events = buildEvents(sheetRows).concat(raw.cafe ? buildCafe(raw.cafe, sheetRows) : [])
+    // 저장소의 보충 자료(data/extra_events.json): 시트에 없는 일정 추가, 비어 있는 확인된 곡 채우기, 중복 숨기기
+    let extra = {};
+    try { extra = JSON.parse(raw.extra || '{}'); } catch (e) { /* 없으면 넘어가요 */ }
+    const sheetIds = new Set(sheetRows.map(r => r['ID']));
+    (extra.rows || []).forEach(r => { if (!sheetIds.has(r['ID'])) sheetRows.push(r); });
+    const hide = new Set(extra.hide || []);
+    const events = buildEvents(sheetRows.filter(r => !hide.has(r['ID']))).concat(raw.cafe ? buildCafe(raw.cafe, sheetRows) : [])
       .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    Object.entries(extra.songs || {}).forEach(([id, s]) => {
+      const e = events.find(x => x.id === id);
+      if (e && !e.songs.length) { e.songs = splitSongs(s); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))]; if (!e.songSource) e.songSource = '나무위키'; }
+    });
     const videos = buildVideos(toObjects(raw.videos));
     const reports = raw.reports ? buildReports(toObjects(raw.reports)) : [];
     const byId = new Map(events.map(e => [e.id, e]));
