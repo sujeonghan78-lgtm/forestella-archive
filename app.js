@@ -685,7 +685,7 @@
         { label: '무대', n: stages.length, html: stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', title: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>` },
         { label: '유튜브', n: so.official.length, html: ytList(so.official) },
         { label: '콘서트', n: so.tours.length, html: so.tours.length ? `<p class="src-note">콘서트 셋리스트 기준이에요. 무대 목록과 달리 영상으로 확인한 건 아니에요.</p><div class="tour-chips">${so.tours.slice().sort((a, b) => (a.dates[0] < b.dates[0] ? 1 : -1)).map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : '' },
-        { label: '공식 X', n: xs.length, html: xs.length ? moreList(xs.map(p => xCard(p, p.cat))) : '' },
+        { label: '공식 X', n: xs.length, html: xList(xs) },
       ])}`;
   }
 
@@ -869,7 +869,7 @@
       ${bday ? `<a class="chip" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${q}">🎂 생일 축하 글 ${bday}개 ›</a>` : ''}
       ${paneTabs([
         { label: '유튜브', n: vs.length, html: vs.length ? `${ytList(vs)}<a class="more mem-all" href="#/yt?m=${q}">유튜브 탭에서 보기 ›</a>` : '' },
-        { label: 'X', n: xs.length, html: xs.length ? moreList(xs.map(p => xCard(p, p.cat))) : '' },
+        { label: 'X', n: xs.length, html: xList(xs) },
         { label: '일정', n: evs.length, html: evs.length ? `${moreList(evs.map(resultCard), 10)}<a class="more mem-all" href="#/search?member=${q}">검색에서 걸러 보기 ›</a>` : '' },
         { label: '음반', n: als.length, html: als.length ? `<div class="stack x-list">${als.map(a => `
           <a class="x-card${a.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
@@ -1239,8 +1239,17 @@
         ${i ? '<hr class="divider">' : ''}
         ${sec.name ? `<h2 class="h3 list-title">${sec.name}</h2>` : ''}
         <ol class="setlist-list" start="${sec.items[0].n}">
-          ${sec.items.map(s => `<li><span class="sl-title">${setlistSong(s.t)}</span>${s.note ? `<span class="sl-note">${esc(s.note)}</span>` : ''}<a class="sl-yt" href="https://www.youtube.com/results?search_query=${encodeURIComponent('포레스텔라 ' + window.DATA.setlistName(s.t.split(' / ')[0]) + ' ' + t.name.replace(/^[\d-]+\s*/, ''))}" target="_blank" rel="noopener" aria-label="${esc(s.t)} 유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`).join('')}
+          ${sec.items.map(s => { const v = tourVideo(t, s.t); return `<li${v ? ' class="sl-has"' : ''}><span class="sl-title">${setlistSong(s.t)}</span>${s.note ? `<span class="sl-note">${esc(s.note)}</span>` : ''}<a class="sl-yt" href="${v ? `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}` : `https://www.youtube.com/results?search_query=${encodeURIComponent('포레스텔라 ' + window.DATA.setlistName(s.t.split(' / ')[0]) + ' ' + t.name.replace(/^[\d-]+\s*/, ''))}`}" target="_blank" rel="noopener" aria-label="${esc(s.t)} ${v ? '공식 영상 보기' : '유튜브에서 검색'}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a></li>`; }).join('')}
         </ol>`).join('')}`;
+  }
+  // 셋리스트 곡의 이 콘서트 공식 영상 (제목에 곡 이름 + 콘서트 이름)
+  function tourVideo(t, title) {
+    for (const part of title.split(' / ')) {
+      const so = data.songs.get(window.DATA.songKey(window.DATA.setlistName(part)));
+      const v = so && (so.official || []).find(x => x.tour === t.id);
+      if (v) return v;
+    }
+    return null;
   }
 
   const tourX = id => (data.xFeed || []).filter(p => p.tour === id);
@@ -1268,7 +1277,7 @@
       </section>
       <section class="album-head tour-info">${concertInfo(info, true)}</section>
       ${ytSection((data.official || []).filter(v => v.tour === info.id), '공식 유튜브', '공연 Recap·라이브 클립·비하인드처럼 제목에 이 콘서트 이름이 들어간 공식 영상이에요.')}
-      ${tourX(info.id).length ? `<hr class="divider"><h2 class="h3 list-title">공식 X</h2>${moreList(tourX(info.id).map(p => xCard(p, p.cat)), 5)}` : ''}
+      ${tourX(info.id).length ? `<hr class="divider"><h2 class="h3 list-title">공식 X</h2>${xList(tourX(info.id))}` : ''}
       <hr class="divider">
       <div class="tour-foot"><p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. <a href="${formUrl({ type: '틀린 정보', title: info.name })}" target="_blank" rel="noopener">알고 있는 곡 알려주기 ›</a></p></div>`;
     }
@@ -1300,7 +1309,7 @@
       ${paneTabs([
         { label: '셋리스트', n: t.songs.length, html: tourSetlist(t) },
         { label: '유튜브', n: (data.official || []).filter(v => v.tour === t.id).length, html: ytList((data.official || []).filter(v => v.tour === t.id)) },
-        { label: '공식 X', n: tourX(t.id).length, html: tourX(t.id).length ? moreList(tourX(t.id).map(p => xCard(p, p.cat))) : '' },
+        { label: '공식 X', n: tourX(t.id).length, html: xList(tourX(t.id)) },
       ])}
       <hr class="divider">
       <div class="tour-foot">
@@ -1337,7 +1346,19 @@
     return `<div class="pane-wrap"><div class="pane-tabs" role="tablist">${panes.map((p, i) => `<button type="button" role="tab" class="${i ? '' : 'on'}" aria-selected="${!i}" onclick="${click}">${p.label}${p.n ? ` <b>${p.n}</b>` : ''}</button>`).join('')}</div>
       ${panes.map((p, i) => `<div class="pane"${i ? ' hidden' : ''}>${p.html}</div>`).join('')}</div>`;
   }
-  const ytList = list => list.length ? moreList(list.map(ytCard), 10) : '';
+  // 분류 칩 + 목록: 칩을 누르면 그 분류만 (분류가 하나뿐이면 칩 없이)
+  function catList(list, key, card) {
+    if (!list.length) return '';
+    const cnt = new Map();
+    list.forEach(x => { const k = key(x) || '기타'; cnt.set(k, (cnt.get(k) || 0) + 1); });
+    if (cnt.size < 2) return moreList(list.map(card), 10);
+    const ks = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]);
+    const click = "const w=this.closest('.cat-wrap');w.querySelectorAll(':scope>.chips>.chip').forEach(c=>c.classList.toggle('on',c===this));w.querySelectorAll(':scope>.cat-block').forEach((b,i)=>b.hidden=i!==+this.dataset.i)";
+    return `<div class="cat-wrap"><div class="chips cat-chips">${['전체', ...ks].map((k, i) => `<button type="button" class="chip${i ? '' : ' on'}" data-i="${i}" onclick="${click}">${esc(k)}${i ? ` ${cnt.get(k)}` : ''}</button>`).join('')}</div>
+      ${[list, ...ks.map(k => list.filter(x => (key(x) || '기타') === k))].map((l, i) => `<div class="cat-block"${i ? ' hidden' : ''}>${moreList(l.map(card), 10)}</div>`).join('')}</div>`;
+  }
+  const ytList = list => catList(list, v => v.kind, ytCard);
+  const xList = list => catList(list, p => p.cat, p => xCard(p, p.cat));
 
   // 가로로 넘기는 영상 줄
   function ytStrip(list) {
