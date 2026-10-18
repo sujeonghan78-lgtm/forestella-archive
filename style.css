@@ -674,3 +674,7 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 /* 곡 목록: 오른쪽 숫자가 길어도 곡 이름이 글자 단위로 쪼개지지 않게 */
 .song-name { word-break: keep-all; overflow-wrap: anywhere; }
 .song-item .song-n { max-width: 42%; text-align: right; line-height: 1.4; }
+/* '○○ 전체'는 다른 칩과 다른 단계: 다른 걸 고르면 회색, 펼치면 혼자 한 줄 */
+.chip-all:not(.on) { background: #EEF1EF; border-color: #E1E6E3; color: #8A968F; }
+.chip-br { display: none; }
+.chips-open .stick .chip-br { display: block; flex-basis: 100%; height: 0; margin: -3px 0; }

@@ -739,7 +739,7 @@
       <div class="chips tl-cats" id="song-sort">
         ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}
       </div>
-      <div class="chips tl-cats" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v)).join('')}</div>
+      <div class="chips tl-cats" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v).replace(v ? '' : 'class="chip', v ? '' : 'class="chip chip-all') + (v ? '' : '<span class="chip-br"></span>')).join('')}</div>
       <div class="view-row"><p class="sub">${list.length.toLocaleString()}곡</p>${chipsBtn()}</div>
       </div>
       <div>
@@ -1229,7 +1229,7 @@
     const sel = state[key];
     const link = next => { const s = new URLSearchParams(Object.entries({ ...state, [key]: next }).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v]).filter(x => x[1])).toString(); return s ? base + '?' + s : base; };
     const a = (on, h, t) => `<a class="chip${on ? ' on' : ''}" href="${h}">${esc(t)}</a>`;
-    return `<div class="chips tl-cats">${a(!sel.length, link([]), allLabel)}${values.map(v => a(sel.includes(v), link(sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]), label(v))).join('')}</div>`;
+    return `<div class="chips tl-cats">${a(!sel.length, link([]), allLabel).replace('class="chip', 'class="chip chip-all')}<span class="chip-br"></span>${values.map(v => a(sel.includes(v), link(sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]), label(v))).join('')}</div>`;
   }
 
   // ---------- 공식 유튜브 모아보기 ----------
