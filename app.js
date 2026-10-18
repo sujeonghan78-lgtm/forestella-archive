@@ -1243,6 +1243,7 @@
         </ol>`).join('')}`;
   }
 
+  const tourX = id => (data.xFeed || []).filter(p => p.tour === id);
   function tourView() {
     const id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const t = data.tours.find(x => x.id === id);
@@ -1267,6 +1268,7 @@
       </section>
       <section class="album-head tour-info">${concertInfo(info, true)}</section>
       ${ytSection((data.official || []).filter(v => v.tour === info.id), '공식 유튜브', '공연 Recap·라이브 클립·비하인드처럼 제목에 이 콘서트 이름이 들어간 공식 영상이에요.')}
+      ${tourX(info.id).length ? `<hr class="divider"><h2 class="h3 list-title">공식 X</h2>${moreList(tourX(info.id).map(p => xCard(p, p.cat)), 5)}` : ''}
       <hr class="divider">
       <div class="tour-foot"><p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. <a href="${formUrl({ type: '틀린 정보', title: info.name })}" target="_blank" rel="noopener">알고 있는 곡 알려주기 ›</a></p></div>`;
     }
@@ -1298,6 +1300,7 @@
       ${paneTabs([
         { label: '셋리스트', n: t.songs.length, html: tourSetlist(t) },
         { label: '유튜브', n: (data.official || []).filter(v => v.tour === t.id).length, html: ytList((data.official || []).filter(v => v.tour === t.id)) },
+        { label: '공식 X', n: tourX(t.id).length, html: tourX(t.id).length ? moreList(tourX(t.id).map(p => xCard(p, p.cat))) : '' },
       ])}
       <hr class="divider">
       <div class="tour-foot">

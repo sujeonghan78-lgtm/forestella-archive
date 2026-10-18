@@ -390,6 +390,17 @@
       const v = (e.ytStage || [])[0] || (e.ytBehind || [])[0];
       if (v) e.ytMain = v;
     });
+    // 공식 X 글 → 콘서트: 공연 일정에 붙은 글 + 글에 콘서트 이름이 나오고 공연 앞 120일~뒤 60일 안의 글
+    const tourOfEv = new Map();
+    tours.forEach(t => (t.events || []).forEach(e => tourOfEv.set(e.id, t.id)));
+    xFeed.forEach(p => {
+      p.tour = tourOfEv.get(p.after) || tourOfEv.get(p.behind) || '';
+      if (p.tour || p.rel || /음반|컴백/.test(p.cat)) return;
+      const ft = flat(p.raw);
+      const c = concertKeys.filter(c => c.key.length >= 4 && ft.includes(c.key) && days(p.date, c.from) >= -120 && days(p.date, c.to) <= 60)
+        .sort((a, b) => b.key.length - a.key.length)[0];
+      if (c) p.tour = c.id;
+    });
     return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, savedAt: raw.savedAt };
   }
 
