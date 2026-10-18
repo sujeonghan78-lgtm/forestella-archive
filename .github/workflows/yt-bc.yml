@@ -1,0 +1,32 @@
+# 방송사 공식 채널의 포레스텔라 영상 받아오기 (매일 + 직접 실행)
+name: yt-bc
+on:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: '처음부터 전부 다시 찾기 (yes)'
+        required: false
+  schedule:
+    - cron: '40 21 * * *'
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/yt_bc.mjs ${{ inputs.full == 'yes' && '--full' || '' }} 2>err.txt || { echo "::error::$(grep -m3 -i 'error' err.txt | tr '\n' ' ' | cut -c1-400)"; exit 1; }
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      - run: |
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/yt_bc.json
+          git diff --cached --quiet && exit 0
+          git commit -m "방송사 유튜브 영상 목록 업데이트"
+          git pull --rebase -q origin main
+          git push
