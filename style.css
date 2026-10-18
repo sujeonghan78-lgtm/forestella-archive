@@ -678,3 +678,9 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .chip-all:not(.on) { background: #EEF1EF; border-color: #E1E6E3; color: #8A968F; }
 .chip-br { display: none; }
 .chips-open .stick .chip-br { display: block; flex-basis: 100%; height: 0; margin: -3px 0; }
+/* 프로그램별 모아보기 */
+.prog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+.prog-card { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 64px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--line); background: #FFFFFF; color: var(--ink); }
+.prog-card b { font-size: 14px; font-weight: 700; line-height: 1.3; word-break: keep-all; }
+.prog-card span { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-list { gap: 0; }

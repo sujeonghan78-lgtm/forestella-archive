@@ -240,14 +240,6 @@
       </section>`;
   }
 
-  const PROGRAMS = ['불후의 명곡', '열린음악회', '라디오', '음악방송'];
-  function homePrograms() {
-    return `
-      <section class="block">
-        <h2 class="h2">프로그램별로 보기</h2>
-        <div class="chips">${PROGRAMS.map(p => `<a class="pill" href="#/program/${encodeURIComponent(p)}">${p}</a>`).join('')}</div>
-      </section>`;
-  }
 
   function homeShortcuts() {
     // 가장 최근 음반 표지·콘서트 포스터를 썸네일로 (없으면 아이콘)
@@ -280,7 +272,7 @@
     return `
       <section class="block prog-mini">
         <h2 class="h3">프로그램별 모아보기</h2>
-        <div class="chips">${PROGRAMS.map(p => `<a class="chip" href="#/program/${encodeURIComponent(p)}">${esc(p)} ›</a>`).join('')}</div>
+        <div class="chips">${PROGRAMS_TOP().map(p => `<a class="chip" href="${progHref(p)}">${esc(p)} ›</a>`).join('')}<a class="chip" href="#/program">전체 ›</a></div>
       </section>`;
   }
 
@@ -460,7 +452,7 @@
     if (!nq || (!cho && nq.length < 2)) return '';
     const hit = matcher(q);
     const out = [];
-    PROGRAMS.filter(hit).forEach(pg => out.push({ href: '#/program/' + encodeURIComponent(pg), kind: '프로그램', name: pg + ' 모아보기' }));
+    programList().map(p => p.name).filter(hit).forEach(pg => out.push({ href: progHref(pg), kind: '프로그램', name: pg + ' 모아보기' }));
     [...data.songs.values()].filter(so => hit(songText(so))).sort((a, b) => playCount(b) - playCount(a)).slice(0, 4)
       .forEach(so => out.push({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', name: so.name, img: songPic(so) }));
     (data.albums || []).filter(a => hit(a.name)).slice(0, 3)
@@ -487,7 +479,7 @@
     const rels = [
       ...(data.albums || []).filter(a => hit(a.name) && (!p.member || a.member === p.member)).map(a => ({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, sub: a.date.replace(/-/g, '.'), img: a.img && imgSize(a.img, 'thumb') })),
       ...(data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).map(c => ({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, sub: c.from ? c.from.replace(/-/g, '.') : '', img: c.img ? imgSize(c.img, 'thumb') : c.tour ? tourPic(c.tour) : c.events ? tourPic(c) : '' })),
-      ...PROGRAMS.filter(hit).map(pg => ({ href: '#/program/' + encodeURIComponent(pg), kind: '프로그램', name: pg + ' 모아보기', sub: '' })),
+      ...programList().map(p => p.name).filter(hit).map(pg => ({ href: progHref(pg), kind: '프로그램', name: pg + ' 모아보기', sub: '' })),
     ];
     // 공식 X: 글에 검색어가 있거나, 찾은 곡이 나온 글
     const xset = new Set((data.xFeed || []).filter(x => hit(x.raw)));
@@ -921,51 +913,128 @@
   }
 
   // ---------- 프로그램별 모아보기 ----------
-  const PROGRAM_MATCH = {
-    '불후의 명곡': e => e.title.includes('불후의 명곡'),
-    '열린음악회': e => e.title.includes('열린음악회'),
-    '라디오': e => e.category === '라디오',
-    '음악방송': e => /뮤직뱅크|음악중심|엠카운트다운|인기가요|쇼챔피언|더\s?쇼/i.test(e.title),
-  };
+  // ---------- 프로그램별 모아보기 ----------
+  // 일정 이름과 방송사 영상 제목으로 프로그램을 묶어요. 위에서부터 먼저 맞는 것으로 정해요.
+  const PROGRAM_DEFS = [
+    ['불후의 명곡', '음악 경연', /불후의\s?명곡|immortal\s?songs/i],
+    ['복면가왕', '음악 경연', /복면가왕/],
+    ['팬텀싱어', '음악 경연', /팬텀싱어/],
+    ['열린음악회', '음악쇼', /열린\s?음악회|open\s?concert/i],
+    ['유희열의 스케치북', '음악쇼', /스케치북/],
+    ['더 시즌즈', '음악쇼', /더\s?시즌즈|고막남친/],
+    ['방판뮤직', '음악쇼', /방판\s?뮤직/],
+    ['해피투게더', '음악쇼', /해피투게더/],
+    ['라이브 와이어', '음악쇼', /라이브\s?와이어/],
+    ['딩고 · 킬링보이스', '음악쇼', /킬링\s?보이스|dingo|딩고/i],
+    ['음악방송', '음악방송', /뮤직뱅크|music\s?bank|음악중심|엠카운트다운|m\s?countdown|인기가요|쇼\s?챔피언|더\s?쇼\b/i],
+    ['연말 · 시상식', '연말 · 시상식', /가요대축제|가요대제전|가요대전|mama|연기대상|연예대상|청룡영화상|어워즈|awards/i],
+    ['신상출시 편스토랑', '예능', /편스토랑/],
+    ['냉장고를 부탁해', '예능', /냉장고를\s?부탁해/],
+    ['구해줘! 홈즈', '예능', /구해줘!?\s?홈즈/],
+    ['전지적 참견 시점', '예능', /전지적\s?참견\s?시점|전참시/],
+    ['라디오스타', '예능', /라디오스타/],
+    ['미운 우리 새끼', '예능', /미운\s?우리\s?새끼|미우새/],
+    ['걸어서 환장 속으로', '예능', /걸어서\s?환장/],
+    ['유 퀴즈 온 더 블럭', '예능', /유\s?퀴즈/],
+    ['전현무계획', '예능', /전현무\s?계획/],
+    ['숲속의 포레시피', '웹 콘텐츠', /포레시피/],
+  ];
+  const PROGRAM_TYPES = ['음악 경연', '음악쇼', '음악방송', '연말 · 시상식', '예능', '라디오', '웹 콘텐츠', '특집 · 행사'];
+  const OTHER_PROG = '특집 · 행사 무대';
+  // 예전 주소(#/program/불후의 명곡 등)는 그대로 열려요
+  let progCache = null;
+  function programs() {
+    if (progCache && progCache.src === data) return progCache.map;
+    const map = new Map();
+    const get = (name, type) => { if (!map.has(name)) map.set(name, { name, type, events: [], videos: [] }); return map.get(name); };
+    const defOf = t => PROGRAM_DEFS.find(d => d[2].test(t));
+    data.events.forEach(e => {
+      if (e.ytOnly || e.setlist) return;
+      const d = defOf(e.title);
+      if (d) get(d[0], d[1]).events.push(e);
+      else if (e.category === '라디오') get('라디오', '라디오').events.push(e);
+      else if (e.category === 'TV') get(OTHER_PROG, '특집 · 행사').events.push(e);
+    });
+    (data.official || []).forEach(v => {
+      if (!v.bc) return;
+      const d = defOf(v.title);
+      if (d) get(d[0], d[1]).videos.push(v);
+      else if (v.event && map.has(OTHER_PROG) && map.get(OTHER_PROG).events.includes(v.event)) map.get(OTHER_PROG).videos.push(v);
+    });
+    map.forEach(p => {
+      p.events.sort((a, b) => b.date.localeCompare(a.date));
+      p.videos.sort((a, b) => b.date.localeCompare(a.date));
+      // 곡: 출연 일정에 확인된 곡 + 프로그램 무대 영상에 붙은 곡 (같은 날은 한 번)
+      const days = new Map();
+      const add = (key, date) => { if (!key) return; if (!days.has(key)) days.set(key, new Set()); days.get(key).add(date); };
+      p.events.forEach(e => (e.songKeys || []).forEach(k => add(k, e.date)));
+      const vset = new Set(p.videos);
+      data.songs.forEach(so => (so.official || []).forEach(v => { if (vset.has(v) && ['무대', '직캠', '라이브'].includes(v.kind)) add(so.key, v.date); }));
+      p.songs = [...days.entries()].map(([k, s]) => ({ so: data.songs.get(k), n: s.size })).filter(x => x.so).sort((a, b) => b.n - a.n || hangulFirst(a.so.name, b.so.name));
+      p.size = p.events.length + p.videos.length;
+    });
+    progCache = { src: data, map };
+    return map;
+  }
+  const programList = () => [...programs().values()].filter(p => p.size).sort((a, b) => b.events.length - a.events.length || b.videos.length - a.videos.length);
+  const PROGRAMS_TOP = () => programList().filter(p => p.name !== OTHER_PROG).slice(0, 6).map(p => p.name);
+  const progHref = name => '#/program/' + encodeURIComponent(name);
 
-  // 프로그램 화면에서는 "[KBS2] 불후의 명곡 - " 같은 앞부분을 떼서 회차 이름만 보여줘요.
+  // 회차 이름: "[KBS2] 불후의 명곡 - 2021 왕중왕전" → "2021 왕중왕전"
   function programTitle(title, prog) {
-    if (!['불후의 명곡', '열린음악회'].includes(prog)) return title;
-    const i = title.indexOf(prog);
-    if (i < 0) return title;
-    const rest = title.slice(i + prog.length).replace(/^[\s\-–:·]+/, '').trim();
+    const t = title.replace(/^\[[^\]]*\]\s*/, '');
+    const d = PROGRAM_DEFS.find(x => x[0] === prog);
+    const m = d && t.match(d[2]);
+    if (!m) return title;
+    const rest = (t.slice(0, m.index).replace(/^(KBS\d?|MBC|SBS|JTBC|Mnet|tvN|MBN)\s*(TV)?\s*/i, '') + ' ' + t.slice(m.index + m[0].length)).replace(/^[\s\-–:·]+/, '').trim();
     return rest || prog;
   }
 
   function programView() {
     const name = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
-    const prog = PROGRAM_MATCH[name] ? name : PROGRAMS[0];
-    const list = data.events.filter(PROGRAM_MATCH[prog]).slice().reverse();
-    const play = playAllUrl(list);
+    const p = name && programs().get(name);
+    return p ? programDetail(p) : programIndex();
+  }
+
+  function programIndex() {
+    const list = programList();
+    const byType = PROGRAM_TYPES.map(t => [t, list.filter(p => p.type === t)]).filter(x => x[1].length);
+    const card = p => `<a class="prog-card" href="${progHref(p.name)}"><b>${esc(p.name)}</b><span>${[p.events.length && `출연 ${p.events.length}`, p.videos.length && `영상 ${p.videos.length}`, p.songs.length && `곡 ${p.songs.length}`].filter(Boolean).join(' · ')}</span></a>`;
     return `
-      <div class="prog-top">
-        <a class="back" href="#/">‹ 홈</a>
-        <div class="block-head"><h1 class="h1">프로그램별 모아보기${help(`공식 팬카페 캘린더에 등록된 출연만 있어요.${prog === '음악방송' ? ' 뮤직뱅크 · 음악중심 · 엠카운트다운 · 인기가요 · 쇼챔피언 · 더쇼를 모았어요.' : ''} 빠진 회차는 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.`)}</h1>${shareBtn('이 프로그램 모음 공유하기', `포레스텔라 ${prog} 무대 몰아보기 ▶▶\n\n${TAGS}`, link('#/program/' + encodeURIComponent(prog)))}</div>
-        <div class="chips">${PROGRAMS.map(p => `<a class="chip${p === prog ? ' on' : ''}" href="#/program/${encodeURIComponent(p)}"${p === prog ? ' aria-current="true"' : ''}>${p}</a>`).join('')}</div>
-      </div>
-      ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>${esc(prog)} 무대 이어보기</a>` : ''}
-      <div>
-        ${list.map(e => {
-          const ref = e.songSource === '참고';
-          const hasVideo = e.videoId || e.related.length;
-          return `
-            <a class="ep" href="#/e/${encodeURIComponent(e.id)}">
-              <span class="ep-body">
-                <span class="ep-date">${fmtDate(e.date)}</span>
-                <span class="ep-title">${esc(programTitle(e.title, prog))}</span>
-                ${ref ? `<span class="ep-ref">참고${e.videoMemo ? ' · ' + esc(e.videoMemo.replace(/^참고:\s*/, '')) : ''}</span>` :
-                  e.songs.length ? `<span class="ep-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
-              </span>
-              ${hasVideo && !ref ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}
-            </a>`;
-        }).join('') || '<p class="empty">아직 기록이 없어요.</p>'}
-      </div>
-`;
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">프로그램별 모아보기${help('팬카페 일정에 등록된 출연과 방송사 공식 유튜브 영상을 프로그램별로 묶었어요. 프로그램 이름은 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
+      ${byType.map(([t, ps]) => `<h2 class="h3 list-title">${esc(t)}</h2><div class="prog-grid">${ps.map(card).join('')}</div>`).join('')}`;
+  }
+
+  function programDetail(p) {
+    const play = playAllUrl(p.events);
+    const ep = e => {
+      const ref = e.songSource === '참고';
+      const hasVideo = e.videoId || e.related.length || (e.ytStage || []).length;
+      return `
+        <a class="ep" href="#/e/${encodeURIComponent(e.id)}">
+          <span class="ep-body">
+            <span class="ep-date">${fmtDate(e.date)}</span>
+            <span class="ep-title">${esc(programTitle(e.title, p.name))}</span>
+            ${ref ? `<span class="ep-ref">참고${e.videoMemo ? ' · ' + esc(e.videoMemo.replace(/^참고:\s*/, '')) : ''}</span>` :
+              e.songs.length ? `<span class="ep-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
+          </span>
+          ${hasVideo && !ref ? '<span class="play-dot" aria-label="영상 있음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span>' : ''}
+        </a>`;
+    };
+    const songRow = x => `<a class="song-item" href="#/song/${encodeURIComponent(x.so.key)}">${songPic(x.so) ? `<img class="song-thumb" src="${esc(songPic(x.so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}<span class="song-name">${esc(x.so.name)}</span><span class="song-n"><b>${x.n}번</b> ›</span></a>`;
+    const others = PROGRAMS_TOP().filter(n => n !== p.name);
+    return `
+      <a class="back" href="#/program">‹ 프로그램</a>
+      <h1 class="h1 page-title">${esc(p.name)}</h1>
+      <p class="sub">${esc(p.type)} · ${[p.events.length && `출연 ${p.events.length}번`, p.videos.length && `영상 ${p.videos.length}개`, p.songs.length && `부른 곡 ${p.songs.length}곡`].filter(Boolean).join(' · ')}</p>
+      ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>${esc(p.name)} 무대 이어보기</a>` : ''}
+      ${paneTabs([
+        { label: '출연', n: p.events.length, html: p.events.length ? moreList(p.events.map(ep), 15).replace('stack x-list', 'stack ep-list') : '' },
+        { label: '영상', n: p.videos.length, html: p.videos.length ? ytList(p.videos) : '' },
+        { label: '곡', n: p.songs.length, html: p.songs.length ? `<p class="src-note">이 프로그램에서 부른 날 수 순서예요.</p><div>${p.songs.map(songRow).join('')}</div>` : '' },
+      ]) || '<p class="empty">아직 기록이 없어요.</p>'}
+      ${others.length ? `<h2 class="h3 list-title">다른 프로그램</h2><div class="chips">${others.map(n => `<a class="chip" href="${progHref(n)}">${esc(n)}</a>`).join('')}<a class="chip" href="#/program">전체 ›</a></div>` : ''}`;
   }
 
   // ---------- 더보기 ----------
@@ -980,7 +1049,7 @@
         <span>일정은 공식 팬카페 캘린더, 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
       </a>
       <nav aria-label="더보기 메뉴">
-        ${item('#/program/' + encodeURIComponent(PROGRAMS[0]), '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
+        ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
         ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표', '연도·월별 기록')}
         ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범 · 싱글별 공식 X')}
