@@ -1050,19 +1050,21 @@
   const YT_KINDS = ['M/V', '라이브', '클립', '가사 영상', '비하인드', '티저', '쇼츠', '영상'];
   function ytView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-    const kind = qs.get('kind') || '', yr = qs.get('y') || '', mem = qs.get('m') || '', q = qs.get('q') || '';
+    const kind = qs.get('kind') || '', yr = qs.get('y') || '', mem = qs.get('m') || '', q = qs.get('q') || '', chn = qs.get('ch') || '';
     const all = data.official || [];
-    const href = (k, y, m) => '#/yt?' + new URLSearchParams(Object.entries({ kind: k, y, m, q }).filter(x => x[1])).toString();
+    const href = (k, y, m, c = chn) => '#/yt?' + new URLSearchParams(Object.entries({ ch: c, kind: k, y, m, q }).filter(x => x[1])).toString();
+    const chans = [...new Set(all.map(v => v.ch).filter(Boolean))];
     const chip = (on, h, label) => `<a class="chip${on ? ' on' : ''}" href="${h}">${label}</a>`;
     const nq = norm(q);
-    const list = all.filter(v => (!kind || v.kind === kind) && (!yr || v.date.startsWith(yr)) && (!mem || v.members.includes(mem)) && (!nq || norm(v.title).includes(nq)));
+    const list = all.filter(v => (!chn || (chn === '포레스텔라' ? !v.ch : v.ch === chn)) && (!kind || v.kind === kind) && (!yr || v.date.startsWith(yr)) && (!mem || v.members.includes(mem)) && (!nq || norm(v.title).includes(nq)));
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">공식 유튜브${help('포레스텔라 공식 유튜브 채널(@officialforestella) 영상을 매일 자동으로 모아요. 종류와 멤버는 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
+      <h1 class="h1 page-title">공식 유튜브${help('포레스텔라 공식 유튜브 채널(@officialforestella)과 고우림·조민규·강형호 공식 채널 영상을 매일 자동으로 모아요. 종류와 멤버는 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       <form class="searchbox song-search" role="search" id="yt-form">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="yt-q" value="${esc(q)}" placeholder="영상 제목 찾기" aria-label="공식 영상 찾기">
       </form>
+      ${chans.length ? `<div class="chips tl-cats">${chip(!chn, href(kind, yr, mem, ''), '모든 채널')}${['포레스텔라', ...chans].map(c => chip(c === chn, href(kind, yr, mem, c), c === '포레스텔라' ? c : c + ' 채널')).join('')}</div>` : ''}
       <div class="chips tl-cats">${chip(!kind, href('', yr, mem), '전체')}${YT_KINDS.filter(k => all.some(v => v.kind === k)).map(k => chip(k === kind, href(k, yr, mem), k)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(kind, '', mem), '전체 연도')}${[...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(kind, y, mem), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(kind, yr, ''), '멤버 전체')}${MEMBER_LIST.map(m => chip(m === mem, href(kind, yr, m), m.slice(1))).join('')}</div>
@@ -1318,7 +1320,7 @@
   function ytCard(v) {
     return `<a class="x-card yt-card" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener">
         <img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()">
-        <span class="x-text"><span class="x-date">${esc(v.kind)} · ${esc(v.date.replace(/-/g, '.'))}</span>${esc(ytTitle(v.title))}</span>
+        <span class="x-text"><span class="x-date">${v.ch ? esc(v.ch) + ' 채널 · ' : ''}${esc(v.kind)} · ${esc(v.date.replace(/-/g, '.'))}</span>${esc(ytTitle(v.title))}</span>
       </a>`;
   }
   // 카드 목록: 처음 n개만 보이고 '더 보기'로 n개씩 펼쳐요

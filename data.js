@@ -319,7 +319,7 @@
       v.kind = /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : '영상';
       const seen = new Set();
       // 따옴표 안 이름 (In un'altra vita처럼 글자 사이 '는 건너뛰어요)
-      [...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]).forEach(q => {
+      [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[|]+?)\s*(?=\(|\[|\||$)/g)].map(m => `'${m[1]}'`)].forEach(q => {
         const so = songByLoose.get(songKey(q.slice(1, -1).replace(/\s*\([^)]*\)\s*$/, '')).replace(/[^0-9a-z가-힣]/g, ''));
         if (so && !seen.has(so)) { seen.add(so); so.official.push(v); }
       });
@@ -337,6 +337,7 @@
       const t = v.title, ft = flat(t);
       v.members = MEMBERS.filter(m => t.includes(m) || t.includes(m.slice(1)) || ENG[m].test(t));
       if (v.members.length === 4) v.members = [];
+      if (v.ch && !v.members.includes(v.ch)) v.members.unshift(v.ch);  // 멤버 개인 채널 영상
       const hit = RELEASES.find(([, rx]) => rx.test(t.normalize('NFKC').toLowerCase()));
       v.rel = hit && v.kind !== '쇼츠' ? hit[0] : '';
       const cs = concertKeys.filter(c => c.key.length >= 4 && ft.includes(c.key) && days(v.date, c.from) >= -90)
