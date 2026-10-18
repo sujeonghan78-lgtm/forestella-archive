@@ -946,7 +946,7 @@
     ['포레 라이브', '웹 콘텐츠', /official\s?live|포레\s?live|숲\s?속\s?라이브|live\s?clip/i],
   ];
   // 자료를 더 모은 다음에 보여줄 프로그램 (목록에서 숨겨요)
-  const HIDDEN_PROGS = new Set(['팬텀싱어']);
+  const HIDDEN_PROGS = new Set([]);
   const MIX_PROG = '모음 · 미분류 영상';
   const PROGRAM_TYPES = ['음악 경연', '음악쇼', '음악방송', '연말 · 시상식', '예능', '라디오', '웹 콘텐츠', '특집 · 행사', '모음'];
   const OTHER_PROG = '특집 · 행사 무대';
@@ -1000,7 +1000,7 @@
     const t = title.replace(BC_PREFIX, '').trim();
     const d = PROGRAM_DEFS.find(x => x[0] === prog);
     // 여러 프로그램을 묶은 칸(음악방송·연말 등)은 제목을 그대로
-    if (!d || ['음악방송', '연말 · 시상식', '딩고 · 킬링보이스'].includes(prog)) return t || title;
+    if (!d || ['음악방송', '연말 · 시상식', '딩고 · 킬링보이스', '팬텀싱어'].includes(prog)) return t || title;
     const m = t.match(d[2]);
     if (!m || m.index > 0) return t || title;
     const rest = t.slice(m[0].length).replace(/^[\s\-–:·]+/, '').trim();

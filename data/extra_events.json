@@ -8,13 +8,13 @@
 "시작": "",
 "종료": "",
 "분류": "TV",
-"일정명": "JTBC 팬텀싱어 2",
+"일정명": "JTBC 팬텀싱어 2 (1~13회)",
 "장소": "",
-"내용": "",
+"내용": "예선 · 조민규 - Be my love\n예선 · 강형호 - The phantom of the opera\n예선 · 배두훈 - Defying Gravity\n예선 · 고우림 - 별 헤는 밤\n본선 1라운드 (듀엣 1 VS 1) · 조민규, 임정모 - Mi manchi (합격 (조민규 5표, 임정모 1표))\n본선 1라운드 (듀엣 1 VS 1) · 강형호, 손정수 - 새날 (합격 (강형호 5표, 손정수 1표))\n본선 1라운드 (듀엣 1 VS 1) · 배두훈, 조민웅 - Alejate (합격 (배두훈 4표, 조민웅 2표))\n본선 1라운드 (듀엣 1 VS 1) · 시메 코스타, 고우림 - Somewhere Out There (합격 (시메 코스타 4표, 고우림 2표))\n본선 2라운드 (듀엣 2 VS 2) · 배두훈, 김주택 - 꽃 피는 날 (패 (566점))\n본선 2라운드 (듀엣 2 VS 2) · 조민규, 고우림 - L'immensita (승 (568점))\n본선 2라운드 (듀엣 2 VS 2) · 강형호, 정필립 - Parla piu piano (패 (512점))\n본선 3라운드 (트리오) · 고우림, 조민규, 배두훈 - Dell' Amore Non Si Sa (합격 (트레피톤, 560점, 3위))\n본선 3라운드 (트리오) · 신명근, 김지원, 강형호 - 꽃병 (탈락 후보 (부스터, 552점, 공동 5위))\n(본선 4라운드~결승은 아직 정리 중이에요)",
 "비고": "출처: 나무위키 방송",
 "영상ID": "",
-"확인된 곡": "",
-"곡 확인 출처": "",
+"확인된 곡": "Be my love / The phantom of the opera / Defying Gravity / 별 헤는 밤 / Mi manchi / 새날 / Alejate / Somewhere Out There / 꽃 피는 날 / L'immensita / Parla piu piano / Dell' Amore Non Si Sa / 꽃병",
+"곡 확인 출처": "나무위키",
 "영상 메모": "",
 "공개여부": "공개"
 },
@@ -272,6 +272,23 @@
 "곡 확인 출처": "나무위키",
 "영상 메모": "",
 "공개여부": "공개"
+},
+{
+"ID": "20017",
+"날짜": "2021-04-20",
+"종료일": "",
+"시작": "",
+"종료": "",
+"분류": "TV",
+"일정명": "JTBC 팬텀싱어 올스타전 (12회, 마지막 회)",
+"장소": "",
+"내용": "",
+"비고": "출처: 나무위키",
+"영상ID": "",
+"확인된 곡": "Love Poem / Sweet Dreams / Requiem / Seasons Of Love",
+"곡 확인 출처": "나무위키",
+"영상 메모": "",
+"공개여부": "공개"
 }
 ],
 "songs": {
@@ -286,9 +303,16 @@
 "130220": "Champions",
 "151966": "Hijo de la Luna(달의 아들) / Chagall's Dream / 나 가거든 / Bohemian Rhapsody / White Night(백야) / 내 나라 내 겨레",
 "155032": "White Night(백야) / Hijo de la Luna(달의아들) / 아직도 기억하고 있어요 / 그 후로 오랫동안 / Bohemian Rapsody / Despacito / 곤드레 만드레",
-"160693": "White Night(백야) / Bohemian Rhapsody / Despacito / Love Runs Out / Sweet Dreams / 시월에 어느 멋진 날에"
+"160693": "White Night(백야) / Bohemian Rhapsody / Despacito / Love Runs Out / Sweet Dreams / 시월에 어느 멋진 날에",
+"10174": "Je Suis Malade",
+"10178": "Shape Of You",
+"10187": "Inner Universe"
 },
 "hide": [
 "10116"
-]
+],
+"addSongs": {
+"10177": "Love Runs Out",
+"10182": "언젠가"
+}
 }

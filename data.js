@@ -208,6 +208,11 @@
       const e = events.find(x => x.id === id);
       if (e && !e.songs.length) { e.songs = splitSongs(s); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))]; if (!e.songSource) e.songSource = '나무위키'; }
     });
+    // addSongs: 시트 곡은 그대로 두고 빠진 곡만 더해요
+    Object.entries(extra.addSongs || {}).forEach(([id, s]) => {
+      const e = events.find(x => x.id === id);
+      if (e && e.songSource !== '참고') splitSongs(s).forEach(n => { const k = songKey(n); if (k && !e.songKeys.includes(k)) { e.songs.push(n); e.songKeys.push(k); } });
+    });
     const videos = buildVideos(toObjects(raw.videos));
     const reports = raw.reports ? buildReports(toObjects(raw.reports)) : [];
     const byId = new Map(events.map(e => [e.id, e]));
