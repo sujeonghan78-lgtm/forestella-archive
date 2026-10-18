@@ -666,3 +666,11 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .chips-open .stick .chips.tl-cats + .chips.tl-cats { border-top: 1px solid var(--line); padding-top: 8px; }
 .track-links { margin-top: 6px; }
 .track-links .chip { height: 30px; font-size: 13px; }
+/* 검색창·필터 칩 통일: 통합 검색·곡·유튜브·공식 X 모두 같은 모양 */
+.search-top .searchbox, .stick .searchbox { height: 42px; min-height: 0; padding: 0 14px; box-shadow: none; background: #FFFFFF; border-color: #62D3A1; }
+.stick .song-search { margin: 0 0 8px; }
+.search-top .chip, .stick .chips .chip { height: 28px; font-size: 12px; padding: 0 11px; }
+.s-tabs .chip { height: 28px; font-size: 12px; padding: 0 11px; }
+/* 곡 목록: 오른쪽 숫자가 길어도 곡 이름이 글자 단위로 쪼개지지 않게 */
+.song-name { word-break: keep-all; overflow-wrap: anywhere; }
+.song-item .song-n { max-width: 42%; text-align: right; line-height: 1.4; }

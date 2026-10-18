@@ -312,7 +312,7 @@
     return `
       <form class="searchbox" role="search" id="home-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소 · 초성 OK" autocomplete="off">
+        <input type="search" name="q" aria-label="검색어" placeholder="곡·방송·영상·음반 찾기 · 초성 OK" autocomplete="off">
         <a class="adv-btn" href="#/search">통합 검색</a>
       </form>`;
   }
@@ -502,7 +502,9 @@
     return `<div class="chips s-tabs">${tabs.filter(([t, , n]) => n !== 0 || (p.t || '') === t).map(([t, l, n]) => `<a class="chip${(p.t || '') === t ? ' on' : ''}" href="#" data-t="${t}">${l}${n != null ? ` <b>${n.toLocaleString()}</b>` : ''}</a>`).join('')}</div>`;
   }
   const relCard = x => `<a class="x-card${x.img ? '' : ' no-img'}" href="${x.href}">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="x-text"><span class="x-date">${esc(x.kind)}${x.sub ? ' · ' + esc(x.sub) : ''}</span><b>${esc(x.name)}</b></span></a>`;
-  const songCard = so => relCard({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', sub: `무대 ${so.events.length}번`, name: so.name, img: songPic(so) });
+  // 곡 요약 (곡 목록·검색 결과 공통)
+  const songMeta = (so, plain) => [so.events.length ? (plain ? `무대 ${so.events.length}` : `<b>무대 ${so.events.length}</b>`) : '', (so.official || []).length ? `영상 ${so.official.length}` : '', so.tours.length ? `콘서트 ${so.tours.length}` : '', so.titleOf.length ? '타이틀' : ''].filter(Boolean).join(' · ');
+  const songCard = so => relCard({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', sub: songMeta(so, true), name: so.name, img: songPic(so) });
   function searchAll(p) {
     const h = searchHits(p);
     const { list, fuzzy } = runSearch(p);
@@ -597,7 +599,7 @@
         <a class="back" href="#/">‹ 홈</a>
         <form class="searchbox" role="search" id="search-form">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-          <input type="search" name="q" aria-label="검색어" placeholder="곡·방송·영상·음반 검색 · 초성 OK" value="${esc(p.q)}" autocomplete="off">
+          <input type="search" name="q" aria-label="검색어" placeholder="곡·방송·영상·음반 찾기 · 초성 OK" value="${esc(p.q)}" autocomplete="off">
         </form>
         <div id="fwrap"${fHide(p) ? ' hidden' : ''}><div class="chips" id="filters">
           ${chip('video', '1', '▶ 영상 있음', p.video)}${cats.map(c => chip('cat', c, c, p.cat === c)).join('')}
@@ -674,7 +676,7 @@
   };
   let songSort = 'name';
   let songFilter = '';
-  const SONG_FILTERS = [['', '전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
+  const SONG_FILTERS = [['', '분류 전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
   const playCount = so => so.events.length + so.tours.length;
 
   // 곡 이름이 나온 공식 X 글 (짧은 이름은 엉뚱한 글이 섞여서 한글 2자·영문 4자 이상만)
@@ -728,22 +730,22 @@
           : hangulFirst(a.name, b.name));
     const chip = (attr, val, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-${attr}="${val}" aria-pressed="${on}">${label}</button>`;
     return `
-      <div class="page-head">
-        <h1 class="h1">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. 초록 숫자는 영상으로 확인된 무대 수예요.')}</h1>
-        <p class="sub">한 곡을 누르면 무대, 음반, 콘서트가 모두 나와요 · ${list.length}곡</p>
-      </div>
+      <h1 class="h1 page-title">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. 한 곡을 누르면 무대, 음반, 콘서트가 모두 나와요. 초록 숫자는 영상으로 확인된 무대 수예요.')}</h1>
+      <div class="stick">
       <form class="searchbox song-search" role="search" onsubmit="return false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="song-q" aria-label="곡 이름 찾기" placeholder="곡 이름 찾기 · 초성도 OK" autocomplete="off">
+        <input type="search" id="song-q" aria-label="곡 찾기" placeholder="곡 찾기 · 초성 OK" autocomplete="off">
       </form>
-      <div class="chips" id="song-sort">
+      <div class="chips tl-cats" id="song-sort">
         ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}
       </div>
-      <div class="chips" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v)).join('')}</div>
+      <div class="chips tl-cats" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v)).join('')}</div>
+      <div class="view-row"><p class="sub">${list.length.toLocaleString()}곡</p>${chipsBtn()}</div>
+      </div>
       <div>
         ${list.map(so => {
           const al = so.albums[0];
-          const meta = [so.events.length ? `<b>무대 ${so.events.length}</b>` : '', (so.official || []).length ? `영상 ${so.official.length}` : '', so.tours.length ? `콘서트 ${so.tours.length}` : '', so.titleOf.length ? '타이틀' : ''].filter(Boolean).join(' · ');
+          const meta = songMeta(so);
           return `
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(songText(so) + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(songText(so)))}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
@@ -1247,11 +1249,11 @@
       <div class="stick">
       <form class="searchbox song-search" role="search" id="yt-form">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="yt-q" value="${esc(q)}" placeholder="영상 제목 찾기" aria-label="공식 영상 찾기">
+        <input type="search" id="yt-q" value="${esc(q)}" placeholder="영상 찾기 · 초성 OK" aria-label="영상 찾기" autocomplete="off">
       </form>
-      ${chans.length ? multiChips('#/yt', st, 'ch', ['포레스텔라', ...chans], '모든 채널', c => c === '포레스텔라' || c === '방송사' ? c : CH_NAMES[c] || c + ' 채널') : ''}
-      ${multiChips('#/yt', st, 'kind', YT_KINDS.filter(k => all.some(v => v.kind === k)), '전체')}
-      ${multiChips('#/yt', st, 'y', [...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse(), '전체 연도')}
+      ${chans.length ? multiChips('#/yt', st, 'ch', ['포레스텔라', ...chans], '채널 전체', c => c === '포레스텔라' || c === '방송사' ? c : CH_NAMES[c] || c + ' 채널') : ''}
+      ${multiChips('#/yt', st, 'kind', YT_KINDS.filter(k => all.some(v => v.kind === k)), '종류 전체')}
+      ${multiChips('#/yt', st, 'y', [...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse(), '연도 전체')}
       ${multiChips('#/yt', st, 'm', MEMBER_LIST, '멤버 전체', m => m.slice(1))}
       <div class="view-row"><p class="sub">${list.length.toLocaleString()}개</p>${chipsBtn()}${albumBtn()}</div>
       </div>
@@ -1293,7 +1295,7 @@
           </a>`;
       if (!list.length) { box.innerHTML = `<p class="empty">${data.xPending ? '공식 X 글 불러오는 중…' : rel ? '이 음반에 묶인 공식 X 글이 없어요.' : '해당하는 글이 없어요.'}</p>`; return; }
       const pics = list.reduce((s, p) => s + ((p.imgs || []).length || (p.img ? 1 : 0)), 0);
-      const label = `글 ${list.length.toLocaleString()}개${pics ? ` · 사진 ${pics.toLocaleString()}장` : ''}`;
+      const label = `${list.length.toLocaleString()}개${pics ? ` · 사진 ${pics.toLocaleString()}장` : ''}`;
       const cnt = document.getElementById('xcount'); if (cnt) cnt.textContent = label;
       box.innerHTML = `${rel ? `<p class="sub">${label}</p>` : ''}<div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
       const more = () => {
@@ -1321,10 +1323,10 @@
       <div class="stick">
       <form class="searchbox song-search" role="search" onsubmit="return false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="xq" aria-label="공식 X 글 찾기" placeholder="공식 X 글 찾기 · 곡명, 프로그램" value="${esc(xQuery)}" autocomplete="off">
+        <input type="search" id="xq" aria-label="공식 X 글 찾기" placeholder="공식 X 글 찾기 · 초성 OK" value="${esc(xQuery)}" autocomplete="off">
       </form>
-      ${multiChips('#/xfeed', st, 'cat', X_CATS, '전체')}
-      ${multiChips('#/xfeed', st, 'y', [...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse(), '전체 연도')}
+      ${multiChips('#/xfeed', st, 'cat', X_CATS, '종류 전체')}
+      ${multiChips('#/xfeed', st, 'y', [...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse(), '연도 전체')}
       ${multiChips('#/xfeed', st, 'm', X_MEMBERS, '멤버 전체', m => m.slice(1))}
       <div class="view-row"><p class="sub" id="xcount"></p>${chipsBtn()}${albumBtn()}</div>
       </div>
@@ -1405,8 +1407,7 @@
       : data.tours.slice().reverse().map(t => ({ id: t.id, name: t.name, sub: `${tourRange(t)} · ${t.complete ? '' : '일부 '}${t.songs.length}곡` }));
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">콘서트${help('공연 정보는 예매처·기사·위키 중 두 곳 이상 맞는 것만 적었어요. 셋리스트는 나무위키·setlist.fm·뉴스 기사를 모았어요. 틀린 곳이 있으면 제보해 주세요.')}</h1>
-      <p class="sub">단독 콘서트와 투어의 일정, 공연장, 부른 곡을 모았어요.</p>
+      <h1 class="h1 page-title">콘서트${help('단독 콘서트와 투어의 일정, 공연장, 부른 곡을 모았어요. 공연 정보는 예매처·기사·위키 중 두 곳 이상 맞는 것만 적었어요. 셋리스트는 나무위키·setlist.fm·뉴스 기사를 모았어요. 틀린 곳이 있으면 제보해 주세요.')}</h1>
       <div class="stack x-list">
         ${list.map(c => `
           <a class="x-card${c.img ? '' : ' no-img'}" href="#/tour/${encodeURIComponent(c.id)}">
