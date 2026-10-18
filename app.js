@@ -1218,13 +1218,26 @@
     // 활동 이력: 시트 음반 정보에 이미 있는 음반은 음반 탭에서 보여서 빼요
     const alNames = new Set(als.map(a => a.name.toLowerCase().replace(/\s+/g, '')));
     const car = (data.career || []).filter(c => c.member === m && !(c.type === '음반' && alNames.has(c.title.toLowerCase().replace(/\s+/g, ''))));
+    const carRow = c => `<div class="car-row"><span class="car-date">${esc(careerDate(c.date))}</span><span class="car-body"><b>${esc(c.title)}</b>${[c.note, c.where].filter(Boolean).length ? `<span>${esc([c.note, c.where].filter(Boolean).join(' · '))}</span>` : ''}</span></div>`;
+    // 음반 탭에도 솔로 참여곡·OST를 같이 (시트 음반 아래)
+    // 발매일이 가까운(±5일) 시트 음반이 있으면 그 음반 카드에 곡 이름만 붙이고, 없으면 따로 목록으로
+    const dayN = d => Date.parse(d.slice(0, 10)) / 864e5;
+    const albSongs = new Map();
+    const carDisc = car.filter(c => c.type === '음반' || c.type === 'OST').filter(c => {
+      if (c.date.length < 10) return true;
+      const near = als.filter(a => a.date && Math.abs(dayN(a.date) - dayN(c.date)) <= 5);
+      const a = near.find(a => (c.type === 'OST') === /OST/i.test(a.kind + a.name)) || near[0];
+      if (!a) return true;
+      if (a.name.replace(/\s+/g, '').toLowerCase() !== c.title.replace(/\s+/g, '').toLowerCase()) albSongs.set(a, [...(albSongs.get(a) || []), c.title]);
+      return false;
+    }).sort((a, b) => b.date.localeCompare(a.date));
     const groups = CAREER_ORDER.map(t => [t, car.filter(c => (CAREER_ORDER.includes(c.type) ? c.type : '기타') === t).sort((a, b) => b.date.localeCompare(a.date))]).filter(g => g[1].length);
     const careerHtml = groups.length ? `${groups.map(([t, list]) => `
         <h3 class="car-h">${esc(CAREER_LABEL[t] || t)} <b>${list.length}</b></h3>
-        <div class="car-list">${list.map(c => `<div class="car-row"><span class="car-date">${esc(careerDate(c.date))}</span><span class="car-body"><b>${esc(c.title)}</b>${[c.note, c.where].filter(Boolean).length ? `<span>${esc([c.note, c.where].filter(Boolean).join(' · '))}</span>` : ''}</span></div>`).join('')}</div>`).join('')}
+        <div class="car-list">${list.map(carRow).join('')}</div>`).join('')}
         <p class="src-note">나무위키 멤버 문서에서 모았어요. 빠진 활동이 있을 수 있어요.</p>` : '';
     const first = evs.length ? evs[evs.length - 1].date.slice(0, 4) : '';
-    const stat = [['일정', evs.length], ['영상', vs.length], ['음반', als.length], ['활동 이력', car.length]].filter(x => x[1]);
+    const stat = [['일정', evs.length], ['영상', vs.length], ['음반', als.length + carDisc.length], ['활동 이력', car.length]].filter(x => x[1]);
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 영상·공식 X는 제목이나 글에 멤버 이름이 나온 것만 모았어요. 활동 이력은 나무위키 멤버 문서에서 가져왔어요.')}</h1>
@@ -1242,11 +1255,11 @@
       ${paneTabs([
         { label: '활동 이력', n: car.length, html: careerHtml },
         { label: '일정', n: evs.length, html: evs.length ? `${moreList(evs.map(resultCard), 10)}<a class="more mem-all" href="#/search?member=${q}">검색에서 걸러 보기 ›</a>` : '' },
-        { label: '음반', n: als.length, html: als.length ? `<div class="stack x-list">${als.map(a => `
+        { label: '음반', n: als.length + carDisc.length, html: als.length + carDisc.length ? `<div class="stack x-list">${als.map(a => `
           <a class="x-card${a.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
             ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
-            <span class="x-text"><span class="x-date">${nw(`${a.date.replace(/-/g, '.')} · ${a.kind}`)}</span><b>${esc(a.name)}</b></span>
-          </a>`).join('')}</div>` : '' },
+            <span class="x-text"><span class="x-date">${nw(`${a.date.replace(/-/g, '.')} · ${a.kind}`)}</span><b>${esc(a.name)}</b>${albSongs.has(a) ? `<span class="x-date">${esc(m)} 노래 · ${esc(albSongs.get(a).join(', '))}</span>` : ''}</span>
+          </a>`).join('')}</div>${carDisc.length ? `<h3 class="car-h">그 밖의 참여곡 · OST <b>${carDisc.length}</b></h3><div class="car-list">${carDisc.map(carRow).join('')}</div>` : ''}` : '' },
         { label: '유튜브', n: vs.length, html: vs.length ? `<div class="view-row">${albumBtn()}</div>${ytList(vs)}<a class="more mem-all" href="#/yt?m=${q}">유튜브 탭에서 보기 ›</a>` : '' },
         { label: 'X', n: xs.length, html: xList(xs) },
       ])}
