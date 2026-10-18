@@ -1055,7 +1055,7 @@
     const row = p => `<a class="prog-row" href="${progHref(p.name)}"><span class="prog-rthumb">${thumb(p)}</span><span class="prog-rbody"><b>${esc(p.name)}</b><span>${counts(p)}${progSpan(p) ? ` · ${progSpan(p)}` : ''}</span></span><span class="prog-chev" aria-hidden="true">›</span></a>`;
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">프로그램별 모아보기${help('팬카페 일정에 등록된 출연과 방송사 공식 유튜브 영상을 프로그램별로 묶었어요. 프로그램 이름은 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
+      <h1 class="h1 page-title">프로그램별 모아보기${help('일정에 등록된 출연과 방송사 공식 유튜브 영상을 프로그램별로 묶었어요. 프로그램 이름은 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       ${top.length ? `<h2 class="h3 list-title">많이 나온 프로그램</h2><div class="prog-grid">${top.map(card).join('')}</div>` : ''}
       ${byType.map(([t, ps]) => [t, ps.filter(p => !topSet.has(p))]).filter(x => x[1].length).map(([t, ps]) => `<h2 class="h3 list-title">${esc(t)}</h2><div class="prog-rows">${ps.map(row).join('')}</div>`).join('')}`;
   }
@@ -1196,7 +1196,7 @@
       <h1 class="h1 page-title">더보기</h1>
       <a class="about-card" href="#/about">
         <span class="block-head"><span class="about-title">기록은 이렇게 모았어요</span><span aria-hidden="true">›</span></span>
-        <span>일정은 공식 팬카페 캘린더, 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
+        <span>일정은 공식 팬카페 캘린더(2021년 7월 이전은 나무위키·방송 영상), 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
       </a>
       <nav aria-label="더보기 메뉴">
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
