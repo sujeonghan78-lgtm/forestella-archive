@@ -16,7 +16,7 @@ for (const k of todo) {
   let u = 'https://' + k;
   try {
     for (let i = 0; i < 6; i++) {
-      const r = await fetch(u, { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const r = await fetch(u, { redirect: 'manual', signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'Mozilla/5.0' } });
       const loc = r.headers.get('location');
       if (!loc || r.status < 300 || r.status >= 400) break;
       u = new URL(loc, u).href;
