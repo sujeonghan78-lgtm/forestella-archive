@@ -324,6 +324,9 @@
       const q = f.q.value.trim();
       location.hash = '#/search' + (q ? '?q=' + encodeURIComponent(q) : '');
     };
+    // '통합 검색' 버튼도 쓴 검색어를 들고 넘어가요
+    const adv = f && f.querySelector('.adv-btn');
+    if (adv) adv.onclick = ev => { ev.preventDefault(); f.onsubmit(ev); };
     const b = document.getElementById('reroll');
     if (b) b.onclick = () => {
       pickCount++;
