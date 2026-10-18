@@ -248,24 +248,32 @@
         .filter(u => !/\/\/t\.co\//.test(u) && /^https?:\/\/[^/]+\.[a-z]{2,}/i.test(u) && !/(twitter|x)\.com\/[^/]+\/status/.test(u))
         .filter(u => !seen.has(u) && seen.add(u));
     };
-    const xFeed = toObjects(raw.xsheet || '').filter(r => r['링크']).map(r => ({
-      id: r['링크'].split('/').pop(),
-      url: r['링크'],
-      date: normDate(r['날짜']) || r['날짜'],
-      cat: r['종류'] || '사진·일상',
-      m: (r['멤버'] || '').split(',').map(x => x.trim()).filter(Boolean),
-      text: xClean(r['글'] || ''),
-      raw: r['글'] || '',
-      links: linksOf(r['링크'].split('/').pop(), r['글'] || ''),
-      img: r['사진'] || '',
-      imgs: xPhotos[r['링크'].split('/').pop()] || [],
-      after: r['후기 일정ID'] || '',
-      behind: r['비하인드 일정ID'] || '',
-      rel: r['음반'] || '',
-    }));
-    // 시트에 아직 없는 최근 글은 자동으로 받아 둔 것(data/x_auto.json, 1시간마다)으로 채워요
+    // 시트에 아직 없는 최근 글·링크만 붙인 글은 자동으로 받아 둔 것(data/x_auto.json, 1시간마다)으로 채워요
     let xAuto = [];
     try { xAuto = JSON.parse(raw.xauto || '{}').posts || []; } catch (err) { /* 없으면 넘어가요 */ }
+    const autoById = new Map(xAuto.map(p => [p.id, p]));
+    // 글 번호로 올린 시각을 알 수 있어요 (X 글 번호 앞부분이 시각)
+    const idDate = id => { try { return new Date(Number(BigInt(id) >> 22n) + 1288834974657 + 9 * 3600e3).toISOString().slice(0, 10); } catch (e) { return ''; } };
+    const xFeed = toObjects(raw.xsheet || '').filter(r => r['링크']).map(r => {
+      const id = (r['링크'].match(/status(?:es)?\/(\d{15,20})/) || [, r['링크'].split('/').pop()])[1];
+      const au = !(r['글'] || '').trim() && autoById.get(id);
+      const body = r['글'] || (au ? au.text : '');
+      return {
+        id,
+        url: 'https://x.com/official_fore/status/' + id,
+        date: normDate(r['날짜']) || (au && au.date) || idDate(id) || r['날짜'],
+        cat: r['종류'] || (au && au.cat) || '사진·일상',
+        m: r['멤버'] ? r['멤버'].split(',').map(x => x.trim()).filter(Boolean) : (au && au.m) || [],
+        text: xClean(body) || '공식 X에 새 글이 올라왔어요',
+        raw: body,
+        links: linksOf(id, body),
+        img: r['사진'] || (au && (au.imgs || [])[0]) || '',
+        imgs: xPhotos[id] || (au && au.imgs) || [],
+        after: r['후기 일정ID'] || '',
+        behind: r['비하인드 일정ID'] || '',
+        rel: r['음반'] || '',
+      };
+    });
     const xIds = new Set(xFeed.map(p => p.id));
     xAuto.filter(p => !xIds.has(p.id)).forEach(p => xFeed.push({
       id: p.id, url: 'https://x.com/official_fore/status/' + p.id, date: p.date, cat: p.cat, m: p.m || [],

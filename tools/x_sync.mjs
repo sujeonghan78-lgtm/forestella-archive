@@ -36,6 +36,39 @@ const token = id => ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.
 const tweets = new Map();
 const why = [];
 
+// 0) 시트 공식X 탭에 링크만 붙여 둔 글(글 칸이 빈 줄)은 바로 글·사진을 받아 채워요
+const csvRows = text => {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+};
+const getTweet = async id => {
+  const r = await fetch(`https://cdn.syndication.twimg.com/tweet-result?id=${id}&lang=ko&token=${token(id)}`, { headers: UA });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const t = await r.json();
+  return t.created_at ? { ...t, id_str: id, full_text: t.text } : null;
+};
+try {
+  const sheetUrl = fs.readFileSync('config.js', 'utf8').match(/x:\s*'([^']+)'/)[1];
+  const [head, ...rows] = csvRows(await (await fetch(sheetUrl)).text());
+  const L = head.indexOf('링크'), G = head.indexOf('글');
+  const want = rows.filter(r => r[L] && !(r[G] || '').trim()).map(r => (r[L].match(/status(?:es)?\/(\d{15,20})/) || [])[1]).filter(id => id && !byId.has(id));
+  for (const id of want) {
+    try { const t = await getTweet(id); if (t) tweets.set(id, t); } catch (e) { why.push(`시트 글 ${id} ${e.message}`); }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  if (want.length) console.log(`::notice::시트에 링크만 있는 글 ${want.length}개`);
+} catch (e) { why.push('시트 ' + e.message); }
+
+let timelineOk = false;
 // 1) X 임베드 타임라인 (최근 글 20개쯤). 깃허브 서버에서는 자주 막혀요(429)
 try {
   const r = await fetch(URL, { headers: UA });
@@ -43,12 +76,13 @@ try {
   const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
   const entries = m ? JSON.parse(m[1]).props.pageProps.timeline.entries || [] : [];
   entries.map(e => e.content && e.content.tweet).filter(Boolean).forEach(t => tweets.set(t.id_str, t));
+  timelineOk = entries.length > 0;
   if (!entries.length) why.push(`타임라인 HTTP ${r.status}`);
 } catch (e) { why.push('타임라인 ' + e.message); }
 
 // 2) 안 되면 웹 아카이브에 최근 2주 동안 저장된 글 번호 → 글마다 X 임베드 주소로 받아요
 let archiveOk = false;
-if (!tweets.size) {
+if (!timelineOk) {
   const from = new Date(Date.now() - 14 * 86400e3).toISOString().slice(0, 10).replace(/-/g, '');
   const ids = new Set();
   for (const host of ['x.com', 'twitter.com']) {
@@ -59,18 +93,14 @@ if (!tweets.size) {
       archiveOk = true;
     } catch (e) { why.push(`아카이브 ${host} ${e.message}`); }
   }
-  for (const id of [...ids].filter(i => !byId.has(i))) {
-    try {
-      const r = await fetch(`https://cdn.syndication.twimg.com/tweet-result?id=${id}&lang=ko&token=${token(id)}`, { headers: UA });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const t = await r.json();
-      if (t.created_at) tweets.set(id, { ...t, id_str: id, full_text: t.text });
+  for (const id of [...ids].filter(i => !byId.has(i) && !tweets.has(i))) {
+    try { const t = await getTweet(id); if (t) tweets.set(id, t);
     } catch (e) { why.push(`글 ${id} ${e.message}`); }
     await new Promise(r => setTimeout(r, 500));
   }
 }
 
-if (!tweets.size && !archiveOk) {
+if (!timelineOk && !archiveOk) {
   console.log(`::error::공식 X 최근 글을 못 받았어요 (${why.join(' / ')}). X가 막았을 수 있어요.`);
   process.exit(1);
 }
