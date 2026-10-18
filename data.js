@@ -148,7 +148,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, xlinks, xphotos] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -160,10 +160,11 @@
       fetchText('data/yt_videos.json').catch(() => ''),
       fetchText('data/yt_bc.json').catch(() => ''),
       fetchText('data/ytm_tracks.json').catch(() => ''),
+      fetchText('data/ytm_links.json').catch(() => ''),
       fetchText('data/x_links.json').catch(() => ''),
       fetchText('data/x_photos.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, xlinks, xphotos, sheets: JSON.stringify(s), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, sheets: JSON.stringify(s), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -461,6 +462,9 @@
     // 유튜브 뮤직 공식 음원 → 곡의 '음원' 칸 (앨범의 그 곡 링크, 연주곡은 빼요)
     let ytm = [];
     try { ytm = JSON.parse(raw.ytm || '{}').tracks || []; } catch (err) { /* 없으면 넘어가요 */ }
+    let ytml = {};
+    try { ytml = JSON.parse(raw.ytml || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
+    ytm.forEach(t => { t.links = ytml[t.id] || {}; });
     const looseKey = k => k.replace(/[^0-9a-z가-힣]/g, '');
     const songLoose = new Map([...songs.values()].map(so => [looseKey(so.key), so]));
     ytm.forEach(t => {
@@ -502,7 +506,7 @@
   async function load(onUpdate) {
     const cached = readCache();
     // 시트 주소가 바뀌었으면(새 탭 연결 등) 저장본을 버려요.
-    const fresh = cached && 'ytm' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'ytml' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});

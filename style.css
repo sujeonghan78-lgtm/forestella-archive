@@ -663,3 +663,5 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .chips-open .stick .chips { flex-wrap: wrap; overflow: visible; }
 .view-row .sub { white-space: nowrap; }
 .chips-open .stick .chips.tl-cats + .chips.tl-cats { border-top: 1px solid var(--line); padding-top: 8px; }
+.track-links { margin-top: 6px; }
+.track-links .chip { height: 30px; font-size: 13px; }

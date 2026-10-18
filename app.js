@@ -748,11 +748,12 @@
   function songTracks(so) {
     const artist = (so.albums[0] && so.albums[0].member) || '포레스텔라';
     const q = encodeURIComponent(artist + ' ' + (so.match || so.name).replace(/\s*\([^)]*\)\s*$/, ''));
-    const cards = so.tracks.map(t => `
+    const PLAT = { spotify: '스포티파이', appleMusic: '애플뮤직', deezer: '디저', tidal: '타이달', amazonMusic: '아마존 뮤직' };
+    const cards = so.tracks.map(t => `<div class="card-wrap">
       <a class="card has-thumb" href="https://music.youtube.com/watch?v=${encodeURIComponent(t.id)}" target="_blank" rel="noopener">
         <span class="card-body"><span class="meta">${tag('유튜브 뮤직')}<span>${fmtDate(t.date)}</span></span><span class="card-title">${esc(t.album)}</span><span class="sub">${esc(t.title)}</span></span>
         <span class="card-thumb"><img src="https://i.ytimg.com/vi/${encodeURIComponent(t.id)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span></span>
-      </a>`).join('');
+      </a>${Object.keys(t.links || {}).filter(k => PLAT[k]).length ? `<div class="chips wrap track-links">${Object.entries(t.links).filter(([k]) => PLAT[k]).map(([k, u]) => `<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${PLAT[k]} ↗</a>`).join('')}</div>` : ''}</div>`).join('');
     return `${cards ? `<div class="stack">${cards}</div>` : ''}
       <p class="src-note">다른 음원 사이트에서 찾기</p>
       <div class="chips wrap">${MUSIC_SITES.map(([n, u]) => `<a class="chip" href="${u}${q}" target="_blank" rel="noopener">${n} ↗</a>`).join('')}</div>`;
