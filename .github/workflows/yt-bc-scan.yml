@@ -1,0 +1,16 @@
+# 포레스텔라 영상을 올린 채널 찾기 (직접 실행)
+name: yt-bc-scan
+on:
+  workflow_dispatch:
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/yt_bc_scan.mjs 2>err.txt || { echo "::error::$(grep -m3 -i 'error' err.txt | tr '\n' ' ' | cut -c1-400)"; exit 1; }
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
