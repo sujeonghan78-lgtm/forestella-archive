@@ -560,3 +560,4 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .pane-tabs button b { font-weight: 600; color: var(--green); margin-left: 2px; }
 .pane-tabs button.on { background: linear-gradient(120deg, #C6EC6B, #62D3A1 55%, #72BCF3); color: #0F2A22; border-color: transparent; font-weight: 700; }
 .pane-tabs button.on b { color: inherit; }
+.adv-btn { flex: none; margin-right: -6px; padding: 7px 11px; border-radius: 12px; background: linear-gradient(120deg, #E6F6C9, #D3F1E3); color: #1C6A4E; font-size: 12px; font-weight: 700; white-space: nowrap; }

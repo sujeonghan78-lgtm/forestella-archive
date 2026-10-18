@@ -288,7 +288,8 @@
     return `
       <form class="searchbox" role="search" id="home-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소 검색 · 초성 OK" autocomplete="off">
+        <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소 · 초성 OK" autocomplete="off">
+        <a class="adv-btn" href="#/search">상세 검색</a>
       </form>`;
   }
 
@@ -490,6 +491,7 @@
     const chip = (attr, val, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}</button>`;
     return `
       <div class="search-top">
+        <a class="back" href="#/">‹ 홈</a>
         <form class="searchbox" role="search" id="search-form">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
           <input type="search" name="q" aria-label="검색어" placeholder="곡명, 방송, 장소 · 초성도 OK" value="${esc(p.q)}" autocomplete="off">
@@ -842,7 +844,6 @@
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
         ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표', '연도·월별 기록')}
         ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범 · 싱글별 공식 X')}
-        ${item('#/yt', '<rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z"/>', '공식 유튜브', (data.official || []).length + '개')}
         ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
         ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
         ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
@@ -1058,7 +1059,6 @@
     const nq = norm(q);
     const list = all.filter(v => (!chn || (chn === '포레스텔라' ? !v.ch : v.ch === chn)) && (!kind || v.kind === kind) && (!yr || v.date.startsWith(yr)) && (!mem || v.members.includes(mem)) && (!nq || norm(v.title).includes(nq)));
     return `
-      <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">공식 유튜브${help('포레스텔라 공식 유튜브 채널(@officialforestella)과 고우림·조민규·강형호 공식 채널 영상을 매일 자동으로 모아요. 종류와 멤버는 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       <form class="searchbox song-search" role="search" id="yt-form">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -1490,7 +1490,7 @@
   }
 
   function setTabs(name) {
-    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', yt: 'more', timeline: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
