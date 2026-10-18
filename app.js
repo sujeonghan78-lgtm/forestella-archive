@@ -1447,7 +1447,7 @@
     (data.xFeed || []).forEach(p => { if (p.rel) { if (!map.has(p.rel)) map.set(p.rel, []); map.get(p.rel).push(p); } });
     // 시트 "음반 정보"가 있으면 그 순서대로, 없으면 공식 X 글로 묶은 것만
     const items = data.albums && data.albums.length
-      ? data.albums.filter(a => (a.member || '') === who).map(a => { const ps = map.get(a.rel) || []; return { key: a.rel || a.name, name: a.name, sub: `${a.date.replace(/-/g, '.')} · ${a.kind}`, img: a.img || (ps.find(p => p.img) || {}).img, n: ps.length }; })
+      ? data.albums.filter(a => (a.member || '') === who).map(a => { const ps = map.get(a.rel) || []; return { key: a.rel || a.name, name: a.name, sub: `${a.date.replace(/-/g, '.')} · ${a.kind}`, date: a.date, tn: (a.tracks || []).length, img: a.img || (ps.find(p => p.img) || {}).img, n: ps.length }; })
       : [...map.entries()].map(([name, ps]) => ({ key: name, name, sub: `${ps[ps.length - 1].date.replace(/-/g, '.')}부터`, img: (ps.find(p => p.img) || {}).img, n: ps.length, d: ps[ps.length - 1].date }))
         .sort((a, b) => (a.d < b.d ? 1 : -1));
     // 연도별로 묶어 표지 2칸 바둑판
@@ -1464,7 +1464,7 @@
           <a class="rel-tile" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
             <span class="rel-cover">${r.img ? `<img src="${esc(imgSize(r.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
             <b>${esc(r.name)}</b>
-            <span class="rel-sub">${esc(kindOf(r))}${r.n ? ` · X ${r.n}` : ''}</span>
+            <span class="rel-sub">${r.date ? `${esc(kindOf(r))}<br>${esc(r.date.replace(/-/g, '.'))}${r.tn ? `<br>${r.tn}곡` : ''}` : esc(r.sub) + (r.n ? ` · X ${r.n}` : '')}</span>
           </a>`).join('')}</div>`).join('')}`;
   }
 
