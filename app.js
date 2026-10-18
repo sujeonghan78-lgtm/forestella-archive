@@ -505,7 +505,7 @@
     return `<div class="search-yt"><div class="block-head"><h2 class="h3">공식 유튜브</h2><a class="more" href="#/yt?q=${encodeURIComponent(q)}">${vs.length}개 ›</a></div>${ytStrip(vs.slice(0, 8))}</div>`;
   }
 
-  // 검색 전 화면: 최근 검색어, 많이 찾는 곡, 프로그램
+  // 검색 전 화면: 최근 검색어, 많이 부른 곡
   const RECENT_Q = 'soopbyeol-recent-q';
   function recentQueries() { try { return JSON.parse(localStorage.getItem(RECENT_Q) || '[]'); } catch (err) { return []; } }
   function saveQuery(q) {
@@ -519,14 +519,14 @@
     return `
       ${recent.length ? `<h2 class="h3 list-title">최근 검색어 <button type="button" class="link-btn" id="clear-recent">지우기</button></h2>
       <div class="chips wrap">${recent.map(q => `<button type="button" class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
-      <h2 class="h3 list-title">많이 찾는 곡</h2>
+      <h2 class="h3 list-title">많이 부른 곡</h2>
       <div class="chips wrap">${top.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>
-      <h2 class="h3 list-title">프로그램 바로가기</h2>
-      <div class="chips wrap">${PROGRAMS.map(pg => `<a class="chip" href="#/program/${encodeURIComponent(pg)}">${pg}</a>`).join('')}</div>
-      <button type="button" class="btn btn-soft" id="show-all">전체 기록 ${data.events.length}건 보기</button>`;
+      <button type="button" class="btn btn-soft" id="show-all">전체 일정 ${data.events.length.toLocaleString()}건 보기</button>`;
   }
 
   let showAll = false;
+  // 필터는 일정을 볼 때만: 검색 전 첫 화면이나 일정 말고 다른 탭에선 숨겨요
+  const fHide = p => p.q ? p.t !== 'ev' : !(p.cat || p.year || p.member || p.video || showAll);
   function searchResults(p) {
     if (!p.q && !p.cat && !p.year && !p.member && !p.video && !showAll) return searchHome();
     if (p.q && p.t !== 'ev') return searchAll(p);
@@ -568,15 +568,15 @@
         <a class="back" href="#/">‹ 홈</a>
         <form class="searchbox" role="search" id="search-form">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-          <input type="search" name="q" aria-label="검색어" placeholder="곡·방송·장소·영상·음반 다 찾아요 · 초성 OK" value="${esc(p.q)}" autocomplete="off">
+          <input type="search" name="q" aria-label="검색어" placeholder="곡·방송·영상·음반 검색 · 초성 OK" value="${esc(p.q)}" autocomplete="off">
         </form>
-        <div class="chips" id="filters"${p.q && p.t !== 'ev' ? ' hidden' : ''}>
+        <div id="fwrap"${fHide(p) ? ' hidden' : ''}><div class="chips" id="filters">
           ${chip('video', '1', '▶ 영상 있음', p.video)}${cats.map(c => chip('cat', c, c, p.cat === c)).join('')}
         </div>
         <div class="chips" id="filters2">
           ${MEMBER_LIST.map(m => chip('member', m, m.slice(1), p.member === m)).join('')}
         </div>
-        <div class="chips" id="filters3">${years.map(y => chip('year', y, y, p.year === y)).join('')}</div>
+        <div class="chips" id="filters3">${years.map(y => chip('year', y, y, p.year === y)).join('')}</div></div>
       </div>
       <div id="results">${searchResults(p)}</div>`;
   }
@@ -589,7 +589,7 @@
       writeParams(p);
       if (resetShown) shown = 50;
       document.getElementById('results').innerHTML = searchResults(p);
-      document.getElementById('filters').hidden = !!p.q && p.t !== 'ev';
+      document.getElementById('fwrap').hidden = fHide(p);
       bindResults();
     };
     const bindResults = () => {
