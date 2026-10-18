@@ -312,6 +312,8 @@
     // 보충 음반(extra.albums, 시트 열 이름 그대로): 시트에 같은 멤버·앨범명이 없을 때만 얹어요
     const albRows = toObjects(raw.albums || '');
     (extra.albums || []).forEach(r => { if (!albRows.some(a => a['멤버'] === r['멤버'] && a['앨범명'] === r['앨범명'])) albRows.push(r); });
+    // albumFix {"멤버|앨범명": {열: 값}}: 확인된 칸만 시트 값을 고쳐요
+    albRows.forEach(a => Object.assign(a, (extra.albumFix || {})[a['멤버'] + '|' + a['앨범명']] || {}));
     const albums = albRows.filter(a => a['앨범명']).map(a => ({
       name: a['앨범명'], member: a['멤버'] || '', kind: a['종류'], date: normDate(a['발매일']) || a['발매일'], title: a['타이틀곡'],
       tracks: (a['수록곡'] || '').split(' / ').map(t => t.trim()).filter(Boolean), credit: a['타이틀 작사·작곡'],
