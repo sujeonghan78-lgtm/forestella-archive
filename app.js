@@ -383,7 +383,7 @@
   const SONG_KO = {"myeden":"마이에덴","champions":"챔피언스 챔피온스 챔스","lazencasaveus":"라젠카세이브어스 라젠카","inneruniverse":"이너유니버스","scarboroughfair":"스카보로페어 스카버러페어 스카보로우페어","saveourlives":"세이브아워라이브즈 세이브아워라이브스 세아라 세이브아워","warriors":"워리어스 워리어즈","stilllovingyou":"스틸러빙유","badromance":"배드로맨스 베드로맨스","bohemianrhapsody":"보헤미안랩소디 보헤미안렙소디 보헤미안 보랩","healtheworld":"힐더월드","moonlight":"문라이트","fakelove":"페이크러브","utopia":"유토피아","shapeofyou":"쉐이프오브유 셰이프오브유 쉐잎오브유","jesuismalade":"쥬스위말라드 주스위말라드 쥬쉬말라드","forlife":"포라이프","myfavoritethings":"마이페이버릿띵스 마이페이보릿띵스 마이페이버릿씽스 마페띵","legendsneverdie":"레전드네버다이 레전즈네버다이","despacito":"데스파시토","whitenight":"화이트나이트","thegodfather":"대부 갓파더 더갓파더","arabiannights":"아라비안나이트 아라비안나이츠","theshowmustgoon":"더쇼머스트고온 쇼머스트고온","chagallsdream":"샤갈의꿈 샤갈스드림 샤갈","pianoman":"피아노맨","apocalypse":"아포칼립스","abracadabra":"아브라카다브라","everything":"에브리띵 에브리씽","ileftmyheartinsanfrancisco":"아이레프트마이하트인샌프란시스코 샌프란시스코","etude":"에튀드 에뛰드 에튜드","nellanotte":"넬라노떼 넬라노테","armageddon":"아마겟돈 아마게돈","angel":"엔젤 앤젤","snowglobe":"스노우글로브 스노글로브","imcomingnow":"아임커밍나우","dellamorenonsisa":"델라모레논시사","ilmirtoelarosa":"일미르토에라로사","crane":"크레인","amapola":"아마폴라","closeyoureyes":"클로즈유어아이즈","timetravel":"타임트래블 타임트레블","limmensità":"림멘시타 리멘시타","gashiri":"가시리","thornbird":"가시나무새 쏜버드","gethsemane":"겟세마네","amorfati":"아모르파티","wrongfulencounter":"악연","holdingoutforahero":"홀딩아웃포어히어로","youchangemyworld":"유체인지마이월드","youaremystar":"유아마이스타","dreamalittledreamofme":"드림어리틀드림오브미","theprayer":"더프레이어","thejourneyoflove":"더저니오브러브","primula":"프리뮬라 프리물라","sweetdreams":"스윗드림즈 스위트드림스","comeuneternoaddio":"꼬메운에떼르노아디오 코메운에테르노아디오","inunaltravita":"인우날트라비타 인운알트라비타","parlapiupiano":"빠를라삐우삐아노 파를라피우피아노","timeinabottle":"타임인어보틀","saysomething":"세이썸띵 세이섬씽","universe":"유니버스","changeontherise":"체인지온더라이즈","theskyandthedawnandthesun":"하늘과새벽과태양","myheartwillgoon":"마이하트윌고온","intotheunknown":"인투디언노운","laymedown":"레이미다운","paranoidandroid":"파라노이드안드로이드","revival":"리바이벌","thriller":"스릴러","smoothcriminal":"스무스크리미널","wearethechampions":"위아더챔피언스 위아더챔피온스","onelove":"원러브","thesoundofsilence":"사운드오브사일런스 더사운드오브사일런스","thegreatestshow":"더그레이티스트쇼 그레이티스트쇼","thephoenix":"더피닉스 피닉스","thevoice":"더보이스","remember":"리멤버","allthekingshorses":"올더킹스호시스","theresnothingholdinmeback":"데어즈낫띵홀딘미백 데얼스나띵홀딘미백","teeth":"티스","wakawaka":"와카와카","bad":"배드","laultimanoche":"라울티마노체","vivalavida":"비바라비다","radioactive":"레디오액티브 라디오액티브","mama":"마마","hijodelaluna":"이호데라루나","nellafantasia":"넬라판타지아","bemylove":"비마이러브","phantomoftheopera":"오페라의유령 팬텀오브디오페라","téirabhaileriú":"테르아왈리루","countingstars":"카운팅스타즈 카운팅스타스","rise":"라이즈","loverunsout":"러브런즈아웃","square":"스퀘어","signofthetimes":"사인오브더타임즈","kool":"쿨","chosenone":"초즌원","athena":"아테나","handclap":"핸드클랩","introrunes":"룬스","nowwearefree":"나우위아프리","deliverus":"딜리버어스","stillhere":"스틸히어","overture":"오버추어","ultimanoche":"울티마노체","pray":"프레이","evolution":"에볼루션","limmensita":"림멘시타","funiculifunicula":"푸니쿨리푸니쿨라","lacalunnia":"라칼룬니아","intromystique":"미스틱","preludedelaluna":"프렐류드데라루나","dandelion":"댄딜라이언 민들레","thenation":"더네이션","betheone":"비더원","persona":"페르소나","prayer":"프레이어","icarus":"이카루스","notalone":"낫얼론","will":"윌","introlotus":"로투스","carpediem":"카르페디엠","smog":"스모그","befree":"비프리","stuckinamaze":"스턱인어메이즈","recuerdosdebuenosaires":"레쿠에르도스데부에노스아이레스","apollon":"아폴론","dontbequiet":"돈비콰이엇","gtho":"지티에이치오","newness":"뉴니스","better":"베러 베터","knockthedoor":"녹더도어","paradox":"패러독스 파라독스","achristmassymphony":"크리스마스심포니","deepshadow":"딥섀도우 딥쉐도우","vantablack":"반타블랙","parlapiùpiano":"빠를라삐우삐아노 파를라피우피아노","komorebi":"코모레비","nexttoyou":"넥스트투유","sweetescape":"스윗이스케이프 스위트이스케이프","ternuraantiga":"테르누라안티가"};
   const songKoKey = s => String(s || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^0-9a-zà-ÿ]/g, '');
   const koOf = name => SONG_KO[songKoKey(name)] || '';
-  const songText = so => so.name + ' ' + koOf(so.name);
+  const songText = so => so.name + ' ' + koOf(so.match || so.name);
   Object.entries(SONG_KO).forEach(([en, ko]) => ko.split(' ').forEach(k => { if (k.length >= 2 && !KO_EN[k]) KO_EN[k] = en; }));
   const aliasOf = q => { const s = q.replace(/\s+/g, ''); let out = s, hit = false; Object.keys(KO_EN).sort((x, y) => y.length - x.length).forEach(k => { if (out.includes(k)) { out = out.split(k).join(KO_EN[k]); hit = true; } }); return hit ? out : ''; };
   function runSearch(p) {
@@ -414,7 +414,7 @@
     const vid = e.videoId || (e.related[0] || {}).videoId || (e.ytMain && e.ytMain.id);
     const thumb = vid ? `<span class="card-thumb" aria-label="영상 있음"><img src="https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span></span>` : '';
     const card = `
-      <a class="card${e.setlist ? ' card-concert' : ''}${vid ? ' has-thumb' : ''}" href="${e.ytOnly ? 'https://www.youtube.com/watch?v=' + encodeURIComponent(e.videoId) + '" target="_blank" rel="noopener' : '#/e/' + encodeURIComponent(e.id)}">
+      <a class="card${e.setlist ? ' card-concert' : ''}${vid ? ' has-thumb' : ''}" href="${e.ytOnly ? (e.link || 'https://www.youtube.com/watch?v=' + encodeURIComponent(e.videoId)) + '" target="_blank" rel="noopener' : '#/e/' + encodeURIComponent(e.id)}">
         <span class="card-body">
           <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${upcoming(e)}</span>
           <span class="card-title">${esc(e.title)}</span>
@@ -658,14 +658,27 @@
   function songX(so) {
     if (so._x && so._xFeed === data.xFeed) return so._x;
     const flat = t => t.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
-    const nm = flat(so.name);
-    const hangul = /[가-힣]/.test(nm);
-    // 영어 곡은 낱말 경계로 (Angel이 Los Angeles에 걸리지 않게)
-    const words = so.name.toLowerCase().match(/[0-9a-z]+/g) || [];
-    const rx = new RegExp('(^|[^a-z])' + words.join('[^a-z0-9]*') + '($|[^a-z])');
-    const hit = p => hangul ? (p._flat || (p._flat = flat(p.raw))).includes(nm) : rx.test(p._low || (p._low = p.raw.toLowerCase()));
+    // '한국어 (영어)' 곡은 두 이름 다 찾아요
+    const two = so.name.match(/^(.+?)\s*\(([^)]+)\)$/);
+    const names = so.key === 'mama' ? ['MAMA'] : [...new Set([so.match || so.name, ...(two && /[가-힣]/.test(two[1]) ? [two[1], two[2]] : [])])];
+    // 멤버 솔로 음반에만 있는 곡은 그 멤버 글에서만
+    const solo = !so.events.some(e => !e.ytm) && !so.tours.length && so.albums.length && so.albums.every(al => al.member) ? so.albums[0].member : '';
+    const tests = names.map(name => {
+      const nm = flat(name);
+      const hangul = /[가-힣]/.test(nm);
+      if (nm.length < (hangul ? 2 : 4)) return null;
+      // 영어 곡은 낱말 경계로 (Angel이 Los Angeles에 걸리지 않게)
+      const words = name.toLowerCase().match(/[0-9a-z]+/g) || [];
+      if (!hangul && !words.length) return null;
+      const rx = new RegExp('(^|[^a-z])' + words.join('[^a-z0-9]*') + '($|[^a-z])');
+      // '바람'·'친구'처럼 짧은 한글 이름은 곡 이름으로 쓰였을 때만: 따옴표·괄호 안, #해시태그, '- 곡명', '곡명 무대'
+      const nameRx = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s*');
+      const qrx = hangul && nm.length <= 4 && new RegExp(`(?:#|\\s[-–—]\\s*)${nameRx}|(?:[‘'"“<《「『〈\\[]|&lt;)\\s*${nameRx}\\s*(?:[’'"”>》」』〉\\]]|&gt;)|${nameRx}\\s+(?:무대|라이브|음원|뮤비|m\\/v|커버|직캠)`, 'i');
+      return p => qrx ? qrx.test(p.raw) : hangul ? (p._flat || (p._flat = flat(p.raw))).includes(nm) : rx.test(p._low || (p._low = p.raw.toLowerCase()));
+    }).filter(Boolean);
+    const hit = p => (!solo || p.m.includes(solo) || p.raw.includes(solo.slice(1))) && tests.some(t => t(p));
     so._xFeed = data.xFeed;
-    so._x = nm.length >= (hangul ? 2 : 4) && (hangul || words.length) ? (data.xFeed || []).filter(hit) : [];
+    so._x = tests.length ? (data.xFeed || []).filter(hit) : [];
     return so._x;
   }
   // 곡 대표 사진: 음반 표지 → 최근 무대 영상 썸네일 → 공식 X 사진

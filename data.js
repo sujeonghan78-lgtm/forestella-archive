@@ -57,11 +57,16 @@
     n = n.replace(/\s*외\s*\d+\s*곡$/, '');
     // 끝의 (한글)·(with …)·(… ver.)·(Special Track)·(feat. …) 같은 꼬리표는 여러 개여도 빼요
     let prev;
-    do { prev = n; n = n.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /[가-힣]|^with\s|ver\.?$|version|special track|^feat\.|remaster|^inst/i.test(inner) ? '' : m); } while (n !== prev);
+    do { prev = n; n = n.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /[가-힣]|^with\s|ver\.?$|version|special track|^feat\.|remaster|^inst|^to\.\s/i.test(inner) || inner.trim().toLowerCase() === n.replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase() ? '' : m); } while (n !== prev);
     return n.trim();
   }
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
-  const SONG_SAME = { "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려' };
+  const SONG_SAME = { "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려',
+    // 유튜브 뮤직 영어 제목 → 한국어 제목 (2026-10-18 유튜브 뮤직·음반 정보 수록곡 대조)
+    'magic castle': '마법의 성', 'flower vase': '꽃병', nocturne: '야상곡', 'dear moon': '달하 노피곰 도다샤', 'and spring': '그리고 봄', changgwi: '창귀',
+    'bird, bird, blue bird': '새야 새야 파랑새야', 'words from the wind': '바람이 건네준 말', together: '함께라는 이유', ties: '연', '연(緣)': '연',
+    'alone with tears': '눈물 속에 홀로', 'the innocent macho': '순정마초', 'i still remember': '아직도 기억하고 있어요', stay: '멀어지지 말아주세요',
+    'the forest song': '숲의 노래', 'your song': '당신이 듣던', 'close your eyes': '눈을 감아도', 'the journey of love': '사랑의 여정' };
   const songKey = name => { const k = songBase(name).toLowerCase().replace(/\s+/g, ' '); return SONG_SAME[k] || k; };
 
   // 일정명 앞의 [강형호], [두훈/우림] 같은 표시에서 멤버 뽑기
@@ -143,7 +148,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, xlinks, xphotos] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, xlinks, xphotos] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -154,10 +159,11 @@
       s.concerts ? fetchText(s.concerts).catch(() => '') : '',
       fetchText('data/yt_videos.json').catch(() => ''),
       fetchText('data/yt_bc.json').catch(() => ''),
+      fetchText('data/ytm_tracks.json').catch(() => ''),
       fetchText('data/x_links.json').catch(() => ''),
       fetchText('data/x_photos.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, xlinks, xphotos, sheets: JSON.stringify(s), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, xlinks, xphotos, sheets: JSON.stringify(s), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -444,6 +450,21 @@
         so.first = so.events[0]; so.last = so.events[so.events.length - 1];
       }
     });
+    // 유튜브 뮤직 공식 음원 → 곡 무대 목록 (앨범의 그 곡 링크, 연주곡은 빼요)
+    let ytm = [];
+    try { ytm = JSON.parse(raw.ytm || '{}').tracks || []; } catch (err) { /* 없으면 넘어가요 */ }
+    const looseKey = k => k.replace(/[^0-9a-z가-힣]/g, '');
+    const songLoose = new Map([...songs.values()].map(so => [looseKey(so.key), so]));
+    ytm.forEach(t => {
+      if (!t.date || /instrumental|\(inst|- inst/i.test(t.title)) return;
+      const clean = t.title.replace(/[`’]/g, "'").replace(/\s+-\s+.*$/, '');
+      const k = songKey(clean);
+      const so = songs.get(k) || songLoose.get(looseKey(k));
+      if (!so || so.events.some(x => x.ytm && x.album === t.album)) return;
+      so.events.push({ id: 'ytm-' + t.id, ytOnly: true, ytm: true, link: 'https://music.youtube.com/watch?v=' + t.id, album: t.album, date: t.date, category: '음원', title: t.album, place: 'YouTube Music', songs: [so.name], songKeys: [so.key], related: [], members: t.member ? [t.member] : [], videoId: t.id });
+      so.events.sort((a, b) => a.date.localeCompare(b.date));
+      so.first = so.events[0]; so.last = so.events[so.events.length - 1];
+    });
     // 공식 X 글 → 콘서트: 공연 일정에 붙은 글 + 글에 콘서트 이름이 나오고 공연 앞 120일~뒤 60일 안의 글
     const tourOfEv = new Map();
     tours.forEach(t => (t.events || []).forEach(e => tourOfEv.set(e.id, t.id)));
@@ -456,8 +477,15 @@
       if (c) p.tour = c.id;
     });
     // 합친 곡의 대표 이름
-    const SONG_NAME = { mama: 'MAMA', '시간여행': '시간여행', '정신차려': '정신차려' };
-    songs.forEach(so => { if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
+    // 한국어 제목이 있는 곡은 '한국어 (영어)'로 (유튜브 뮤직 공식 음원 기준). so.match는 글·영상 찾을 때 쓰는 원래 이름
+    const SONG_NAME = { mama: 'MAMA', '정신차려': '정신차려', 'nella fantasia': 'Nella Fantasia', '시간여행': '시간여행 (Time Travel)', '달의 아들': '달의 아들 (Hijo de la Luna)', 'white night': '백야 (White Night)',
+      '그리고 봄': '그리고 봄 (And Spring)', '창귀': '창귀 (CHANGGWI)', '달하 노피곰 도다샤': '달하 노피곰 도다샤 (Dear Moon)', '마법의 성': '마법의 성 (Magic Castle)',
+      '꽃병': '꽃병 (Flower Vase)', '야상곡': '야상곡 (Nocturne)', '새야 새야 파랑새야': '새야 새야 파랑새야 (Bird, Bird, Blue Bird)', '바람이 건네준 말': '바람이 건네준 말 (Words From The Wind)',
+      '함께라는 이유': '함께라는 이유 (Together)', '연': '연 (Ties)', '눈물 속에 홀로': '눈물 속에 홀로 (Alone With Tears)', '순정마초': '순정마초 (The Innocent Macho)',
+      '아직도 기억하고 있어요': '아직도 기억하고 있어요 (I Still Remember)', '멀어지지 말아주세요': '멀어지지 말아주세요 (Stay)', '숲의 노래': '숲의 노래 (The Forest Song)',
+      '당신이 듣던': '당신이 듣던 (Your Song)', '눈을 감아도': '눈을 감아도 (Close Your Eyes)', '사랑의 여정': '사랑의 여정 (The Journey of Love)',
+      'thorn bird': '가시나무새 (Thorn Bird)', gashiri: '가시리 (Gashiri)', 'wrongful encounter': '악연 (Wrongful Encounter)', '사랑의 맹세(till)': '사랑의 맹세 (Till)' };
+    songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
     return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, savedAt: raw.savedAt };
   }
 
@@ -466,7 +494,7 @@
   async function load(onUpdate) {
     const cached = readCache();
     // 시트 주소가 바뀌었으면(새 탭 연결 등) 저장본을 버려요.
-    const fresh = cached && 'ytbc' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'ytm' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
