@@ -489,6 +489,7 @@
         const st = { id: 'yt-' + v.id, ytOnly: v, date: v.date, category: 'TV', title: prog, place: v.bc, songs: [so.name], songKeys: [so.key], related: [], members: v.members || [], videoId: v.id };
         so.events.push(st); added = true;
         ytStages.set(st.id, st);
+        byId.set(st.id, st);  // 일정 상세 창으로 열 수 있게
       });
       if (added) {
         so.events.sort((a, b) => a.date.localeCompare(b.date));

@@ -184,13 +184,21 @@
     try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch (err) { return []; }
   }
   // 일정 없는 영상은 제목의 [프로그램] 이름, 없으면 채널 이름으로
-  const vidWhere = v => ((v.title.match(/\[([^\]]+)\]/g) || []).map(x => x.slice(1, -1).split(/[/,|]/)[0].trim()).find(x => !/직캠|focus|4k|eng|페이스캠|가로|세로|fancam|kbs|mbc|sbs|jtbc/i.test(x)) || v.bc || v.ch || '공식 영상');
+  const vidWhere = v => !v.bc ? (v.title.replace(/^.*[’'"”]\s*/, '').trim() || v.kind) : ((v.title.match(/\[([^\]]+)\]/g) || []).map(x => x.slice(1, -1).split(/[/,|]/)[0].trim()).find(x => !/직캠|focus|4k|eng|페이스캠|가로|세로|fancam|kbs|mbc|sbs|jtbc/i.test(x)) || v.bc || v.ch || '공식 영상');
+  // 일정 없는 영상도 일정 상세 창으로 열리게 영상 한 줄짜리 일정을 만들어 둬요 (data.js 방송 무대와 같은 모양)
+  function ytEvent(v, so) {
+    const id = 'yt-' + v.id;
+    if (!data.byId.has(id)) data.byId.set(id, { id, ytOnly: v, date: v.date, category: v.bc ? 'TV' : '유튜브', title: vidWhere(v), place: v.bc || (v.ch ? v.ch + ' 유튜브' : '포레스텔라 공식 유튜브'), songs: [so.name], songKeys: [so.key], related: [], members: v.members || [], videoId: v.id });
+    return data.byId.get(id);
+  }
   function randomCandidates() {
     if (randomPool && randomPool.data === data) return randomPool.list;
     const list = [], seen = new Set();
     data.songs.forEach(so => (so.official || []).forEach(v => {
       if (!STAGE_KINDS.includes(v.kind) || (v.loose || []).includes(so.key) || seen.has(v.id)) return;
-      seen.add(v.id); list.push({ vid: v.id, so, e: v.event || null, date: v.date, where: v.event ? v.event.title : vidWhere(v) });
+      seen.add(v.id);
+      const e = v.event || ytEvent(v, so);
+      list.push({ vid: v.id, so, e, date: v.date, where: e.title });
     }));
     data.events.forEach(e => {
       if (e.songSource === '참고' || !e.videoId || seen.has(e.videoId) || e.songs.length !== 1) return;
@@ -214,7 +222,8 @@
     }
     const { vid, so, e, date, where } = randomPick.p;
     const song = so.name;
-    const href = e ? `#/e/${encodeURIComponent(e.id)}` : `#/song/${encodeURIComponent(so.key)}`;
+    // 일정 상세 창으로 열고, 창 맨 위 영상 자리에 뽑힌 영상을 보여줘요 (?v=영상)
+    const href = `#/e/${encodeURIComponent(e.id)}?v=${encodeURIComponent(vid)}`;
     return `
       <section class="block" id="random">
         <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2><span class="head-side"><button type="button" class="reroll" id="reroll"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>다시 뽑기</button>${shareBtn('랜덤 무대 공유하기', `오늘의 포레스텔라 랜덤 무대 🎲\n${fmtDate(date, false)} ${e ? e.title + ' · ' : ''}${song}\nhttps://youtu.be/${vid}\n\n나도 뽑아보기 👉 ${SITE}\n${TAGS}`, '')}</span></div>
@@ -1870,12 +1879,14 @@
   function detailView(e) {
     const time = !e.start || e.start === '종일' ? '' : ` · ${esc(e.start)}${e.end && e.end !== e.start ? '~' + esc(e.end) : ''}`;
     const period = e.endDate && e.endDate !== e.date ? ` ~ ${fmtDate(e.endDate, false)}` : '';
-    const mainVid = e.videoId || (e.ytMain && e.ytMain.id);
+    // 랜덤 무대에서 열면 주소의 ?v= 영상을 맨 위에
+    const picked = new URLSearchParams(location.hash.split('?')[1] || '').get('v');
+    const mainVid = picked || e.videoId || (e.ytMain && e.ytMain.id);
     const thumb = mainVid ? `
       <a class="thumb" href="${ytWatch(mainVid)}" target="_blank" rel="noopener" aria-label="유튜브에서 영상 보기">
         <img src="${ytThumb(mainVid)}" alt="" loading="lazy">
         <span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span>
-        <span class="thumb-cap">${e.videoId ? (e.songSource === '참고' ? '참고 영상 · ' : '') : (e.ytMain.kind === '비하인드' ? '공식 비하인드 · ' : '공식 영상 · ')}유튜브에서 열기</span>
+        <span class="thumb-cap">${picked ? '🎲 뽑힌 무대 · ' : e.videoId ? (e.songSource === '참고' ? '참고 영상 · ' : '') : (e.ytMain.kind === '비하인드' ? '공식 비하인드 · ' : '공식 영상 · ')}유튜브에서 열기</span>
       </a>` : '';
 
     let songs;
@@ -1969,7 +1980,7 @@
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !sheet.hidden) closeSheet(); });
 
   function showSheet(id) {
-    const e = data.byId.get(decodeURIComponent(id || ''));
+    const e = data.byId.get(decodeURIComponent((id || '').split('?')[0]));
     const box = sheet.querySelector('.sheet');
     box.innerHTML = e ? detailView(e) : `
       <div class="sheet-body"><p class="empty">이 기록을 찾지 못했어요. 주소가 바뀌었거나 숨김 처리된 일정일 수 있어요.</p></div>`;
