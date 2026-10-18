@@ -15,7 +15,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node tools/ytm_tracks.mjs 2>err.txt || { echo "::error::$(grep -m3 -i 'error' err.txt | tr '\n' ' ' | cut -c1-400)"; exit 1; }
+      - continue-on-error: true
+        run: node tools/ytm_tracks.mjs 2>err.txt || { echo "::error::$(grep -m3 -i 'error' err.txt | tr '\n' ' ' | cut -c1-400)"; exit 1; }
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       - run: node tools/ytm_links.mjs
