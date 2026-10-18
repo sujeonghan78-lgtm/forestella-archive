@@ -304,7 +304,7 @@
     return `
       <form class="searchbox" role="search" id="home-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" name="q" aria-label="검색어" placeholder="곡·방송·영상·음반 찾기 · 초성 OK" autocomplete="off">
+        <input type="search" name="q" aria-label="검색어" placeholder="무엇이든 찾기 · 초성 OK" autocomplete="off">
         <a class="adv-btn" href="#/search">통합 검색</a>
       </form>`;
   }
@@ -1736,12 +1736,8 @@
     const related = rels.length ? `
       <hr class="divider">
       <section class="d-block">
-        <h2 class="h3">관련 영상</h2>
-        ${rels.map(v => `
-          <a class="rel" href="${ytWatch(v.videoId)}" target="_blank" rel="noopener">
-            <span class="tag">${esc(v.source || '영상')}</span>
-            <span class="rel-body"><span>${esc(v.title)}</span>${v.note ? `<span class="row-sub">${esc(v.note)}</span>` : ''}</span>
-          </a>`).join('')}
+        <h2 class="h3">관련 영상 <span class="song-count">${rels.length}</span></h2>
+        <div class="yt-strip">${rels.map(v => `<a href="${ytWatch(v.videoId)}" target="_blank" rel="noopener"><img src="${ytThumbUrl(v.videoId)}" alt="" loading="lazy" onerror="this.remove()"><span>${esc(v.title)}</span><small class="yt-src">${esc([v.source || '영상', v.note].filter(Boolean).join(' · '))}</small></a>`).join('')}</div>
       </section>` : '';
 
     return `
