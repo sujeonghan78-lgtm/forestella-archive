@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 BASE = 'https://m.cafe.daum.net/official.forestella/XkhA/schedule'
 UA = 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'cafe.json')
-FIRST = date(2017, 11, 1)
+FIRST = date(2021, 8, 1)  # 카페 일정표는 2021년 8월부터만 있어요(2026-10-18 확인)
 
 
 def month_start(d):

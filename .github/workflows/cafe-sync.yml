@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       full:
-        description: '데뷔(2017년 11월)부터 전부 다시 가져오기'
+        description: '2021년 8월부터 전부 다시 가져오기'
         type: boolean
         default: false
 permissions:
