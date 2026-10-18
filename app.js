@@ -1377,11 +1377,12 @@
   // ---------- 콘서트 셋리스트 ----------
   // 셋리스트 한 줄: "A / B"처럼 날마다 달랐던 곡은 각각 곡 페이지로 이어요
   function setlistSong(title) {
-    return title.split(' / ').map(part => {
+    return title.split(' / ').map(seg => seg.split(/(\s+[+&]\s+)/).map((part, i) => {
+      if (i % 2) return esc(part);
       const so = data.songs.get(window.DATA.songKey(window.DATA.setlistName(part)));
       const cls = so && [so.events.length ? '' : 'plain', (so.official || []).length ? 'has-vid' : ''].filter(Boolean).join(' ');
       return so ? `<a${cls ? ` class="${cls}"` : ''} href="#/song/${encodeURIComponent(so.key)}">${esc(part)}</a>` : esc(part);
-    }).join(' / ');
+    }).join('')).join(' / ');
   }
 
   // 메모 맨 앞의 "1부·2부·앵콜"을 소제목으로 바꿔요

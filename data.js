@@ -44,7 +44,8 @@
   }
 
   function splitSongs(s) {
-    return String(s || '').split('/').map(x => x.trim()).filter(Boolean);
+    // "Prelude de la Luna + 달의 아들", "Hijo de la Luna & The Show Must Go On"처럼 이어 부른 곡은 각각 세요
+    return String(s || '').split('/').flatMap(x => x.split(/\s+[+&]\s+/)).map(x => x.trim()).filter(Boolean);
   }
 
   // 곡 아카이브에서 같은 곡으로 묶기 위한 이름.
@@ -302,7 +303,7 @@
     });
     // 곡마다 셋리스트에 들어 있는 투어 ("A / B"처럼 날마다 달랐던 곡은 각각 셈)
     songs.forEach(so => { so.tours = []; });
-    tours.forEach(t => t.songs.forEach(s => s.t.split(' / ').forEach(part => {
+    tours.forEach(t => t.songs.forEach(s => s.t.split(' / ').flatMap(x => x.split(/\s+[+&]\s+/)).forEach(part => {
       const so = songs.get(songKey(setlistName(part)));
       if (so && !so.tours.includes(t)) so.tours.push(t);
     })));
@@ -339,7 +340,7 @@
       if (!songs.has(key)) songs.set(key, { key, name: songBase(name), names: {}, events: [], tours: [], albums: [], titleOf: [] });
       return songs.get(key);
     };
-    tours.forEach(t => t.songs.forEach(s => s.t.split(' / ').forEach(part => {
+    tours.forEach(t => t.songs.forEach(s => s.t.split(' / ').flatMap(x => x.split(/\s+[+&]\s+/)).forEach(part => {
       const so = addSong(setlistName(part));
       if (so && !so.tours.includes(t)) so.tours.push(t);
     })));
