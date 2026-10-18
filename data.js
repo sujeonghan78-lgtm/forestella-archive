@@ -55,10 +55,14 @@
     let n = String(name).trim();
     if (/^참고/.test(n) || /\s소개$/.test(n)) return '';
     n = n.replace(/\s*외\s*\d+\s*곡$/, '');
-    n = n.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /[가-힣]|^with\s/i.test(inner) ? '' : m);
+    // 끝의 (한글)·(with …)·(… ver.)·(Special Track)·(feat. …) 같은 꼬리표는 여러 개여도 빼요
+    let prev;
+    do { prev = n; n = n.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /[가-힣]|^with\s|ver\.?$|version|special track|^feat\.|remaster|^inst/i.test(inner) ? '' : m); } while (n !== prev);
     return n.trim();
   }
-  const songKey = name => songBase(name).toLowerCase().replace(/\s+/g, ' ');
+  // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
+  const SONG_SAME = { 'we are the champions': 'champions', "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려' };
+  const songKey = name => { const k = songBase(name).toLowerCase().replace(/\s+/g, ' '); return SONG_SAME[k] || k; };
 
   // 일정명 앞의 [강형호], [두훈/우림] 같은 표시에서 멤버 뽑기
   const MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
@@ -451,6 +455,9 @@
         .sort((a, b) => b.key.length - a.key.length)[0];
       if (c) p.tour = c.id;
     });
+    // 합친 곡의 대표 이름
+    const SONG_NAME = { mama: 'MAMA', '시간여행': '시간여행', '정신차려': '정신차려' };
+    songs.forEach(so => { if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
     return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, savedAt: raw.savedAt };
   }
 
