@@ -414,7 +414,7 @@
   async function load(onUpdate) {
     const cached = readCache();
     // 시트 주소가 바뀌었으면(새 탭 연결 등) 저장본을 버려요.
-    const fresh = cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
+    const fresh = cached && 'xphotos' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
     if (cached) {
       if (!fresh) {
         fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
