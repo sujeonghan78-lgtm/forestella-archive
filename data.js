@@ -152,7 +152,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, extra] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, extra, career] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -168,8 +168,9 @@
       fetchText('data/x_links.json').catch(() => ''),
       fetchText('data/x_photos.json').catch(() => ''),
       fetchText('data/extra_events.json').catch(() => ''),
+      fetchText('data/member_career.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, extra, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, extra, career, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -546,7 +547,9 @@
       '당신이 듣던': '당신이 듣던 (Your Song)', '눈을 감아도': '눈을 감아도 (Close Your Eyes)', '사랑의 여정': '사랑의 여정 (The Journey of Love)',
       'thorn bird': '가시나무새 (Thorn Bird)', gashiri: '가시리 (Gashiri)', 'wrongful encounter': '악연 (Wrongful Encounter)', '사랑의 맹세(till)': '사랑의 맹세 (Till)' };
     songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, savedAt: raw.savedAt };
+    let career = [];
+    try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

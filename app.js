@@ -1195,6 +1195,17 @@
       box.querySelectorAll('.view-tog').forEach(b => { b.classList.toggle('dis', !ok); b.disabled = !ok; });
     });
   };
+  // 멤버 개인 활동: 맨 위 프로필(사진·숫자), 탭은 활동 이력 → 일정 → 음반 → 유튜브 → X
+  const CAREER_ORDER = ['뮤지컬', '공연', 'OST', '음반', '방송', '라디오', '광고', '기타'];
+  const CAREER_LABEL = { 공연: '단독 공연 · 무대', 음반: '솔로 음반 · 참여곡', OST: 'OST', 방송: '방송', 뮤지컬: '뮤지컬' };
+  const careerDate = d => {
+    const [a, b] = String(d).split('~');
+    const f = x => (x || '').replace(/-/g, '.');
+    if (!b) return f(a);
+    // 기간은 달까지만: 2015.10~2016.01, 같은 달이면 날짜 그대로
+    const ma = f(a).slice(0, 7), mb = f(b).slice(0, 7);
+    return ma === mb ? f(a) : `${ma}~${a.slice(0, 4) === b.slice(0, 4) ? mb.slice(5) : mb}`;
+  };
   function membersView() {
     const m = new URLSearchParams(location.hash.split('?')[1] || '').get('m') || MEMBER_LIST[0];
     const evs = data.events.filter(e => e.members.includes(m)).sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -1204,23 +1215,40 @@
     const pics = xs.filter(p => p.img).slice(0, 10);
     const bday = xs.filter(p => p.cat === '생일').length;
     const q = encodeURIComponent(m);
+    // 활동 이력: 시트 음반 정보에 이미 있는 음반은 음반 탭에서 보여서 빼요
+    const alNames = new Set(als.map(a => a.name.toLowerCase().replace(/\s+/g, '')));
+    const car = (data.career || []).filter(c => c.member === m && !(c.type === '음반' && alNames.has(c.title.toLowerCase().replace(/\s+/g, ''))));
+    const groups = CAREER_ORDER.map(t => [t, car.filter(c => (CAREER_ORDER.includes(c.type) ? c.type : '기타') === t).sort((a, b) => b.date.localeCompare(a.date))]).filter(g => g[1].length);
+    const careerHtml = groups.length ? `${groups.map(([t, list]) => `
+        <h3 class="car-h">${esc(CAREER_LABEL[t] || t)} <b>${list.length}</b></h3>
+        <div class="car-list">${list.map(c => `<div class="car-row"><span class="car-date">${esc(careerDate(c.date))}</span><span class="car-body"><b>${esc(c.title)}</b>${[c.note, c.where].filter(Boolean).length ? `<span>${esc([c.note, c.where].filter(Boolean).join(' · '))}</span>` : ''}</span></div>`).join('')}</div>`).join('')}
+        <p class="src-note">나무위키 멤버 문서에서 모았어요. 빠진 활동이 있을 수 있어요.</p>` : '';
+    const first = evs.length ? evs[evs.length - 1].date.slice(0, 4) : '';
+    const stat = [['일정', evs.length], ['영상', vs.length], ['음반', als.length], ['활동 이력', car.length]].filter(x => x[1]);
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 영상·공식 X는 제목이나 글에 멤버 이름이 나온 것만 모았어요.')}</h1>
+      <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 영상·공식 X는 제목이나 글에 멤버 이름이 나온 것만 모았어요. 활동 이력은 나무위키 멤버 문서에서 가져왔어요.')}</h1>
       <div class="seg-wrap" role="tablist">${MEMBER_LIST.map(x => `<a class="seg${x === m ? ' on' : ''}" href="#/members?m=${encodeURIComponent(x)}" role="tab" aria-selected="${x === m}">${x}</a>`).join('')}</div>
-      ${pics.length ? `<div class="member-x"><div class="x-strip">${pics.map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div></div>` : ''}
-      ${bday ? `<a class="chip" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${q}">🎂 생일 축하 글 ${bday}개 ›</a>` : ''}
-      <div class="view-row">${albumBtn()}</div>
+      <div class="mem-hero">
+        <span class="mem-hero-pic">${pics[0] ? `<img src="${esc(pics[0].img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
+        <div class="mem-hero-body">
+          <b>${esc(m)}</b>
+          <div class="mem-stats">${stat.map(([k, n]) => `<span>${k} <b>${n}</b></span>`).join('')}</div>
+          ${bday ? `<a class="mem-bday" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${q}">🎂 생일 축하 글 ${bday}개 ›</a>` : ''}
+        </div>
+      </div>
+      ${pics.length > 1 ? `<div class="member-x"><div class="x-strip">${pics.slice(1).map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div></div>` : ''}
       <div class="mem-body">
       ${paneTabs([
-        { label: '유튜브', n: vs.length, html: vs.length ? `${ytList(vs)}<a class="more mem-all" href="#/yt?m=${q}">유튜브 탭에서 보기 ›</a>` : '' },
-        { label: 'X', n: xs.length, html: xList(xs) },
+        { label: '활동 이력', n: car.length, html: careerHtml },
         { label: '일정', n: evs.length, html: evs.length ? `${moreList(evs.map(resultCard), 10)}<a class="more mem-all" href="#/search?member=${q}">검색에서 걸러 보기 ›</a>` : '' },
         { label: '음반', n: als.length, html: als.length ? `<div class="stack x-list">${als.map(a => `
           <a class="x-card${a.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
             ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${nw(`${a.date.replace(/-/g, '.')} · ${a.kind}`)}</span><b>${esc(a.name)}</b></span>
           </a>`).join('')}</div>` : '' },
+        { label: '유튜브', n: vs.length, html: vs.length ? `<div class="view-row">${albumBtn()}</div>${ytList(vs)}<a class="more mem-all" href="#/yt?m=${q}">유튜브 탭에서 보기 ›</a>` : '' },
+        { label: 'X', n: xs.length, html: xList(xs) },
       ])}
       </div>`;
   }
