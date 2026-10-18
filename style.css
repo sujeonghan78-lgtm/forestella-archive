@@ -597,18 +597,3 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .shortcuts .sc-l { font-size: 13px; white-space: nowrap; }
 .shortcuts .sc-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-head { margin-bottom: 0; }
-/* 접히는 필터 */
-.fbar { margin: 4px 0 8px; }
-.fbtns { display: flex; gap: 6px; }
-.fbtn { flex: 1; min-height: 38px; padding: 0 6px; border: 1px solid #DCE8E0; border-radius: 12px; background: #fff; font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; white-space: nowrap; }
-.fbtn span { font-size: 10px; color: var(--muted); }
-.fbtn.set { border-color: #8FD3B0; background: #EEF8F2; color: #1C6A4E; font-weight: 700; }
-.fbtn.open { border-color: var(--green); }
-.fbtn.open span { display: inline-block; transform: rotate(180deg); }
-.fpanel { padding: 10px 2px 4px; gap: 6px; }
-.fpanel .chip { font-size: 12px; }
-.fpicked { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; scrollbar-width: none; align-items: center; }
-.fchip { flex: none; padding: 5px 10px; border-radius: 999px; background: linear-gradient(120deg, #C6EC6B, #62D3A1 55%, #72BCF3); color: #0F2A22; font-size: 12px; font-weight: 600; }
-.fchip span { margin-left: 2px; opacity: .7; }
-.fclear { flex: none; font-size: 12px; color: var(--muted); text-decoration: underline; margin-left: 4px; }
-.fpanel[hidden] { display: none; }
