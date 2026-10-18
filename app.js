@@ -1797,7 +1797,6 @@
         ${shows ? `<div class="tour-shows">${foldShows(shows)}</div>` : ''}
         ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
-      ${t.info ? `<section class="album-head tour-info">${concertInfo(t.info, true)}</section>` : ''}
       <hr class="divider">
       <div class="view-row">${albumBtn()}</div>
       ${paneTabs([
@@ -1805,6 +1804,7 @@
         { label: '유튜브', n: (data.official || []).filter(v => v.tour === t.id).length, html: ytList((data.official || []).filter(v => v.tour === t.id)) },
         { label: '공식 X', n: tourX(t.id).length, html: xList(tourX(t.id)) },
       ])}
+      ${t.info ? `<hr class="divider"><section class="album-head tour-info">${concertInfo(t.info, true)}</section>` : ''}
       <hr class="divider">
       <div class="tour-foot">
         ${t.caution ? `<p class="src-note">${esc(t.caution)}</p>` : ''}
