@@ -1106,7 +1106,7 @@
       <div class="stack x-list">${items.map(r => `
         <a class="x-card${r.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
           ${r.img ? `<img src="${esc(imgSize(r.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
-          <span class="x-text"><span class="x-date">${esc(r.sub)}${r.n ? ` · 공식 X ${r.n}개` : ''}</span><b>${esc(r.name)}</b></span>
+          <span class="x-text"><span class="x-date">${nw(r.sub + (r.n ? ` · 공식 X ${r.n}개` : ''))}</span><b>${esc(r.name)}</b></span>
         </a>`).join('')}</div>`;
   }
 
@@ -1124,12 +1124,14 @@
         ${list.map(c => `
           <a class="x-card${c.img ? '' : ' no-img'}" href="#/tour/${encodeURIComponent(c.id)}">
             ${c.img ? `<img src="${esc(imgSize(c.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
-            <span class="x-text"><span class="x-date">${esc(c.sub)}</span><b>${esc(c.name)}</b></span>
+            <span class="x-text"><span class="x-date">${nw(c.sub)}</span><b>${esc(c.name)}</b></span>
           </a>`).join('')}
       </div>`;
   }
 
   // X 사진만 크기를 골라 받을 수 있어요. 다른 곳 사진은 주소 그대로 써요.
+  // ' · '로 나뉜 조각은 줄바꿈 때 쪼개지지 않게
+  const nw = t => t.split(' · ').map((x, i, all) => `<span class="nw">${esc(x)}${i < all.length - 1 ? ' ·' : ''}</span>`).join(' ');
   function imgSize(u, size) { return /pbs\.twimg\.com/.test(u) ? `${u}?name=${size}` : u; }
 
   // 포스터가 없는 공연은 그 투어 무대 영상 썸네일로
@@ -1201,7 +1203,7 @@
     return `
       <a class="back" href="#/concerts">‹ 콘서트</a>
       <section class="song-hero">
-        <div class="block-head"><h1 class="song-title">${esc(t.name)}${help('곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.')}</h1>${shareBtn('이 셋리스트 공유하기', `포레스텔라 ${t.name} 셋리스트 🎤\n${top} …\n\n${TAGS}`, link('#/tour/' + encodeURIComponent(t.id)))}</div>
+        <div class="block-head"><h1 class="song-title">${esc(t.name.replace(/\s+\S+$/, ''))} <span class="nw">${esc((t.name.match(/\S+$/) || [''])[0])}${help('곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.')}</span></h1>${shareBtn('이 셋리스트 공유하기', `포레스텔라 ${t.name} 셋리스트 🎤\n${top} …\n\n${TAGS}`, link('#/tour/' + encodeURIComponent(t.id)))}</div>
         ${t.info && t.info.img ? `<a href="${esc(t.info.imgPost || t.info.img)}" target="_blank" rel="noopener"><img class="album-img tour-poster" src="${esc(imgSize(t.info.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
         <span class="count-pill">${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
         <p class="sub">${tourRange(t)}${t.info && !t.info.ok ? ' <span class="tag">확인 중</span>' : ''}</p>
