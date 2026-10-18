@@ -940,6 +940,17 @@
   try { albumOn = localStorage.getItem('albumMode') === '1' || localStorage.getItem('memAlbum') === '1'; } catch (err) { /* 괜찮아요 */ }
   document.documentElement.classList.toggle('album-on', albumOn);
   const albumBtn = () => `<button type="button" class="chip view-tog${albumOn ? ' on' : ''}" onclick="toggleAlbum()">${albumOn ? '목록으로 보기' : '앨범으로 보기'}</button>`;
+  // 필터 펼치기: 좌우로 넘기던 필터 줄을 여러 줄로 다 보여줘요 (펼친 동안은 위에 고정하지 않아요)
+  let chipsOpen = false;
+  try { chipsOpen = localStorage.getItem('chipsOpen') === '1'; } catch (err) { /* 저장 못 해도 괜찮아요 */ }
+  document.documentElement.classList.toggle('chips-open', chipsOpen);
+  const chipsBtn = () => `<button type="button" class="link-btn chips-tog" onclick="toggleChips()">${chipsOpen ? '접기 ▴' : '펼치기 ▾'}</button>`;
+  window.toggleChips = () => {
+    chipsOpen = !chipsOpen;
+    try { localStorage.setItem('chipsOpen', chipsOpen ? '1' : '0'); } catch (err) { /* 괜찮아요 */ }
+    document.documentElement.classList.toggle('chips-open', chipsOpen);
+    document.querySelectorAll('.chips-tog').forEach(b => { b.textContent = chipsOpen ? '접기 ▴' : '펼치기 ▾'; });
+  };
   window.toggleAlbum = () => {
     albumOn = !albumOn;
     document.documentElement.classList.toggle('album-on', albumOn);
@@ -1176,7 +1187,7 @@
       <div class="chips tl-cats">${chip(!kind, href('', yr, mem), '전체')}${YT_KINDS.filter(k => all.some(v => v.kind === k)).map(k => chip(k === kind, href(k, yr, mem), k)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(kind, '', mem), '전체 연도')}${[...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(kind, y, mem), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(kind, yr, ''), '멤버 전체')}${MEMBER_LIST.map(m => chip(m === mem, href(kind, yr, m), m.slice(1))).join('')}</div>
-      <div class="view-row"><p class="sub">${list.length.toLocaleString()}개</p>${albumBtn()}</div>
+      <div class="view-row"><p class="sub">${list.length.toLocaleString()}개</p>${chipsBtn()}${albumBtn()}</div>
       </div>
       ${list.length ? moreList(list.map(ytCard), 20) : '<p class="empty">해당하는 영상이 없어요.</p>'}`;
   }
@@ -1250,7 +1261,7 @@
       <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(cat, mem, ''), '전체 연도')}${[...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(cat, mem, y), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(cat, ''), '멤버 전체')}${X_MEMBERS.map(m => chip(m === mem, href(cat, m), m.slice(1))).join('')}</div>
-      <div class="view-row"><p class="sub" id="xcount"></p>${albumBtn()}</div>
+      <div class="view-row"><p class="sub" id="xcount"></p>${chipsBtn()}${albumBtn()}</div>
       </div>
       <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
   }

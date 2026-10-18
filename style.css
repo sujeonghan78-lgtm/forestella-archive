@@ -656,3 +656,9 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .s-sec { margin: 6px 0 18px; }
 .s-sec .block-head { margin-bottom: 8px; }
 #filters[hidden], #fwrap[hidden] { display: none; }
+
+/* 필터 펼치기 */
+.chips-tog { font-size: 13px; white-space: nowrap; }
+.chips-open .stick { position: static; }
+.chips-open .stick .chips { flex-wrap: wrap; overflow: visible; }
+.view-row .sub { white-space: nowrap; }
