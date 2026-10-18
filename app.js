@@ -1118,7 +1118,7 @@
       <div class="chips tl-cats">${chip(!kind, href('', yr, mem), '전체')}${YT_KINDS.filter(k => all.some(v => v.kind === k)).map(k => chip(k === kind, href(k, yr, mem), k)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(kind, '', mem), '전체 연도')}${[...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(kind, y, mem), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(kind, yr, ''), '멤버 전체')}${MEMBER_LIST.map(m => chip(m === mem, href(kind, yr, m), m.slice(1))).join('')}</div>
-      <div class="view-row"><p class="sub">${list.length}개</p>${albumBtn()}</div>
+      <div class="view-row"><p class="sub">${list.length.toLocaleString()}개</p>${albumBtn()}</div>
       </div>
       ${list.length ? moreList(list.map(ytCard), 20) : '<p class="empty">해당하는 영상이 없어요.</p>'}`;
   }
@@ -1158,7 +1158,7 @@
           </a>`;
       if (!list.length) { box.innerHTML = `<p class="empty">${data.xPending ? '공식 X 글 불러오는 중…' : rel ? '이 음반에 묶인 공식 X 글이 없어요.' : '해당하는 글이 없어요.'}</p>`; return; }
       const pics = list.reduce((s, p) => s + ((p.imgs || []).length || (p.img ? 1 : 0)), 0);
-      const label = `글 ${list.length}개${pics ? ` · 사진 ${pics}장` : ''}`;
+      const label = `글 ${list.length.toLocaleString()}개${pics ? ` · 사진 ${pics.toLocaleString()}장` : ''}`;
       const cnt = document.getElementById('xcount'); if (cnt) cnt.textContent = label;
       box.innerHTML = `${rel ? `<p class="sub">${label}</p>` : ''}<div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
       const more = () => {
@@ -1439,7 +1439,7 @@
       ${[list, ...ks.map(k => list.filter(x => (key(x) || '기타') === k))].map((l, i) => `<div class="cat-block"${i ? ' hidden' : ''}>${moreList(l.map(card), 10)}</div>`).join('')}</div>`;
   }
   const ytList = list => catList(list, v => v.kind, ytCard);
-  const xCount = list => { const pics = list.reduce((s, p) => s + ((p.imgs || []).length || (p.img ? 1 : 0)), 0); return `글 ${list.length}개${pics ? ` · 사진 ${pics}장` : ''}`; };
+  const xCount = list => { const pics = list.reduce((s, p) => s + ((p.imgs || []).length || (p.img ? 1 : 0)), 0); return `글 ${list.length.toLocaleString()}개${pics ? ` · 사진 ${pics.toLocaleString()}장` : ''}`; };
   const xList = list => list.length ? `<p class="sub x-count">${xCount(list)}</p>${catList(list, p => p.cat, p => xCard(p, p.cat))}` : '';
 
   // 가로로 넘기는 영상 줄
