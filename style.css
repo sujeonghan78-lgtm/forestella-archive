@@ -567,3 +567,6 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .x-links { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 10px; margin-top: -4px; }
 .x-wrap:has(> .x-card > img) .x-links { padding-left: 106px; }
 .x-links a { padding: 5px 10px; border-radius: 10px; background: #EEF7F1; color: #1C6A4E; font-size: 12px; font-weight: 600; }
+.member-x + .chip { display: inline-flex; margin-bottom: 8px; }
+.member-x .x-strip { margin-top: 0; }
+.mem-all { display: block; text-align: right; margin-top: 12px; }

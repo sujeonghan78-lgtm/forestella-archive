@@ -853,34 +853,30 @@
   }
 
   function membersView() {
+    const m = new URLSearchParams(location.hash.split('?')[1] || '').get('m') || MEMBER_LIST[0];
+    const evs = data.events.filter(e => e.members.includes(m)).sort((a, b) => (a.date < b.date ? 1 : -1));
+    const vs = (data.official || []).filter(v => v.members.includes(m));
+    const xs = (data.xFeed || []).filter(p => p.m.includes(m));
+    const als = (data.albums || []).filter(a => a.member === m);
+    const pics = xs.filter(p => p.img).slice(0, 10);
+    const bday = xs.filter(p => p.cat === '생일').length;
+    const q = encodeURIComponent(m);
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 공식 X는 글에 멤버 이름이 나온 것만 모았어요.')}</h1>
-      <nav class="member-list">
-        ${MEMBER_LIST.map(m => {
-          const n = data.events.filter(e => e.members.includes(m)).length;
-          return `<a class="mi" href="#/search?member=${encodeURIComponent(m)}"><span class="mi-l">${m}</span><span class="mi-side">${n}건 ›</span></a>`;
-        }).join('')}
-      </nav>
-      ${MEMBER_LIST.map(m => {
-        const vs = (data.official || []).filter(v => v.members.includes(m));
-        return vs.length ? `<hr class="divider">
-        <section class="member-x">
-          <div class="block-head"><h2 class="h3">${m} · 공식 유튜브</h2><a class="more" href="#/yt?m=${encodeURIComponent(m)}">${vs.length}개 ›</a></div>
-          ${ytStrip(vs.slice(0, 8))}
-        </section>` : '';
-      }).join('')}
-      ${MEMBER_LIST.map(m => {
-        const xs = (data.xFeed || []).filter(p => p.m.includes(m));
-        if (!xs.length) return '';
-        const bday = xs.filter(p => p.cat === '생일').length;
-        return `<hr class="divider">
-        <section class="member-x">
-          <div class="block-head"><h2 class="h3">${m} · 공식 X</h2><a class="more" href="#/xfeed?m=${encodeURIComponent(m)}">${xs.length}개 ›</a></div>
-          <div class="x-strip">${xs.filter(p => p.img).slice(0, 8).map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div>
-          ${bday ? `<a class="chip" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${encodeURIComponent(m)}">생일 축하 글 ${bday}개 ›</a>` : ''}
-        </section>`;
-      }).join('')}`;
+      <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 영상·공식 X는 제목이나 글에 멤버 이름이 나온 것만 모았어요.')}</h1>
+      <div class="seg-wrap" role="tablist">${MEMBER_LIST.map(x => `<a class="seg${x === m ? ' on' : ''}" href="#/members?m=${encodeURIComponent(x)}" role="tab" aria-selected="${x === m}">${x}</a>`).join('')}</div>
+      ${pics.length ? `<div class="member-x"><div class="x-strip">${pics.map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div></div>` : ''}
+      ${bday ? `<a class="chip" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${q}">🎂 생일 축하 글 ${bday}개 ›</a>` : ''}
+      ${paneTabs([
+        { label: '유튜브', n: vs.length, html: vs.length ? `${ytList(vs)}<a class="more mem-all" href="#/yt?m=${q}">유튜브 탭에서 보기 ›</a>` : '' },
+        { label: 'X', n: xs.length, html: xs.length ? moreList(xs.map(p => xCard(p, p.cat))) : '' },
+        { label: '일정', n: evs.length, html: evs.length ? `${moreList(evs.map(resultCard), 10)}<a class="more mem-all" href="#/search?member=${q}">검색에서 걸러 보기 ›</a>` : '' },
+        { label: '음반', n: als.length, html: als.length ? `<div class="stack x-list">${als.map(a => `
+          <a class="x-card${a.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
+            ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+            <span class="x-text"><span class="x-date">${nw(`${a.date.replace(/-/g, '.')} · ${a.kind}`)}</span><b>${esc(a.name)}</b></span>
+          </a>`).join('')}</div>` : '' },
+      ])}`;
   }
 
   function aboutView() {
