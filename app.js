@@ -173,40 +173,56 @@
     return `${years}년 전 오늘의 포레스텔라 🌲\n${e.title}${song}\n\n${TAGS}`;
   }
 
-  // 랜덤 무대 후보: 곡이 확인되고 볼 수 있는 영상이 있는 일정의 (일정, 곡) 한 쌍씩. 일정이 아니라 곡 단위로 뽑아서
-  // 곡이 많은 공연도, 한 곡만 부른 방송도 고르게 나와요. 최근에 나온 것들은 한동안 다시 안 나와요.
+  // 랜덤 무대 후보: 곡이 확인된 무대 영상 전체에서 (영상, 곡) 한 쌍씩. 뽑힌 곡이 나오는 그 영상을 보여줘요.
+  // 공식 채널 무대·라이브·직캠·클립 + 시트 일정 영상(곡이 하나뿐인 일정만). 최근에 나온 것들은 한동안 다시 안 나와요.
   let pickCount = 0;
   let randomPick = null;
+  let randomPool = null;
   const RECENT_KEY = 'soopbyeol-recent-picks';
+  const STAGE_KINDS = ['무대', '라이브', '직캠', '클립'];
   function recentPicks() {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch (err) { return []; }
   }
-  function homeRandom() {
-    const pool = [];
+  // 일정 없는 영상은 제목의 [프로그램] 이름, 없으면 채널 이름으로
+  const vidWhere = v => ((v.title.match(/\[([^\]]+)\]/g) || []).map(x => x.slice(1, -1).split(/[/,|]/)[0].trim()).find(x => !/직캠|focus|4k|eng|페이스캠|가로|세로|fancam|kbs|mbc|sbs|jtbc/i.test(x)) || v.bc || v.ch || '공식 영상');
+  function randomCandidates() {
+    if (randomPool && randomPool.data === data) return randomPool.list;
+    const list = [], seen = new Set();
+    data.songs.forEach(so => (so.official || []).forEach(v => {
+      if (!STAGE_KINDS.includes(v.kind) || (v.loose || []).includes(so.key) || seen.has(v.id)) return;
+      seen.add(v.id); list.push({ vid: v.id, so, e: v.event || null, date: v.date, where: v.event ? v.event.title : vidWhere(v) });
+    }));
     data.events.forEach(e => {
-      if (e.songSource === '참고' || !(e.videoId || e.related.length)) return;
-      e.songs.forEach(song => { if (window.DATA.songKey(song)) pool.push({ e, song }); });
+      if (e.songSource === '참고' || !e.videoId || seen.has(e.videoId) || e.songs.length !== 1) return;
+      const so = data.songs.get(window.DATA.songKey(e.songs[0]));
+      if (so) { seen.add(e.videoId); list.push({ vid: e.videoId, so, e, date: e.date, where: e.title }); }
     });
+    randomPool = { data, list };
+    return list;
+  }
+  function homeRandom() {
+    const pool = randomCandidates();
     if (!pool.length) return '';
-    if (!randomPick || randomPick.n !== pickCount || !data.events.includes(randomPick.e)) {
+    if (!randomPick || randomPick.n !== pickCount || !pool.includes(randomPick.p)) {
       const recent = recentPicks();
       const keep = Math.min(30, Math.floor(pool.length / 2));
-      const fresh = pool.filter(p => !recent.includes(p.e.id + '|' + p.song));
+      const fresh = pool.filter(p => !recent.includes(p.vid));
       const from = fresh.length ? fresh : pool;
       const p = from[Math.floor(Math.random() * from.length)];
-      randomPick = { n: pickCount, e: p.e, song: p.song };
-      try { localStorage.setItem(RECENT_KEY, JSON.stringify([p.e.id + '|' + p.song, ...recent].slice(0, keep))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
+      randomPick = { n: pickCount, p };
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify([p.vid, ...recent].slice(0, keep))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
     }
-    const { e, song } = randomPick;
-    const vid = e.videoId || (e.related[0] || {}).videoId || '';
+    const { vid, so, e, date, where } = randomPick.p;
+    const song = so.name;
+    const href = e ? `#/e/${encodeURIComponent(e.id)}` : `#/song/${encodeURIComponent(so.key)}`;
     return `
       <section class="block" id="random">
-        <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2><span class="head-side"><button type="button" class="reroll" id="reroll"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>다시 뽑기</button>${shareBtn('랜덤 무대 공유하기', `오늘의 포레스텔라 랜덤 무대 🎲\n${fmtDate(e.date, false)} ${e.title} · ${song}\n\n나도 뽑아보기 👉 ${SITE}\n${TAGS}`, '')}</span></div>
+        <div class="block-head"><h2 class="h2">오늘의 랜덤 무대</h2><span class="head-side"><button type="button" class="reroll" id="reroll"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>다시 뽑기</button>${shareBtn('랜덤 무대 공유하기', `오늘의 포레스텔라 랜덤 무대 🎲\n${fmtDate(date, false)} ${e ? e.title + ' · ' : ''}${song}\nhttps://youtu.be/${vid}\n\n나도 뽑아보기 👉 ${SITE}\n${TAGS}`, '')}</span></div>
         <div class="dice-card">
-          <a class="dice-link" href="#/e/${encodeURIComponent(e.id)}">
-            <span class="dice-thumb" aria-hidden="true">${vid ? `<img src="https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">` : ''}<span class="dice-play"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></span>
+          <a class="dice-link" href="${href}">
+            <span class="dice-thumb" aria-hidden="true"><img src="https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="dice-play"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></span>
             <span class="dice-text">
-              <span class="sub">${fmtDate(e.date, false)} · ${esc(e.title)}</span>
+              <span class="sub">${fmtDate(date, false)} · ${esc(where)}</span>
               <span class="dice-song">${esc(song)}</span>
             </span>
           </a>
