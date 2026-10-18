@@ -136,7 +136,8 @@
     return res.text();
   }
 
-  async function fetchAll() {
+  // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
+  async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
     const [events, videos, reports, cafe, setlists, xsheet, albums, concerts] = await Promise.all([
       fetchText(s.events),
@@ -144,7 +145,7 @@
       fetchText(s.reports).catch(() => ''),
       fetchText('cafe.json').catch(() => ''),
       fetchText('setlists.json').catch(() => ''),
-      fetchText(s.x).catch(() => ''),
+      withX ? fetchText(s.x).catch(() => '') : '',
       s.albums ? fetchText(s.albums).catch(() => '') : '',
       s.concerts ? fetchText(s.concerts).catch(() => '') : '',
     ]);
@@ -323,9 +324,12 @@
       }
       return build(cached);
     }
-    const raw = await fetchAll();
-    writeCache(raw);
-    return build(raw);
+    // 처음 방문: X 글은 따로 받아서, 도착하면 다시 그려요
+    const xText = fetchText(window.CONFIG.sheets.x).catch(() => '');
+    const raw = await fetchAll(false);
+    // 화면에 첫 데이터가 들어간 다음에 바꿔 끼우도록 한 박자 늦춰요
+    xText.then(x => setTimeout(() => { raw.xsheet = x; writeCache(raw); if (x) onUpdate(build(raw)); }, 0));
+    return Object.assign(build(raw), { xPending: true });
   }
 
   window.DATA = { load, parseCSV, normDate, songKey, setlistName };

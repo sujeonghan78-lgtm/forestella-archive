@@ -152,7 +152,7 @@
     const xImg = e => (e.xPost && e.xPost.img) || ((e.xBehind || []).find(p => p.img) || {}).img || '';
     const cards = hits.map(e => `
       <a class="hero${xImg(e) ? ' hero-pic' : ''}" href="#/e/${encodeURIComponent(e.id)}">
-        ${xImg(e) ? `<img class="hero-img" src="${esc(xImg(e))}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hero-pic');this.remove()">` : ''}
+        ${xImg(e) ? `<img class="hero-img" src="${esc(xImg(e))}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('hero-pic');this.remove()">` : ''}
         <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${multi ? ` · ${yearsOf(e)}년 전` : ''}</span></span>
         <span class="hero-title">${esc(e.title)}</span>
         <span class="hero-foot">${songsLine(e)}${playBadge(e)}</span>
@@ -396,9 +396,9 @@
     [...data.songs.values()].filter(so => hit(so.name)).sort((a, b) => playCount(b) - playCount(a)).slice(0, 4)
       .forEach(so => out.push({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', name: so.name, img: songPic(so) }));
     (data.albums || []).filter(a => hit(a.name)).slice(0, 3)
-      .forEach(a => out.push({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, img: a.img && imgSize(a.img, 'small') }));
+      .forEach(a => out.push({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, img: a.img && imgSize(a.img, 'thumb') }));
     (data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).slice(0, 3)
-      .forEach(c => out.push({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, img: c.img ? imgSize(c.img, 'small') : tourPic(c.tour || c) }));
+      .forEach(c => out.push({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, img: c.img ? imgSize(c.img, 'thumb') : tourPic(c.tour || c) }));
     if (!out.length) return '';
     return `<div class="shortcut-row">${out.map(x => `
       <a class="shortcut-card" href="${x.href}">
@@ -555,7 +555,7 @@
     // 영어 곡은 낱말 경계로 (Angel이 Los Angeles에 걸리지 않게)
     const words = so.name.toLowerCase().match(/[0-9a-z]+/g) || [];
     const rx = new RegExp('(^|[^a-z])' + words.join('[^a-z0-9]*') + '($|[^a-z])');
-    const hit = p => hangul ? flat(p.raw).includes(nm) : rx.test(p.raw.toLowerCase());
+    const hit = p => hangul ? (p._flat || (p._flat = flat(p.raw))).includes(nm) : rx.test(p._low || (p._low = p.raw.toLowerCase()));
     so._xFeed = data.xFeed;
     so._x = nm.length >= (hangul ? 2 : 4) && (hangul || words.length) ? (data.xFeed || []).filter(hit) : [];
     return so._x;
@@ -563,13 +563,13 @@
   // 곡 대표 사진: 음반 표지 → 최근 무대 영상 썸네일 → 공식 X 사진
   function songPic(so) {
     const al = so.albums.find(a => a.img);
-    if (al) return imgSize(al.img, 'small');
+    if (al) return imgSize(al.img, 'thumb');
     for (let i = so.events.length - 1; i >= 0; i--) {
       const e = so.events[i], vid = e.videoId || (e.related[0] || {}).videoId;
       if (vid) return `https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg`;
     }
     const xp = songX(so).find(p => p.img);
-    return xp ? imgSize(xp.img, 'small') : '';
+    return xp ? imgSize(xp.img, 'thumb') : '';
   }
 
   function songsView() {
@@ -629,7 +629,7 @@
     // 수록 음반 (표지 + 음반 이야기 링크)
     const albumRow = so.albums.length ? `<div class="song-albums">${so.albums.map(a => `
       <a class="song-album" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
-        ${a.img ? `<img src="${esc(imgSize(a.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '<span></span>'}
+        ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '<span></span>'}
         <span><b>${esc(a.name)}</b><small>${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.slice(0, 4))} · ${esc(a.kind || '')}${so.titleOf.includes(a) ? ' · 타이틀곡' : ''}</small></span>
       </a>`).join('')}</div>` : '';
     // 무대 목록은 연도별로 묶고, 가장 최근 해만 펼쳐 둬요
@@ -846,7 +846,7 @@
         return `<hr class="divider">
         <section class="member-x">
           <div class="block-head"><h2 class="h3">${m} · 공식 X</h2><a class="more" href="#/xfeed?m=${encodeURIComponent(m)}">${xs.length}개 ›</a></div>
-          <div class="x-strip">${xs.filter(p => p.img).slice(0, 8).map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div>
+          <div class="x-strip">${xs.filter(p => p.img).slice(0, 8).map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.text)}"><img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join('')}</div>
           ${bday ? `<a class="chip" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${encodeURIComponent(m)}">생일 축하 글 ${bday}개 ›</a>` : ''}
         </section>`;
       }).join('')}`;
@@ -1032,10 +1032,10 @@
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => `
           <a class="x-card${p.img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">
-            ${p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+            ${p.img ? `<img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${esc(p.date.replace(/-/g, '.'))} · ${esc(p.cat)}</span>${esc(p.text || '(글 없음)')}</span>
           </a>`;
-      if (!list.length) { box.innerHTML = `<p class="empty">${rel ? '이 음반에 묶인 공식 X 글이 없어요.' : '해당하는 글이 없어요.'}</p>`; return; }
+      if (!list.length) { box.innerHTML = `<p class="empty">${data.xPending ? '공식 X 글 불러오는 중…' : rel ? '이 음반에 묶인 공식 X 글이 없어요.' : '해당하는 글이 없어요.'}</p>`; return; }
       box.innerHTML = `<p class="sub">${list.length}개</p><div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
       const more = () => {
         box.querySelector('.x-list').insertAdjacentHTML('beforeend', list.slice(n, n + 40).map(card).join(''));
@@ -1105,7 +1105,7 @@
       ${(data.albums || []).some(a => a.member) ? `<div class="chips tl-cats">${['', ...MEMBER_LIST.filter(m => data.albums.some(a => a.member === m))].map(m => `<a class="chip${m === who ? ' on' : ''}" href="#/releases${m ? '?m=' + encodeURIComponent(m) : ''}">${m ? m + ' 솔로' : '포레스텔라'}</a>`).join('')}</div>` : ''}
       <div class="stack x-list">${items.map(r => `
         <a class="x-card${r.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
-          ${r.img ? `<img src="${esc(imgSize(r.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+          ${r.img ? `<img src="${esc(imgSize(r.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
           <span class="x-text"><span class="x-date">${esc(r.sub)}${r.n ? ` · 공식 X ${r.n}개` : ''}</span><b>${esc(r.name)}</b></span>
         </a>`).join('')}</div>`;
   }
@@ -1123,7 +1123,7 @@
       <div class="stack x-list">
         ${list.map(c => `
           <a class="x-card${c.img ? '' : ' no-img'}" href="#/tour/${encodeURIComponent(c.id)}">
-            ${c.img ? `<img src="${esc(imgSize(c.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
+            ${c.img ? `<img src="${esc(imgSize(c.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${esc(c.sub)}</span><b>${esc(c.name)}</b></span>
           </a>`).join('')}
       </div>`;
@@ -1229,7 +1229,7 @@
 
   // 공식 X 대표 글: 사진 + 글 앞부분 카드 하나, 누르면 X로
   function xCard(p, label) {
-    const img = p.img ? `<img src="${esc(p.img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
+    const img = p.img ? `<img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
     return `<a class="x-card${img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">${img}
         <span class="x-text"><span class="x-date">${label} · ${esc(p.date.replace(/-/g, '.'))}</span>${esc(p.text)}</span>
       </a>`;
