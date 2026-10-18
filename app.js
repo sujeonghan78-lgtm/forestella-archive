@@ -1139,7 +1139,7 @@
     const pane = l => { const r = left(l); return r.length ? moreList(r.map(row), 15).replace(/stack x-list/g, 'stack chk-list') : '<p class="empty">다 확인했어요!</p>'; };
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">자동 연결 점검${help('영상·공식 X가 제목만 보고 자동으로 붙은 것 중 애매한 것만 모았어요. 맞으면 [맞아요], 틀리면 [틀려요]를 누르고, 틀린 목록을 복사해서 보내 주시면 사이트에서 빼요. [맞아요]는 이 기기에만 기억돼요.')}</h1>
+      <h1 class="h1 page-title">자동 연결 점검${help('영상과 공식 X 글 중 제목·글 내용만 보고 자동으로 붙인 것 가운데 애매한 것만 모았어요. 맞으면 [맞아요], 틀리면 [틀려요]를 누르고, 틀린 목록을 복사해서 보내 주시면 사이트에서 빼요. [맞아요]는 이 기기에만 기억돼요.')}</h1>
       <div class="sync-box" id="sync-status"><b>자동으로 가져오기</b><span class="sync-row">불러오는 중…</span></div>
       <div class="chk-bar">
         <span>틀린 연결 <b>${bad.length}</b>개</span>
@@ -1295,7 +1295,7 @@
     const stat = [['일정', evs.length], ['영상', vs.length], ['음반', als.length + carDisc.length], ['활동 이력', carShow.length]].filter(x => x[1]);
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 영상·공식 X는 제목이나 글에 멤버 이름이 나온 것만 모았어요. 활동 이력은 나무위키 멤버 문서에서 가져왔어요.')}</h1>
+      <h1 class="h1 page-title">멤버 개인 활동${help('일정은 일정명에 멤버 이름이 표시된 기록만, 영상·공식 X는 제목이나 글에 멤버 이름이 나온 것만 모았어요. 활동 이력은 나무위키 · 더뮤지컬 · 소속사 프로필 · 기사에서 모았어요.')}</h1>
       <div class="seg-wrap" role="tablist">${MEMBER_LIST.map(x => `<a class="seg${x === m ? ' on' : ''}" href="#/members?m=${encodeURIComponent(x)}" role="tab" aria-selected="${x === m}">${x}</a>`).join('')}</div>
       <div class="mem-hero">
         <span class="mem-hero-pic">${pics[0] ? `<img src="${esc(pics[0].img)}?name=small" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
@@ -1331,7 +1331,7 @@
       </div>
       <section class="sec">
         <h2 class="h3">일정은 어디서 왔나요?</h2>
-        <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라, 그 이전(2017~2021년 7월)은 나무위키와 방송사 유튜브 영상 날짜로 따로 채웠어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요. 카페에 새 일정이 올라오면 하루 몇 번 자동으로 확인해서 여기에도 추가돼요.</p>
+        <p>공식 팬카페 캘린더에 올라온 일정을 옮겨왔어요. 카페 캘린더가 2021년 8월부터라, 그 이전(2017~2021년 7월)은 나무위키와 방송사 유튜브 영상 날짜로 따로 채웠어요. 카페 회원만 볼 수 있는 일정(응모 · 방청 신청 같은 것)은 올리지 않아요. 카페에 새 일정이 올라오면 아침 8시부터 밤 12시까지 1시간마다 자동으로 확인해서 여기에도 추가돼요.</p>
       </section>
       <section class="sec">
         <h2 class="h3">영상과 곡은 어디서 오나요?</h2>
@@ -1625,7 +1625,7 @@
         { label: '유튜브', n: (data.official || []).filter(v => v.rel === rel).length, html: ytList((data.official || []).filter(v => v.rel === rel)) },
         { label: '공식 X', n: (data.xFeed || []).filter(p => p.rel === rel).length, html: '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' },
       ]) : ''}
-      ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
+      ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 새 글은 하루 두 번 자동으로 가져오고, 링크를 붙여 넣으면 15분 안에 올라와요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
       <details class="x-add"><summary>＋ 새 글 링크 붙여넣기</summary>
         <form id="x-add-form" class="x-add-form"><input id="x-add-url" type="url" inputmode="url" placeholder="https://x.com/official_fore/status/…" aria-label="공식 X 글 링크" autocomplete="off"><button type="submit" class="chip">올리기</button></form>
         <p class="x-add-msg sub" id="x-add-msg"></p>
