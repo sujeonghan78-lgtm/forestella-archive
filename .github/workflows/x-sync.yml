@@ -1,0 +1,27 @@
+# 공식 X 최근 글 자동 가져오기 (1시간마다). 막히면 실패로 끝나 깃허브가 메일을 보내요
+name: x-sync
+on:
+  schedule:
+    - cron: '37 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: x-sync
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/x_sync.mjs
+      - run: |
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/x_auto.json
+          git diff --cached --quiet && exit 0
+          git commit -m "공식 X 새 글 자동 가져오기"
+          git pull --rebase -q origin main
+          git push

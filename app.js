@@ -1140,6 +1140,7 @@
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">자동 연결 점검${help('영상·공식 X가 제목만 보고 자동으로 붙은 것 중 애매한 것만 모았어요. 맞으면 [맞아요], 틀리면 [틀려요]를 누르고, 틀린 목록을 복사해서 보내 주시면 사이트에서 빼요. [맞아요]는 이 기기에만 기억돼요.')}</h1>
+      <div class="sync-box" id="sync-status"><b>자동으로 가져오기</b><span class="sync-row">불러오는 중…</span></div>
       <div class="chk-bar">
         <span>틀린 연결 <b>${bad.length}</b>개</span>
         <button type="button" class="chip" id="chk-copy"${bad.length ? '' : ' disabled'}>목록 복사</button>
@@ -1151,7 +1152,26 @@
         { label: '공식 X → 곡', n: left(its.x).length, html: pane(its.x) },
       ])}`;
   }
+  // 자동으로 가져오는 작업(깃허브 액션)마다 마지막 실행 시각과 성공 여부. 너무 오래 멈추면 빨갛게
+  const SYNC_JOBS = [['cafe-sync.yml', '카페 일정', 1], ['yt-sync.yml', '공식 유튜브', 2], ['yt-bc.yml', '방송사 유튜브', 2], ['x-sync.yml', '공식 X', 1]];
+  function loadSyncStatus() {
+    const box = document.getElementById('sync-status');
+    if (!box) return;
+    const when = t => new Date(t).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    Promise.all(SYNC_JOBS.map(([f, name, days]) =>
+      fetch(`https://api.github.com/repos/sujeonghan78-lgtm/forestella-archive/actions/workflows/${f}/runs?per_page=1&exclude_pull_requests=true`)
+        .then(r => r.ok ? r.json() : Promise.reject()).then(j => {
+          const run = (j.workflow_runs || [])[0];
+          if (!run) return `<span class="sync-row"><span>${name}</span><span>아직 실행 전</span></span>`;
+          const failed = run.status === 'completed' && run.conclusion !== 'success';
+          const stale = Date.now() - Date.parse(run.updated_at) > days * 86400e3;
+          const state = run.status !== 'completed' ? '가져오는 중' : failed ? '실패' : '성공';
+          return `<span class="sync-row${failed || stale ? ' sync-bad' : ''}"><span>${name}</span><a href="${esc(run.html_url)}" target="_blank" rel="noopener">${esc(when(run.updated_at))} · ${state}</a></span>`;
+        }).catch(() => `<span class="sync-row"><span>${name}</span><span>확인 못 함</span></span>`)))
+      .then(rows => { box.innerHTML = '<b>자동으로 가져오기</b>' + rows.join(''); });
+  }
   function bindCheck() {
+    loadSyncStatus();
     const v = document.getElementById('view') || document.body;
     v.querySelectorAll('[data-chk]').forEach(b => b.onclick = () => {
       const box = b.closest('.chk'), k = box.dataset.k;

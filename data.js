@@ -152,7 +152,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, extra, career] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, extra, career] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -167,10 +167,11 @@
       fetchText('data/ytm_links.json').catch(() => ''),
       fetchText('data/x_links.json').catch(() => ''),
       fetchText('data/x_photos.json').catch(() => ''),
+      fetchText('data/x_auto.json').catch(() => ''),
       fetchText('data/extra_events.json').catch(() => ''),
       fetchText('data/member_career.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, extra, career, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, extra, career, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -261,7 +262,17 @@
       after: r['후기 일정ID'] || '',
       behind: r['비하인드 일정ID'] || '',
       rel: r['음반'] || '',
-    })).sort((a, b) => (a.id.length - b.id.length) || (a.id < b.id ? -1 : 1));
+    }));
+    // 시트에 아직 없는 최근 글은 자동으로 받아 둔 것(data/x_auto.json, 1시간마다)으로 채워요
+    let xAuto = [];
+    try { xAuto = JSON.parse(raw.xauto || '{}').posts || []; } catch (err) { /* 없으면 넘어가요 */ }
+    const xIds = new Set(xFeed.map(p => p.id));
+    xAuto.filter(p => !xIds.has(p.id)).forEach(p => xFeed.push({
+      id: p.id, url: 'https://x.com/official_fore/status/' + p.id, date: p.date, cat: p.cat, m: p.m || [],
+      text: xClean(p.text || ''), raw: p.text || '', links: linksOf(p.id, p.text || ''),
+      img: (p.imgs || [])[0] || '', imgs: p.imgs || [], after: '', behind: '', rel: '', auto: true,
+    }));
+    xFeed.sort((a, b) => (a.id.length - b.id.length) || (a.id < b.id ? -1 : 1));
     // 음반 이야기: 시트 "음반" 칸이 있으면 그걸, 없으면 글 속 이름으로 (위에 있을수록 먼저 맞춰요)
     const RELEASES = [
       ['THE LEGACY', /the legacy|정규\s?4집/], ['Etude', /etude|에튀드/], ['Nella Notte', /nella notte/], ['Still Here', /still here/],
