@@ -1072,6 +1072,19 @@
 
   // ---------- 공식 유튜브 모아보기 ----------
   const YT_KINDS = ['M/V', '라이브', '클립', '가사 영상', '비하인드', '티저', '쇼츠', '영상'];
+  // 필터: 윗줄엔 묶음 버튼만, 누르면 아래로 칩이 펼쳐지고, 고른 건 한 줄로 (✕로 빼기)
+  // groups: [{ key, label, opts: [[값, 이름]] }], cur: 지금 값들, href: 값들 → 주소
+  function filterBar(groups, cur, href) {
+    groups = groups.filter(g => g.opts.length > 1);
+    const name = g => (g.opts.find(o => o[0] === cur[g.key]) || [])[1];
+    const tog = "const w=this.closest('.fbar'),i=+this.dataset.i,ps=w.querySelectorAll(':scope>.fpanel');[...this.parentNode.children].forEach((b,j)=>{const on=j===i&&!b.classList.contains('open');b.classList.toggle('open',on);ps[j].hidden=!on})";
+    const picked = groups.filter(g => cur[g.key]);
+    return `<div class="fbar">
+      <div class="fbtns">${groups.map((g, i) => `<button type="button" class="fbtn${cur[g.key] ? ' set' : ''}" data-i="${i}" onclick="${tog}">${g.label} <span aria-hidden="true">▾</span></button>`).join('')}</div>
+      ${groups.map(g => `<div class="fpanel chips wrap" hidden>${g.opts.map(([v, l]) => `<a class="chip${v === cur[g.key] ? ' on' : ''}" href="${href({ ...cur, [g.key]: v === cur[g.key] ? '' : v })}">${esc(l)}</a>`).join('')}</div>`).join('')}
+      ${picked.length ? `<div class="fpicked">${picked.map(g => `<a class="fchip" href="${href({ ...cur, [g.key]: '' })}">${esc(name(g) || cur[g.key])} <span aria-label="빼기">✕</span></a>`).join('')}${picked.length > 1 ? `<a class="fclear" href="${href(Object.fromEntries(Object.keys(cur).map(k => [k, groups.some(g => g.key === k) ? '' : cur[k]])))}">모두 지우기</a>` : ''}</div>` : ''}
+    </div>`;
+  }
   function ytView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     const kind = qs.get('kind') || '', yr = qs.get('y') || '', mem = qs.get('m') || '', q = qs.get('q') || '', chn = qs.get('ch') || '';
@@ -1087,10 +1100,12 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="yt-q" value="${esc(q)}" placeholder="영상 제목 찾기" aria-label="공식 영상 찾기">
       </form>
-      ${chans.length ? `<div class="chips tl-cats">${chip(!chn, href(kind, yr, mem, ''), '모든 채널')}${['포레스텔라', ...chans].map(c => chip(c === chn, href(kind, yr, mem, c), c === '포레스텔라' ? c : c + ' 채널')).join('')}</div>` : ''}
-      <div class="chips tl-cats">${chip(!kind, href('', yr, mem), '전체')}${YT_KINDS.filter(k => all.some(v => v.kind === k)).map(k => chip(k === kind, href(k, yr, mem), k)).join('')}</div>
-      <div class="chips tl-cats">${chip(!yr, href(kind, '', mem), '전체 연도')}${[...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(kind, y, mem), y)).join('')}</div>
-      <div class="chips tl-cats">${chip(!mem, href(kind, yr, ''), '멤버 전체')}${MEMBER_LIST.map(m => chip(m === mem, href(kind, yr, m), m.slice(1))).join('')}</div>
+      ${filterBar([
+        { key: 'ch', label: '채널', opts: chans.length ? [['포레스텔라', '포레스텔라'], ...chans.map(c => [c, c + ' 채널'])] : [] },
+        { key: 'kind', label: '분류', opts: YT_KINDS.filter(k => all.some(v => v.kind === k)).map(k => [k, k]) },
+        { key: 'y', label: '연도', opts: [...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => [y, y]) },
+        { key: 'm', label: '멤버', opts: MEMBER_LIST.map(m => [m, m]) },
+      ], { ch: chn, kind, y: yr, m: mem, q }, c => '#/yt?' + new URLSearchParams(Object.entries(c).filter(x => x[1])).toString())}
       <p class="sub">${list.length}개</p>
       ${list.length ? moreList(list.map(ytCard), 20) : '<p class="empty">해당하는 영상이 없어요.</p>'}`;
   }
@@ -1156,9 +1171,11 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="xq" aria-label="공식 X 글 찾기" placeholder="공식 X 글 찾기 · 곡명, 프로그램" value="${esc(xQuery)}" autocomplete="off">
       </form>
-      <div class="chips tl-cats">${chip(!cat, href('', mem), '전체')}${X_CATS.map(c => chip(c === cat, href(c, mem), c)).join('')}</div>
-      <div class="chips tl-cats">${chip(!yr, href(cat, mem, ''), '전체 연도')}${[...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(cat, mem, y), y)).join('')}</div>
-      <div class="chips tl-cats">${chip(!mem, href(cat, ''), '멤버 전체')}${X_MEMBERS.map(m => chip(m === mem, href(cat, m), m.slice(1))).join('')}</div>
+      ${filterBar([
+        { key: 'cat', label: '분류', opts: X_CATS.map(c => [c, c]) },
+        { key: 'y', label: '연도', opts: [...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse().map(y => [y, y]) },
+        { key: 'm', label: '멤버', opts: X_MEMBERS.map(m => [m, m]) },
+      ], { cat, m: mem, y: yr }, c => '#/xfeed?' + new URLSearchParams(Object.entries(c).filter(x => x[1])).toString())}
       <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
   }
 
