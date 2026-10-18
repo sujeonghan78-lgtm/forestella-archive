@@ -520,6 +520,30 @@
    "확인": "확인",
    "비고": "JTBC 드라마 OST 전곡 앨범",
    "사진": "covers/assembled-family-ost.jpg"
+  },
+  {
+   "멤버": "고우림",
+   "앨범명": "나의 아저씨 OST",
+   "종류": "OST",
+   "발매일": "2018-05-18",
+   "타이틀곡": "",
+   "수록곡": "백만송이 장미",
+   "출처1": "",
+   "확인": "확인",
+   "비고": "tvN 드라마 OST 전곡 앨범",
+   "사진": "covers/my-mister-ost.jpg"
+  },
+  {
+   "멤버": "고우림",
+   "앨범명": "디 엠파이어: 법의 제국 OST",
+   "종류": "OST",
+   "발매일": "2022-11-13",
+   "타이틀곡": "",
+   "수록곡": "삐에로",
+   "출처1": "",
+   "확인": "확인",
+   "비고": "JTBC 드라마 OST 전곡 앨범",
+   "사진": "covers/the-empire-ost.jpg"
   }
  ],
  "concerts": [
@@ -568,7 +592,7 @@
    "사진": "covers/killer-party-ost.jpg"
   },
   "고우림|나의 아저씨 OST Part 5": {
-   "사진": "covers/my-mister-ost.jpg"
+   "사진": "covers/my-mister-ost5.jpg"
   }
  }
 }
