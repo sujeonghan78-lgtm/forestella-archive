@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node tools/yt_sync.mjs
+      - run: node tools/yt_sync.mjs 2>err.txt || { echo "::error::$(grep -m3 -i 'error' err.txt | tr '\n' ' ' | cut -c1-400)"; exit 1; }
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       - run: |
