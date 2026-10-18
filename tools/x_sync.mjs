@@ -1,7 +1,7 @@
 // 공식 X(@official_fore) 최근 글을 X 공개 임베드 타임라인(syndication)에서 받아 data/x_auto.json 에 쌓아요.
 // 타임라인이 막히면 웹 아카이브에 최근 저장된 글 번호로 대신 받아요.
 // 사이트는 시트 "공식X" 탭에 없는 글만 이걸로 보여줘요. 목록이 비어 오면(막힘) 실패로 끝내서 깃허브 메일이 가게 해요.
-// 사용: node tools/x_sync.mjs
+// 사용: node tools/x_sync.mjs [links]  (links: 시트·사이트에서 올린 링크만 확인, 15분마다)
 import fs from 'node:fs';
 
 const OUT = 'data/x_auto.json';
@@ -71,9 +71,10 @@ for (const id of want) {
 }
 if (want.size) console.log(`::notice::시트·사이트에서 들어온 링크 ${want.size}개`);
 
+const linksOnly = process.argv[2] === 'links';
 let timelineOk = false;
 // 1) X 임베드 타임라인 (최근 글 20개쯤). 깃허브 서버에서는 자주 막혀요(429)
-try {
+if (!linksOnly) try {
   const r = await fetch(URL, { headers: UA });
   const html = await r.text();
   const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
@@ -85,7 +86,7 @@ try {
 
 // 2) 안 되면 웹 아카이브에 최근 2주 동안 저장된 글 번호 → 글마다 X 임베드 주소로 받아요
 let archiveOk = false;
-if (!timelineOk) {
+if (!linksOnly && !timelineOk) {
   const from = new Date(Date.now() - 14 * 86400e3).toISOString().slice(0, 10).replace(/-/g, '');
   const ids = new Set();
   for (const host of ['x.com', 'twitter.com']) {
@@ -103,7 +104,7 @@ if (!timelineOk) {
   }
 }
 
-if (!timelineOk && !archiveOk) {
+if (!linksOnly && !timelineOk && !archiveOk) {
   console.log(`::error::공식 X 최근 글을 못 받았어요 (${why.join(' / ')}). X가 막았을 수 있어요.`);
   process.exit(1);
 }
