@@ -1603,6 +1603,9 @@
       let timer;
       if (q) q.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { xQuery = q.value; n = 0; fill(); }, 200); };
       const add = document.getElementById('x-add-form');
+      // 링크를 붙여넣기만 해도 바로 올려요
+      const addInp = document.getElementById('x-add-url');
+      if (addInp) addInp.oninput = () => { if (xIdOf(addInp.value)) add.requestSubmit(); };
       if (add) add.onsubmit = ev => {
         ev.preventDefault();
         const inp = document.getElementById('x-add-url'), msg = document.getElementById('x-add-msg');
@@ -1623,7 +1626,7 @@
         { label: '공식 X', n: (data.xFeed || []).filter(p => p.rel === rel).length, html: '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' },
       ]) : ''}
       ${rel ? '' : `<h1 class="h1 page-title">공식 X 모아보기${help('포레스텔라 공식 X(@official_fore)에 올라온 글을 모았어요. 종류는 글 내용으로 자동 분류해서 가끔 틀릴 수 있어요.')}</h1>
-      <details class="x-add"><summary>＋ 새 글 링크 올리기</summary>
+      <details class="x-add"><summary>＋ 새 글 링크 붙여넣기</summary>
         <form id="x-add-form" class="x-add-form"><input id="x-add-url" type="url" inputmode="url" placeholder="https://x.com/official_fore/status/…" aria-label="공식 X 글 링크" autocomplete="off"><button type="submit" class="chip">올리기</button></form>
         <p class="x-add-msg sub" id="x-add-msg"></p>
       </details>
