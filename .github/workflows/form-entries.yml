@@ -1,0 +1,18 @@
+# 제보 폼 칸 번호 확인 (직접 실행)
+name: form-entries
+on: workflow_dispatch
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -sL 'https://docs.google.com/forms/d/e/1FAIpQLSdyRlcj5T7KazqvC4mT6KPIM-c13neDsXk0dxXL74yjXK-IKw/viewform' -o f.html
+          python3 - <<'P'
+          import re,json
+          h=open('f.html',encoding='utf-8').read()
+          m=re.search(r'FB_PUBLIC_LOAD_DATA_ = (.*?);</script>',h,re.S)
+          d=json.loads(m.group(1))
+          for q in d[1][1]:
+              try: print('::notice::', q[1], '| entry.%s'%q[4][0][0], '| 필수' if q[4][0][2] else '', '|', [o[0] for o in (q[4][0][1] or [])])
+              except Exception as e: print('::notice::?', str(q)[:200])
+          P
