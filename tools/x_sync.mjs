@@ -1,4 +1,5 @@
 // 공식 X(@official_fore) 최근 글을 X 공개 임베드 타임라인(syndication)에서 받아 data/x_auto.json 에 쌓아요.
+// 타임라인이 막히면 웹 아카이브에 최근 저장된 글 번호로 대신 받아요.
 // 사이트는 시트 "공식X" 탭에 없는 글만 이걸로 보여줘요. 목록이 비어 오면(막힘) 실패로 끝내서 깃허브 메일이 가게 해요.
 // 사용: node tools/x_sync.mjs
 import fs from 'node:fs';
@@ -29,25 +30,60 @@ const classify = text => {
 const kstDate = s => new Date(Date.parse(s) + 9 * 3600e3).toISOString().slice(0, 10);
 
 const old = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : { posts: [] };
-const r = await fetch(URL, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36', 'Accept-Language': 'ko' } });
-const html = await r.text();
-const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-let entries = [];
-try { entries = JSON.parse(m[1]).props.pageProps.timeline.entries || []; } catch (e) { /* 아래에서 실패 처리 */ }
-const got = entries.map(e => e.content && e.content.tweet).filter(t => t && t.id_str && !t.retweeted_status && (t.user || {}).screen_name?.toLowerCase() === 'official_fore');
-if (!got.length) {
-  console.log(`::error::공식 X 최근 글을 못 받았어요 (HTTP ${r.status}, ${html.length}자, 항목 ${entries.length}개). X가 막았을 수 있어요.`);
+const byId = new Map(old.posts.map(p => [p.id, p]));
+const UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36', 'Accept-Language': 'ko' };
+const token = id => ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, '');
+const tweets = new Map();
+const why = [];
+
+// 1) X 임베드 타임라인 (최근 글 20개쯤). 깃허브 서버에서는 자주 막혀요(429)
+try {
+  const r = await fetch(URL, { headers: UA });
+  const html = await r.text();
+  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  const entries = m ? JSON.parse(m[1]).props.pageProps.timeline.entries || [] : [];
+  entries.map(e => e.content && e.content.tweet).filter(Boolean).forEach(t => tweets.set(t.id_str, t));
+  if (!entries.length) why.push(`타임라인 HTTP ${r.status}`);
+} catch (e) { why.push('타임라인 ' + e.message); }
+
+// 2) 안 되면 웹 아카이브에 최근 2주 동안 저장된 글 번호 → 글마다 X 임베드 주소로 받아요
+let archiveOk = false;
+if (!tweets.size) {
+  const from = new Date(Date.now() - 14 * 86400e3).toISOString().slice(0, 10).replace(/-/g, '');
+  const ids = new Set();
+  for (const host of ['x.com', 'twitter.com']) {
+    try {
+      const r = await fetch(`https://web.archive.org/cdx/search/cdx?url=${host}/official_fore/status/*&output=json&fl=original&collapse=urlkey&from=${from}&limit=2000`, { headers: UA });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      JSON.parse((await r.text()) || '[]').slice(1).forEach(([u]) => { const m = u.match(/status(?:es)?\/(\d{15,20})/); if (m) ids.add(m[1]); });
+      archiveOk = true;
+    } catch (e) { why.push(`아카이브 ${host} ${e.message}`); }
+  }
+  for (const id of [...ids].filter(i => !byId.has(i))) {
+    try {
+      const r = await fetch(`https://cdn.syndication.twimg.com/tweet-result?id=${id}&lang=ko&token=${token(id)}`, { headers: UA });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const t = await r.json();
+      if (t.created_at) tweets.set(id, { ...t, id_str: id, full_text: t.text });
+    } catch (e) { why.push(`글 ${id} ${e.message}`); }
+    await new Promise(r => setTimeout(r, 500));
+  }
+}
+
+if (!tweets.size && !archiveOk) {
+  console.log(`::error::공식 X 최근 글을 못 받았어요 (${why.join(' / ')}). X가 막았을 수 있어요.`);
   process.exit(1);
 }
-const byId = new Map(old.posts.map(p => [p.id, p]));
 let added = 0;
-for (const t of got) {
-  if (byId.has(t.id_str)) continue;
+for (const t of tweets.values()) {
+  if (byId.has(t.id_str) || t.retweeted_status) continue;
+  if ((t.user || {}).screen_name?.toLowerCase() !== 'official_fore') continue;
+  if (t.in_reply_to_screen_name && t.in_reply_to_screen_name.toLowerCase() !== 'official_fore') continue;
   const text = (t.full_text || t.text || '').replace(/\s*https:\/\/t\.co\/\w+$/, '');
-  const media = ((t.extended_entities || t.entities || {}).media || []).map(x => x.media_url_https).filter(Boolean);
+  const media = (t.mediaDetails || (t.extended_entities || t.entities || {}).media || []).map(x => x.media_url_https).filter(Boolean);
   byId.set(t.id_str, { id: t.id_str, date: kstDate(t.created_at), ...classify(text), text, imgs: media });
   added++;
 }
 const posts = [...byId.values()].sort((a, b) => (b.id.length - a.id.length) || (b.id > a.id ? 1 : -1)).slice(0, 300);
 fs.writeFileSync(OUT, JSON.stringify({ source: '포레스텔라 공식 X @official_fore (자동)', posts }, null, 0));
-console.log(`::notice::받은 글 ${got.length} / 새 글 ${added} / 쌓인 글 ${posts.length}`);
+console.log(`::notice::받은 글 ${tweets.size} / 새 글 ${added} / 쌓인 글 ${posts.length} ${why.slice(0, 3).join(' / ')}`);
