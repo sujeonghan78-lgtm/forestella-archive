@@ -1726,18 +1726,30 @@
   }
 
   const tourX = id => (data.xFeed || []).filter(p => p.tour === id);
+  // 콘서트 정보의 공연 일정("날짜 도시 공연장")을 한 줄씩. 그날 일정이 있으면 날짜를 그 일정으로 이어요.
+  function infoShows(info, events) {
+    const rows = new Map();  // 같은 장소는 한 줄로
+    info.shows.forEach(x => {
+      const m = x.match(/^(\d{4})-(\d\d)-(\d\d)(?:~(?:(\d\d)-)?(\d\d))?\s*(.*)$/);
+      if (!m) { rows.set(x, { place: x, days: [] }); return; }
+      const first = `${m[1]}-${m[2]}-${m[3]}`;
+      const days = [first];
+      if (m[5]) { const end = `${m[1]}-${m[4] || m[2]}-${m[5]}`; let d = new Date(first + 'T00:00:00Z'); while ((d = new Date(d.getTime() + 864e5)).toISOString().slice(0, 10) <= end) days.push(d.toISOString().slice(0, 10)); }
+      const place = m[6] || '장소 확인 중';
+      const key = place === '확인 중' || place === '장소 확인 중' ? x : place.replace(/\s+/g, '');
+      if (!rows.has(key)) rows.set(key, { place, days: [] });
+      rows.get(key).days.push(...days);
+    });
+    return [...rows.values()].map(({ place, days }) => `<div class="tour-show"><span class="tour-place">${esc(place)}</span><span class="ev-days">${days.map(dd => { const e = events.find(x => x.date === dd); const lab = dd.slice(5).replace('-', '.'); return e ? `<a class="ev-day" href="#/e/${encodeURIComponent(e.id)}">${lab}</a>` : `<span class="ev-day">${lab}</span>`; }).join('')}</span></div>`).join('');
+  }
+
   function tourView() {
     const id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const t = data.tours.find(x => x.id === id);
     const info = (data.concerts || []).find(x => x.id === id);
     if (!t && info) {
       // 셋리스트가 없는 공연도 같은 초록 카드로 보여줘요. 일정은 "날짜 도시 공연장" 글에서 나눠요.
-      const shows = info.shows.map(x => {
-        const m = x.match(/^(\d{4})-(\d\d)-(\d\d)(?:~(?:(\d\d)-)?(\d\d))?\s*(.*)$/);
-        if (!m) return `<div class="tour-show"><span class="tour-place">${esc(x)}</span></div>`;
-        const day = `${m[2]}.${m[3]}${m[5] ? ' ~ ' + (m[4] ? m[4] + '.' : '') + m[5] : ''}`;
-        return `<div class="tour-show"><span class="tour-place">${esc(m[6])}</span><span class="ev-days"><span class="ev-day">${day}</span></span></div>`;
-      }).join('');
+      const shows = infoShows(info, []);
       return `
       <a class="back" href="#/concerts">‹ 콘서트</a>
       <section class="song-hero">
@@ -1764,7 +1776,9 @@
       if (!places.has(key)) places.set(key, { label, list: [] });
       places.get(key).list.push(e);
     });
-    const shows = [...places.values()].map(({ label, list }) =>
+    // 콘서트 정보에 회차가 더 많이 적혀 있으면 그걸로 (셋리스트 출처는 일부 날짜만 있을 때가 있어요)
+    const infoN = t.info ? t.info.shows.filter(x => /^\d{4}-/.test(x)).length : 0;
+    const shows = infoN > places.size ? infoShows(t.info, t.events) : [...places.values()].map(({ label, list }) =>
       `<div class="tour-show"><span class="tour-place">${esc(label)}</span><span class="ev-days">${list.map(x => `<a class="ev-day" href="#/e/${encodeURIComponent(x.id)}">${x.date.slice(5).replace('-', '.')}</a>`).join('')}</span></div>`).join('');
     const top = t.songs.slice(0, 3).map(x => x.t).join(', ');
     return `
@@ -1773,7 +1787,7 @@
         <div class="block-head"><h1 class="song-title">${esc(t.name.replace(/\s+\S+$/, ''))} <span class="nw">${esc((t.name.match(/\S+$/) || [''])[0])}${help('곡 옆 ▶ 버튼을 누르면 이 콘서트 무대를 유튜브에서 찾아볼 수 있어요.')}</span></h1>${shareBtn('이 셋리스트 공유하기', `포레스텔라 ${t.name} 셋리스트 🎤\n${top} …\n\n${TAGS}`, link('#/tour/' + encodeURIComponent(t.id)))}</div>
         ${t.info && t.info.img ? `<a href="${esc(t.info.imgPost || t.info.img)}" target="_blank" rel="noopener"><img class="album-img tour-poster" src="${esc(imgSize(t.info.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
         <span class="count-pill">${t.complete ? '' : '일부 '}${t.songs.length}곡</span>
-        <p class="sub">${tourRange(t)}${t.info && !t.info.ok ? ' <span class="tag">확인 중</span>' : ''}</p>
+        <p class="sub">${t.info ? concertRange(t.info) : tourRange(t)}${t.info && !t.info.ok ? ' <span class="tag">확인 중</span>' : ''}</p>
         ${shows ? `<div class="tour-shows">${shows}</div>` : ''}
         ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
