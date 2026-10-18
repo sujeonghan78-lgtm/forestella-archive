@@ -61,7 +61,7 @@
     return n.trim();
   }
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
-  const SONG_SAME = { 'we are the champions': 'champions', "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려' };
+  const SONG_SAME = { "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려' };
   const songKey = name => { const k = songBase(name).toLowerCase().replace(/\s+/g, ' '); return SONG_SAME[k] || k; };
 
   // 일정명 앞의 [강형호], [두훈/우림] 같은 표시에서 멤버 뽑기
