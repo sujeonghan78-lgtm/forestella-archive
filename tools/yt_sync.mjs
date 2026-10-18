@@ -11,6 +11,7 @@ const api = async (path, q) => {
   if (!r.ok) throw new Error(`${path} ${r.status} ${d.error?.message || ''}`);
   return d;
 };
+process.on('unhandledRejection', e => { console.log(`::error::${e.message}`); process.exit(1); });
 const old = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')).videos : [];
 const known = new Set(old.map(v => v.id));
 const full = process.argv.includes('--full') || !old.length;
