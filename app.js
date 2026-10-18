@@ -1268,7 +1268,7 @@
     if (!so) return `<div class="day-song"><span class="day-song-name">${esc(name)}</span></div>`;
     const day = e && ((so.official || []).find(v => v.event === e) || (so.official || []).find(v => v.date === e.date && ['무대', '직캠', '라이브'].includes(v.kind)));
     const vid = day ? day.id : e && e.videoId && e.songs.length === 1 ? e.videoId : '';
-    return `<div class="day-song"><a class="day-song-name" href="#/song/${encodeURIComponent(so.key)}"><b>${esc(name)}</b><small>${songMeta(so, true) || '기록 없음'} ›</small></a>${vid ? `<a class="sl-yt day-play" href="${ytWatch(vid)}" target="_blank" rel="noopener" aria-label="${esc(name)} 이날 영상 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10 9.5v5l4.5-2.5z" class="fill"/></svg></a>` : ''}</div>`;
+    return `<div class="day-song"><a class="day-song-name" href="#/song/${encodeURIComponent(so.key)}"><b>${esc(name)} ›</b></a>${vid ? `<a class="day-thumb" href="${ytWatch(vid)}" target="_blank" rel="noopener" aria-label="${esc(name)} 이날 영상 보기"><img src="${ytThumbUrl(vid)}" alt="" loading="lazy" onerror="this.remove()"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></a>` : ''}</div>`;
   }
 
   // ---------- 콘서트 셋리스트 ----------
