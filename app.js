@@ -1099,7 +1099,8 @@
       const nq = rel ? '' : norm(xQuery);
       let list = (data.xFeed || []).filter(p => (!cat || p.cat === cat) && (!mem || p.m.includes(mem)) && (!rel || p.rel === rel) && (!yr || p.date.startsWith(yr)) && (!nq || norm(p.raw).includes(nq)));
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
-      const card = p => `
+      const card = p => xLinks(p) ? `<div class="x-wrap">${card0(p)}${xLinks(p)}</div>` : card0(p);
+      const card0 = p => `
           <a class="x-card${p.img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">
             ${p.img ? `<img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${esc(p.date.replace(/-/g, '.'))} · ${esc(p.cat)}</span>${esc(p.text || '(글 없음)')}</span>
@@ -1326,8 +1327,8 @@
   // 카드 목록: 처음 n개만 보이고 '더 보기'로 n개씩 펼쳐요
   function moreList(cards, n = 10) {
     if (cards.length <= n) return `<div class="stack x-list">${cards.join('')}</div>`;
-    return `<div class="stack x-list">${cards.map((c, i) => i < n ? c : c.replace('<a ', '<a hidden ')).join('')}</div>
-      <button type="button" class="more-btn" onclick="const h=[...this.previousElementSibling.querySelectorAll('a[hidden]')];h.slice(0,${n}).forEach(a=>a.hidden=false);this.textContent='더 보기 ('+Math.max(h.length-${n},0)+'개 남음)';if(h.length<=${n})this.remove()">더 보기 (${cards.length - n}개 남음)</button>`;
+    return `<div class="stack x-list">${cards.map((c, i) => i < n ? c : c.replace(/^(\s*<\w+)/, '$1 hidden')).join('')}</div>
+      <button type="button" class="more-btn" onclick="const h=[...this.previousElementSibling.querySelectorAll(':scope>[hidden]')];h.slice(0,${n}).forEach(a=>a.hidden=false);this.textContent='더 보기 ('+Math.max(h.length-${n},0)+'개 남음)';if(h.length<=${n})this.remove()">더 보기 (${cards.length - n}개 남음)</button>`;
   }
   // 상세 화면 탭: 한 번에 한 칸만 보여서 화면이 길어지지 않게 (내용 없는 칸은 빼요)
   function paneTabs(panes) {
@@ -1348,12 +1349,27 @@
     return `<hr class="divider"><h2 class="h3 list-title">${title}${help(note)}</h2>${moreList(list.map(ytCard), 5)}`;
   }
 
+  // 공식 X 글 속 링크 → 작은 버튼 (유튜브 공식 영상이면 종류까지)
+  const LINK_NAMES = [[/youtu\.?be/, '유튜브'], [/naver/, '네이버'], [/instagram/, '인스타그램'], [/cafe\.daum/, '팬카페'], [/weverse/, '위버스'], [/fromm/, '프롬'], [/interpark|ticket|yes24|melon/, '예매'], [/spotify|music\.apple|genie|bugs|flo/, '음원']];
+  function xLinks(p) {
+    if (!p.links || !p.links.length) return '';
+    const ytId = u => (u.match(/(?:youtu\.be\/|[?&]v=|shorts\/)([\w-]{11})/) || [])[1];
+    return `<div class="x-links">${p.links.slice(0, 4).map(u => {
+      const id = ytId(u), ov = id && (data.official || []).find(v => v.id === id);
+      let host = ''; try { host = new URL(u).hostname.replace(/^www\./, ''); } catch (err) { return ''; }
+      const name = ov ? '공식 ' + ov.kind : ((LINK_NAMES.find(([rx]) => rx.test(host)) || [])[1] || host);
+      return `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(name)} ↗</a>`;
+    }).join('')}</div>`;
+  }
+
   // 공식 X 대표 글: 사진 + 글 앞부분 카드 하나, 누르면 X로
   function xCard(p, label) {
     const img = p.img ? `<img src="${esc(p.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
-    return `<a class="x-card${img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">${img}
+    const card = `<a class="x-card${img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">${img}
         <span class="x-text"><span class="x-date">${label} · ${esc(p.date.replace(/-/g, '.'))}</span>${esc(p.text)}</span>
       </a>`;
+    const ln = xLinks(p);
+    return ln ? `<div class="x-wrap">${card}${ln}</div>` : card;
   }
   function xBlock(e) {
     const b = e.xBehind || [];

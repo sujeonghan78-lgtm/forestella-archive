@@ -139,7 +139,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, xlinks] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -149,8 +149,9 @@
       s.albums ? fetchText(s.albums).catch(() => '') : '',
       s.concerts ? fetchText(s.concerts).catch(() => '') : '',
       fetchText('data/yt_videos.json').catch(() => ''),
+      fetchText('data/x_links.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, sheets: JSON.stringify(s), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, xlinks, sheets: JSON.stringify(s), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -198,6 +199,15 @@
       const body = t.replace(/^\[[^\]]*\]\s*/, '').replace(/#\S+/g, '').replace(/https?:\/\/\s?\S+/g, '').replace('더보기', '').replace(/\s+/g, ' ').trim();
       return (body || (t.match(/#(\S+)/g) || []).map(h => h.slice(1)).filter(h => !/^(포레스텔라|forestella)$/i.test(h)).join(' ')).slice(0, 120);
     };
+    // 글 속 링크: 본문에 보이는 주소 + t.co를 풀어둔 주소(data/x_links.json)
+    let xLinks = {};
+    try { xLinks = JSON.parse(raw.xlinks || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
+    const linksOf = (id, text) => {
+      const seen = new Set();
+      return [...(text.match(/https?:\/\/\s?[^\s…]+/g) || []).map(u => u.replace(/\s/g, '')), ...(xLinks[id] || [])]
+        .filter(u => !/\/\/t\.co\//.test(u) && /^https?:\/\/[^/]+\.[a-z]{2,}/i.test(u) && !/(twitter|x)\.com\/[^/]+\/status/.test(u))
+        .filter(u => !seen.has(u) && seen.add(u));
+    };
     const xFeed = toObjects(raw.xsheet || '').filter(r => r['링크']).map(r => ({
       id: r['링크'].split('/').pop(),
       url: r['링크'],
@@ -206,6 +216,7 @@
       m: (r['멤버'] || '').split(',').map(x => x.trim()).filter(Boolean),
       text: xClean(r['글'] || ''),
       raw: r['글'] || '',
+      links: linksOf(r['링크'].split('/').pop(), r['글'] || ''),
       img: r['사진'] || '',
       after: r['후기 일정ID'] || '',
       behind: r['비하인드 일정ID'] || '',
