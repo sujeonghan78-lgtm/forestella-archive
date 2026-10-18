@@ -921,7 +921,7 @@
   const PROGRAM_DEFS = [
     ['불후의 명곡', '음악 경연', /불후의\s?명곡|immortal\s?songs/i],
     ['복면가왕', '음악 경연', /복면가왕/],
-    ['팬텀싱어', '음악 경연', /팬텀싱어/],
+    ['팬텀싱어', '음악 경연', /팬텀싱어\s?\d*/],
     ['열린음악회', '음악쇼', /열린\s?음악회|open\s?concert/i],
     ['유희열의 스케치북', '음악쇼', /스케치북/],
     ['더 시즌즈', '음악쇼', /더\s?시즌즈|고막남친/],
@@ -937,9 +937,9 @@
     ['전지적 참견 시점', '예능', /전지적\s?참견\s?시점|전참시/],
     ['라디오스타', '예능', /라디오스타/],
     ['미운 우리 새끼', '예능', /미운\s?우리\s?새끼|미우새/],
-    ['걸어서 환장 속으로', '예능', /걸어서\s?환장/],
-    ['유 퀴즈 온 더 블럭', '예능', /유\s?퀴즈/],
-    ['전현무계획', '예능', /전현무\s?계획/],
+    ['걸어서 환장 속으로', '예능', /걸어서\s?환장(\s?속으로)?/],
+    ['유 퀴즈 온 더 블럭', '예능', /유\s?퀴즈(\s?온\s?더\s?블럭)?/],
+    ['전현무계획', '예능', /전현무\s?계획\s?\d*/],
     ['숲속의 포레시피', '웹 콘텐츠', /포레시피/],
   ];
   const PROGRAM_TYPES = ['음악 경연', '음악쇼', '음악방송', '연말 · 시상식', '예능', '라디오', '웹 콘텐츠', '특집 · 행사'];
@@ -958,9 +958,12 @@
       else if (e.category === '라디오') get('라디오', '라디오').events.push(e);
       else if (e.category === 'TV') get(OTHER_PROG, '특집 · 행사').events.push(e);
     });
+    // 다른 방송(연예 뉴스 등)이 프로그램 이름만 언급한 영상은 빼요 ([연예가 헤드라인] … '팬텀싱어' 같은)
+    const MENTION_ONLY = /^\s*\[(연예가|연중|뉴스|news|연예\s?뉴스|스타\s?뉴스)/i;
+    const defOfVideo = t => MENTION_ONLY.test(t) ? null : defOf(t);
     (data.official || []).forEach(v => {
       if (!v.bc) return;
-      const d = defOf(v.title);
+      const d = defOfVideo(v.title);
       if (d) get(d[0], d[1]).videos.push(v);
       else if (v.event && map.has(OTHER_PROG) && map.get(OTHER_PROG).events.includes(v.event)) map.get(OTHER_PROG).videos.push(v);
     });
@@ -983,14 +986,17 @@
   const PROGRAMS_TOP = () => programList().filter(p => p.name !== OTHER_PROG).slice(0, 6).map(p => p.name);
   const progHref = name => '#/program/' + encodeURIComponent(name);
 
-  // 회차 이름: "[KBS2] 불후의 명곡 - 2021 왕중왕전" → "2021 왕중왕전"
+  // 회차 이름: "[KBS2] 불후의 명곡 - 2021 왕중왕전" → "2021 왕중왕전". 프로그램 이름이 맨 앞에 있을 때만 떼고, 남는 게 없으면 원래 제목
+  const BC_PREFIX = /^(\[[^\]]*\]\s*)*((KBS|MBC|SBS|JTBC|Mnet|tvN|MBN|EBS|채널S)\d?(\s*TV)?(\s*,\s*|\s+))*/i;
   function programTitle(title, prog) {
-    const t = title.replace(/^\[[^\]]*\]\s*/, '');
+    const t = title.replace(BC_PREFIX, '').trim();
     const d = PROGRAM_DEFS.find(x => x[0] === prog);
-    const m = d && t.match(d[2]);
-    if (!m) return title;
-    const rest = (t.slice(0, m.index).replace(/^(KBS\d?|MBC|SBS|JTBC|Mnet|tvN|MBN)\s*(TV)?\s*/i, '') + ' ' + t.slice(m.index + m[0].length)).replace(/^[\s\-–:·]+/, '').trim();
-    return rest || prog;
+    // 여러 프로그램을 묶은 칸(음악방송·연말 등)은 제목을 그대로
+    if (!d || ['음악방송', '연말 · 시상식', '딩고 · 킬링보이스'].includes(prog)) return t || title;
+    const m = t.match(d[2]);
+    if (!m || m.index > 0) return t || title;
+    const rest = t.slice(m[0].length).replace(/^[\s\-–:·]+/, '').trim();
+    return rest || t;
   }
 
   function programView() {
