@@ -337,7 +337,7 @@
     const songByLoose = new Map([...songs.values()].map(so => [so.key.replace(/[^0-9a-z가-힣]/g, ''), so]));
     songs.forEach(so => { so.official = []; });
     official.forEach(v => {
-      v.kind = v.bc && /직캠|fancam|focus|페이스캠/i.test(v.title) ? '직캠' : /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /포레미파솔|behind|비하인드/i.test(v.title) ? '비하인드' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : v.bc && / - |무대|stage/i.test(v.title) ? '무대' : '영상';
+      v.kind = v.bc && /직캠|fancam|focus|페이스캠/i.test(v.title) ? '직캠' : /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /포레미파솔|behind|비하인드/i.test(v.title) ? '비하인드' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : v.bc && !/모음|몰아보기|compilation|레전드 무대|댓글/i.test(v.title) && / - |무대|stage/i.test(v.title) ? '무대' : '영상';
       const seen = new Set();
       // 따옴표 안 이름 (In un'altra vita처럼 글자 사이 '는 건너뛰어요)
       [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[|]+?)\s*(?=\(|\[|\||$)/g)].map(m => `'${m[1]}'`), ...[...v.title.matchAll(/^([^\-\[|]+?)\s+-\s+(?:포레스텔라|forestella)/gi)].map(m => `'${m[1]}'`)].forEach(q => {
@@ -348,12 +348,16 @@
     // 영상 → 멤버·음반·콘서트·일정 (제목 기준, 자동이라 가끔 틀릴 수 있어요)
     const flat = t => String(t).normalize('NFKC').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
     const ENG = { 배두훈: /baedoohoon|doohoon/i, 강형호: /kanghyungho|hyungho/i, 조민규: /chomingyu|mingyu/i, 고우림: /kowoorim|woorim/i };
-    const GENERIC = new Set(['포레스텔라', 'forestella', '콘서트', '공연', '비하인드', '기념', '축하무대', '촬영', '현장', '특집', '단독', '초청', '함께하는', '시민과', '행사', '축제', '페스티벌', '열린음악회', 'kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'festival', 'concert', 'live', 'behind', 'part', 'feat', '생일', '축하해']);
+    const GENERIC = new Set(['포레스텔라', 'forestella', '콘서트', '공연', '비하인드', '기념', '축하무대', '촬영', '현장', '특집', '단독', '초청', '함께하는', '시민과', '행사', '축제', '페스티벌', '열린음악회', 'kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'festival', 'concert', 'live', 'behind', 'part', 'feat', '생일', '축하해', 'the', 'in', 'of', 'and', 'with', 'for', 'on', 'to', 'at', 'by', 'ep', 'vol', 'ver']);
     const words = t => (String(t).normalize('NFKC').match(/[0-9A-Za-z가-힣]{2,}/g) || []).map(w => w.toLowerCase()).filter(w => !GENERIC.has(w) && !/^\d+$|^\d+주년$/.test(w) && !/^포레미파솔/.test(w));
     const evWords = events.filter(e => !e.auto || e.title).map(e => ({ e, w: new Set(words(e.title)) }));
     const concertKeys = [...tours.map(t => ({ id: t.id, key: flat(t.name.replace(/^[\d-]+\s*/, '')), from: t.dates[0], to: t.dates[t.dates.length - 1] })),
       ...concerts.filter(c => !tours.some(t => t.id === c.id) && c.from).map(c => ({ id: c.id, key: flat(c.name.replace(/\(.*\)|[\d-]{4,}|포레스텔라|전국투어|콘서트|forestella|concert|show|\+\s*encore/gi, '')), from: c.from, to: c.to || c.from }))];
     const days = (a, b) => (new Date(a) - new Date(b)) / 864e5;
+    // 방송 프로그램 이름 낱말 (일정명에서 [KBS2]·[멤버] 같은 머리말과 방송사 이름은 빼요) + 영어 제목 별칭
+    const PROG_STOP = new Set(['kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'jtbc', 'mnet', 'mbn', 'tvn', 'ebs', '포레스텔라', 'forestella', '방송', '특집', '출연', '녹화', '본방', '재방']);
+    const progWords = t => (String(t).replace(/^\[[^\]]*\]\s*/, '').normalize('NFKC').match(/[0-9A-Za-z가-힣]{2,}/g) || []).map(w => w.toLowerCase()).filter(w => !PROG_STOP.has(w) && !/^\d+$/.test(w));
+    const PROG_ALIAS = { 불후의: /immortal songs/i, 명곡: /immortal songs/i, 열린음악회: /open concert/i, 스케치북: /sketchbook/i, 뮤직뱅크: /music ?bank/i, 음악중심: /music ?core|예능연구소/i, 엠카운트다운: /m ?countdown|엠카/i, 가요대축제: /song festival/i, 복면가왕: /king of mask/i, 편스토랑: /fun_?staurant/i };
     official.forEach(v => {
       const t = v.title, ft = flat(t);
       v.members = MEMBERS.filter(m => t.includes(m) || t.includes(m.slice(1)) || ENG[m].test(t));
@@ -368,6 +372,21 @@
       // 비하인드는 행사 뒤 400일까지, 무대·클립 영상은 60일까지 (쇼츠·M/V·가사·티저는 빼요)
       const behind = v.kind === '비하인드' && !/m\/v|jacket|making|shooting/i.test(t);
       const stage = ['라이브', '클립', '영상', '무대', '직캠'].includes(v.kind) && !/recap|인사|greeting|예고|preview|d-\d|exhibition|메이킹|making/i.test(t);
+      if (v.bc) {
+        // 방송사 영상: 방송 일정(공연 제외)만, 프로그램 이름이 제목에 있고 날짜가 가까운 것 (재업로드가 많아 날짜만으로는 안 붙여요)
+        if (v.tour || !(behind || stage) || /모음|몰아보기|compilation|댓글|리액션/i.test(v.title)) return;
+        const fv = flat(v.title) + ' ' + Object.entries(PROG_ALIAS).filter(([, rx]) => rx.test(v.title)).map(([k]) => k).join(' ');
+        let best = null, score = 0, bgap = 1e9;
+        events.forEach(e => {
+          if (e.category === '공연') return;
+          const gap = days(v.date, e.date);
+          if (gap < -1 || gap > (behind ? 400 : 14)) return;
+          const sc = progWords(e.title).filter(w => fv.includes(w)).reduce((n, w) => n + w.length, 0);
+          if (sc >= 2 && (sc > score || (sc === score && Math.abs(gap) < bgap))) { best = e; score = sc; bgap = Math.abs(gap); }
+        });
+        if (best) { v.event = best; (behind ? (best.ytBehind = best.ytBehind || []) : (best.ytStage = best.ytStage || [])).push(v); }
+        return;
+      }
       if (!v.tour && (behind || stage)) {
         const yymmdd = (t.match(/\b(\d{2})(\d{2})(\d{2})\b/) || []);
         const vw = words(t);
@@ -399,13 +418,11 @@
       if (v) e.ytMain = v;
     });
     // 방송사 무대 영상 → 곡 무대 목록: 이어진 일정(또는 같은 날 방송 일정)이 있으면 그 일정에 곡을 붙이고, 없으면 영상만으로 무대 한 줄을 만들어요
-    const tvByDate = new Map();
-    events.forEach(e => { if (e.category !== '공연') (tvByDate.get(e.date) || tvByDate.set(e.date, []).get(e.date)).push(e); });
     const ytStages = new Map();
     songs.forEach(so => {
       let added = false;
       so.official.filter(v => v.bc && ['무대', '직캠', '라이브'].includes(v.kind)).sort((a, b) => (a.kind === '직캠') - (b.kind === '직캠')).forEach(v => {
-        const e = v.event || (tvByDate.get(v.date) || [])[0];
+        const e = v.event;
         if (e) {
           if (!so.events.includes(e)) { so.events.push(e); added = true; }
           if (!e.songKeys.includes(so.key)) { e.songs.push(so.name); e.songKeys.push(so.key); }
