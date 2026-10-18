@@ -7,12 +7,6 @@ jobs:
     steps:
       - run: |
           curl -sL 'https://docs.google.com/forms/d/e/1FAIpQLSdyRlcj5T7KazqvC4mT6KPIM-c13neDsXk0dxXL74yjXK-IKw/viewform' -o f.html
-          python3 - <<'P'
-          import re,json
-          h=open('f.html',encoding='utf-8').read()
-          m=re.search(r'FB_PUBLIC_LOAD_DATA_ = (.*?);</script>',h,re.S)
-          d=json.loads(m.group(1))
-          for q in d[1][1]:
-              try: print('::notice::', q[1], '| entry.%s'%q[4][0][0], '| 필수' if q[4][0][2] else '', '|', [o[0] for o in (q[4][0][1] or [])])
-              except Exception as e: print('::notice::?', str(q)[:200])
-          P
+          echo "::notice::size $(wc -c < f.html) title $(grep -o '<title>[^<]*' f.html | head -1)"
+          grep -oE 'FB_PUBLIC_LOAD_DATA_[^;]{0,3000}' f.html | grep -oE '\[[0-9]{6,12},\"[^"]{0,40}\"|"[^"]{1,20}",null,[0-9],\[\[[0-9]{6,12}' | head -20 | sed 's/^/::notice::/'
+          grep -oE '\[[0-9]{6,12},null,[01]' f.html | head -20 | sed 's/^/::notice::/'
