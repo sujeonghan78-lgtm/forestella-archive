@@ -686,4 +686,3 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .ep-list { gap: 0; }
 /* 유튜브 뮤직 음원 썸네일로 채운 표지: 양옆 검은 띠를 잘라 정사각형으로 */
 img[src*="i.ytimg.com"].album-img { width: 200px; height: 200px; margin-left: auto; margin-right: auto; object-fit: cover; }
-.rel-tile .rel-sub { white-space: normal; overflow: visible; display: block; line-height: 1.45; }

@@ -1464,7 +1464,7 @@
           <a class="rel-tile" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
             <span class="rel-cover">${r.img ? `<img src="${esc(imgSize(r.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
             <b>${esc(r.name)}</b>
-            <span class="rel-sub">${r.date ? `${esc(kindOf(r))}<br>${esc(r.date.replace(/-/g, '.'))}${r.tn ? `<br>${r.tn}곡` : ''}` : esc(r.sub) + (r.n ? ` · X ${r.n}` : '')}</span>
+            <span class="rel-sub">${r.date ? esc([kindOf(r), r.tn && r.tn + '곡'].filter(Boolean).join(' · ')) : esc(r.sub) + (r.n ? ` · X ${r.n}` : '')}</span>
           </a>`).join('')}</div>`).join('')}`;
   }
 
