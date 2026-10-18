@@ -1070,7 +1070,7 @@
       <p class="sub">${esc(p.type)}${progSpan(p) ? ` · ${progSpan(p)}` : ''}</p>
       ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>${esc(p.name)} 무대 이어보기</a>` : ''}
       ${paneTabs([
-        { label: '출연', n: p.events.length, html: p.events.length ? moreList(p.events.map((e, i) => (i === 0 || p.events[i - 1].date.slice(0, 4) !== e.date.slice(0, 4) ? `<h3 class="ep-year">${e.date.slice(0, 4)}</h3>` : '') + ep(e)), 15).replace('stack x-list', 'stack ep-list') : '' },
+        { label: '출연', n: p.events.length, html: p.events.length ? moreList(p.events.map((e, i) => `<div class="ep-item">${i === 0 || p.events[i - 1].date.slice(0, 4) !== e.date.slice(0, 4) ? `<h3 class="ep-year">${e.date.slice(0, 4)}</h3>` : ''}${ep(e)}</div>`), 15).replace('stack x-list', 'stack ep-list') : '' },
         { label: '영상', n: p.videos.length, html: p.videos.length ? ytList(p.videos) : '' },
         { label: '곡', n: p.songs.length, html: p.songs.length ? `<p class="src-note">이 프로그램에서 부른 날 수 순서예요.</p><div>${p.songs.map(songRow).join('')}</div>` : '' },
       ]) || '<p class="empty">아직 기록이 없어요.</p>'}

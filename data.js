@@ -54,14 +54,14 @@
   function songBase(name) {
     let n = String(name).trim();
     if (/^참고/.test(n) || /\s소개$/.test(n)) return '';
-    n = n.replace(/\s*외\s*\d+\s*곡$/, '');
+    n = n.replace(/\s*외\s*\d+\s*곡$/, '').replace(/^\((앵콜|앵코르|앙코르|encore)\)\s*/i, '').replace(/[`´‘’]/g, "'");
     // 끝의 (한글)·(with …)·(… ver.)·(Special Track)·(feat. …) 같은 꼬리표는 여러 개여도 빼요
     let prev;
     do { prev = n; n = n.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /[가-힣]|^with\s|ver\.?$|version|special track|^feat\.|remaster|^inst|^to\.\s/i.test(inner) || inner.trim().toLowerCase() === n.replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase() ? '' : m); } while (n !== prev);
     return n.trim();
   }
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
-  const SONG_SAME = { "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려',
+  const SONG_SAME = { "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려', '곤드레만드레': '곤드레 만드레', "dell'amore non si sa": "dell' amore non si sa",
     // 유튜브 뮤직 영어 제목 → 한국어 제목 (2026-10-18 유튜브 뮤직·음반 정보 수록곡 대조)
     'magic castle': '마법의 성', 'flower vase': '꽃병', nocturne: '야상곡', 'dear moon': '달하 노피곰 도다샤', 'and spring': '그리고 봄', changgwi: '창귀',
     'bird, bird, blue bird': '새야 새야 파랑새야', 'words from the wind': '바람이 건네준 말', together: '함께라는 이유', ties: '연', '연(緣)': '연',
