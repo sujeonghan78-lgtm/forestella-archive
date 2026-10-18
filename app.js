@@ -1154,8 +1154,10 @@
             <span class="x-text"><span class="x-date">${esc(p.date.replace(/-/g, '.'))} · ${esc(p.cat)}</span>${esc(p.text || '(글 없음)')}</span>
           </a>`;
       if (!list.length) { box.innerHTML = `<p class="empty">${data.xPending ? '공식 X 글 불러오는 중…' : rel ? '이 음반에 묶인 공식 X 글이 없어요.' : '해당하는 글이 없어요.'}</p>`; return; }
-      const cnt = document.getElementById('xcount'); if (cnt) cnt.textContent = list.length + '개';
-      box.innerHTML = `${rel ? `<p class="sub">${list.length}개</p>` : ''}<div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
+      const pics = list.reduce((s, p) => s + ((p.imgs || []).length || (p.img ? 1 : 0)), 0);
+      const label = `글 ${list.length}개${pics ? ` · 사진 ${pics}장` : ''}`;
+      const cnt = document.getElementById('xcount'); if (cnt) cnt.textContent = label;
+      box.innerHTML = `${rel ? `<p class="sub">${label}</p>` : ''}<div class="stack x-list"></div><button type="button" class="more-btn">더 보기</button>`;
       const more = () => {
         box.querySelector('.x-list').insertAdjacentHTML('beforeend', list.slice(n, n + 40).map(card).join(''));
         n += 40;
