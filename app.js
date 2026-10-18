@@ -1077,7 +1077,8 @@
     const kind = qs.get('kind') || '', yr = qs.get('y') || '', mem = qs.get('m') || '', q = qs.get('q') || '', chn = qs.get('ch') || '';
     const all = data.official || [];
     const href = (k, y, m, c = chn) => '#/yt?' + new URLSearchParams(Object.entries({ ch: c, kind: k, y, m, q }).filter(x => x[1])).toString();
-    const chans = [...new Set(all.map(v => v.ch).filter(Boolean))];
+    const chans = MEMBER_LIST.filter(m => all.some(v => v.ch === m));
+    const CH_NAMES = { 강형호: '[PITTA]강형호 & 이용우', 조민규: '조민규 ChoMinGyu', 고우림: 'Official KOWOORIM' };
     const chip = (on, h, label) => `<a class="chip${on ? ' on' : ''}" href="${h}">${label}</a>`;
     const nq = norm(q);
     const list = all.filter(v => (!chn || (chn === '포레스텔라' ? !v.ch : v.ch === chn)) && (!kind || v.kind === kind) && (!yr || v.date.startsWith(yr)) && (!mem || v.members.includes(mem)) && (!nq || norm(v.title).includes(nq)));
@@ -1088,7 +1089,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="yt-q" value="${esc(q)}" placeholder="영상 제목 찾기" aria-label="공식 영상 찾기">
       </form>
-      ${chans.length ? `<div class="chips tl-cats">${chip(!chn, href(kind, yr, mem, ''), '모든 채널')}${['포레스텔라', ...chans].map(c => chip(c === chn, href(kind, yr, mem, c), c === '포레스텔라' ? c : c + ' 채널')).join('')}</div>` : ''}
+      ${chans.length ? `<div class="chips tl-cats">${chip(!chn, href(kind, yr, mem, ''), '모든 채널')}${['포레스텔라', ...chans].map(c => chip(c === chn, href(kind, yr, mem, c), c === '포레스텔라' ? c : CH_NAMES[c] || c + ' 채널')).join('')}</div>` : ''}
       <div class="chips tl-cats">${chip(!kind, href('', yr, mem), '전체')}${YT_KINDS.filter(k => all.some(v => v.kind === k)).map(k => chip(k === kind, href(k, yr, mem), k)).join('')}</div>
       <div class="chips tl-cats">${chip(!yr, href(kind, '', mem), '전체 연도')}${[...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse().map(y => chip(y === yr, href(kind, y, mem), y)).join('')}</div>
       <div class="chips tl-cats">${chip(!mem, href(kind, yr, ''), '멤버 전체')}${MEMBER_LIST.map(m => chip(m === mem, href(kind, yr, m), m.slice(1))).join('')}</div>
