@@ -654,7 +654,7 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .s-tabs .chip b { font-weight: 600; color: var(--green); margin-left: 2px; }
 .s-tabs .chip.on b { color: inherit; }
 .s-xlink { border-style: dashed; color: var(--green); }
-.s-sec { margin: 6px 0 18px; }
+.s-sec { margin: 6px 0 30px; }
 .s-sec .block-head { margin-bottom: 8px; }
 #filters[hidden], #fwrap[hidden] { display: none; }
 
@@ -777,3 +777,6 @@ b > .help-pop[hidden] { display: none; }
 .yt-find svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .day-song-find { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex: 1; min-height: 44px; }
 .day-song-find b { min-width: 0; }
+.s-group { gap: 0; border: 1px solid var(--line); border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 3px 10px rgba(46, 139, 106, 0.06); }
+.s-group :is(.card, .x-card, .x-wrap) { border: 0; border-radius: 0; box-shadow: none; }
+.s-group.s-group > * + * { border-top: 1px solid var(--line); }

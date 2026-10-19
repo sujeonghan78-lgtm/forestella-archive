@@ -545,11 +545,11 @@
     const sec = (title, n, body, t, unit) => n ? `<section class="s-sec"><div class="block-head"><h2 class="h3">${title} <span class="song-count">${n.toLocaleString()}</span></h2>${more(t, n, unit)}</div>${body}</section>` : '';
     const any = evs.length || others;
     return head + (any ? [
-      sec('곡', h.songs.length, `<div class="stack x-list">${h.songs.slice(0, 3).map(songCard).join('')}</div>`, 'song', '곡'),
-      sec(fuzzy ? '비슷한 일정' : '일정', evs.length, `<div class="stack">${evs.slice(0, 4).map(resultCard).join('')}</div>`, 'ev', '건'),
+      sec('곡', h.songs.length, `<div class="stack x-list s-group">${h.songs.slice(0, 3).map(songCard).join('')}</div>`, 'song', '곡'),
+      sec(fuzzy ? '비슷한 일정' : '일정', evs.length, `<div class="stack s-group">${evs.slice(0, 4).map(resultCard).join('')}</div>`, 'ev', '건'),
       sec('공식 유튜브', h.vids.length, ytStrip(h.vids.slice(0, 8)), 'yt', '개'),
-      sec('음반·콘서트', h.rels.length, `<div class="stack x-list">${h.rels.slice(0, 3).map(relCard).join('')}</div>`, 'rel', '개'),
-      sec('공식 X', h.xs.length, `<div class="stack x-list">${h.xs.slice(0, 3).map(xMini).join('')}</div>`, 'x', '개'),
+      sec('음반·콘서트', h.rels.length, `<div class="stack x-list s-group">${h.rels.slice(0, 3).map(relCard).join('')}</div>`, 'rel', '개'),
+      sec('공식 X', h.xs.length, `<div class="stack x-list s-group">${h.xs.slice(0, 3).map(xMini).join('')}</div>`, 'x', '개'),
     ].join('') : `<p class="empty">찾는 기록이 없어요. 혹시 빠진 기록이라면 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`);
   }
   function searchVideos(q) {
