@@ -1,0 +1,20 @@
+name: melon-probe
+on:
+  push:
+    paths: ['.github/workflows/melon-probe.yml']
+permissions:
+  contents: write
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36"
+          for i in 14447806 13339522 12845755 12666681 12429343 11884840 11677482 11625908 11585189 11399918 11360036 11327724 11319495 11276931 11129141 10968755 10594631 10414146 10288174 10282814 10147465 2292202 10874474 10823530 10494475 10470656 10453072 10165821 10278922; do
+            u=$(curl -sL -A "$UA" "https://www.melon.com/album/detail.htm?albumId=$i" | grep -oE 'og:image" content="[^"]+' | head -1 | sed 's/.*content="//; s/?.*//')
+            curl -sL -A "$UA" "$u" -o covers/melon-$i.jpg || true
+          done
+          for f in covers/melon-*.jpg; do convert "$f" -resize '320x320>' -strip -quality 82 "$f" || true; done
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add covers; git commit -m "Add Melon group album covers" && git push
