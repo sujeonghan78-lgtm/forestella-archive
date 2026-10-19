@@ -576,6 +576,37 @@
       const best = cand.sort((x, y) => Math.abs(day(x.date) - day(al.date)) - Math.abs(day(y.date) - day(al.date)))[0];
       if (best) { al.img = `https://i.ytimg.com/vi/${best.id}/hqdefault.jpg`; al.imgYt = true; }
     });
+    // 음반에 붙는 영상·글: 발매 150일 전 ~ 180일 뒤 것만 남기고(나중 무대·콘서트 영상은 곡 페이지에서 봐요),
+    // RELEASES에 없는 음반은 앨범명·타이틀곡으로 찾아요. 멤버 음반은 그 멤버 영상·글만
+    const relDay = s => Date.parse(s || '') || 0;
+    const inWin = (d, a) => { const g = (relDay(d) - relDay(a.date)) / 864e5; return g >= -150 && g <= 180; };
+    const albOfKey = new Map(albums.map(a => [a.rel || a.name, a]));
+    const relLow = t => t.normalize('NFKC').toLowerCase();
+    const relEsc = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const albPats = albums.filter(a => a.date && !/방송 음원/.test(a.kind || '') && !albOfKey.get(a.rel || a.name).rel).map(a => {
+      const words = new Set();
+      const nm = relLow(a.name);
+      nm.split(/\s*[()]\s*/).forEach(w => words.add(w.replace(/\s*ost.*$/, '').trim()));
+      if ((a.tracks || []).length <= 3 || a.title) (a.title ? a.title.split(' / ') : a.tracks).forEach(t => words.add(relLow(t).replace(/\s*\(.*$/, '').trim()));
+      const ws = [...words].filter(w => w.length >= 3 && !/^(intro|inst\.?|mr)$/.test(w));
+      return ws.length ? { a, key: a.rel || a.name, rx: new RegExp(ws.map(w => (/^[a-z]/.test(w) ? '\\b' : '') + relEsc(w) + (/[a-z]$/.test(w) ? '\\b' : '')).join('|')) } : null;
+    }).filter(Boolean);
+    const relFor = (text, date, mems) => {
+      const t = relLow(text);
+      const hit = albPats.filter(x => inWin(date, x.a) && x.rx.test(t) && (!x.a.member || mems.includes(x.a.member)))
+        .sort((x, y) => Math.abs(relDay(date) - relDay(x.a.date)) - Math.abs(relDay(date) - relDay(y.a.date)))[0];
+      return hit ? hit.key : '';
+    };
+    xFeed.forEach(p => {
+      const a = p.rel && albOfKey.get(p.rel);
+      if (a && !inWin(p.date, a)) p.rel = '';
+      if (!p.rel && /음반|컴백|투표/.test(p.cat)) p.rel = relFor(p.raw, p.date, p.m || []);
+    });
+    official.forEach(v => {
+      const a = v.rel && albOfKey.get(v.rel);
+      if (a && !inWin(v.date, a)) v.rel = '';
+      if (!v.rel && v.kind !== '쇼츠' && !v.bc) v.rel = relFor(v.title, v.date, v.members || []);
+    });
     // 공식 X 글 → 콘서트: 공연 일정에 붙은 글 + 글에 콘서트 이름이 나오고 공연 앞 120일~뒤 60일 안의 글
     const tourOfEv = new Map();
     tours.forEach(t => (t.events || []).forEach(e => tourOfEv.set(e.id, t.id)));
