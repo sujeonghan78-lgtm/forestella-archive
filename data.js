@@ -219,6 +219,11 @@
       const e = events.find(x => x.id === id);
       if (e && e.songSource !== '참고') splitSongs(s).forEach(n => { const k = songKey(n); if (k && !e.songKeys.includes(k)) { e.songs.push(n); e.songKeys.push(k); } });
     });
+    // fanSongs: 팬이 X에 올린 셋리스트. 곡이 비어 있는 일정에만 넣고 원글 링크를 같이 둬요
+    Object.entries(extra.fanSongs || {}).forEach(([id, f]) => {
+      const e = events.find(x => x.id === id);
+      if (e && !e.songs.length) { e.songs = splitSongs(f.songs); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))]; e.songSource = '팬 기록'; e.fanSrc = f; }
+    });
     const videos = buildVideos(toObjects(raw.videos));
     const reports = raw.reports ? buildReports(toObjects(raw.reports)) : [];
     const byId = new Map(events.map(e => [e.id, e]));
