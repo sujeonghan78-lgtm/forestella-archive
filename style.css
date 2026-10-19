@@ -780,3 +780,6 @@ b > .help-pop[hidden] { display: none; }
 .s-group { gap: 0; border: 1px solid var(--line); border-radius: 16px; background: #fff; overflow: hidden; box-shadow: 0 3px 10px rgba(46, 139, 106, 0.06); }
 .s-group :is(.card, .x-card, .x-wrap) { border: 0; border-radius: 0; box-shadow: none; }
 .s-group.s-group > * + * { border-top: 1px solid var(--line); }
+.setlist-list li:has(.sl-find) { padding-right: 76px; }
+.sl-yt.sl-find { width: auto; padding: 0 2px 0 6px; }
+.sl-find .yt-find { margin-left: 0; }
