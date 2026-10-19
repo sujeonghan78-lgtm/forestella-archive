@@ -579,7 +579,7 @@ span.song-thumb::before { content: '♪'; font-size: 16px; color: #8DBFA3; }
 .mem-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .mem-row a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 4px; border-radius: 14px; background: var(--grad-soft); color: var(--ink); }
 .mem-row b { font-size: 14px; }
-.mem-row span { font-size: 12px; color: #66766E; }
+.mem-row span { font-size: 11px; color: #66766E; text-align: center; line-height: 1.4; }
 .prog-mini .h3 { margin-bottom: 8px; font-size: 13px; color: #4C5C54; }
 .prog-mini .chip { font-size: 12px; }
 .mem-pic { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; background: #fff; margin-bottom: 4px; }
