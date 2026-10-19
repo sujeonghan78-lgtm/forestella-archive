@@ -11,4 +11,6 @@ jobs:
           curl -sL -A "Mozilla/5.0" "$U" -o f.html
           echo "::notice::size $(wc -c < f.html) title $(grep -oE '<title>[^<]*' f.html)"
           echo "::notice::load $(grep -oE 'FB_PUBLIC_LOAD_DATA_ = .{0,600}' f.html | head -1)"
+          python3 -c "import re;h=open('f.html').read();h=re.sub(r'<style.*?</style>|<script.*?</script>','',h,flags=re.S);print('::notice::txt '+re.sub(r'\\s+',' ',re.sub('<[^>]+>',' ',h))[:500])"
+          curl -s -o /dev/null -w '::notice::redir %{redirect_url}\n' -A "Mozilla/5.0" "$U"
           echo "::notice::ids $(grep -oE '\[\[[0-9]{6,12},' f.html | sort -u | tr '\n' ' ')"
