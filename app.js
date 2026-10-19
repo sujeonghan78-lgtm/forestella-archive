@@ -1474,6 +1474,11 @@
     if (!so) return `<div class="day-song"><span class="day-song-name">${esc(name)}</span></div>`;
     const day = e && ((so.official || []).find(v => v.event === e) || (so.official || []).find(v => v.date === e.date && ['무대', '직캠', '라이브'].includes(v.kind)));
     const vid = day ? day.id : e && e.videoId && e.songs.length === 1 ? e.videoId : '';
+    // 이날 영상이 없으면 곡 이름을 누를 때 유튜브 검색이 열려요 (곡 · 일정 이름으로)
+    if (!vid && e) {
+      const q = `포레스텔라 ${name} ${e.title.replace(/\[[^\]]*\]|\([^)]*\)|<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}`;
+      return `<div class="day-song"><a class="day-song-name day-song-find" href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" rel="noopener" aria-label="${esc(name)} 유튜브에서 찾기"><b>${esc(name)}</b><span class="yt-find" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>유튜브</span></a></div>`;
+    }
     return `<div class="day-song"><a class="day-song-name" href="#/song/${encodeURIComponent(so.key)}"><b>${esc(name)} ›</b></a>${vid ? `<a class="day-thumb" href="${ytWatch(vid)}" target="_blank" rel="noopener" aria-label="${esc(name)} 이날 영상 보기"><img src="${ytThumbUrl(vid)}" alt="" loading="lazy" onerror="this.remove()"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></a>` : ''}</div>`;
   }
 
