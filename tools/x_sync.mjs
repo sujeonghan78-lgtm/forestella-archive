@@ -59,16 +59,18 @@ const getTweet = async id => {
 // 사이트의 "새 글 링크 올리기"로 들어온 링크(제보 탭, 일정명 "공식X 링크")도 같이 받아요. 공식 계정 글만 남겨요
 const cfg = fs.readFileSync('config.js', 'utf8');
 const want = new Set();
+let fromForm = 0;
 for (const [key, pick] of [['x', (h, r) => !(r[h.indexOf('글')] || '').trim() ? r[h.indexOf('링크')] : ''], ['reports', (h, r) => r[h.findIndex(c => c.includes('일정'))] || '']]) {
   try {
     const [head, ...rows] = csvRows(await (await fetch(cfg.match(new RegExp(key + ":\\s*'([^']+)'"))[1])).text());
-    rows.forEach(r => { const v = pick(head, r) || ''; if (key === 'reports' && !/^공식X\s/.test(v)) return; const id = (v.match(/status(?:es)?\/(\d{15,20})/) || [])[1]; if (id && !byId.has(id)) want.add(id); });
+    rows.forEach(r => { const v = pick(head, r) || ''; if (key === 'reports' && !/^공식X\s/.test(v)) return; if (key === 'reports') fromForm++; const id = (v.match(/status(?:es)?\/(\d{15,20})/) || [])[1]; if (id && !byId.has(id)) want.add(id); });
   } catch (e) { why.push(`시트 ${key} ${e.message}`); }
 }
 for (const id of want) {
   try { const t = await getTweet(id); if (t) tweets.set(id, t); } catch (e) { why.push(`시트 글 ${id} ${e.message}`); }
   await new Promise(r => setTimeout(r, 500));
 }
+console.log(`::notice::사이트에서 올린 링크 ${fromForm}개 (이미 있는 글 빼고 새로 받을 글 ${want.size}개)`);
 if (want.size) console.log(`::notice::시트·사이트에서 들어온 링크 ${want.size}개`);
 
 const linksOnly = process.argv[2] === 'links';
