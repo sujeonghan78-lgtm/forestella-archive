@@ -1981,7 +1981,7 @@
     } else if (e.songs.length) {
       songs = `
         <div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>
-        ${e.fanSrc ? `<p class="src-note">${e.fanSrc.note ? `${esc(e.fanSrc.note)} 때 ` : ''}인터넷에 올라온 정보를 모은 거라 실제와 다를 수 있어요.</p>` : SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
+        ${e.fanSrc ? `<p class="src-note">${e.songSource !== '팬 기록' ? '일부 곡은 ' : ''}${e.fanSrc.note ? `${esc(e.fanSrc.note)} 때 ` : ''}인터넷에 올라온 정보를 모은 거라 실제와 다를 수 있어요.</p>` : SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
     } else {
       songs = `<p class="src-note">아직 확인된 곡이 없어요.</p>`;
     }
