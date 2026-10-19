@@ -414,6 +414,10 @@
     try { official = JSON.parse(raw.yt || '{}').videos || []; } catch (err) { /* 없으면 넘어가요 */ }
     // 방송사 공식 채널 영상 (data/yt_bc.json, 매일 자동): v.bc = 채널 이름, 날짜는 방송일
     try { const seenId = new Set(official.map(v => v.id)); official = official.concat((JSON.parse(raw.ytbc || '{}').videos || []).filter(v => !seenId.has(v.id))).sort((a, b) => b.date.localeCompare(a.date)); } catch (err) { /* 없으면 넘어가요 */ }
+    const VIDEO_SONG_ALIAS = [
+      [/spread silk on my heart|내 마음의 주단을 깔고/i, '내 마음에 주단을 깔고'], [/as i live|살다가/i, '살다가'], [/(^|[^a-z])till([^a-z]|$)/i, '사랑의 맹세(till)'],
+      [/마마\s*\(mama\)|mama\s*\((원곡|original)|^mama\s*\(original/i, 'mama'], [/l'?immensit[aá]/i, "l'immensita"], [/my eden/i, 'my eden'], [/(^|[^a-z])angel([^a-z]|$)/i, 'angel'], [/내 나라 내 겨[례레]/, '내 나라 내 겨레'],
+    ];
     const songByLoose = new Map([...songs.values()].map(so => [so.key.replace(/[^0-9a-z가-힣]/g, ''), so]));
     songs.forEach(so => { so.official = []; });
     const songScan = [...songs.values()].map(so => {
@@ -436,6 +440,11 @@
         const solo = !so.events.length && !so.tours.length && so.albums.length && so.albums.every(a => a.member) ? so.albums[0].member : '';
         if (solo && v.ch !== solo && !v.title.includes(solo.slice(1))) return;
         if (!seen.has(so) && rx.test(v.title) && !LINK_SKIP.has(`${v.id}>song:${so.key}`)) { seen.add(so); so.official.push(v); (v.loose = v.loose || []).push(so.key); }
+      });
+      // 짧은 곡 이름·영어 제목·오타는 따로 맞춰요 (Spread Silk On My Heart = 내 마음에 주단을 깔고 등)
+      VIDEO_SONG_ALIAS.forEach(([rx, key]) => {
+        const so = songs.get(key);
+        if (so && !seen.has(so) && rx.test(v.title) && !LINK_SKIP.has(`${v.id}>song:${so.key}`)) { seen.add(so); so.official.push(v); }
       });
     });
     // 영상 → 멤버·음반·콘서트·일정 (제목 기준, 자동이라 가끔 틀릴 수 있어요)
