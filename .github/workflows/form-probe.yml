@@ -1,0 +1,14 @@
+name: form-probe
+on:
+  push:
+    paths: ['.github/workflows/form-probe.yml']
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          U="https://docs.google.com/forms/d/e/1FAIpQLSdyRlcj5T7KazqvC4mT6KPIM-c13neDsXk0dxXL74yjXK-IKw/viewform"
+          curl -sL -A "Mozilla/5.0" "$U" -o f.html
+          echo "::notice::size $(wc -c < f.html) title $(grep -oE '<title>[^<]*' f.html)"
+          echo "::notice::load $(grep -oE 'FB_PUBLIC_LOAD_DATA_ = .{0,600}' f.html | head -1)"
+          echo "::notice::ids $(grep -oE '\[\[[0-9]{6,12},' f.html | sort -u | tr '\n' ' ')"
