@@ -1647,8 +1647,8 @@
       if (!box) return;
       const qm = rel ? null : matcher(xQuery);
       const have = new Set((data.xFeed || []).map(p => p.id));
-      const mine = rel ? [] : xAdded().filter(id => !have.has(id)).map(id => ({ id, url: 'https://x.com/official_fore/status/' + id, date: xIdDate(id), cat: '새 글', m: [], text: '공식 X에 새 글이 올라왔어요', raw: '', img: '', imgs: [] }));
-      let list = mine.concat(data.xFeed || []).filter(p => p.cat === '새 글' || (rel || ((!st.cat.length || st.cat.includes(p.cat)) && (!st.m.length || st.m.some(m => p.m.includes(m))) && (!st.y.length || st.y.includes(p.date.slice(0, 4))))) && (!rel || p.rel === rel) && (!qm || qm(p.raw)));
+      const mine = rel ? [] : xAdded().filter(id => !have.has(id)).map(id => ({ id, url: 'https://x.com/official_fore/status/' + id, date: xIdDate(id), cat: '내가 올린 링크', m: [], text: '눌러서 X에서 보기 · 내용은 확인되면 채워져요', raw: '', img: '', imgs: [] }));
+      let list = mine.concat(data.xFeed || []).filter(p => p.cat === '내가 올린 링크' || (rel || ((!st.cat.length || st.cat.includes(p.cat)) && (!st.m.length || st.m.some(m => p.m.includes(m))) && (!st.y.length || st.y.includes(p.date.slice(0, 4))))) && (!rel || p.rel === rel) && (!qm || qm(p.raw)));
       if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => xGroup(p, xLinks(p) ? `<div class="x-wrap">${card0(p)}${xLinks(p)}</div>` : card0(p));
       const card0 = p => `
