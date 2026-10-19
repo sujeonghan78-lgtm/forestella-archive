@@ -381,10 +381,14 @@
   }
 
   const MEMBER_LIST = ['배두훈', '강형호', '조민규', '고우림'];
+  const MEMBER_NICK = { 듄: '배두훈', 클: '강형호', 밍: '조민규', 욺: '고우림' };
   let shown = 50;
 
   function readParams() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+    // 팬들이 부르는 멤버 별명 한 글자(듄·클·밍·욺)로 치면 그 멤버로 걸러요
+    const q = qs.get('q') || '', nick = MEMBER_NICK[q.trim()];
+    if (nick) return { q: '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: nick, video: qs.get('video') === '1', t: qs.get('t') || '', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
     return { q: qs.get('q') || '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: qs.get('member') || '', video: qs.get('video') === '1', t: qs.get('t') || '', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
   }
   function writeParams(p) {
@@ -637,8 +641,11 @@
     const form = document.getElementById('search-form');
     const input = form.q;
     const update = (change, resetShown = true) => {
+      const nick = MEMBER_NICK[String(change.q || '').trim()];
+      if (nick) { change = { ...change, q: '', member: nick }; input.value = ''; }
       const p = Object.assign(readParams(), change);
       writeParams(p);
+      if (nick) document.querySelectorAll('.chip[data-member]').forEach(x => { const on = x.dataset.member === nick; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
       if (resetShown) shown = 50;
       document.getElementById('results').innerHTML = searchResults(p);
       document.getElementById('fwrap').hidden = fHide(p);
