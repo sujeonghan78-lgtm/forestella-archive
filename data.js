@@ -86,6 +86,8 @@
     return [...found];
   }
 
+  // 비고의 "출처: …" 작업 메모는 화면에 안 보이게 빼고, "출연: …"만 남겨요
+  const cleanNote = v => /^출처:/.test(v || '') ? ((v.match(/출연:.*/) || [''])[0]) : (v || '');
   function buildEvents(rows) {
     return rows
       .filter(r => r['ID'] && r['공개여부'] !== '숨김')
@@ -99,7 +101,7 @@
         title: r['일정명'],
         place: r['장소'],
         content: r['내용'],
-        note: r['비고'],
+        note: cleanNote(r['비고']),
         videoId: r['영상ID'],
         songs: splitSongs(r['확인된 곡']),
         songSource: r['곡 확인 출처'],
@@ -122,7 +124,7 @@
         source: r['출처'],
         title: r['제목'],
         videoId: r['영상ID'],
-        note: r['비고'],
+        note: cleanNote(r['비고']),
       }));
   }
 
@@ -460,8 +462,14 @@
           if (sc >= 2) cand.push({ sc, gap: Math.abs(gap) });
           if (sc >= 2 && (sc > score || (sc === score && Math.abs(gap) < bgap))) { best = e; score = sc; bgap = Math.abs(gap); }
         });
+        // 프로그램 이름이 제목에 없으면: 같은 날(하루 차이까지) 같은 방송사 방송 일정이 딱 하나일 때만 붙여요
+        const net = (v.bc.match(/^(KBS|MBC|SBS|JTBC|Mnet|MBN|tvN|EBS)/i) || [])[1];
+        if (!best && net && !behind && !Object.keys(PROG_ALIAS).some(k => fv.includes(k))) {
+          const same = events.filter(e => e.category !== '공연' && !LINK_SKIP.has(`${v.id}>ev:${e.id}`) && new RegExp(net, 'i').test(e.title) && days(v.date, e.date) >= 0 && days(v.date, e.date) <= 1);
+          if (same.length === 1) { best = same[0]; bgap = days(v.date, best.date); score = 0; }
+        }
         if (best) { v.event = best; const tie = cand.filter(c => c.sc >= score && Math.abs(c.gap - bgap) <= 2).length - 1;
-          v.evWhy = [bgap >= 3 && `날짜 ${Math.round(bgap)}일 차이`, tie > 0 && `비슷한 일정 ${tie + 1}개 중 하나`].filter(Boolean); (behind ? (best.ytBehind = best.ytBehind || []) : (best.ytStage = best.ytStage || [])).push(v); }
+          v.evWhy = [bgap >= 3 && `날짜 ${Math.round(bgap)}일 차이`, tie > 0 && `비슷한 일정 ${tie + 1}개 중 하나`, !score && '제목에 프로그램 이름이 없어 날짜·방송사로 붙임'].filter(Boolean); (behind ? (best.ytBehind = best.ytBehind || []) : (best.ytStage = best.ytStage || [])).push(v); }
         return;
       }
       if (!v.tour && (behind || stage)) {
