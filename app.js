@@ -1724,16 +1724,18 @@
         }).join('')}</ol>`;
   }
 
+  let relItems = [];
   function releasesView() {
     const who = new URLSearchParams(location.hash.split('?')[1] || '').get('m') || '';
     const map = new Map();
     (data.xFeed || []).forEach(p => { if (p.rel) { if (!map.has(p.rel)) map.set(p.rel, []); map.get(p.rel).push(p); } });
     // 시트 "음반 정보"가 있으면 그 순서대로, 없으면 공식 X 글로 묶은 것만
     const items = data.albums && data.albums.length
-      ? data.albums.filter(a => (a.member || '') === who).map(a => { const ps = map.get(a.rel) || []; return { key: a.rel || a.name, href: albHref(a), name: a.name, sub: `${a.date.replace(/-/g, '.')} · ${a.kind}`, date: a.date, tn: (a.tracks || []).length, img: a.img || (ps.find(p => p.img) || {}).img, n: ps.length }; })
+      ? data.albums.filter(a => (a.member || '') === who).map(a => { const ps = map.get(a.rel) || []; return { key: a.rel || a.name, href: albHref(a), name: a.name, sub: `${a.date.replace(/-/g, '.')} · ${a.kind}`, date: a.date, tn: (a.tracks || []).length, tr: a.tracks || [], img: a.img || (ps.find(p => p.img) || {}).img, n: ps.length }; })
       : [...map.entries()].map(([name, ps]) => ({ key: name, name, sub: `${ps[ps.length - 1].date.replace(/-/g, '.')}부터`, img: (ps.find(p => p.img) || {}).img, n: ps.length, d: ps[ps.length - 1].date }))
         .sort((a, b) => (a.d < b.d ? 1 : -1));
     // 연도별로 묶어 표지 2칸 바둑판
+    relItems = items;
     const byYear = new Map();
     items.forEach(r => { const y = (r.sub.match(/^\d{4}/) || ['기타'])[0]; if (!byYear.has(y)) byYear.set(y, []); byYear.get(y).push(r); });
     const kindOf = r => (r.sub.split(' · ')[1] || '').replace(/\s*\(.*\)/, '');
@@ -1741,14 +1743,38 @@
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">음반 이야기${help('앨범 정보는 음원 사이트·위키·기사에서 두 곳 이상 맞는 것만 적었어요. 공식 X 글은 앨범·싱글별로 묶었어요.')}</h1>
       ${(data.albums || []).some(a => a.member) ? `<div class="chips tl-cats">${['', ...MEMBER_LIST.filter(m => data.albums.some(a => a.member === m))].map(m => `<a class="chip${m === who ? ' on' : ''}" href="#/releases${m ? '?m=' + encodeURIComponent(m) : ''}">${m || '포레스텔라'}</a>`).join('')}</div>` : ''}
+      ${items.some(r => r.date) ? `<div class="stick">
+      <form class="searchbox song-search" role="search" onsubmit="return false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="rel-q" aria-label="음반 찾기" placeholder="앨범·수록곡 찾기 · 초성 OK" autocomplete="off">
+      </form>
+      <p class="sub" id="rel-count">${relCount(items)}</p>
+      </div>` : ''}
       ${[...byYear.entries()].map(([y, rs]) => `
+        <section class="rel-sec">
         <h2 class="rel-year">${y}</h2>
         <div class="rel-grid">${rs.map(r => `
-          <a class="rel-tile" href="${r.href || '#/xfeed?rel=' + encodeURIComponent(r.key)}">
+          <a class="rel-tile" data-i="${items.indexOf(r)}" data-n="${esc(norm(r.name + ' ' + (r.tr || []).join(' ')))}" data-c="${esc(chosung(r.name + ' ' + (r.tr || []).join(' ')))}" href="${r.href || '#/xfeed?rel=' + encodeURIComponent(r.key)}">
             <span class="rel-cover">${r.img ? `<img src="${esc(imgSize(r.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
             <b>${esc(r.name)}</b>
             <span class="rel-sub">${r.date ? esc([kindOf(r), r.tn && r.tn + '곡'].filter(Boolean).join(' · ')) : esc(r.sub) + (r.n ? ` · X ${r.n}` : '')}</span>
-          </a>`).join('')}</div>`).join('')}`;
+          </a>`).join('')}</div>
+        </section>`).join('')}`;
+  }
+  // 앨범 수 · 곡 수 (같은 곡·Inst. 버전은 한 번만 세요)
+  const relSong = t => norm(t.replace(/\s*[\(\[](inst\.?|instrumental|mr|piano ver\.?|remaster ver\.?)[\)\]]/gi, ''));
+  const relCount = rs => `앨범 ${rs.length}장 · ${new Set(rs.flatMap(r => (r.tr || []).filter(t => !/^\s*$/.test(t)).map(relSong))).size}곡`;
+  function bindReleases() {
+    const q = document.getElementById('rel-q');
+    if (!q) return;
+    const tiles = [...document.querySelectorAll('.rel-tile')];
+    const all = tiles.map(a => relItems[+a.dataset.i]);
+    q.oninput = () => {
+      const v = norm(q.value), c = q.value.replace(/\s/g, ''), alt = aliasOf(q.value), na = alt && norm(alt);
+      tiles.forEach(a => { a.hidden = !!v && (isChosungOnly(c) ? !a.dataset.c.includes(c) : !a.dataset.n.includes(v) && !(na && a.dataset.n.includes(na))); });
+      document.querySelectorAll('.rel-sec').forEach(sec => { sec.hidden = ![...sec.querySelectorAll('.rel-tile')].some(a => !a.hidden); });
+      document.getElementById('rel-count').textContent = relCount(all.filter((r, i) => !tiles[i].hidden));
+    };
   }
 
 
@@ -2160,6 +2186,7 @@
     if (name === 'home') bindHome();
     if (name === 'search') bindSearch();
     if (name === 'songs') bindSongs();
+    if (name === 'releases') bindReleases();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
     if (name === 'install') bindInstall();

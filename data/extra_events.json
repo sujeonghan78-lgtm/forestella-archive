@@ -921,7 +921,8 @@
  },
  "albumFix": {
   "조민규|Sweet Escape": {
-   "수록곡": "Next to You / Stay Here / Komorebi / Sweet Escape / Ternura Antiga / 리스본행 야간열차 / Sunny Sunday"
+   "수록곡": "Next to You / Stay Here / Komorebi / Sweet Escape / Ternura Antiga / 리스본행 야간열차 / Sunny Sunday",
+   "사진": "covers/melon-14534970.jpg"
   },
   "배두훈|멋진 고양이 (킬러파티 OST)": {
    "사진": "covers/killer-party-ost.jpg"
@@ -930,7 +931,143 @@
    "사진": "covers/my-mister-ost5.jpg"
   },
   "조민규|신세계 : PARANA": {
-   "수록곡": "라야 / Be My Love / Will / 바람 / 푸른 꿈을 꾸는 새 / 희망도 절망도 아닌 하루 / 바람 (Piano ver.)"
+   "수록곡": "라야 / Be My Love / Will / 바람 / 푸른 꿈을 꾸는 새 / 희망도 절망도 아닌 하루 / 바람 (Piano ver.)",
+   "사진": "covers/melon-10801580.jpg"
+  },
+  "|창귀 (CHANGGWI)": {
+   "사진": "covers/melon-14447806.jpg"
+  },
+  "|THE LEGACY": {
+   "사진": "covers/melon-13339522.jpg"
+  },
+  "|Etude": {
+   "사진": "covers/melon-12845755.jpg"
+  },
+  "|Nella Notte": {
+   "사진": "covers/melon-12666681.jpg"
+  },
+  "|Still Here": {
+   "사진": "covers/melon-12429343.jpg"
+  },
+  "|Everything": {
+   "사진": "covers/melon-11884840.jpg"
+  },
+  "|그리고 봄 (And spring)": {
+   "사진": "covers/melon-11677482.jpg"
+  },
+  "|Apocalypse": {
+   "사진": "covers/melon-11625908.jpg"
+  },
+  "|Piano Man": {
+   "사진": "covers/melon-11585189.jpg"
+  },
+  "|Stuck In a Maze (BJJMUSIC ORIGINAL)": {
+   "사진": "covers/melon-11399918.jpg"
+  },
+  "|Unfinished": {
+   "사진": "covers/melon-11360036.jpg"
+  },
+  "|Chosen One (아라문의 검 OST)": {
+   "사진": "covers/melon-11327724.jpg"
+  },
+  "|KOOL": {
+   "사진": "covers/melon-11319495.jpg"
+  },
+  "|White Night (백야)": {
+   "사진": "covers/melon-11276931.jpg"
+  },
+  "|The Bloom : UTOPIA": {
+   "사진": "covers/melon-11129141.jpg"
+  },
+  "|The Beginning : World Tree": {
+   "사진": "covers/melon-10968755.jpg"
+  },
+  "|The Forestella": {
+   "사진": "covers/melon-10594631.jpg"
+  },
+  "|Nella Fantasia": {
+   "사진": "covers/melon-10414146.jpg"
+  },
+  "|Mystique": {
+   "사진": "covers/melon-10288174.jpg"
+  },
+  "|Dear Moon (달하 노피곰 도다샤)": {
+   "사진": "covers/melon-10282814.jpg"
+  },
+  "|Evolution": {
+   "사진": "covers/melon-10147465.jpg"
+  },
+  "배두훈|마이 버킷 리스트": {
+   "사진": "covers/melon-2292202.jpg"
+  },
+  "|Stand By Me": {
+   "사진": "covers/melon-10874474.jpg"
+  },
+  "|Christmas Time": {
+   "사진": "covers/melon-10823530.jpg"
+  },
+  "|연(緣)": {
+   "사진": "covers/melon-10494475.jpg"
+  },
+  "|바람이 건네준 말": {
+   "사진": "covers/melon-10470656.jpg"
+  },
+  "|함께라는 이유": {
+   "사진": "covers/melon-10453072.jpg"
+  },
+  "|L'impossibile Vivere": {
+   "사진": "covers/melon-10165821.jpg"
+  },
+  "|새야 새야 파랑새야 (녹두꽃 OST Part.1)": {
+   "사진": "covers/melon-10278922.jpg"
+  },
+  "강형호|Deep Shadow": {
+   "사진": "covers/melon-11750921.jpg"
+  },
+  "조민규|A Christmas Symphony": {
+   "사진": "covers/melon-11651292.jpg"
+  },
+  "배두훈|백설공주에게 죽음을-Black Out OST Part 1": {
+   "사진": "covers/melon-11573241.jpg"
+  },
+  "조민규|Recuerdos de Buenos Aires": {
+   "사진": "covers/melon-11428885.jpg"
+  },
+  "강형호|BE FREE": {
+   "사진": "covers/melon-11227000.jpg"
+  },
+  "강형호|CARPE DIEM": {
+   "사진": "covers/melon-11198156.jpg"
+  },
+  "강형호|The Nation": {
+   "사진": "covers/melon-10751711.jpg"
+  },
+  "강형호|dandelion": {
+   "사진": "covers/melon-10655790.jpg"
+  },
+  "조민규|바람": {
+   "사진": "covers/melon-10587619.jpg"
+  },
+  "강형호|Universe": {
+   "사진": "covers/melon-10509857.jpg"
+  },
+  "조민규|친구": {
+   "사진": "covers/melon-10487435.jpg"
+  },
+  "조민규|신세계 : NEW AGE": {
+   "사진": "covers/melon-10388461.jpg"
+  },
+  "조민규|동네앨범 단양 Part.1": {
+   "사진": "covers/melon-10224682.jpg"
+  },
+  "고우림|동네앨범 단양 Part.1": {
+   "사진": "covers/melon-10224682.jpg"
+  },
+  "배두훈|나만 아는 바보야": {
+   "사진": "covers/melon-2202808.jpg"
+  },
+  "배두훈|사랑하길 잘했어 OST": {
+   "사진": "covers/melon-1145454.jpg"
   }
  },
  "fanSongs": {
