@@ -957,11 +957,16 @@
   // 일정 이름과 방송사 영상 제목으로 프로그램을 묶어요. 위에서부터 먼저 맞는 것으로 정해요.
   const PROGRAM_DEFS = [
     ['불후의 명곡', '음악 경연', /불후의\s?명곡|immortal\s?songs/i],
+    ['로또싱어', '음악 경연', /로또\s?싱어/],
+    ['싱크로유', '음악쇼', /싱크로유/],
+    ['슈가맨', '음악쇼', /슈가맨/],
+    ['코리아 온 스테이지', '음악쇼', /코리아\s?온\s?스테이지/],
+    ['괴팍한 5형제', '예능', /괴팍한\s?5\s?형제/],
     ['복면가왕', '음악 경연', /복면가왕/],
     ['팬텀싱어', '음악 경연', /팬텀싱어\s?\d*/],
     ['열린음악회', '음악쇼', /열린\s?음악회|open\s?concert/i],
-    ['유희열의 스케치북', '음악쇼', /스케치북/],
-    ['더 시즌즈', '음악쇼', /더\s?시즌즈|고막남친/],
+    ['유희열의 스케치북', '음악쇼', /스케치북|유스케/],
+    ['더 시즌즈', '음악쇼', /더\s?시즌즈|고막남친|the\s?seasons/i],
     ['방판뮤직', '음악쇼', /방판\s?뮤직/],
     ['해피투게더', '음악쇼', /해피투게더/],
     ['라이브 와이어', '음악쇼', /라이브\s?와이어/],
@@ -1005,7 +1010,8 @@
     const defOfVideo = t => MENTION_ONLY.test(t) ? null : defOf(t);
     // 방송사 영상은 방송 프로그램에, 공식·멤버 채널 영상은 웹 콘텐츠에만 붙여요
     (data.official || []).forEach(v => {
-      const d = defOfVideo(v.title);
+      // 딩고 채널 영상은 제목에 프로그램 이름이 없어도 딩고로
+      const d = defOfVideo(v.title) || (/딩고/.test(v.bc || '') ? PROGRAM_DEFS.find(x => x[0] === '딩고 · 킬링보이스') : null);
       if (!v.bc) { if (d && d[1] === '웹 콘텐츠') get(d[0], d[1]).videos.push(v); return; }
       if (d && d[1] !== '웹 콘텐츠') get(d[0], d[1]).videos.push(v);
       else if (v.event && map.has(OTHER_PROG) && map.get(OTHER_PROG).events.includes(v.event)) map.get(OTHER_PROG).videos.push(v);
