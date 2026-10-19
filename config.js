@@ -11,15 +11,11 @@ window.CONFIG = {
   form: {
     url: 'https://docs.google.com/forms/d/e/1FAIpQLSdyRlcj5T7KazqvC4mT6KPIM-c13neDsXk0dxXL74yjXK-IKw/viewform',
     fields: {
-      type: 'entry.927044690',   // 새 기록 / 빠진 곡 / 틀린 정보
-      date: 'entry.1872629826',  // YYYY-MM-DD
-      title: 'entry.60191373',
-      song: 'entry.1950973052',
-      content: 'entry.1225620977',  // 통합형 "제보 내용" 칸 번호 (새 폼 받으면 채우기)
+      content: 'entry.1225620977',  // 통합형 질문 "제보 내용" (종류·날짜·일정·곡·링크·내용을 줄로 넣어요)
     },
   },
   // 저장해 둔 데이터를 이 시간(분)이 지나면 새로 받아요.
   cacheMinutes: 30,
   // 시트를 크게 고쳤을 때 이 숫자를 올리면 모든 폰이 저장본을 버리고 바로 새로 받아요.
-  dataVer: 47,
+  dataVer: 48,
 };

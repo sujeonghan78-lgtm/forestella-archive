@@ -135,7 +135,7 @@
       return k ? r[k] : '';
     };
     // 통합형 폼: "제보 내용" 한 칸에 "종류: … / 날짜: … / 일정: … / 곡: … / 링크: … / 내용: …" 줄로 들어와요 (예전 칸 나뉜 응답도 읽어요)
-    const line = (txt, key) => ((txt || '').match(new RegExp('^\\s*' + key + '\\s*[:：]\\s*(.*)$', 'm')) || [])[1] || '';
+    const line = (txt, key) => { const v = (((txt || '').match(new RegExp('^[ \\t]*' + key + '[ \\t]*[:：][ \\t]*(.*)$', 'm')) || [])[1] || '').trim(); return /중 하나$/.test(v) ? '' : v; };
     return rows.map(r => {
       const c = pick(r, '내용');
       const free = c && !/^\s*(종류|날짜|일정|곡|링크|내용)\s*[:：]/m.test(c) ? c.trim() : '';

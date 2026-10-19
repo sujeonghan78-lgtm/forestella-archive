@@ -686,12 +686,13 @@
   }
 
   // 구글 폼 미리 채우기 주소 (통합형: "제보 내용" 한 칸에 줄로 채워요)
+  // 칸 이름을 다 보여줘서 빈 줄만 채우면 되게 해요
   const reportText = ({ type, date, title, song, link, msg } = {}) =>
-    [['종류', type], ['날짜', date], ['일정', title], ['곡', song], ['링크', link], ['내용', msg]].filter(([k, v]) => v || k === '내용').map(([k, v]) => `${k}: ${v || ''}`).join('\n');
+    [['종류', type || '새 기록 / 빠진 곡 / 틀린 정보 중 하나'], ['날짜', date], ['일정', title], ['곡', song], ['링크', link], ['내용', msg]].map(([k, v]) => `${k}: ${v || ''}`).join('\n');
   function formUrl(o = {}) {
     const f = window.CONFIG.form;
     const qs = new URLSearchParams({ usp: 'pp_url' });
-    if (f.fields.content && Object.keys(o).length) qs.set(f.fields.content, reportText(o));
+    if (f.fields.content) qs.set(f.fields.content, reportText(o));
     return `${f.url}?${qs}`;
   }
 
@@ -852,7 +853,7 @@
       </section>
       <div class="view-row">${albumBtn()}</div>
       ${paneTabs([
-        { label: '무대', n: stages.length, html: stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', title: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>` },
+        { label: '무대', n: stages.length, html: stages.length ? yearBlocks : `<p class="empty">아직 영상으로 확인된 무대가 없어요. <a href="${formUrl({ type: '새 기록', song: so.name })}" target="_blank" rel="noopener">무대 알려주기 ›</a></p>` },
         { label: '유튜브', n: so.official.length, html: ytList(so.official) },
         { label: '음원', n: so.tracks.length, html: so.tracks.length || so.albums.length ? songTracks(so) : '' },
         { label: '콘서트', n: so.tours.length, html: so.tours.length ? `<p class="src-note">콘서트 셋리스트 기준이에요. 무대 목록과 달리 영상으로 확인한 건 아니에요.</p><div class="tour-chips">${so.tours.slice().sort((a, b) => (a.dates[0] < b.dates[0] ? 1 : -1)).map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : '' },
@@ -1624,7 +1625,7 @@
   const X_CATS = ['일정 후기', '일정 현장', '비하인드·직캠', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사', '생일', '투표·이벤트'];
   const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
   let xQuery = '';
-  // 공식 X 새 글 링크 올리기: 제보 폼 응답(일정명 "공식X 링크")으로 보내고, 이 기기엔 바로 보여줘요.
+  // 공식 X 새 글 링크 올리기: 제보 폼에 "종류: 공식X" 줄로 보내고, 이 기기엔 바로 보여줘요.
   // 다른 사람 화면엔 자동 작업(x-sync)이 공식 계정 글인지 확인한 뒤에 떠요.
   const X_ADD = 'sb-x-added';
   const xAdded = () => { try { return JSON.parse(localStorage.getItem(X_ADD) || '[]'); } catch (err) { return []; } };
@@ -1632,7 +1633,7 @@
   const xIdDate = id => { try { return new Date(Number(BigInt(id) >> 22n) + 1288834974657 + 9 * 3600e3).toISOString().slice(0, 10); } catch (e) { return ''; } };
   function sendXLink(id) {
     const f = window.CONFIG.form;
-    const body = new URLSearchParams({ [f.fields.content]: reportText({ type: '공식X', date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), link: 'https://x.com/official_fore/status/' + id }) });
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 공식X\n날짜: ${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)}\n링크: https://x.com/official_fore/status/${id}` });
     return fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body });
   }
   function xfeedView() {
