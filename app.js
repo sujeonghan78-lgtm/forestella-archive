@@ -989,6 +989,14 @@
   // 자료를 더 모은 다음에 보여줄 프로그램 (목록에서 숨겨요)
   const HIDDEN_PROGS = new Set([]);
   const MIX_PROG = '모음 · 미분류 영상';
+  // 프로그램을 못 찾은 방송사 영상은 종류별로 나눠 묶어요
+  const MIX_SPLIT = [
+    ['모음 · 뮤비 · 가사 영상', /\[MV\]|M\/V|뮤직\s?비디오|lyric|리릭/i],
+    ['모음 · 인터뷰', /인터뷰|interview|퇴근길|재미\s?LIVE/i],
+    ['모음 · 예능 클립', /#?shorts|쇼츠|사심픽|십분클립|최고의\s?5분|노래방|쿠키|심리상담|토크|개인기|깻잎|청혼|슈가워치|자료화면|비밀|귀 막아|성사된/i],
+    ['모음 · 연예 뉴스', /연예가|연중\s?(플러스|라이브)|연중플러스/],
+    ['모음 · 무대 모음', /모음|몰아보기|compilation|플레이리스트|유플리|best\s?songs|미리\s?보기|무대|live|\s-\s|–/i],
+  ];
   const REGION_BC = /^(KBS|MBC|TBC|KNN|TJB|JTV|UBC|G1|CJB|JIBS)\s?(전주|대전|부산|대구|광주|창원|춘천|청주|제주|울산|강릉|안동|진주|포항|순천|목포|충주|원주|경남|강원|충북|전북|전남|경북)$/;
   const PROGRAM_TYPES = ['음악 경연', '음악쇼', '음악방송', '연말 · 시상식', '예능', '라디오', '웹 콘텐츠', '지역 방송', '특집 · 행사', '모음'];
   const OTHER_PROG = '특집 · 행사 무대';
@@ -1018,7 +1026,7 @@
       // 지역 방송사(KBS전주·KBS대전 등) 영상은 채널별로 묶어요
       else if (REGION_BC.test(v.bc)) get(v.bc.replace(/^KBS\s?/, 'KBS ').replace(/^(KBS 대전)$/, '$1 · 대케가수'), '지역 방송').videos.push(v);
       else if (v.event && map.has(OTHER_PROG) && map.get(OTHER_PROG).events.includes(v.event)) map.get(OTHER_PROG).videos.push(v);
-      else if (!v.event) get(MIX_PROG, '모음').videos.push(v);
+      else if (!v.event) { const m = MIX_SPLIT.find(x => x[1].test(v.title)); get(m ? m[0] : MIX_PROG, '모음').videos.push(v); }
     });
     map.forEach(p => {
       p.events.sort((a, b) => b.date.localeCompare(a.date));
