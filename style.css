@@ -11,7 +11,7 @@
   --grad: linear-gradient(90deg, #C6EC6B, #62D3A1, #72BCF3);
   --grad-soft: linear-gradient(135deg, #EEFAD6 0%, #DDF5EA 50%, #DDEEFC 100%);
   --serif: 'Gowun Batang', serif;
-  --sans: 'Noto Sans KR', system-ui, sans-serif;
+  --sans: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
   --tabs-h: 64px;
   --max-w: 560px;
 }
