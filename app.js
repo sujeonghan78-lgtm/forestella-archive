@@ -989,7 +989,8 @@
   // 자료를 더 모은 다음에 보여줄 프로그램 (목록에서 숨겨요)
   const HIDDEN_PROGS = new Set([]);
   const MIX_PROG = '모음 · 미분류 영상';
-  const PROGRAM_TYPES = ['음악 경연', '음악쇼', '음악방송', '연말 · 시상식', '예능', '라디오', '웹 콘텐츠', '특집 · 행사', '모음'];
+  const REGION_BC = /^(KBS|MBC|TBC|KNN|TJB|JTV|UBC|G1|CJB|JIBS)\s?(전주|대전|부산|대구|광주|창원|춘천|청주|제주|울산|강릉|안동|진주|포항|순천|목포|충주|원주|경남|강원|충북|전북|전남|경북)$/;
+  const PROGRAM_TYPES = ['음악 경연', '음악쇼', '음악방송', '연말 · 시상식', '예능', '라디오', '웹 콘텐츠', '지역 방송', '특집 · 행사', '모음'];
   const OTHER_PROG = '특집 · 행사 무대';
   // 예전 주소(#/program/불후의 명곡 등)는 그대로 열려요
   let progCache = null;
@@ -1014,6 +1015,8 @@
       const d = defOfVideo(v.title) || (/딩고/.test(v.bc || '') ? PROGRAM_DEFS.find(x => x[0] === '딩고 · 킬링보이스') : null);
       if (!v.bc) { if (d && d[1] === '웹 콘텐츠') get(d[0], d[1]).videos.push(v); return; }
       if (d && d[1] !== '웹 콘텐츠') get(d[0], d[1]).videos.push(v);
+      // 지역 방송사(KBS전주·KBS대전 등) 영상은 채널별로 묶어요
+      else if (REGION_BC.test(v.bc)) get(v.bc.replace(/^KBS\s?/, 'KBS ').replace(/^(KBS 대전)$/, '$1 · 대케가수'), '지역 방송').videos.push(v);
       else if (v.event && map.has(OTHER_PROG) && map.get(OTHER_PROG).events.includes(v.event)) map.get(OTHER_PROG).videos.push(v);
       else if (!v.event) get(MIX_PROG, '모음').videos.push(v);
     });
