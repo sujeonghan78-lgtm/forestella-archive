@@ -7,13 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
-          curl -sL -A "$UA" -e "https://www.melon.com/artist/album.htm?artistId=2111354" "https://www.melon.com/artist/albumPaging.htm?startIndex=1&pageSize=500&listType=0&orderBy=ISSUE_DATE&artistId=2111354" -o a.html
-          echo "::notice::paging bytes $(wc -c < a.html) ids $(grep -oE 'goAlbumDetail\(.{0,14}' a.html | head -3 | tr '\n' ' ')"
-          grep -oE '.{60}[0-9]{8}.{40}' a.html | head -4 | while read l; do echo "::notice::P $(echo "$l" | tr -d '\r' | cut -c1-200)"; done
-          curl -sL -A "$UA" "https://www.melon.com/artist/album.htm?artistId=2111354" -o b.html
-          echo "::notice::page bytes $(wc -c < b.html)"
-          grep -oE '.{50}[Aa]lbum.{0,10}[0-9]{8}.{30}' b.html | head -4 | while read l; do echo "::notice::B $(echo "$l" | cut -c1-200)"; done
-          curl -sL -A "$UA" "https://www.melon.com/album/detail.htm?albumId=10572098" -o c.html
-          echo "::notice::detail bytes $(wc -c < c.html)"
-          for k in song_name 'dl class="list"' rank01 rank02 gubun 'class="artist'; do echo "::notice::C $k: $(grep -m1 -A2 "$k" c.html | tr -d '\t\r\n' | sed 's/  */ /g' | cut -c1-220)"; done
+          UA="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1"
+          curl -sL -A "$UA" -w '%{url_effective}\n' "https://www.melon.com/artist/album.htm?artistId=2111354" -o a.html | while read u; do echo "::notice::redirect $u"; done
+          echo "::notice::a bytes $(wc -c < a.html)"
+          grep -oE '.{70}(albumId|AlbumDetail|album_no|albumNo)[^0-9]{0,8}[0-9]{8}.{30}' a.html | head -5 | while read l; do echo "::notice::A $(echo "$l" | cut -c1-220)"; done
+          grep -oE '"/[a-z/]*album[A-Za-z/]*\.(htm|json)[^"]*' a.html | sort -u | head -8 | while read l; do echo "::notice::U $l"; done
+          curl -sL -A "$UA" -w '%{url_effective}\n' "https://m.melon.com/album/music.htm?albumId=14447806" -o c.html | while read u; do echo "::notice::det $u"; done
+          echo "::notice::c bytes $(wc -c < c.html)"
+          grep -oE '.{0,60}(title|tit|song)[^>]{0,40}>[^<]{2,40}<' c.html | head -8 | while read l; do echo "::notice::C $(echo "$l" | tr -d '\t\r' | cut -c1-200)"; done
