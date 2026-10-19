@@ -1,0 +1,28 @@
+# 영상 없는 일정 유튜브 후보 찾기 (입력 파일을 올리면 실행)
+name: yt-event-find
+on:
+  workflow_dispatch:
+  push:
+    paths: ['tools/yt_event_in.json']
+permissions:
+  contents: write
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/yt_event_find.mjs
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      - run: |
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/yt_event_out.json
+          git diff --cached --quiet && exit 0
+          git commit -m "일정 영상 후보 검색 결과"
+          git pull --rebase -q origin main
+          git push
