@@ -489,7 +489,7 @@
     [...data.songs.values()].filter(so => hit(songText(so))).sort((a, b) => playCount(b) - playCount(a)).slice(0, 4)
       .forEach(so => out.push({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', name: so.name, img: songPic(so) }));
     (data.albums || []).filter(a => hit(a.name)).slice(0, 3)
-      .forEach(a => out.push({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, img: a.img && imgSize(a.img, 'thumb') }));
+      .forEach(a => out.push({ href: albHref(a), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, img: a.img && imgSize(a.img, 'thumb') }));
     (data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).slice(0, 3)
       .forEach(c => out.push({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, img: c.img ? imgSize(c.img, 'thumb') : (c.tour ? tourPic(c.tour) : c.events ? tourPic(c) : '') }));
     if (!out.length) return '';
@@ -510,7 +510,7 @@
     const songs = [...data.songs.values()].filter(so => hit(songText(so))).sort((a, b) => playCount(b) - playCount(a));
     const vids = (data.official || []).filter(v => hit(vidText(v)) && (!p.member || v.members.includes(p.member)) && (!p.year || v.date.startsWith(p.year)));
     const rels = [
-      ...(data.albums || []).filter(a => hit(a.name) && (!p.member || a.member === p.member)).map(a => ({ href: '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, sub: a.date.replace(/-/g, '.'), img: a.img && imgSize(a.img, 'thumb') })),
+      ...(data.albums || []).filter(a => hit(a.name) && (!p.member || a.member === p.member)).map(a => ({ href: albHref(a), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, sub: a.date.replace(/-/g, '.'), img: a.img && imgSize(a.img, 'thumb') })),
       ...(data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).map(c => ({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, sub: c.from ? c.from.replace(/-/g, '.') : '', img: c.img ? imgSize(c.img, 'thumb') : c.tour ? tourPic(c.tour) : c.events ? tourPic(c) : '' })),
       ...programList().map(p => p.name).filter(hit).map(pg => ({ href: progHref(pg), kind: '프로그램', name: pg + ' 모아보기', sub: '' })),
     ];
@@ -825,7 +825,7 @@
     const xs = songX(so);
     // 수록 음반 (표지 + 음반 이야기 링크)
     const albumRow = so.albums.length ? `<div class="song-albums">${so.albums.map(a => `
-      <a class="song-album" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
+      <a class="song-album" href="${albHref(a)}">
         ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createElement('span'))">` : '<span></span>'}
         <span><b>${esc(a.name)}${unsure(a.unsure)}</b><small>${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.slice(0, 4))} · ${esc(a.kind || '')}${so.titleOf.includes(a) ? ' · 타이틀곡' : ''}</small></span>
       </a>`).join('')}</div>` : '';
@@ -1344,7 +1344,7 @@
         { label: '활동 이력', n: carShow.length, html: careerHtml },
         { label: '일정', n: evs.length, html: evs.length ? `${moreList(evs.map(resultCard), 10)}<a class="more mem-all" href="#/search?member=${q}">검색에서 걸러 보기 ›</a>` : '' },
         { label: '음반', n: als.length + carDisc.length, html: als.length + carDisc.length ? `<div class="stack x-list">${als.map(a => `
-          <a class="x-card${a.img ? '' : ' no-img'}" href="#/xfeed?rel=${encodeURIComponent(a.rel || a.name)}">
+          <a class="x-card${a.img ? '' : ' no-img'}" href="${albHref(a)}">
             ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${nw(`${a.date.replace(/-/g, '.')} · ${a.kind}`)}</span><b>${esc(a.name)}${unsure(a.unsure)}</b>${albSongs.has(a) ? `<span class="x-date">${esc(m)} 노래 · ${esc(albSongs.get(a).join(', '))}</span>` : ''}</span>
           </a>`).join('')}</div>${carDisc.length ? `<h3 class="car-h">그 밖의 참여곡 · OST <b>${carDisc.length}</b></h3><div class="car-list">${carDisc.map(carRow).join('')}</div>` : ''}` : '' },
@@ -1659,8 +1659,8 @@
       };
     });
     return `
-      ${rel ? albumHead(rel) + '<hr class="divider"><div class="view-row">' + albumBtn() + '</div>' + paneTabs([
-        { label: '수록곡', html: albumTracks(rel) },
+      ${rel ? albumHead(rel, qs.get('am')) + '<hr class="divider"><div class="view-row">' + albumBtn() + '</div>' + paneTabs([
+        { label: '수록곡', html: albumTracks(rel, qs.get('am')) },
         { label: '유튜브', n: (data.official || []).filter(v => v.rel === rel).length, html: ytList((data.official || []).filter(v => v.rel === rel)) },
         { label: '공식 X', n: (data.xFeed || []).filter(p => p.rel === rel).length, html: '<div id="xfeed"><p class="empty">불러오는 중…</p></div>' },
       ]) : ''}
@@ -1682,13 +1682,16 @@
       <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
   }
 
-  function albumHead(rel) {
-    const a = (data.albums || []).find(x => (x.rel || x.name) === rel);
+  // 같은 이름 음반이 멤버마다 있을 수 있어서(팬텀싱어 올스타전 등) 멤버도 주소에 넣어요
+  const albHref = a => '#/xfeed?rel=' + encodeURIComponent(a.rel || a.name) + (a.member ? '&am=' + encodeURIComponent(a.member) : '');
+  const albumOf = (rel, am) => { const all = (data.albums || []).filter(x => (x.rel || x.name) === rel); return all.find(x => (x.member || '') === (am || '')) || all[0]; };
+  function albumHead(rel, am) {
+    const a = albumOf(rel, am);
     if (!a) return `<a class="back" href="#/releases">‹ 음반 이야기</a><h1 class="h1 page-title">${esc(rel)}</h1><p class="sub">티저부터 발매·이벤트까지 공식 X 글을 순서대로 모았어요.</p>`;
     // 같은 가수(그룹/멤버) 음반 안에서 이전·다음
     const same = data.albums.filter(x => (x.member || '') === (a.member || '')).sort((x, y) => (x.date < y.date ? -1 : 1));
     const k = same.indexOf(a), prev = same[k - 1], next = same[k + 1];
-    const go = (x, label) => x ? `<a href="#/xfeed?rel=${encodeURIComponent(x.rel || x.name)}"><span>${label}</span><b>${esc(x.name)}</b></a>` : '<span></span>';
+    const go = (x, label) => x ? `<a href="${albHref(x)}"><span>${label}</span><b>${esc(x.name)}</b></a>` : '<span></span>';
     const SRC = [[/namu/, '나무위키'], [/wikipedia/, '위키백과'], [/melon/, '멜론'], [/genie/, '지니'], [/bugs/, '벅스'], [/apple/, '애플뮤직'], [/spotify/, '스포티파이'], [/vibe|naver/, '네이버'], [/youtu/, '유튜브'], [/x\.com|twitter/, '공식 X'], [/daum/, '다음']];
     const host = u => { let h = ''; try { h = new URL(u).hostname; } catch (e) { /* 넘어가요 */ } return (SRC.find(([rx]) => rx.test(h)) || [])[1] || '기사'; };
     return `<a class="back" href="#/releases${a.member ? '?m=' + encodeURIComponent(a.member) : ''}">‹ 음반 이야기</a>
@@ -1711,8 +1714,8 @@
       </section>`;
   }
 
-  function albumTracks(rel) {
-    const a = (data.albums || []).find(x => (x.rel || x.name) === rel);
+  function albumTracks(rel, am) {
+    const a = albumOf(rel, am);
     if (!a || !a.tracks.length) return '';
     return `<ol class="setlist-list">${a.tracks.map(t => {
           const so = data.songs.get(window.DATA.songKey(t));
@@ -1727,7 +1730,7 @@
     (data.xFeed || []).forEach(p => { if (p.rel) { if (!map.has(p.rel)) map.set(p.rel, []); map.get(p.rel).push(p); } });
     // 시트 "음반 정보"가 있으면 그 순서대로, 없으면 공식 X 글로 묶은 것만
     const items = data.albums && data.albums.length
-      ? data.albums.filter(a => (a.member || '') === who).map(a => { const ps = map.get(a.rel) || []; return { key: a.rel || a.name, name: a.name, sub: `${a.date.replace(/-/g, '.')} · ${a.kind}`, date: a.date, tn: (a.tracks || []).length, img: a.img || (ps.find(p => p.img) || {}).img, n: ps.length }; })
+      ? data.albums.filter(a => (a.member || '') === who).map(a => { const ps = map.get(a.rel) || []; return { key: a.rel || a.name, href: albHref(a), name: a.name, sub: `${a.date.replace(/-/g, '.')} · ${a.kind}`, date: a.date, tn: (a.tracks || []).length, img: a.img || (ps.find(p => p.img) || {}).img, n: ps.length }; })
       : [...map.entries()].map(([name, ps]) => ({ key: name, name, sub: `${ps[ps.length - 1].date.replace(/-/g, '.')}부터`, img: (ps.find(p => p.img) || {}).img, n: ps.length, d: ps[ps.length - 1].date }))
         .sort((a, b) => (a.d < b.d ? 1 : -1));
     // 연도별로 묶어 표지 2칸 바둑판
@@ -1741,7 +1744,7 @@
       ${[...byYear.entries()].map(([y, rs]) => `
         <h2 class="rel-year">${y}</h2>
         <div class="rel-grid">${rs.map(r => `
-          <a class="rel-tile" href="#/xfeed?rel=${encodeURIComponent(r.key)}">
+          <a class="rel-tile" href="${r.href || '#/xfeed?rel=' + encodeURIComponent(r.key)}">
             <span class="rel-cover">${r.img ? `<img src="${esc(imgSize(r.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>
             <b>${esc(r.name)}</b>
             <span class="rel-sub">${r.date ? esc([kindOf(r), r.tn && r.tn + '곡'].filter(Boolean).join(' · ')) : esc(r.sub) + (r.n ? ` · X ${r.n}` : '')}</span>
