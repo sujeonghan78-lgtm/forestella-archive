@@ -1099,6 +1099,15 @@
     return a === b ? a : `${a}~${b}`;
   }
 
+  // 회차 제목이 프로그램 이름이나 "방송"뿐이면 누가 나왔는지로 보여줘요
+  const MEM_ORDER = ['배두훈', '강형호', '조민규', '고우림'];
+  function epTitle(e, prog) {
+    const t = programTitle(e.title, prog).replace(/\s*\((두훈|형호|민규|우림)([,\/·\s]+(두훈|형호|민규|우림))*\)\s*$/, '').trim();
+    const generic = !t || t === prog || /^(MBC|KBS|SBS|JTBC|Mnet|tvN|MBN)?\s*방송$/.test(t) || PROGRAM_DEFS.some(d => d[0] === prog && d[2].test(t) && t.replace(d[2], '').trim() === '');
+    if (!generic) return t;
+    const ms = MEM_ORDER.filter(m => (e.members || []).includes(m));
+    return ms.length && ms.length < 4 ? `${ms.map(m => m.slice(1)).join(' · ')} 출연` : '포레스텔라 출연';
+  }
   function programDetail(p) {
     const play = playAllUrl(p.events);
     const ep = e => {
@@ -1108,7 +1117,7 @@
         <a class="ep" href="#/e/${encodeURIComponent(e.id)}">
           <span class="ep-body">
             <span class="ep-date">${fmtDate(e.date)}</span>
-            <span class="ep-title">${esc(programTitle(e.title, p.name))}</span>
+            <span class="ep-title">${esc(epTitle(e, p.name))}</span>
             ${ref ? `<span class="ep-ref">참고${e.videoMemo ? ' · ' + esc(e.videoMemo.replace(/^참고:\s*/, '')) : ''}</span>` :
               e.songs.length ? `<span class="ep-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
           </span>
