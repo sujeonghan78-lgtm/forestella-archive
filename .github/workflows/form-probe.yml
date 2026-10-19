@@ -11,4 +11,5 @@ jobs:
           echo "::notice::rows $(wc -l < r.csv) $(tail -3 r.csv | cut -c1-120 | tr '\n' '|')"
           curl -sL "https://docs.google.com/forms/d/e/1FAIpQLSdyRlcj5T7KazqvC4mT6KPIM-c13neDsXk0dxXL74yjXK-IKw/viewform" -o f.html
           echo "::notice::form $(wc -c < f.html) $(grep -oE 'entry\.[0-9]+' f.html | sort -u | tr '\n' ' ') $(grep -oE '\[[0-9]+,\"[^\"]{1,20}\",null,[0-9]' f.html | head -8 | tr '\n' ' ')"
-          echo "::notice::options $(grep -oE '\[\"(새 기록|빠진 곡|틀린 정보)[^]]{0,5}' f.html | tr '\n' ' ')"
+          echo "::notice::title $(grep -oE "<title>[^<]*" f.html) $(sed "s/<[^>]*>/ /g" f.html | tr -s " \n" " " | cut -c1-400)"
+          curl -sIL "https://docs.google.com/forms/d/e/1FAIpQLSdyRlcj5T7KazqvC4mT6KPIM-c13neDsXk0dxXL74yjXK-IKw/viewform" | grep -iE "^(HTTP|location)" | tr "\n" " " | sed "s/^/::notice::hdr /"; echo
