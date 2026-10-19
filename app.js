@@ -1274,7 +1274,7 @@
     // 활동 이력: 시트 음반 정보에 이미 있는 음반은 음반 탭에서 보여서 빼요
     const alNames = new Set(als.map(a => a.name.toLowerCase().replace(/\s+/g, '')));
     const car = (data.career || []).filter(c => c.member === m && !(c.type === '음반' && alNames.has(c.title.toLowerCase().replace(/\s+/g, ''))));
-    const carRow = c => `<div class="car-row"><span class="car-date">${esc(careerDate(c.date))}</span><span class="car-body"><b>${esc(c.title)}${unsure(c.unsure)}</b>${[c.note, c.where].filter(Boolean).length ? `<span>${esc([c.note, c.where].filter(Boolean).join(' · '))}</span>` : ''}</span></div>`;
+    const carRow = c => `<div class="car-row"><span class="car-date">${esc(careerDate(c.date)).replace('~', '~<br>')}</span><span class="car-body"><b>${esc(c.title)}${unsure(c.unsure)}</b>${[c.note, c.where].filter(Boolean).length ? `<span>${esc([c.note, c.where].filter(Boolean).join(' · '))}</span>` : ''}</span></div>`;
     // 음반 탭에도 솔로 참여곡·OST를 같이 (시트 음반 아래)
     // 발매일이 같은(±1일) 시트 음반이 있으면 그 음반 카드에 곡 이름만 붙이고, 없으면 따로 목록으로
     const dayN = d => Date.parse(d.slice(0, 10)) / 864e5;
