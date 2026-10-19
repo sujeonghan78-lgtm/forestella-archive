@@ -2,29 +2,19 @@ name: melon-probe
 on:
   push:
     paths: ['.github/workflows/melon-probe.yml']
+permissions:
+  contents: write
 jobs:
   p:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
-          cat > m.py <<'P'
-          import urllib.request,re,html
-          ids='13983568 12938230 11427272 11348862 10900320 10765361 10592215 10581472 10561993 10557971 10510230 10444175 10425213 10402991 10306641 10286739 10166204 10539211 10455427 10326788 10251953 10221039 10211847 10195348 10894234 10890034'.split()
-          out=[]
-          for i in ids:
-            h=urllib.request.urlopen(urllib.request.Request('https://www.melon.com/album/detail.htm?albumId='+i,headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36'})).read().decode('utf8','ignore')
-            rows=re.findall(r'<tr[^>]*>(.*?)</tr>',h,re.S)
-            t=[]
-            for r in rows:
-              m=re.search(r'title="([^"]*?) 좋아요" data-song-no',r)
-              if not m: continue
-              ars=[]
-              for x in re.findall(r'goArtistDetail\(\'\d+\'\);" title="([^"]*?) - 페이지 이동"',r):
-                x=html.unescape(x)
-                if x not in ars: ars.append(x)
-              t.append(html.unescape(m.group(1))+' ('+', '.join(ars)+')')
-            f=[x for x in t if ('포레스텔라' in x or 'Forestella' in x) or '배두훈' in x or '강형호' in x or '조민규' in x or '고우림' in x]
-            out.append(i+': '+str(len(t))+' / '+' / '.join(f))
-          print('::notice::'+' ;; '.join(out))
-          P
-          python3 m.py
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36"
+          for i in 13983568 12938230 11427272 11348862 10900320 10765361 10592215 10581472 10561993 10557971 10510230 10444175 10425213 10402991 10306641 10286739 10166204 10539211 10455427 10326788 10251953 10221039 10211847 10195348; do
+            u=$(curl -sL -A "$UA" "https://www.melon.com/album/detail.htm?albumId=$i" | grep -oE 'og:image" content="[^"]+' | head -1 | sed 's/.*content="//; s/?.*//')
+            curl -sL -A "$UA" "$u?type=w400" -o covers/melon-$i.jpg || true
+            echo "$i $(wc -c < covers/melon-$i.jpg)"
+          done
+          git config user.name github-actions; git config user.email github-actions@users.noreply.github.com
+          git add covers; git commit -m "Add Melon omnibus covers" && git push
