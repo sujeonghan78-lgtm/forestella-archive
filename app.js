@@ -685,14 +685,13 @@
     if (!readParams().q && !readParams().cat) input.focus({ preventScroll: true });
   }
 
-  // 구글 폼 미리 채우기 주소
-  function formUrl({ type, date, title, song } = {}) {
+  // 구글 폼 미리 채우기 주소 (통합형: "제보 내용" 한 칸에 줄로 채워요)
+  const reportText = ({ type, date, title, song, link, msg } = {}) =>
+    [['종류', type], ['날짜', date], ['일정', title], ['곡', song], ['링크', link], ['내용', msg]].filter(([k, v]) => v || k === '내용').map(([k, v]) => `${k}: ${v || ''}`).join('\n');
+  function formUrl(o = {}) {
     const f = window.CONFIG.form;
     const qs = new URLSearchParams({ usp: 'pp_url' });
-    if (type) qs.set(f.fields.type, type);
-    if (date) qs.set(f.fields.date, date);
-    if (title) qs.set(f.fields.title, title);
-    if (song) qs.set(f.fields.song, song);
+    if (f.fields.content && Object.keys(o).length) qs.set(f.fields.content, reportText(o));
     return `${f.url}?${qs}`;
   }
 
@@ -1633,7 +1632,7 @@
   const xIdDate = id => { try { return new Date(Number(BigInt(id) >> 22n) + 1288834974657 + 9 * 3600e3).toISOString().slice(0, 10); } catch (e) { return ''; } };
   function sendXLink(id) {
     const f = window.CONFIG.form;
-    const body = new URLSearchParams({ [f.fields.type]: '새 기록', [f.fields.date]: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), [f.fields.title]: '공식X https://x.com/official_fore/status/' + id, [f.fields.song]: '공식X' });
+    const body = new URLSearchParams({ [f.fields.content]: reportText({ type: '공식X', date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), link: 'https://x.com/official_fore/status/' + id }) });
     return fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body });
   }
   function xfeedView() {

@@ -15,6 +15,7 @@ window.CONFIG = {
       date: 'entry.1872629826',  // YYYY-MM-DD
       title: 'entry.60191373',
       song: 'entry.1950973052',
+      content: '',  // 통합형 "제보 내용" 칸 번호 (새 폼 받으면 채우기)
     },
   },
   // 저장해 둔 데이터를 이 시간(분)이 지나면 새로 받아요.

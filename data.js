@@ -134,16 +134,22 @@
       const k = Object.keys(r).find(k => k.includes(word));
       return k ? r[k] : '';
     };
-    // 공식 X 링크 올리기로 들어온 줄(일정명 "공식X …")은 제보가 아니라서 빼요
-    return rows.filter(r => !/^공식X\s/.test(pick(r, '일정'))).map(r => ({
-      time: pick(r, '타임스탬프'),
-      type: pick(r, '종류'),
-      date: normDate(pick(r, '날짜')),
-      title: pick(r, '일정'),
-      song: pick(r, '곡'),
-      link: pick(r, '링크'),
-      message: pick(r, '말'),
-    })).filter(r => r.title || r.song || r.date);
+    // 통합형 폼: "제보 내용" 한 칸에 "종류: … / 날짜: … / 일정: … / 곡: … / 링크: … / 내용: …" 줄로 들어와요 (예전 칸 나뉜 응답도 읽어요)
+    const line = (txt, key) => ((txt || '').match(new RegExp('^\\s*' + key + '\\s*[:：]\\s*(.*)$', 'm')) || [])[1] || '';
+    return rows.map(r => {
+      const c = pick(r, '내용');
+      const free = c && !/^\s*(종류|날짜|일정|곡|링크|내용)\s*[:：]/m.test(c) ? c.trim() : '';
+      return {
+        time: pick(r, '타임스탬프'),
+        type: line(c, '종류') || pick(r, '종류'),
+        date: normDate(line(c, '날짜') || pick(r, '날짜')),
+        title: line(c, '일정') || pick(r, '일정'),
+        song: line(c, '곡') || pick(r, '곡'),
+        link: line(c, '링크') || pick(r, '링크'),
+        message: line(c, '내용') || free || pick(r, '말'),
+      };
+    // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
+    }).filter(r => r.type !== '공식X' && !/^공식X\s/.test(r.title)).filter(r => r.title || r.song || r.date || r.message);
   }
 
   async function fetchText(url) {
