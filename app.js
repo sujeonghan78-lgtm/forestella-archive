@@ -298,10 +298,11 @@
       </section>`;
   }
   function homePrograms() {
+    const top = programList().filter(p => p.name !== OTHER_PROG && p.name !== MIX_PROG).slice(0, 8);
     return `
       <section class="block prog-mini">
-        <h2 class="h3">프로그램별 모아보기</h2>
-        <div class="chips">${PROGRAMS_TOP().map(p => `<a class="chip" href="${progHref(p)}">${esc(p)} ›</a>`).join('')}<a class="chip" href="#/program">전체 ›</a></div>
+        <div class="sec-head"><h2 class="h3">프로그램별 모아보기</h2><a class="more-link" href="#/program">전체 ›</a></div>
+        <div class="prog-scroll">${top.map(p => `<a class="prog-card" href="${progHref(p.name)}"><span class="prog-thumb">${progThumb(p)}</span><b>${esc(p.name)}</b><span class="prog-meta">${p.events.length ? `출연 ${p.events.length}` : `영상 ${p.videos.length}`}</span>${progLast(p) ? `<span class="prog-meta">최근 ${progLast(p)}</span>` : ''}</a>`).join('')}</div>
       </section>`;
   }
 
@@ -1067,22 +1068,55 @@
     return p ? programDetail(p) : programIndex();
   }
 
+  let progType = '', progSort = 'many';
   function programIndex() {
-    const list = programList();
-    const byType = PROGRAM_TYPES.map(t => [t, list.filter(p => p.type === t)]).filter(x => x[1].length);
+    const all = programList();
+    const types = PROGRAM_TYPES.filter(t => all.some(p => p.type === t));
+    let list = progType ? all.filter(p => p.type === progType) : all;
+    if (progSort === 'recent') list = list.slice().sort((a, b) => (progLastDate(b) > progLastDate(a) ? 1 : -1));
     const counts = p => [p.events.length && `출연 ${p.events.length}`, p.videos.length && `영상 ${p.videos.length}`, p.songs.length && `곡 ${p.songs.length}`].filter(Boolean).join(' · ');
-    const thumb = p => { const v = progCover(p); return v ? `<img src="${ytThumbUrl(v)}" alt="" loading="lazy" onerror="this.remove()">` : ''; };
-    // 많이 나온 프로그램은 큰 썸네일 카드, 나머지는 종류별 한 줄 목록
-    const top = list.filter(p => p.name !== OTHER_PROG && p.name !== MIX_PROG && progCover(p)).slice(0, 4);
+    const row = p => `<a class="prog-row" href="${progHref(p.name)}" data-n="${esc(norm(p.name))}" data-c="${esc(chosung(p.name))}"><span class="prog-rthumb">${progThumb(p)}</span><span class="prog-rbody"><b>${esc(p.name)}</b><span>${counts(p)}</span>${progLast(p) ? `<span>최근 ${progLast(p)}${progSpan(p).includes('~') ? ` · ${progSpan(p).slice(0, 4)}년부터` : ''}</span>` : ''}</span><span class="prog-chev" aria-hidden="true">›</span></a>`;
+    // 전체 · 많이 나온 순일 때만 큰 카드 + 종류별 묶음, 나머지는 한 줄 목록
+    const grouped = !progType && progSort === 'many';
+    const top = grouped ? list.filter(p => p.name !== OTHER_PROG && p.name !== MIX_PROG && progCover(p)).slice(0, 4) : [];
     const topSet = new Set(top);
-    const card = p => `<a class="prog-card" href="${progHref(p.name)}"><span class="prog-thumb">${thumb(p)}</span><b>${esc(p.name)}</b><span class="prog-meta">${counts(p)}</span>${progSpan(p) ? `<span class="prog-meta">${progSpan(p)}</span>` : ''}</a>`;
-    const row = p => `<a class="prog-row" href="${progHref(p.name)}"><span class="prog-rthumb">${thumb(p)}</span><span class="prog-rbody"><b>${esc(p.name)}</b><span>${counts(p)}${progSpan(p) ? ` · ${progSpan(p)}` : ''}</span></span><span class="prog-chev" aria-hidden="true">›</span></a>`;
+    const card = p => `<a class="prog-card" href="${progHref(p.name)}" data-n="${esc(norm(p.name))}" data-c="${esc(chosung(p.name))}"><span class="prog-thumb">${progThumb(p)}</span><b>${esc(p.name)}</b><span class="prog-meta">${counts(p)}</span>${progLast(p) ? `<span class="prog-meta">최근 ${progLast(p)}</span>` : ''}</a>`;
+    const chip = (attr, val, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}</button>`;
+    const body = grouped
+      ? `${top.length ? `<section class="prog-sec"><h2 class="h3 list-title">많이 나온 프로그램</h2><div class="prog-grid">${top.map(card).join('')}</div></section>` : ''}
+        ${types.map(t => [t, list.filter(p => p.type === t && !topSet.has(p))]).filter(x => x[1].length).map(([t, ps]) => `<section class="prog-sec"><h2 class="h3 list-title">${esc(t)}</h2><div class="prog-rows">${ps.map(row).join('')}</div></section>`).join('')}`
+      : `<section class="prog-sec"><div class="prog-rows">${list.map(row).join('')}</div></section>`;
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">프로그램별 모아보기${help('일정에 등록된 출연과 방송사 공식 유튜브 영상을 프로그램별로 묶었어요. 프로그램 이름은 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
-      ${top.length ? `<h2 class="h3 list-title">많이 나온 프로그램</h2><div class="prog-grid">${top.map(card).join('')}</div>` : ''}
-      ${byType.map(([t, ps]) => [t, ps.filter(p => !topSet.has(p))]).filter(x => x[1].length).map(([t, ps]) => `<h2 class="h3 list-title">${esc(t)}</h2><div class="prog-rows">${ps.map(row).join('')}</div>`).join('')}`;
+      <div class="stick">
+      <form class="searchbox song-search" role="search" onsubmit="return false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="prog-q" aria-label="프로그램 찾기" placeholder="프로그램 찾기 · 초성 OK" autocomplete="off">
+      </form>
+      <div class="chips tl-cats" id="prog-type">${chip('t', '', '전체', !progType)}${types.map(t => chip('t', t, t, progType === t)).join('')}</div>
+      <div class="view-row"><p class="sub" id="prog-count">${list.length}개</p><div class="chips" id="prog-sort">${chip('s', 'many', '많이 나온 순', progSort === 'many')}${chip('s', 'recent', '최근 순', progSort === 'recent')}</div></div>
+      </div>
+      ${body}`;
   }
+  function bindPrograms() {
+    document.querySelectorAll('#prog-type .chip').forEach(b => b.onclick = () => { progType = b.dataset.t; renderBase('program'); });
+    document.querySelectorAll('#prog-sort .chip').forEach(b => b.onclick = () => { progSort = b.dataset.s; renderBase('program'); });
+    const on = document.querySelector('#prog-type .chip.on');
+    if (on && on.dataset.t) on.parentNode.scrollLeft = on.offsetLeft - 16;
+    const q = document.getElementById('prog-q');
+    if (!q) return;
+    q.oninput = () => {
+      const v = norm(q.value), c = q.value.replace(/\s/g, '');
+      const items = [...document.querySelectorAll('.prog-row, .prog-grid .prog-card')];
+      items.forEach(a => { a.hidden = !!v && (isChosungOnly(c) ? !a.dataset.c.includes(c) : !a.dataset.n.includes(v)); });
+      document.querySelectorAll('.prog-sec').forEach(sec => { sec.hidden = ![...sec.querySelectorAll('.prog-row, .prog-card')].some(a => !a.hidden); });
+      document.getElementById('prog-count').textContent = items.filter(a => !a.hidden).length + '개';
+    };
+  }
+  const progThumb = p => { const v = progCover(p); return v ? `<img src="${ytThumbUrl(v)}" alt="" loading="lazy" onerror="this.remove()">` : ''; };
+  const progLastDate = p => p.events.map(e => e.date).concat(p.videos.map(v => v.date)).filter(Boolean).sort().pop() || '';
+  const progLast = p => progLastDate(p).slice(0, 7).replace('-', '.');
 
   // 프로그램 대표 썸네일: 가장 최근 무대 영상 → 최근 영상 → 영상 있는 최근 출연
   function progCover(p) {
@@ -2187,6 +2221,7 @@
     if (name === 'search') bindSearch();
     if (name === 'songs') bindSongs();
     if (name === 'releases') bindReleases();
+    if (name === 'program') bindPrograms();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
     if (name === 'install') bindInstall();

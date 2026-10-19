@@ -784,3 +784,14 @@ b > .help-pop[hidden] { display: none; }
 .setlist-list li:has(.sl-find) { padding-right: 76px; }
 .sl-yt.sl-find { width: auto; padding: 0 2px 0 6px; }
 .sl-find .yt-find { margin-left: 0; }
+
+/* 프로그램 모아보기: 홈 가로 카드 · 찾기 */
+.prog-mini .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.prog-mini .sec-head .h3 { margin: 0; }
+.prog-mini .more-link { font-size: 13px; color: var(--green-2); font-weight: 600; }
+.prog-scroll { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 4px; scroll-snap-type: x mandatory; }
+.prog-scroll::-webkit-scrollbar { display: none; }
+.prog-scroll .prog-card { flex: none; width: 42%; scroll-snap-align: start; }
+.prog-scroll .prog-card b { font-size: 13px; }
+.prog-row[hidden], .prog-card[hidden], .prog-sec[hidden] { display: none; }
+#prog-sort .chip { font-size: 12px; padding: 4px 10px; }
