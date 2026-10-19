@@ -1981,7 +1981,7 @@
     } else if (e.songs.length) {
       songs = `
         <div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>
-        ${e.fanSrc ? `<p class="src-note">팬 기록${e.fanSrc.note ? `(${esc(e.fanSrc.note)})` : ''} 기준이라 실제와 다를 수 있어요.</p>` : SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
+        ${e.fanSrc ? `<p class="src-note">${e.fanSrc.note ? `${esc(e.fanSrc.note)} 때 ` : ''}인터넷에 올라온 정보를 모은 거라 실제와 다를 수 있어요.</p>` : SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
     } else {
       songs = `<p class="src-note">아직 확인된 곡이 없어요.</p>`;
     }
@@ -2031,7 +2031,7 @@
         ${related}
         <hr class="divider">
         <section class="d-block">
-          <div class="block-head"><h2 class="h3">이날 부른 곡${e.songSource !== '참고' && e.songs.length ? ` <span class="song-count">${e.songs.length}</span>` : ''}${help('방송·공식 영상이나 팬 기록으로 확인된 곡이에요. 빠진 곡이 있을 수 있어요. ▶를 누르면 그날 영상이 열려요.')}</h2></div>
+          <div class="block-head"><h2 class="h3">이날 부른 곡${e.songSource !== '참고' && e.songs.length ? ` <span class="song-count">${e.songs.length}</span>` : ''}${help('방송·공식 영상이나 인터넷에 올라온 정보로 확인된 곡이에요. 빠진 곡이 있을 수 있어요. ▶를 누르면 그날 영상이 열려요.')}</h2></div>
           ${songs}
           ${e.videoMemo && e.songSource !== '참고' ? `<p class="src-note">${esc(e.videoMemo)}</p>` : ''}
           <div class="report-links">
