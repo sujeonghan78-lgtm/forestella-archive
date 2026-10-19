@@ -1683,10 +1683,10 @@
         const inp = document.getElementById('x-add-url'), msg = document.getElementById('x-add-msg');
         const id = xIdOf(inp.value);
         if (!id) { msg.textContent = '포레스텔라 공식 X(@official_fore) 글 링크를 넣어 주세요.'; return; }
-        if ((data.xFeed || []).some(p => p.id === id) || xAdded().includes(id)) { msg.textContent = '이미 있는 글이에요.'; return; }
+        if ((data.xFeed || []).some(p => p.id === id)) { msg.textContent = '이미 있는 글이에요.'; return; }
         msg.textContent = '올리는 중…';
         sendXLink(id).then(() => {
-          try { localStorage.setItem(X_ADD, JSON.stringify([id, ...xAdded()].slice(0, 50))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
+          try { localStorage.setItem(X_ADD, JSON.stringify([id, ...xAdded().filter(x => x !== id)].slice(0, 50))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
           inp.value = ''; msg.textContent = '올렸어요! 다른 분들 화면에는 잠시 뒤에 보여요.'; n = 0; fill();
         }).catch(() => { msg.textContent = '못 올렸어요. 인터넷 연결을 확인해 주세요.'; });
       };
