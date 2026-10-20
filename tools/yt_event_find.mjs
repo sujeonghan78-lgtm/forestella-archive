@@ -5,7 +5,7 @@ const jobs = JSON.parse(fs.readFileSync('tools/yt_event_in.json', 'utf8'));
 const day = (d, n) => new Date(new Date(d + 'T00:00:00+09:00').getTime() + n * 864e5).toISOString();
 const out = [];
 for (const j of jobs) {
-  const q = { part: 'snippet', type: 'video', q: j.q, maxResults: j.max || 10, regionCode: 'KR', relevanceLanguage: 'ko', publishedAfter: day(j.date, -1), publishedBefore: day(j.date, j.days || 30), key: KEY };
+  const q = { part: 'snippet', type: 'video', q: j.q, maxResults: j.max || 10, regionCode: 'KR', relevanceLanguage: 'ko', publishedAfter: day(j.date, -1), publishedBefore: day(j.date, j.days || 30), key: KEY, ...(j.ch ? { channelId: j.ch } : {}) };
   const r = await fetch('https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams(q));
   const d = await r.json();
   if (!r.ok) { console.log(`::warning::${j.id} ${r.status} ${d.error?.message || ''}`); if (r.status === 403) break; continue; }
