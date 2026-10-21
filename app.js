@@ -1149,7 +1149,7 @@
         <b>다른 폰에서도 이어 쓰기</b>
         <span>이름과 숫자 4자리를 정해 두면, 다른 폰에서 같은 이름·숫자를 넣었을 때 보관함이 그대로 이어져요. 이메일이나 로그인은 필요 없어요.</span>
         <form id="box-form" class="box-form" onsubmit="return false">
-          <input id="box-name" maxlength="20" placeholder="이름 (예: 숲별우림러)" autocomplete="off" aria-label="이름">
+          <input id="box-name" maxlength="20" placeholder="이름 (예: 숲별홍길동)" autocomplete="off" aria-label="이름">
           <input id="box-pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="숫자 4자리" autocomplete="off" aria-label="숫자 4자리">
           <button type="submit" class="chip on" id="box-go">시작하기</button>
         </form>
