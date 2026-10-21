@@ -1139,6 +1139,18 @@
     const first = went[went.length - 1];
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
     const empty = !went.length && !liked.length && !songs.length;
+    const LIMIT = 8;
+    const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
+    const tabs = [
+      ['w', '🎫 직관', went.length, went.map(row).join('')],
+      ['e', '♥ 일정', liked.length, liked.map(row).join('')],
+      ['s', '♥ 곡', songs.length, `<div class="chips box-songs">${songs.map(so => songChip(so)).join('')}</div>`],
+      ['h', '들은 곡', heardList.length, `<div class="chips box-songs">${heardList.map(([so, n]) => songChip(so, n)).join('')}</div>`],
+    ].filter(x => x[2]);
+    let t = decodeURIComponent((location.hash.split('?t=')[1] || '').split('&')[0]);
+    if (!tabs.some(x => x[0] === t)) t = (tabs[0] || [''])[0];
+    const curTab = tabs.find(x => x[0] === t) || ['', '', 0, ''];
+    const cur = { n: curTab[2], html: curTab[3] };
     const sync = !boxApi() ? '' : boxUser ? `
       <section class="box-sync">
         <b>다른 폰에서도 이어 쓰는 중</b>
@@ -1164,13 +1176,17 @@
         <div class="box-nums"><span><b>${went.length}</b>번 직관</span><span><b>${heardList.length}</b>곡 라이브로 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b> 제일 많이 감</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
       </section>` : ''}
-      ${heardList.length ? `<section class="block"><h2 class="h3 list-title">직관으로 들은 곡 <span class="song-count">${heardList.length}</span></h2><div class="chips box-songs">${heardList.map(([so, n]) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`).join('')}</div></section>` : ''}
-      ${went.length ? `<section class="block"><h2 class="h3 list-title">🎫 직관한 일정 <span class="song-count">${went.length}</span></h2>${went.map(row).join('')}</section>` : ''}
-      ${liked.length ? `<section class="block"><h2 class="h3 list-title">♥ 좋아요한 일정 <span class="song-count">${liked.length}</span></h2>${liked.map(row).join('')}</section>` : ''}
-      ${songs.length ? `<section class="block"><h2 class="h3 list-title">♥ 좋아요한 곡 <span class="song-count">${songs.length}</span></h2><div class="chips box-songs">${songs.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div></section>` : ''}
+      ${empty ? '' : `
+      <div class="chips box-tabs">${tabs.map(([k, label, n]) => `<a class="chip${k === t ? ' on' : ''}" href="#/box?t=${k}"${k === t ? ' aria-current="true"' : ''}>${label} ${n}</a>`).join('')}</div>
+      <section class="block box-list${cur.n > LIMIT ? ' short' : ''}">
+        ${cur.html || '<p class="empty">아직 없어요.</p>'}
+        ${cur.n > LIMIT ? `<button type="button" class="link-btn box-more">${cur.n}개 전체 보기</button>` : ''}
+      </section>`}
       ${sync}`;
   }
   function bindBox() {
+    const more = document.querySelector('.box-more');
+    if (more) more.onclick = () => { more.parentNode.classList.remove('short'); more.remove(); };
     const out = document.getElementById('box-out');
     if (out) out.onclick = () => { boxUser = null; boxWrite(BOX_USER, null); renderBase('box'); };
     const form = document.getElementById('box-form');
