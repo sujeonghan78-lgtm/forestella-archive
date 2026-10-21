@@ -1202,6 +1202,8 @@
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
   const wentBtns = e => {
     const near = data.events.filter(x => x.title === e.title && x.place === e.place && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
+    // 방송은 '방청'으로 불러요
+    if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="pill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="방청했어요" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}방청했어요</button>`; }
     if (near.length < 2) return boxBtn('w', e.id, 'pill');
     return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="pill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };
