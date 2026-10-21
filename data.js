@@ -161,7 +161,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, extra, career] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -177,10 +177,11 @@
       fetchText('data/x_links.json').catch(() => ''),
       fetchText('data/x_photos.json').catch(() => ''),
       fetchText('data/x_auto.json').catch(() => ''),
+      fetchText('data/x_extra.json').catch(() => ''),
       fetchText('data/extra_events.json').catch(() => ''),
       fetchText('data/member_career.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, extra, career, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -277,6 +278,8 @@
     // 시트에 아직 없는 최근 글·링크만 붙인 글은 자동으로 받아 둔 것(data/x_auto.json, 1시간마다)으로 채워요
     let xAuto = [];
     try { xAuto = JSON.parse(raw.xauto || '{}').posts || []; } catch (err) { /* 없으면 넘어가요 */ }
+    // 공식 계정이 자기 글에 이어 단 타래 글 (data/x_extra.json, 웹 아카이브에서 찾은 것)
+    try { const seenA = new Set(xAuto.map(p => p.id)); xAuto = xAuto.concat((JSON.parse(raw.xextra || '{}').posts || []).filter(p => !seenA.has(p.id))); } catch (err) { /* 없으면 넘어가요 */ }
     const autoById = new Map(xAuto.map(p => [p.id, p]));
     // 글 번호로 올린 시각을 알 수 있어요 (X 글 번호 앞부분이 시각)
     const idDate = id => { try { return new Date(Number(BigInt(id) >> 22n) + 1288834974657 + 9 * 3600e3).toISOString().slice(0, 10); } catch (e) { return ''; } };
@@ -660,9 +663,12 @@
     const cached = readCache();
     // 시트 주소가 바뀌었으면(새 탭 연결 등) 저장본을 버려요.
     const fresh = cached && 'ytml' in cached && cached.sheets === JSON.stringify(window.CONFIG.sheets) + (window.CONFIG.dataVer || '') && Date.now() - cached.savedAt < window.CONFIG.cacheMinutes * 60000;
-    if (cached) {
+    // 하루 넘은 저장본은 너무 옛날 거라 먼저 보여주지 않고 새로 받아요
+    const tooOld = cached && Date.now() - cached.savedAt > 24 * 3600e3;
+    if (cached && !tooOld) {
       if (!fresh) {
-        fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => {});
+        const again = (n) => fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => { if (n) setTimeout(() => again(n - 1), 5000); });
+        again(2);
       }
       return build(cached);
     }
