@@ -826,3 +826,5 @@ a.ev-day { padding: 2px 8px; margin: 0; border-radius: 10px; background: #EAF7F0
 .ev-days .ev-day + .ev-day::before { content: none; }
 .ev-days a.ev-day { padding: 2px 8px; margin: 0; }
 a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
+.liked-mark { color: #D9567C; }
+.went-mark { color: #B23A5E; font-weight: 600; }

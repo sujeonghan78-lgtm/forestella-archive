@@ -159,7 +159,9 @@
       if (r.ok) { boxUser.at = Date.now(); boxWrite(BOX_USER, boxUser); }
     }).catch(() => { /* 다음에 다시 보내요 */ }), 1500);
   }
+  let boxDirty = false;
   function boxToggle(k, id) {
+    boxDirty = true;
     box[k] = boxHas(k, id) ? box[k].filter(x => x !== id) : [id, ...box[k]];
     box.t = Date.now();
     boxWrite(BOX_KEY, box);
@@ -975,13 +977,14 @@
         const md = x => x.date.slice(5).replace('-', '.');
         const when = run.length > 1
           ? `<span class="ev-days">${run.map(x => `<a class="ev-day${boxHas('w', x.id) ? ' went' : ''}" href="#/e/${encodeURIComponent(x.id)}">${boxHas('w', x.id) ? '🎫 ' : ''}${md(x)}</a>`).join('')}</span>`
-          : `<span>${md(e)}</span>`;
+          : `<span${boxHas('w', e.id) ? ' class="went-mark"' : ''}>${boxHas('w', e.id) ? '🎫 ' : ''}${md(e)}</span>`;
+        const liked = run.some(x => boxHas('e', x.id));
         return `
           <div class="ev">
             <span class="dot${songs.length ? '' : ' dot-plain'}" aria-hidden="true"></span>
             <span class="ev-body">
               <span class="ev-date">${tag(e.category)}${upcoming(e)}${when}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
-              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
+              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${liked ? '<span class="liked-mark">♥</span> ' : ''}${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
               ${songs.length ? `<span class="ev-songs">확인된 곡 · ${songs.map(esc).join(', ')}</span>` : ''}
             </span>
           </div>`;
@@ -1280,7 +1283,7 @@
             <span class="dot${e.songs.length ? '' : ' dot-plain'}" aria-hidden="true"></span>
             <span class="ev-body">
               <span class="ev-date">${r ? '' : `<span class="tag">${esc(regionOf(e))}</span>`}${upcoming(e)}<span>${md(e)}</span>${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
-              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}${hasVideo(e) ? ' <span class="ev-count">▶ 영상</span>' : ''}</a>
+              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${boxHas('e', e.id) ? '<span class="liked-mark">♥</span> ' : ''}${boxHas('w', e.id) ? '🎫 ' : ''}${esc(e.title)}${hasVideo(e) ? ' <span class="ev-count">▶ 영상</span>' : ''}</a>
               ${e.songs.length && e.songSource !== '참고' ? `<span class="ev-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
             </span>
           </div>`;
@@ -2478,7 +2481,11 @@
     }
     hideSheet();
     openedInApp = false;
-    if (baseHash === location.hash && view.innerHTML) return false;
+    if (baseHash === location.hash && view.innerHTML) {
+      // 시트에서 좋아요·직관을 바꿨으면 바탕 화면 표시도 다시 그려요 (스크롤은 그대로)
+      if (boxDirty) { boxDirty = false; const y = window.scrollY; renderBase(name); window.scrollTo(0, y); }
+      return false;
+    }
     baseHash = location.hash;
     renderBase(name);
     return true;
