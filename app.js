@@ -1203,9 +1203,9 @@
   const wentBtns = e => {
     const near = data.events.filter(x => x.title === e.title && x.place === e.place && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
     // 방송은 '방청'으로 불러요
-    if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="pill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="방청했어요" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}방청했어요</button>`; }
-    if (near.length < 2) return boxBtn('w', e.id, 'pill');
-    return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="pill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
+    if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="방청했어요" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}방청했어요</button>`; }
+    if (near.length < 2) return boxBtn('w', e.id, 'bpill');
+    return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };
   function bindBox() {
     const more = document.querySelector('.box-more');
@@ -2349,7 +2349,7 @@
         <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span>${upcoming(e)}</div>
         <h1 class="d-title">${esc(e.title)}</h1>
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
-        <div class="box-row">${boxBtn('e', e.id, 'pill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
+        <div class="box-row">${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
         <div class="share-row">
