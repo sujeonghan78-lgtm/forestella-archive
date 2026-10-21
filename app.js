@@ -1147,11 +1147,11 @@
       </section>` : `
       <section class="box-sync">
         <b>다른 폰에서도 이어 쓰기</b>
-        <span>이름과 숫자 4자리를 정해 두면, 다른 폰에서 같은 이름·숫자를 넣었을 때 보관함이 그대로 이어져요. 이메일이나 로그인은 필요 없어요.</span>
+        <span>처음이면 이름과 숫자 4자리를 새로 정하고, 다른 폰에서 쓰던 보관함을 불러오려면 그때 정한 이름·숫자를 똑같이 넣어 주세요. 두 폰의 목록이 합쳐져요.</span>
         <form id="box-form" class="box-form" onsubmit="return false">
           <input id="box-name" maxlength="20" placeholder="이름 (예: 숲별홍길동)" autocomplete="off" aria-label="이름">
           <input id="box-pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="숫자 4자리" autocomplete="off" aria-label="숫자 4자리">
-          <button type="submit" class="chip on" id="box-go">시작하기</button>
+          <button type="submit" class="chip on" id="box-go">시작 · 불러오기</button>
         </form>
         <p class="src-note" id="box-msg">숫자를 잊으면 찾아드릴 방법이 없어요. 다른 사이트 비밀번호는 쓰지 마세요.</p>
       </section>`;
