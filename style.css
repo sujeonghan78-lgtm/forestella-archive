@@ -807,7 +807,9 @@ b > .help-pop[hidden] { display: none; }
 .box-nums span { flex: 1 1 30%; min-width: 96px; padding: 12px; border-radius: 14px; background: var(--soft); font-size: 12px; color: var(--muted); }
 .box-nums b { display: block; font-size: 20px; color: var(--ink); }
 .box-songs { flex-wrap: wrap; overflow: visible; }
-.box-tabs { margin: 16px 0 4px; flex-wrap: wrap; }
+.box-search { margin-top: 16px; }
+.box-hit[hidden], #box-found[hidden], #box-tabs-wrap[hidden], #box-none[hidden] { display: none !important; }
+.box-tabs { margin: 12px 0 4px; flex-wrap: wrap; }
 .box-list.short > .box-ev:nth-of-type(n+9), .box-list.short .box-songs > .chip:nth-child(n+9) { display: none; }
 .box-more { margin-top: 12px; }
 .box-ev { display: flex; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }

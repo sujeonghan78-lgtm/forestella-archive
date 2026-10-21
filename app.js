@@ -1151,6 +1151,11 @@
     if (!tabs.some(x => x[0] === t)) t = (tabs[0] || [''])[0];
     const curTab = tabs.find(x => x[0] === t) || ['', '', 0, ''];
     const cur = { n: curTab[2], html: curTab[3] };
+    // 검색용: 직관·좋아요 일정과 곡을 한 목록에
+    const findAttr = t => `data-n="${esc(norm(t))}" data-c="${esc(chosung(t))}"`;
+    const allEv = [...new Map([...went, ...liked].map(e => [e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
+    const allItems = allEv.map(e => `<a class="box-ev box-hit" ${findAttr(e.title + ' ' + (e.place || ''))} href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${boxHas('w', e.id) ? '🎫 ' : ''}${boxHas('e', e.id) ? '♥ ' : ''}${esc(e.title)}</b></a>`).join('')
+      + (songs.length ? `<div class="chips box-songs">${songs.map(so => `<a class="chip box-hit" ${findAttr(so.name)} href="#/song/${encodeURIComponent(so.key)}">♥ ${esc(so.name)}</a>`).join('')}</div>` : '');
     const sync = !boxApi() ? '' : boxUser ? `
       <section class="box-sync">
         <b>다른 폰에서도 이어 쓰는 중</b>
@@ -1177,11 +1182,21 @@
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
       </section>` : ''}
       ${empty ? '' : `
+      <form class="searchbox song-search box-search" role="search" onsubmit="return false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="box-q" aria-label="보관함에서 찾기" placeholder="보관함에서 찾기 · 초성 OK" autocomplete="off">
+      </form>
+      <section class="block" id="box-found" hidden>
+        ${allItems}
+        <p class="empty" id="box-none" hidden>찾는 게 없어요.</p>
+      </section>
+      <div id="box-tabs-wrap">
       <div class="chips box-tabs">${tabs.map(([k, label, n]) => `<a class="chip${k === t ? ' on' : ''}" href="#/box?t=${k}"${k === t ? ' aria-current="true"' : ''}>${label} ${n}</a>`).join('')}</div>
       <section class="block box-list${cur.n > LIMIT ? ' short' : ''}">
         ${cur.html || '<p class="empty">아직 없어요.</p>'}
         ${cur.n > LIMIT ? `<button type="button" class="link-btn box-more">${cur.n}개 전체 보기</button>` : ''}
-      </section>`}
+      </section>
+      </div>`}
       ${sync}`;
   }
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
@@ -1193,6 +1208,15 @@
   function bindBox() {
     const more = document.querySelector('.box-more');
     if (more) more.onclick = () => { more.parentNode.classList.remove('short'); more.remove(); };
+    const bq = document.getElementById('box-q');
+    if (bq) bq.oninput = () => {
+      const v = norm(bq.value), c = bq.value.replace(/\s/g, ''), cho = isChosungOnly(c);
+      document.getElementById('box-tabs-wrap').hidden = !!v;
+      document.getElementById('box-found').hidden = !v;
+      let n = 0;
+      document.querySelectorAll('.box-hit').forEach(a => { a.hidden = !(cho ? a.dataset.c.includes(c) : a.dataset.n.includes(v)); if (!a.hidden) n++; });
+      document.getElementById('box-none').hidden = n > 0;
+    };
     const out = document.getElementById('box-out');
     if (out) out.onclick = () => { boxUser = null; boxWrite(BOX_USER, null); renderBase('box'); };
     const form = document.getElementById('box-form');
