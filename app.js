@@ -124,7 +124,7 @@
       ev.preventDefault();
       const { box: k, id } = bx.dataset;
       boxToggle(k, id);
-      document.querySelectorAll(`[data-box="${k}"]`).forEach(b => { if (b.dataset.id === id) { b.setAttribute('aria-pressed', String(boxHas(k, id))); b.textContent = BOX_LABEL[k][boxHas(k, id) ? 1 : 0]; } });
+      document.querySelectorAll(`[data-box="${k}"]`).forEach(b => { if (b.dataset.id === id) { b.setAttribute('aria-pressed', String(boxHas(k, id))); b.textContent = b.dataset.label ? (boxHas(k, id) ? '✓ ' : '🎫 ') + b.dataset.label : BOX_LABEL[k][boxHas(k, id) ? 1 : 0]; } });
       return;
     }
     const c = ev.target.closest('[data-copy]');
@@ -974,7 +974,7 @@
         const songs = [...new Set(run.flatMap(x => x.songSource !== '참고' ? x.songs : []))];
         const md = x => x.date.slice(5).replace('-', '.');
         const when = run.length > 1
-          ? `<span class="ev-days">${run.map(x => `<a class="ev-day" href="#/e/${encodeURIComponent(x.id)}">${md(x)}</a>`).join('')}</span>`
+          ? `<span class="ev-days">${run.map(x => `<a class="ev-day${boxHas('w', x.id) ? ' went' : ''}" href="#/e/${encodeURIComponent(x.id)}">${boxHas('w', x.id) ? '🎫 ' : ''}${md(x)}</a>`).join('')}</span>`
           : `<span>${md(e)}</span>`;
         return `
           <div class="ev">
@@ -1184,6 +1184,12 @@
       </section>`}
       ${sync}`;
   }
+  // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
+  const wentBtns = e => {
+    const near = data.events.filter(x => x.title === e.title && x.place === e.place && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
+    if (near.length < 2) return boxBtn('w', e.id, 'pill');
+    return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="pill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
+  };
   function bindBox() {
     const more = document.querySelector('.box-more');
     if (more) more.onclick = () => { more.parentNode.classList.remove('short'); more.remove(); };
@@ -2317,7 +2323,7 @@
         <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span>${upcoming(e)}</div>
         <h1 class="d-title">${esc(e.title)}</h1>
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
-        <div class="box-row">${boxBtn('e', e.id, 'pill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : boxBtn('w', e.id, 'pill')}</div>
+        <div class="box-row">${boxBtn('e', e.id, 'pill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
         <div class="share-row">

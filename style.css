@@ -798,7 +798,7 @@ b > .help-pop[hidden] { display: none; }
 #prog-sort .chip { font-size: 12px; padding: 4px 10px; }
 
 /* 보관함 (♡ 좋아요 · 🎫 직관) */
-.box-row { display: flex; gap: 6px; margin: 2px 0 12px; }
+.box-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 12px; }
 .pill { height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid #D6E6DC; background: #FFFFFF; color: var(--ink); font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
 .box-btn[aria-pressed="true"] { border-color: #E9A0B4; background: #FFF1F5; color: #B23A5E; font-weight: 600; }
 .heart-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #D6E6DC; background: #FFFFFF; color: #B23A5E; font-size: 18px; display: inline-flex; align-items: center; justify-content: center; margin-right: 6px; }
