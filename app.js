@@ -124,7 +124,7 @@
       ev.preventDefault();
       const { box: k, id } = bx.dataset;
       boxToggle(k, id);
-      document.querySelectorAll(`[data-box="${k}"]`).forEach(b => { if (b.dataset.id === id) { b.setAttribute('aria-pressed', String(boxHas(k, id))); b.textContent = b.dataset.label ? (boxHas(k, id) ? '✓ ' : '🎫 ') + b.dataset.label : BOX_LABEL[k][boxHas(k, id) ? 1 : 0]; } });
+      document.querySelectorAll(`[data-box="${k}"]`).forEach(b => { if (b.dataset.id === id) { b.setAttribute('aria-pressed', String(boxHas(k, id))); b.textContent = b.dataset.label ? (boxHas(k, id) ? '✓ ' : (b.dataset.ic || '🎫') + ' ') + b.dataset.label : BOX_LABEL[k][boxHas(k, id) ? 1 : 0]; } });
       return;
     }
     const c = ev.target.closest('[data-copy]');
@@ -1126,12 +1126,14 @@
   // ---------- 보관함 화면 ----------
   function boxView() {
     const evs = ids => ids.map(id => data.byId.get(id)).filter(Boolean);
-    const went = evs(box.w).sort((a, b) => b.date.localeCompare(a.date));
+    const wentAll = evs(box.w).sort((a, b) => b.date.localeCompare(a.date));
+    const isBc = e => /TV|라디오/.test(e.category);
+    const went = wentAll.filter(e => !isBc(e)), seen = wentAll.filter(isBc);  // 직관 / 방청
     const liked = evs(box.e).sort((a, b) => b.date.localeCompare(a.date));
     const songs = box.s.map(k => data.songs.get(k)).filter(Boolean);
     // 직관으로 들은 곡: 그날 확인된 곡 (없으면 그 투어 셋리스트)
     const heard = new Map();
-    went.forEach(e => {
+    wentAll.forEach(e => {
       const names = e.songSource !== '참고' && e.songs.length ? e.songs : e.setlist ? e.setlist.songs.map(x => x.t) : [];
       new Set(names.map(window.DATA.songKey).filter(Boolean)).forEach(k => heard.set(k, (heard.get(k) || 0) + 1));
     });
@@ -1141,11 +1143,12 @@
     const topRegion = [...regions.entries()].sort((a, b) => b[1] - a[1])[0];
     const first = went[went.length - 1];
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
-    const empty = !went.length && !liked.length && !songs.length;
+    const empty = !wentAll.length && !liked.length && !songs.length;
     const LIMIT = 8;
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
     const tabs = [
       ['w', '🎫 직관', went.length, went.map(row).join('')],
+      ['b', '📺 방청', seen.length, seen.map(row).join('')],
       ['e', '♥ 일정', liked.length, liked.map(row).join('')],
       ['s', '♥ 곡', songs.length, `<div class="chips box-songs">${songs.map(so => songChip(so)).join('')}</div>`],
       ['h', '들은 곡', heardList.length, `<div class="chips box-songs">${heardList.map(([so, n]) => songChip(so, n)).join('')}</div>`],
@@ -1156,7 +1159,7 @@
     const cur = { n: curTab[2], html: curTab[3] };
     // 검색용: 직관·좋아요 일정과 곡을 한 목록에
     const findAttr = t => `data-n="${esc(norm(t))}" data-c="${esc(chosung(t))}"`;
-    const allEv = [...new Map([...went, ...liked].map(e => [e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
+    const allEv = [...new Map([...wentAll, ...liked].map(e => [e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
     const allItems = allEv.map(e => `<a class="box-ev box-hit" ${findAttr(e.title + ' ' + (e.place || ''))} href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${boxHas('w', e.id) ? '🎫 ' : ''}${boxHas('e', e.id) ? '♥ ' : ''}${esc(e.title)}</b></a>`).join('')
       + (songs.length ? `<div class="chips box-songs">${songs.map(so => `<a class="chip box-hit" ${findAttr(so.name)} href="#/song/${encodeURIComponent(so.key)}">♥ ${esc(so.name)}</a>`).join('')}</div>` : '');
     const sync = !boxApi() ? '' : boxUser ? `
@@ -1179,9 +1182,9 @@
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">보관함${help('일정·곡에서 ♡ 좋아요, 🎫 직관했어요를 누르면 여기 모여요. 이 폰에 저장돼요.')}</h1>
       ${empty ? `<p class="empty">아직 비어 있어요. 일정이나 곡 화면에서 ♡ 좋아요, 🎫 직관했어요를 눌러 보세요.</p>` : ''}
-      ${went.length ? `
+      ${wentAll.length ? `
       <section class="block box-stat">
-        <div class="box-nums"><span><b>${went.length}</b>번 직관</span><span><b>${heardList.length}</b>곡 라이브로 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b> 제일 많이 감</span>` : ''}</div>
+        <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 방청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
       </section>` : ''}
       ${empty ? '' : `
@@ -1206,7 +1209,7 @@
   const wentBtns = e => {
     const near = data.events.filter(x => x.title === e.title && x.place === e.place && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
     // 방송은 '방청'으로 불러요
-    if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="방청했어요" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}방청했어요</button>`; }
+    if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="방청했어요" data-ic="📺" aria-pressed="${on}">${on ? '✓ ' : '📺 '}방청했어요</button>`; }
     if (near.length < 2) return boxBtn('w', e.id, 'bpill');
     return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };
