@@ -187,7 +187,10 @@
     try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch (e) { return null; }
   }
   function writeCache(raw) {
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(raw)); } catch (e) { /* 저장 공간이 없으면 넘어가요 */ }
+    // 저장 공간이 모자라면 옛 저장본이 남아 예전 데이터가 먼저 보이니, 지우고 다시 넣어 봐요
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(raw)); } catch (e) {
+      try { localStorage.removeItem(CACHE_KEY); localStorage.setItem(CACHE_KEY, JSON.stringify(raw)); } catch (e2) { try { localStorage.removeItem(CACHE_KEY); } catch (e3) { /* 넘어가요 */ } }
+    }
   }
 
   // 카페 스케줄에서 자동으로 가져온 일정 중 시트에 아직 없는 것 (숨김 처리한 일정도 시트에 있는 것으로 봐요)
