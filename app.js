@@ -119,6 +119,14 @@
     }
     const s = ev.target.closest('[data-share]');
     if (s) { ev.preventDefault(); share(s.dataset.text, s.dataset.url); return; }
+    const bx = ev.target.closest('[data-box]');
+    if (bx) {
+      ev.preventDefault();
+      const { box: k, id } = bx.dataset;
+      boxToggle(k, id);
+      document.querySelectorAll(`[data-box="${k}"]`).forEach(b => { if (b.dataset.id === id) { b.setAttribute('aria-pressed', String(boxHas(k, id))); b.textContent = BOX_LABEL[k][boxHas(k, id) ? 1 : 0]; } });
+      return;
+    }
     const c = ev.target.closest('[data-copy]');
     if (c) {
       ev.preventDefault();
@@ -127,6 +135,46 @@
       if (m) m.remove();
     }
   });
+
+  // ---------- 보관함 (♡ 좋아요 · 🎫 직관): 이 폰에 저장, 이름+숫자 4자리로 다른 폰에서 이어 쓰기 ----------
+  const BOX_KEY = 'sb-box', BOX_USER = 'sb-box-user';
+  const boxRead = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (err) { return null; } };
+  const boxWrite = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (err) { /* 저장 못 해도 괜찮아요 */ } };
+  const boxClean = b => ({ e: (b && b.e) || [], s: (b && b.s) || [], w: (b && b.w) || [], t: (b && b.t) || 0 });
+  let box = boxClean(boxRead(BOX_KEY));
+  let boxUser = boxRead(BOX_USER);  // { name, pin, at }
+  const boxApi = () => (window.CONFIG || {}).boxApi || '';
+  const boxHas = (k, id) => box[k].includes(id);
+  const BOX_LABEL = { e: ['♡ 좋아요', '♥ 좋아요'], s: ['♡', '♥'], w: ['🎫 직관했어요', '✓ 직관했어요'] };
+  const boxBtn = (k, id, cls = 'act') => `<button type="button" class="${cls} box-btn" data-box="${k}" data-id="${esc(id)}" aria-pressed="${boxHas(k, id)}"${k === 's' ? ' aria-label="이 곡 좋아요"' : ''}>${BOX_LABEL[k][boxHas(k, id) ? 1 : 0]}</button>`;
+  async function boxCall(action, extra = {}) {
+    const r = await fetch(boxApi(), { method: 'POST', body: JSON.stringify({ action, name: boxUser && boxUser.name, pin: boxUser && boxUser.pin, ...extra }) });
+    return r.json();
+  }
+  let boxTimer = null;
+  function boxPush() {
+    if (!boxUser || !boxApi()) return;
+    clearTimeout(boxTimer);
+    boxTimer = setTimeout(() => boxCall('save', { data: box }).then(r => {
+      if (r.ok) { boxUser.at = Date.now(); boxWrite(BOX_USER, boxUser); }
+    }).catch(() => { /* 다음에 다시 보내요 */ }), 1500);
+  }
+  function boxToggle(k, id) {
+    box[k] = boxHas(k, id) ? box[k].filter(x => x !== id) : [id, ...box[k]];
+    box.t = Date.now();
+    boxWrite(BOX_KEY, box);
+    boxPush();
+  }
+  // 앱을 열 때 서버 쪽이 더 새로우면 받아와요
+  function boxPull() {
+    if (!boxUser || !boxApi()) return;
+    boxCall('load').then(r => {
+      if (!r.ok || !r.data) return;
+      const srv = boxClean(r.data);
+      if (srv.t > box.t) { box = srv; boxWrite(BOX_KEY, box); if (currentRoute() === 'box') renderBase('box'); }
+      else if (box.t > srv.t) boxPush();
+    }).catch(() => { /* 오프라인이면 폰 저장만 써요 */ });
+  }
 
   // ---------- 홈 ----------
   // 정확히 같은 날짜가 없으면, 앞뒤 3일 안에서 가장 가까운 날을 보여줘요.
@@ -851,7 +899,7 @@
     return `
       <a class="back" href="#/songs">‹ 곡 아카이브</a>
       <section class="song-hero">
-        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1>${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</div>
+        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>
         <span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>
         ${albumRow}
         ${so.first ? `<div class="facts">
@@ -1070,6 +1118,83 @@
     const rest = t.slice(m[0].length).replace(/^[\s\-–:·]+/, '').trim();
     // "(6/28 녹화분)"처럼 괄호만 남으면 "방송 (6/28 녹화분)"으로
     return !rest ? t : rest.startsWith('(') ? `방송 ${rest}` : rest;
+  }
+
+  // ---------- 보관함 화면 ----------
+  function boxView() {
+    const evs = ids => ids.map(id => data.byId.get(id)).filter(Boolean);
+    const went = evs(box.w).sort((a, b) => b.date.localeCompare(a.date));
+    const liked = evs(box.e).sort((a, b) => b.date.localeCompare(a.date));
+    const songs = box.s.map(k => data.songs.get(k)).filter(Boolean);
+    // 직관으로 들은 곡: 그날 확인된 곡 (없으면 그 투어 셋리스트)
+    const heard = new Map();
+    went.forEach(e => {
+      const names = e.songSource !== '참고' && e.songs.length ? e.songs : e.setlist ? e.setlist.songs.map(x => x.t) : [];
+      new Set(names.map(window.DATA.songKey).filter(Boolean)).forEach(k => heard.set(k, (heard.get(k) || 0) + 1));
+    });
+    const heardList = [...heard.entries()].map(([k, n]) => [data.songs.get(k), n]).filter(x => x[0]).sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name));
+    const regions = new Map();
+    went.forEach(e => { const r = regionOf(e); if (r !== '그 외') regions.set(r, (regions.get(r) || 0) + 1); });
+    const topRegion = [...regions.entries()].sort((a, b) => b[1] - a[1])[0];
+    const first = went[went.length - 1];
+    const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
+    const empty = !went.length && !liked.length && !songs.length;
+    const sync = !boxApi() ? '' : boxUser ? `
+      <section class="box-sync">
+        <b>다른 폰에서도 이어 쓰는 중</b>
+        <span>이름 <b>${esc(boxUser.name)}</b>${boxUser.at ? ` · 마지막 저장 ${new Date(boxUser.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}</span>
+        <button type="button" class="link-btn" id="box-out">이 폰에서 연결 끊기</button>
+      </section>` : `
+      <section class="box-sync">
+        <b>다른 폰에서도 이어 쓰기</b>
+        <span>이름과 숫자 4자리를 정해 두면, 다른 폰에서 같은 이름·숫자를 넣었을 때 보관함이 그대로 이어져요. 이메일이나 로그인은 필요 없어요.</span>
+        <form id="box-form" class="box-form" onsubmit="return false">
+          <input id="box-name" maxlength="20" placeholder="이름 (예: 숲별우림러)" autocomplete="off" aria-label="이름">
+          <input id="box-pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="숫자 4자리" autocomplete="off" aria-label="숫자 4자리">
+          <button type="submit" class="chip on" id="box-go">시작하기</button>
+        </form>
+        <p class="src-note" id="box-msg">숫자를 잊으면 찾아드릴 방법이 없어요. 다른 사이트 비밀번호는 쓰지 마세요.</p>
+      </section>`;
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">보관함${help('일정·곡에서 ♡ 좋아요, 🎫 직관했어요를 누르면 여기 모여요. 이 폰에 저장돼요.')}</h1>
+      ${empty ? `<p class="empty">아직 비어 있어요. 일정이나 곡 화면에서 ♡ 좋아요, 🎫 직관했어요를 눌러 보세요.</p>` : ''}
+      ${went.length ? `
+      <section class="block box-stat">
+        <div class="box-nums"><span><b>${went.length}</b>번 직관</span><span><b>${heardList.length}</b>곡 라이브로 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b> 제일 많이 감</span>` : ''}</div>
+        ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
+      </section>` : ''}
+      ${heardList.length ? `<section class="block"><h2 class="h3 list-title">직관으로 들은 곡 <span class="song-count">${heardList.length}</span></h2><div class="chips box-songs">${heardList.map(([so, n]) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`).join('')}</div></section>` : ''}
+      ${went.length ? `<section class="block"><h2 class="h3 list-title">🎫 직관한 일정 <span class="song-count">${went.length}</span></h2>${went.map(row).join('')}</section>` : ''}
+      ${liked.length ? `<section class="block"><h2 class="h3 list-title">♥ 좋아요한 일정 <span class="song-count">${liked.length}</span></h2>${liked.map(row).join('')}</section>` : ''}
+      ${songs.length ? `<section class="block"><h2 class="h3 list-title">♥ 좋아요한 곡 <span class="song-count">${songs.length}</span></h2><div class="chips box-songs">${songs.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div></section>` : ''}
+      ${sync}`;
+  }
+  function bindBox() {
+    const out = document.getElementById('box-out');
+    if (out) out.onclick = () => { boxUser = null; boxWrite(BOX_USER, null); renderBase('box'); };
+    const form = document.getElementById('box-form');
+    if (!form) return;
+    const msg = document.getElementById('box-msg');
+    form.onsubmit = async () => {
+      const name = document.getElementById('box-name').value.trim(), pin = document.getElementById('box-pin').value.trim();
+      if (name.length < 2) { msg.textContent = '이름은 2글자 이상으로 정해 주세요.'; return false; }
+      if (!/^\d{4}$/.test(pin)) { msg.textContent = '숫자 4자리를 넣어 주세요.'; return false; }
+      msg.textContent = '확인하는 중…';
+      try {
+        boxUser = { name, pin };
+        const r = await boxCall('login', { data: box });
+        if (!r.ok) {
+          boxUser = null;
+          msg.textContent = r.err === 'locked' ? '여러 번 틀려서 잠시 막혔어요. 10분 뒤에 다시 해 주세요.' : r.err === 'pin' ? '이미 있는 이름이에요. 내 이름이라면 숫자를 다시 확인해 주세요.' : '지금은 연결이 안 돼요. 잠시 뒤 다시 해 주세요.';
+          return false;
+        }
+        box = boxClean(r.data); boxWrite(BOX_KEY, box);
+        boxUser.at = Date.now(); boxWrite(BOX_USER, boxUser);
+        renderBase('box');
+      } catch (err) { boxUser = null; msg.textContent = '지금은 연결이 안 돼요. 잠시 뒤 다시 해 주세요.'; }
+      return false;
+    };
   }
 
   // ---------- 지역 행사 (축제·기업 행사·지역 공연) ----------
@@ -1327,6 +1452,7 @@
         <span>일정은 공식 팬카페 캘린더(2021년 7월 이전은 나무위키·방송 영상), 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
       </a>
       <nav aria-label="더보기 메뉴">
+        ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (box.e.length + box.s.length + box.w.length) ? `♥ ${box.e.length + box.s.length} · 🎫 ${box.w.length}` : '좋아요 · 직관')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '지역 행사', '축제 · 지역 공연')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
@@ -1557,6 +1683,7 @@
     search: searchView,
     program: programView,
     local: localView,
+    box: boxView,
     songs: songsView,
     song: songView,
     timeline: timelineView,
@@ -2182,6 +2309,7 @@
           <a class="act" href="${xUrl(eventShareText(e), link('#/e/' + encodeURIComponent(e.id)))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>X</a>
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
+        <div class="share-row box-row">${boxBtn('e', e.id)}${/생일|유튜브|네이버TV/.test(e.category) ? '' : boxBtn('w', e.id)}</div>
         ${findRow(findQuery(e.title))}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
         ${(e.ytStage || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">방송 영상 <span class="song-count">${e.ytStage.length}</span>${help('방송사 공식 유튜브 영상 중 제목의 프로그램 이름과 방송 날짜로 이 일정에 붙인 거예요. 가끔 다른 회차일 수 있어요.')}</h2></div>${ytStrip(e.ytStage)}</section>` : ''}
@@ -2285,6 +2413,7 @@
     if (name === 'songs') bindSongs();
     if (name === 'releases') bindReleases();
     if (name === 'program') bindPrograms();
+    if (name === 'box') bindBox();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
     if (name === 'install') bindInstall();
@@ -2328,6 +2457,7 @@
     try {
       data = await window.DATA.load(next => { data = next; searchIndex = null; if (currentRoute() !== 'e') baseHash = null; render(); });
       render();
+      boxPull();
     } catch (err) {
       showError(err);
     }

@@ -795,3 +795,20 @@ b > .help-pop[hidden] { display: none; }
 .prog-scroll .prog-card b { font-size: 13px; }
 .prog-row[hidden], .prog-card[hidden], .prog-sec[hidden] { display: none; }
 #prog-sort .chip { font-size: 12px; padding: 4px 10px; }
+
+/* 보관함 (♡ 좋아요 · 🎫 직관) */
+.box-row { margin-top: 8px; }
+.box-btn[aria-pressed="true"] { border-color: #E9A0B4; background: #FFF1F5; color: #B23A5E; font-weight: 600; }
+.heart-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #D6E6DC; background: #FFFFFF; color: #B23A5E; font-size: 18px; display: inline-flex; align-items: center; justify-content: center; margin-right: 6px; }
+.song-hero .head-side { display: inline-flex; align-items: center; }
+.box-stat .box-nums { display: flex; flex-wrap: wrap; gap: 8px; }
+.box-nums span { flex: 1 1 30%; min-width: 96px; padding: 12px; border-radius: 14px; background: var(--soft); font-size: 12px; color: var(--muted); }
+.box-nums b { display: block; font-size: 20px; color: var(--ink); }
+.box-songs { flex-wrap: wrap; overflow: visible; }
+.box-ev { display: flex; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.box-ev span { flex: none; font-size: 12px; color: var(--muted); }
+.box-ev b { font-weight: 500; font-size: 14px; }
+.box-sync { margin-top: 24px; padding: 16px; border-radius: 16px; background: #F7FAF8; border: 1px solid #E1ECE5; display: grid; gap: 8px; font-size: 13px; }
+.box-form { display: flex; flex-wrap: wrap; gap: 8px; }
+.box-form input { flex: 1 1 140px; min-width: 0; height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid #D6E6DC; font-size: 16px; background: #FFFFFF; }
+.box-form input#box-pin { flex: 0 1 110px; }
