@@ -648,7 +648,7 @@
     songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

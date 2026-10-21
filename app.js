@@ -1072,6 +1072,57 @@
     return !rest ? t : rest.startsWith('(') ? `방송 ${rest}` : rest;
   }
 
+  // ---------- 지역 행사 (축제·기업 행사·지역 공연) ----------
+  // 단독 투어·게스트·셋리스트 있는 콘서트는 빼고, 장소·행사명 낱말로 지역을 나눠요 (보충 파일 region으로 고칠 수 있어요)
+  const REGIONS = [
+    ['해외', /두바이|해외|일본|미국|도쿄/],
+    ['경기·인천', /경기 광주|인천|송도|부천|광명|안성|분당|성남|고양|킨텍스|수원|의정부|신한대|인스파이어|계양|자라섬|jarasum|가평|용인|경기도|과천|렛츠런파크(?! 제주)/i],
+    ['제주', /제주/],
+    ['강원', /강원|원주|춘천|강릉|인제|동해|속초|평창|삼척|홍천/],
+    ['충청', /대전|세종시|충남|충북|충청|천안|아산|이순신종합운동장|이순신 종합운동장|계룡|예산|제천|청주|공주|금강|대백제전|당진|서산|논산|충주/],
+    ['전라', /광주|타이거즈|전남|전북|전라|목포|여수|나주|순천|장흥|보림사|곡성|익산|원광|남원|광한루|영광|화순|지스트|엘로우시티|드래곤즈|광양|함평|군산|전주|고창|정읍|해남|강진|수묵/],
+    ['경상', /부산|대구|울산|경북|경남|경상|창원|김해|통영|용호도|경주|칠곡|직지사|김천|영도|벡스코|BNK|포항|안동|구미|영덕|예주|울진|연호문화센터|태화강|3\.15|거제|진주|양산|APEC|창녕|밀양|상주|문경/],
+    ['서울', /서울|seoul|잠실|올림픽공원|올림픽홀|88잔디|롯데콘서트홀|코엑스|장충|은평|서리풀|홍대|노량진|동작|세종대|고려대|한전아트센터|유니버설아트센터|플라자호텔|KBS홀|블루스퀘어|예술의전당(?!.*(광주|대구|경주|부산))/i],
+  ];
+  const regionOf = e => {
+    const fix = ((data.extra || {}).region || {})[e.id];
+    if (fix) return fix;
+    const t = `${e.place || ''} ${e.title}`;
+    const r = REGIONS.find(([, rx]) => rx.test(t));
+    return r ? r[0] : '그 외';
+  };
+  const isLocalEvent = e => e.category === '공연' && !e.setlist && !e.ytOnly
+    && !/전국투어|더 포레스텔라|팬텀싱어\s?2 콘서트|팬텀 vs 팬텀|팬텀 오브 클래식|\(게스트\)|단독 콘서트|Night Live|강형호 콘서트|올스타전 갈라/i.test(e.title);
+  const hasVideo = e => !!(e.videoId || e.related.length || e.ytMain || (e.ytStage || []).length);
+  function localView() {
+    const r = decodeURIComponent((location.hash.split('?r=')[1] || '').split('&')[0]);
+    const all = data.events.filter(isLocalEvent);
+    const names = ['서울', '경기·인천', '강원', '충청', '전라', '경상', '제주', '해외', '그 외'];
+    const count = n => all.filter(e => regionOf(e) === n).length;
+    const list = (r ? all.filter(e => regionOf(e) === r) : all).slice().reverse();
+    const years = new Map();
+    list.forEach(e => { const y = e.date.slice(0, 4); if (!years.has(y)) years.set(y, []); years.get(y).push(e); });
+    const md = x => x.date.slice(5).replace('-', '.');
+    const row = e => `
+          <div class="ev">
+            <span class="dot${e.songs.length ? '' : ' dot-plain'}" aria-hidden="true"></span>
+            <span class="ev-body">
+              <span class="ev-date">${r ? '' : `<span class="tag">${esc(regionOf(e))}</span>`}${upcoming(e)}<span>${md(e)}</span>${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
+              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}${hasVideo(e) ? ' <span class="ev-count">▶ 영상</span>' : ''}</a>
+              ${e.songs.length && e.songSource !== '참고' ? `<span class="ev-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
+            </span>
+          </div>`;
+    const chip = (n, label) => `<a class="chip${n === r ? ' on' : ''}" href="#/local${n ? '?r=' + encodeURIComponent(n) : ''}"${n === r ? ' aria-current="true"' : ''}>${esc(label)}</a>`;
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">지역 행사${help('축제·지역 공연·기업 행사처럼 단독 콘서트가 아닌 공연을 지역별로 모았어요. 지역은 장소와 행사 이름으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
+      <div class="stick">
+      <div class="chips tl-cats">${chip('', `전체 ${all.length}`)}${names.filter(count).map(n => chip(n, `${n} ${count(n)}`)).join('')}</div>
+      <p class="sub">${list.length}개 · ${list.filter(hasVideo).length}개는 영상이 있어요</p>
+      </div>
+      <div class="tl">${[...years.entries()].map(([y, es]) => `<h2 class="month">${y}년</h2>${es.map(row).join('')}`).join('')}</div>`;
+  }
+
   function programView() {
     const name = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const p = name && !HIDDEN_PROGS.has(name) && programs().get(name);
@@ -1277,6 +1328,7 @@
       </a>
       <nav aria-label="더보기 메뉴">
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
+        ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '지역 행사', '축제 · 지역 공연')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
         ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표', '연도·월별 기록')}
         ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범 · 싱글별 공식 X')}
@@ -1504,6 +1556,7 @@
       ${homeMonth()}`,
     search: searchView,
     program: programView,
+    local: localView,
     songs: songsView,
     song: songView,
     timeline: timelineView,
