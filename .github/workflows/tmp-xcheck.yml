@@ -1,0 +1,13 @@
+name: tmp-xcheck
+on: workflow_dispatch
+jobs:
+  c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          U=$(grep -o "x: *'[^']*'" config.js | sed "s/x: *'//;s/'$//")
+          curl -sL "$U" -o x.csv
+          echo "::notice::rows $(wc -l < x.csv) hit $(grep -c 2111813982961205302 x.csv)"
+          grep -n "2111813982961205302\|2026-10-1[6-9]\|2026\. *10\. *1[6-9]" x.csv | head -10 | while read l; do echo "::notice::${l:0:200}"; done
+          curl -s https://sujeonghan78-lgtm.github.io/forestella-archive/data/x_auto.json | grep -c 2111813982961205302 | xargs -I{} echo "::notice::live auto hit {}"
