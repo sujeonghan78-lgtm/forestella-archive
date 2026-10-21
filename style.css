@@ -828,3 +828,5 @@ a.ev-day { padding: 2px 8px; margin: 0; border-radius: 10px; background: #EAF7F0
 a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .liked-mark { color: #D9567C; }
 .went-mark { color: #B23A5E; font-weight: 600; }
+.yt-thumb { position: relative; display: block; font-style: normal; }
+.new-badge { position: absolute; top: 6px; left: 6px; padding: 2px 6px; border-radius: 6px; background: #E5484D; color: #FFFFFF; font-size: 10px; font-weight: 700; letter-spacing: .3px; }

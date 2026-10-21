@@ -366,17 +366,21 @@
       </section>`;
   }
 
-  // 홈: 공식 유튜브 새 영상 (+ 몇 년 전 오늘 올라온 영상)
+  // 홈: 유튜브 새 영상 (공식 + 방송사, 올라온 날 순) (+ 몇 년 전 오늘 올라온 공식 영상)
   function homeVideos() {
-    const vs = (data.official || []).filter(v => !v.bc);
-    if (!vs.length) return '';
+    const all = data.official || [];
+    const vs = all.filter(v => !v.bc);
+    if (!all.length) return '';
     const t = todayParts();
+    const upOf = v => v.up || v.date;
+    const fresh = all.slice().sort((a, b) => upOf(b).localeCompare(upOf(a))).slice(0, 12);
+    const newSince = new Date(Date.now() - 4 * 864e5).toISOString().slice(0, 10);
     const md = `${String(t.m).padStart(2, '0')}-${String(t.d).padStart(2, '0')}`;
     const ago = vs.filter(v => v.date.slice(5) === md && v.date.slice(0, 4) < String(t.y));
     return `
       <section class="block">
-        <div class="block-head"><h2 class="h2">공식 유튜브 새 영상</h2><a class="more" href="#/yt">전체 보기</a></div>
-        ${ytStrip(vs.slice(0, 10))}
+        <div class="block-head"><h2 class="h2">유튜브 새 영상</h2><a class="more" href="#/yt">전체 보기</a></div>
+        ${ytStrip(fresh, v => upOf(v) >= newSince)}
         ${ago.length ? `<p class="sub yt-ago">${t.y - Number(ago[0].date.slice(0, 4))}년 전 오늘 올라온 영상</p>${ytStrip(ago)}` : ''}
       </section>`;
   }
@@ -2254,8 +2258,8 @@
   const xList = list => list.length ? `<p class="sub x-count">${xCount(list)}</p>${catList(list, p => p.cat, p => xCard(p, p.cat))}` : '';
 
   // 가로로 넘기는 영상 줄
-  function ytStrip(list) {
-    return `<div class="yt-strip">${list.map(v => `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()"><span>${esc(ytTitle(v.title))}</span></a>`).join('')}</div>`;
+  function ytStrip(list, isNew) {
+    return `<div class="yt-strip">${list.map(v => `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><i class="yt-thumb"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()">${isNew && isNew(v) ? '<b class="new-badge">NEW</b>' : ''}</i><span>${esc(ytTitle(v.title))}</span>${v.bc ? `<small class="yt-src">${esc(v.bc)}</small>` : ''}</a>`).join('')}</div>`;
   }
   function ytSection(list, title, note) {
     if (!list.length) return '';
