@@ -9,6 +9,8 @@ jobs:
     steps:
       - run: |
           U='https://script.google.com/macros/s/AKfycbwYlE1fytf4V0tpm9HkRHvGZqA7Pnv6YwwM2Cek6cKHPFg_RpxCev9vhv8ZdBF3e5Fkfg/exec'
-          R=$(curl -sS -L -m 30 -X POST -H 'Content-Type: text/plain;charset=utf-8' -H 'Origin: https://sujeonghan78-lgtm.github.io' -D h.txt --data '{"action":"load","name":"zz연결확인zz","pin":"0000"}' "$U")
+          R=$(curl -sS -L -m 30 -H 'Content-Type: text/plain;charset=utf-8' -H 'Origin: https://sujeonghan78-lgtm.github.io' -D h.txt --data '{"action":"load","name":"zz연결확인zz","pin":"0000"}' "$U")
           echo "::notice::body ${R:0:200}"
+          echo "::notice::title $(echo "$R" | grep -o "<title>[^<]*" | head -1)"
+          echo "::notice::status $(grep -i "^HTTP\|^location" h.txt | tr -d "\r" | tr "\n" " " | cut -c1-300)"
           echo "::notice::acao $(grep -i 'access-control-allow-origin' h.txt | tr -d '\r' | tr '\n' ' ')"
