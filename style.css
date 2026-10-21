@@ -817,3 +817,10 @@ b > .help-pop[hidden] { display: none; }
 .box-form { display: flex; flex-wrap: wrap; gap: 8px; }
 .box-form input { flex: 1 1 140px; min-width: 0; height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid #D6E6DC; font-size: 16px; background: #FFFFFF; }
 .box-form input#box-pin { flex: 0 1 110px; }
+
+/* 눌리는 날짜는 작은 버튼처럼 */
+.ev-days { gap: 4px; }
+a.ev-day { padding: 2px 8px; margin: 0; border-radius: 10px; background: #EAF7F0; color: var(--green-2); font-weight: 600; text-decoration: none; }
+.ev-days .ev-day + .ev-day::before { content: none; }
+.ev-days a.ev-day { padding: 2px 8px; margin: 0; }
+a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
