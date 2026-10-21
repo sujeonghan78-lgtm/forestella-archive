@@ -205,6 +205,16 @@
       const so = data.songs.get(window.DATA.songKey(e.songs[0]));
       if (so) { seen.add(e.videoId); list.push({ vid: e.videoId, so, e, date: e.date, where: e.title }); }
     });
+    // 일정의 관련 영상 중 곡 하나짜리 무대도 넣어요
+    data.events.forEach(e => {
+      if (e.songSource === '참고') return;
+      e.related.forEach(v => {
+        if (seen.has(v.videoId)) return;
+        const ks = (v.title || '').split(' / ').map(window.DATA.songKey).filter(k => k && data.songs.has(k));
+        if (ks.length !== 1 || !e.songKeys.includes(ks[0])) return;
+        seen.add(v.videoId); list.push({ vid: v.videoId, so: data.songs.get(ks[0]), e, date: e.date, where: e.title });
+      });
+    });
     randomPool = { data, list };
     return list;
   }
@@ -213,7 +223,7 @@
     if (!pool.length) return '';
     if (!randomPick || randomPick.n !== pickCount || !pool.includes(randomPick.p)) {
       const recent = recentPicks();
-      const keep = Math.min(30, Math.floor(pool.length / 2));
+      const keep = Math.max(1, pool.length - 20); // 거의 다 한 번씩 나온 뒤에야 다시 나와요
       const fresh = pool.filter(p => !recent.includes(p.vid));
       const from = fresh.length ? fresh : pool;
       const p = from[Math.floor(Math.random() * from.length)];
