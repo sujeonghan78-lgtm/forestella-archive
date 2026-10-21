@@ -299,7 +299,7 @@ body.sheet-open { overflow: hidden; }
 .hero ~ .share-round, .song-hero .share-round, .prog-top .share-round { background: #FFFFFF; }
 .head-side { display: inline-flex; align-items: center; gap: 6px; }
 .share-row { display: flex; gap: 8px; margin-top: 4px; }
-.act { flex: 1; height: 48px; border-radius: 14px; border: 1px solid #D6E6DC; background: #FFFFFF; color: var(--ink); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.act { flex: 1; height: 44px; border-radius: 14px; border: 1px solid #D6E6DC; background: #FFFFFF; color: var(--ink); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .act-wide { flex: 2; }
 .act svg { width: 18px; height: 18px; stroke: var(--green-2); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .share-menu { position: fixed; inset: 0; z-index: 40; }
@@ -423,7 +423,7 @@ body.sheet-open { overflow: hidden; }
 .tour-list { margin-top: 14px; }
 .find-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .find-label { font-size: 12px; color: var(--muted); flex: none; margin-right: 2px; }
-.find-btn { flex: 1; height: 40px; border-radius: 12px; border: 1px solid #D6E6DC; background: #FFFFFF; color: var(--ink); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.find-btn { flex: 1; height: 44px; border-radius: 14px; border: 1px solid #D6E6DC; background: #FFFFFF; color: var(--ink); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .find-btn svg { width: 16px; height: 16px; stroke: var(--green-2); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .find-btn svg .fill { fill: var(--green-2); stroke: none; }
 .song-hero .find-row { margin-top: 0; }
@@ -797,7 +797,8 @@ b > .help-pop[hidden] { display: none; }
 #prog-sort .chip { font-size: 12px; padding: 4px 10px; }
 
 /* 보관함 (♡ 좋아요 · 🎫 직관) */
-.box-row { margin-top: 8px; }
+.box-row { display: flex; gap: 6px; margin: 2px 0 12px; }
+.pill { height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid #D6E6DC; background: #FFFFFF; color: var(--ink); font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
 .box-btn[aria-pressed="true"] { border-color: #E9A0B4; background: #FFF1F5; color: #B23A5E; font-weight: 600; }
 .heart-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #D6E6DC; background: #FFFFFF; color: #B23A5E; font-size: 18px; display: inline-flex; align-items: center; justify-content: center; margin-right: 6px; }
 .song-hero .head-side { display: inline-flex; align-items: center; }

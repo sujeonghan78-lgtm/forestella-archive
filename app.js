@@ -145,7 +145,7 @@
   let boxUser = boxRead(BOX_USER);  // { name, pin, at }
   const boxApi = () => (window.CONFIG || {}).boxApi || '';
   const boxHas = (k, id) => box[k].includes(id);
-  const BOX_LABEL = { e: ['♡ 좋아요', '♥ 좋아요'], s: ['♡', '♥'], w: ['🎫 직관했어요', '✓ 직관했어요'] };
+  const BOX_LABEL = { e: ['♡ 좋아요', '♥ 좋아요'], s: ['♡', '♥'], w: ['🎫 직관했어요', '🎫 직관 ✓'] };
   const boxBtn = (k, id, cls = 'act') => `<button type="button" class="${cls} box-btn" data-box="${k}" data-id="${esc(id)}" aria-pressed="${boxHas(k, id)}"${k === 's' ? ' aria-label="이 곡 좋아요"' : ''}>${BOX_LABEL[k][boxHas(k, id) ? 1 : 0]}</button>`;
   async function boxCall(action, extra = {}) {
     const r = await fetch(boxApi(), { method: 'POST', body: JSON.stringify({ action, name: boxUser && boxUser.name, pin: boxUser && boxUser.pin, ...extra }) });
@@ -1200,14 +1200,14 @@
   // ---------- 지역 행사 (축제·기업 행사·지역 공연) ----------
   // 단독 투어·게스트·셋리스트 있는 콘서트는 빼고, 장소·행사명 낱말로 지역을 나눠요 (보충 파일 region으로 고칠 수 있어요)
   const REGIONS = [
-    ['해외', /두바이|해외|일본|미국|도쿄/],
-    ['경기·인천', /경기 광주|인천|송도|부천|광명|안성|분당|성남|고양|킨텍스|수원|의정부|신한대|인스파이어|계양|자라섬|jarasum|가평|용인|경기도|과천|렛츠런파크(?! 제주)/i],
+    ['해외', /두바이|해외|일본|미국|도쿄|N\.?AMERICA|Atlanta|Dallas|New York|Vancouver|\bin LA\b/i],
+    ['경기·인천', /경기 광주|인천|송도|부천|광명|안성|분당|성남|고양|킨텍스|수원|의정부|신한대|인스파이어|계양|자라섬|jarasum|가평|용인|경기도|과천|렛츠런파크(?! 제주)|Incheon|Suwon|Goyang/i],
     ['제주', /제주/],
-    ['강원', /강원|원주|춘천|강릉|인제|동해|속초|평창|삼척|홍천/],
-    ['충청', /대전|세종시|충남|충북|충청|천안|아산|이순신종합운동장|이순신 종합운동장|계룡|예산|제천|청주|공주|금강|대백제전|당진|서산|논산|충주/],
-    ['전라', /광주|타이거즈|전남|전북|전라|목포|여수|나주|순천|장흥|보림사|곡성|익산|원광|남원|광한루|영광|화순|지스트|엘로우시티|드래곤즈|광양|함평|군산|전주|고창|정읍|해남|강진|수묵/],
-    ['경상', /부산|대구|울산|경북|경남|경상|창원|김해|통영|용호도|경주|칠곡|직지사|김천|영도|벡스코|BNK|포항|안동|구미|영덕|예주|울진|연호문화센터|태화강|3\.15|거제|진주|양산|APEC|창녕|밀양|상주|문경/],
-    ['서울', /서울|seoul|잠실|올림픽공원|올림픽홀|88잔디|롯데콘서트홀|코엑스|장충|은평|서리풀|홍대|노량진|동작|세종대|고려대|한전아트센터|유니버설아트센터|플라자호텔|KBS홀|블루스퀘어|예술의전당(?!.*(광주|대구|경주|부산))/i],
+    ['강원', /Gangn[eu]+ng|Gangneong|강원|원주|춘천|강릉|인제|동해|속초|평창|삼척|홍천/],
+    ['충청', /Daejeon|Cheongju|in DA|대전|세종시|충남|충북|충청|천안|아산|이순신종합운동장|이순신 종합운동장|계룡|예산|제천|청주|공주|금강|대백제전|당진|서산|논산|충주/],
+    ['전라', /Gwangju|Jeonju|광주|타이거즈|전남|전북|전라|목포|여수|나주|순천|장흥|보림사|곡성|익산|원광|남원|광한루|영광|화순|지스트|엘로우시티|드래곤즈|광양|함평|군산|전주|고창|정읍|해남|강진|수묵/],
+    ['경상', /Busan|Daegu|Ulsan|Changwon|in BU|부산|대구|울산|경북|경남|경상|창원|김해|통영|용호도|경주|칠곡|직지사|김천|영도|벡스코|BNK|포항|안동|구미|영덕|예주|울진|연호문화센터|태화강|3\.15|거제|진주|양산|APEC|창녕|밀양|상주|문경/],
+    ['서울', /서울|seoul|경희대|잠실|올림픽공원|올림픽홀|88잔디|롯데콘서트홀|코엑스|장충|은평|서리풀|홍대|노량진|동작|세종대|고려대|한전아트센터|유니버설아트센터|플라자호텔|KBS홀|블루스퀘어|예술의전당(?!.*(광주|대구|경주|부산))/i],
   ];
   const regionOf = e => {
     const fix = ((data.extra || {}).region || {})[e.id];
@@ -1216,8 +1216,7 @@
     const r = REGIONS.find(([, rx]) => rx.test(t));
     return r ? r[0] : '그 외';
   };
-  const isLocalEvent = e => e.category === '공연' && !e.setlist && !e.ytOnly
-    && !/전국투어|더 포레스텔라|팬텀싱어\s?2 콘서트|팬텀 vs 팬텀|팬텀 오브 클래식|\(게스트\)|단독 콘서트|Night Live|강형호 콘서트|올스타전 갈라/i.test(e.title);
+  const isLocalEvent = e => e.category === '공연' && !e.ytOnly;
   const hasVideo = e => !!(e.videoId || e.related.length || e.ytMain || (e.ytStage || []).length);
   function localView() {
     const r = decodeURIComponent((location.hash.split('?r=')[1] || '').split('&')[0]);
@@ -2302,6 +2301,7 @@
         <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span>${upcoming(e)}</div>
         <h1 class="d-title">${esc(e.title)}</h1>
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
+        <div class="box-row">${boxBtn('e', e.id, 'pill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : boxBtn('w', e.id, 'pill')}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
         <div class="share-row">
@@ -2309,7 +2309,6 @@
           <a class="act" href="${xUrl(eventShareText(e), link('#/e/' + encodeURIComponent(e.id)))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>X</a>
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
-        <div class="share-row box-row">${boxBtn('e', e.id)}${/생일|유튜브|네이버TV/.test(e.category) ? '' : boxBtn('w', e.id)}</div>
         ${findRow(findQuery(e.title))}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
         ${(e.ytStage || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">방송 영상 <span class="song-count">${e.ytStage.length}</span>${help('방송사 공식 유튜브 영상 중 제목의 프로그램 이름과 방송 날짜로 이 일정에 붙인 거예요. 가끔 다른 회차일 수 있어요.')}</h2></div>${ytStrip(e.ytStage)}</section>` : ''}
