@@ -2106,7 +2106,7 @@
       if (!rows.has(key)) rows.set(key, { place, days: [] });
       rows.get(key).days.push(...days);
     });
-    return [...rows.values()].map(({ place, days }) => `<div class="tour-show"><span class="tour-place">${esc(place)}</span><span class="ev-days">${days.map(dd => { const e = events.find(x => x.date === dd); const lab = dd.slice(5).replace('-', '.'); return e ? `<a class="ev-day" href="#/e/${encodeURIComponent(e.id)}">${lab}</a>` : `<span class="ev-day">${lab}</span>`; }).join('')}</span></div>`).join('');
+    return [...rows.values()].map(({ place, days }) => `<div class="tour-show"><span class="tour-place">${esc(place)}</span><span class="ev-days">${days.map(dd => { const e = events.find(x => x.date === dd); const lab = dd.slice(5).replace('-', '.'); return e ? `<a class="ev-day${boxHas('w', e.id) ? ' went' : ''}" href="#/e/${encodeURIComponent(e.id)}">${boxHas('w', e.id) ? '🎫 ' : ''}${lab}</a>` : `<span class="ev-day">${lab}</span>`; }).join('')}</span></div>`).join('');
   }
 
   function tourView() {

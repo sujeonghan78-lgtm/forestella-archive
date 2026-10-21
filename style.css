@@ -275,6 +275,7 @@ body.sheet-open { overflow: hidden; }
 .ev-place::before { content: '· '; }
 .ev-days { display: inline-flex; gap: 4px; flex: none; }
 .ev-day { color: var(--muted); }
+.ev-day.went { color: #B23A5E; font-weight: 600; }
 .ev-day + .ev-day::before { content: '· '; }
 .ev-count { font-size: 12px; font-weight: 700; color: var(--green); background: #EEF7F1; border-radius: 6px; padding: 1px 6px; vertical-align: 2px; }
 .ev-title { font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--ink); }
