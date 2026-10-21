@@ -237,6 +237,9 @@
       e.fanSrc = f;
     });
     const videos = buildVideos(toObjects(raw.videos));
+    // 시트에 없는 관련 영상(보충 파일 videos): 같은 영상이 시트에 있으면 시트 우선
+    const sheetVids = new Set(videos.map(v => v.videoId));
+    buildVideos((extra.videos || []).filter(r => !sheetVids.has(r['영상ID']))).forEach(v => videos.push(v));
     const reports = raw.reports ? buildReports(toObjects(raw.reports)) : [];
     const byId = new Map(events.map(e => [e.id, e]));
     events.forEach(e => { e.related = []; });
