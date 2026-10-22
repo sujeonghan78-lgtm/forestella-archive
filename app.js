@@ -2486,23 +2486,12 @@
     const FULL = { 배두훈: '두훈', 강형호: '형호', 조민규: '민규', 고우림: '우림' };
     const items = (data.career || []).filter(c => c.type === '공연' && /단독/.test(c.note || ''));
     if (!items.length) return '';
-    // 사진: 그 공연 일정의 공식 X 사진 → 무대 영상 썸네일 → 공연 이름이 들어간 공식 X 사진
-    const GENERIC = /^(배두훈|강형호|조민규|고우림|pitta|포레스텔라|콘서트|팬미팅|단독|앙코르|encore|in|the|-|:)$/i;
-    const xPic = (c, a, to) => {
-      const key = c.title.replace(/[<>\[\]'"‘’“”:]/g, ' ').split(/\s+/).filter(w => w.length > 1 && !GENERIC.test(w)).sort((x, y) => y.length - x.length)[0];
-      if (!key || a.length !== 10) return '';
-      const from = new Date(new Date(a) - 120 * 864e5).toISOString().slice(0, 10);
-      const p = (data.xFeed || []).find(x => x.img && x.date >= from && x.date <= to && x.m.includes(c.member) && x.raw.toLowerCase().includes(key.toLowerCase()));
-      return p ? imgSize(p.img, 'small') : '';
-    };
+    // 사진: 활동 이력의 poster(예매처 포스터)만 써요. 없으면 색 배경
     const card = c => {
       const [a, b] = c.date.split('~'), to = b || a;
       const evs = a.length === 10 ? data.events.filter(e => e.date >= a && e.date <= to && (e.title.includes('[' + FULL[c.member] + ']') || e.title.includes(c.member))) : [];
       const when = a.length === 10 ? (b && b !== a ? `${fmtDate(a, false)} ~ ${b.slice(5).replace('-', '.')}` : fmtDate(a, false)) : a + '년';
-      const xe = evs.find(e => (e.xPost && e.xPost.img) || (e.xBehind || []).some(p => p.img));
-      const ve = evs.find(e => e.videoId || e.related.length || e.ytMain);
-      const vid = ve && (ve.videoId || (ve.related[0] || {}).videoId || (ve.ytMain && ve.ytMain.id));
-      const img = xe ? imgSize((xe.xPost && xe.xPost.img) || xe.xBehind.find(p => p.img).img, 'small') : vid ? `https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg` : xPic(c, a, to);
+      const img = c.poster || '';
       const seen = evs.some(e => boxHas('w', e.id));
       const sub = [when, evs.length > 1 ? `${evs.length}회` : ''].filter(Boolean).join(' · ');
       const inner = `
