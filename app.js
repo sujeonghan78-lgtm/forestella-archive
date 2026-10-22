@@ -35,8 +35,10 @@
   const tag = cat => `<span class="tag">${esc(cat)}</span>`;
   // 아직 오지 않은 일정에는 '예정' 표시
   const upcoming = e => e.date > todayParts().iso ? '<span class="upcoming">예정</span>' : '';
+  // 목록에서는 곡을 앞 3곡만, 나머지는 '외 N곡'으로 (전체는 일정 상세에서)
+  const songsShort = (list, sep = ', ') => list.length > 3 ? `${list.slice(0, 3).map(esc).join(sep)} 외 ${list.length - 3}곡` : list.map(esc).join(sep);
   const songsLine = e => e.songSource === '참고' || !e.songs.length ? '' :
-    `<span class="songs"><span class="songs-label">확인된 곡</span>${e.songs.map(esc).join(' · ')}</span>`;
+    `<span class="songs"><span class="songs-label">확인된 곡</span>${songsShort(e.songs, ' · ')}</span>`;
   const playBadge = e => e.videoId ?
     `<span class="play-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>영상</span>` : '';
 
@@ -968,7 +970,7 @@
     list.forEach(e => {
       const last = runs[runs.length - 1];
       const prev = last && last[last.length - 1];
-      const close = prev && (new Date(e.date) - new Date(prev.date)) / 864e5 <= 3;
+      const close = prev && Math.abs(new Date(e.date) - new Date(prev.date)) / 864e5 <= 3;
       if (prev && close && prev.title === e.title && samePlace(prev.place, e.place)) last.push(e);
       else runs.push([e]);
     });
@@ -1022,7 +1024,7 @@
             <span class="ev-body">
               <span class="ev-date">${tag(e.category)}${upcoming(e)}${when}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
               <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${liked ? '<span class="liked-mark">♥</span> ' : ''}${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
-              ${songs.length ? `<span class="ev-songs">확인된 곡 · ${songs.map(esc).join(', ')}</span>` : ''}
+              ${songs.length ? `<span class="ev-songs">확인된 곡 · ${songsShort(songs)}</span>` : ''}
             </span>${evThumb(evPic(run))}
           </div>`;
       }).join('')}`).join('');
@@ -1732,15 +1734,16 @@
     const years = new Map();
     list.forEach(e => { const y = e.date.slice(0, 4); if (!years.has(y)) years.set(y, []); years.get(y).push(e); });
     const md = x => x.date.slice(5).replace('-', '.');
-    const row = e => `
+    // 이틀 공연은 연표처럼 한 줄에 날짜 버튼 여러 개로
+    const row = run => { const e = run[0]; const songs = run.find(x => x.songs.length && x.songSource !== '참고'); return `
           <div class="ev">
-            <span class="dot${e.songs.length ? '' : ' dot-plain'}" aria-hidden="true"></span>
+            <span class="dot${songs ? '' : ' dot-plain'}" aria-hidden="true"></span>
             <span class="ev-body">
-              <span class="ev-date">${r ? '' : `<span class="tag">${esc(regionOf(e))}</span>`}${upcoming(e)}<span>${md(e)}</span>${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
-              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${boxHas('e', e.id) ? '<span class="liked-mark">♥</span> ' : ''}${boxHas('w', e.id) ? '🎫 ' : ''}${esc(e.title)}${hasVideo(e) ? ' <span class="ev-count">▶ 영상</span>' : ''}</a>
-              ${e.songs.length && e.songSource !== '참고' ? `<span class="ev-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
-            </span>${evThumb(evPic([e]))}
-          </div>`;
+              <span class="ev-date">${r ? '' : `<span class="tag">${esc(regionOf(e))}</span>`}${upcoming(e)}${run.length > 1 ? `<span class="ev-days">${run.slice().sort((a, b) => a.date.localeCompare(b.date)).map(x => `<a class="ev-day${boxHas('w', x.id) ? ' went' : ''}" href="#/e/${encodeURIComponent(x.id)}">${boxHas('w', x.id) ? '🎫 ' : ''}${md(x)}</a>`).join('')}</span>` : `<span>${md(e)}</span>`}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
+              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${run.some(x => boxHas('e', x.id)) ? '<span class="liked-mark">♥</span> ' : ''}${run.length === 1 && boxHas('w', e.id) ? '🎫 ' : ''}${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}${run.some(hasVideo) ? ' <span class="ev-count">▶ 영상</span>' : ''}</a>
+              ${songs ? `<span class="ev-songs">확인된 곡 · ${songsShort(songs.songs)}</span>` : ''}
+            </span>${evThumb(evPic(run))}
+          </div>`; };
     const chip = (n, label) => `<a class="chip${n === r ? ' on' : ''}" href="#/local${n ? '?r=' + encodeURIComponent(n) : ''}"${n === r ? ' aria-current="true"' : ''}>${esc(label)}</a>`;
     return `
       <a class="back" href="#/more">‹ 더보기</a>
@@ -1749,7 +1752,7 @@
       <div class="chips tl-cats">${chip('', `전체 ${all.length}`)}${names.filter(count).map(n => chip(n, `${n} ${count(n)}`)).join('')}</div>
       <p class="sub">${list.length}개 · ${list.filter(hasVideo).length}개는 영상이 있어요</p>
       </div>
-      <div class="tl">${[...years.entries()].map(([y, es]) => `<h2 class="month">${y}년</h2>${es.map(row).join('')}`).join('')}</div>`;
+      <div class="tl">${[...years.entries()].map(([y, es]) => `<h2 class="month">${y}년</h2>${groupRuns(es).map(row).join('')}`).join('')}</div>`;
   }
 
   function programView() {
@@ -1843,7 +1846,7 @@
             <span class="ep-date">${fmtDate(e.date)}</span>
             <span class="ep-title">${esc(epTitle(e, p.name))}</span>
             ${ref ? `<span class="ep-ref">참고${e.videoMemo ? ' · ' + esc(e.videoMemo.replace(/^참고:\s*/, '')) : ''}</span>` :
-              e.songs.length ? `<span class="ep-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
+              e.songs.length ? `<span class="ep-songs">확인된 곡 · ${songsShort(e.songs)}</span>` : ''}
           </span>
           ${vid && !ref ? `<span class="day-thumb ep-thumb"><img src="${ytThumbUrl(vid)}" alt="" loading="lazy" onerror="this.remove()"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></span>` : ''}
         </a>`;
