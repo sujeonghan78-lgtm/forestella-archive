@@ -816,6 +816,22 @@
    "title": "MONO",
    "note": "단독 콘서트",
    "where": "블루스퀘어"
+  },
+  {
+   "member": "배두훈",
+   "date": "2015-03-30",
+   "type": "공연",
+   "title": "뮤지컬 콘서트 집들이 #7 원.투.쓰리",
+   "note": "뮤지컬 콘서트",
+   "where": "대학로 TOM 2관"
+  },
+  {
+   "member": "배두훈",
+   "date": "2017-12-06",
+   "type": "공연",
+   "title": "Musica Paradiso",
+   "note": "",
+   "where": "광림아트센터 장천홀"
   }
  ]
 }
