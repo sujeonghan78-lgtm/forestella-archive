@@ -220,6 +220,8 @@
     const hide = new Set(extra.hide || []);
     const events = buildEvents(sheetRows.filter(r => !hide.has(r['ID']))).concat(raw.cafe ? buildCafe(raw.cafe, sheetRows) : [])
       .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    // placeFix: 시트에 장소가 비어 있는 일정만 채워요
+    Object.entries(extra.placeFix || {}).forEach(([id, p]) => { const e = events.find(x => x.id === id); if (e && !e.place) e.place = p; });
     Object.entries(extra.songs || {}).forEach(([id, s]) => {
       const e = events.find(x => x.id === id);
       if (e && !e.songs.length) { e.songs = splitSongs(s); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))]; if (!e.songSource) e.songSource = '나무위키'; }

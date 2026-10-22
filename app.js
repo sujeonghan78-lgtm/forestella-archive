@@ -2489,7 +2489,7 @@
     const groups = Object.keys(FULL).map(m => [m, items.filter(c => c.member === m).sort((a, b) => b.date.localeCompare(a.date))]).filter(g => g[1].length);
     const row = c => {
       const [a, b] = c.date.split('~'), to = b || a;
-      const evs = a.length === 10 ? data.events.filter(e => e.date >= a && e.date <= to && e.title.includes('[' + FULL[c.member] + ']')) : [];
+      const evs = a.length === 10 ? data.events.filter(e => e.date >= a && e.date <= to && (e.title.includes('[' + FULL[c.member] + ']') || e.title.includes(c.member))) : [];
       const when = a.length === 10 ? (b && b !== a ? `${fmtDate(a, false)} ~ ${b.slice(5).replace('-', '.')}` : fmtDate(a, false)) : a;
       const mark = evs.some(e => boxHas('w', e.id)) ? '🎫 ' : '';
       const inner = `<span>${esc(when)}</span><b>${mark}${esc(c.title)}${c.where ? ` <small>${esc(c.where)}</small>` : ''}</b>`;
