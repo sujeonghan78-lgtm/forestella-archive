@@ -2346,7 +2346,9 @@
   }
   function slForm(evs) {
     if (!evs.length || !(window.CONFIG.form || {}).fields) return '';
-    const fs = evs.length === 1 && evs[0].fanSet;
+    // 곡이 이미 있으면 그 목록을 채워 두고 '셋리 고치기'로 보여줘요
+    const one = evs.length === 1 && evs[0];
+    const fs = one && (one.fanSet || (one.songs.length && one.songSource !== '참고' ? { songs: one.songs } : null));
     const opt = e => `${e.date.slice(5).replace('-', '.')}${e.place ? ' ' + e.place : ''}`;
     return `
       <details class="sl-add">
@@ -2355,11 +2357,13 @@
           ${evs.length > 1 ? `<select class="sl-ev">${evs.map(e => `<option value="${esc(e.id)}">${esc(opt(e))}</option>`).join('')}</select>` : `<input type="hidden" class="sl-ev" value="${esc(evs[0].id)}">`}
           <textarea class="sl-in" rows="8" placeholder="한 줄에 한 곡씩 붙여넣어 주세요. 보랩·넬판 같은 줄임말도 알아들어요.&#10;&#10;예)&#10;Save our lives&#10;스카페&#10;넬판&#10;Inner Universe&#10;아리랑">${fs ? esc(fs.songs.join('\n')) : ''}</textarea>
           <ol class="sl-pre"></ol>
-          <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 보내면 바로 '확인 필요'로 붙고, 다른 두 분이 맞다고 하면 확정돼요.${fs ? ' 고쳐서 보내면 확인은 처음부터 다시 받아요.' : ''}</p>
+          <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 보내면 바로 '확인 필요'로 붙고, 다른 두 분이 맞다고 하면 확정돼요.${fs && fs.ver ? ' 고쳐서 보내면 확인은 처음부터 다시 받아요.' : ''}</p>
           <button type="button" class="bpill sl-send" disabled>보내기</button>
         </div>
       </details>`;
   }
+  // 미리 채워 둔 목록은 열자마자 ✓/? 미리보기를 보여줘요
+  document.addEventListener('toggle', ev => { const t = ev.target.matches && ev.target.matches('.sl-add') && ev.target.open && ev.target.querySelector('.sl-in'); if (t && t.value) t.dispatchEvent(new Event('input', { bubbles: true })); }, true);
   document.addEventListener('input', ev => {
     if (!ev.target.matches('.sl-in')) return;
     const box = ev.target.closest('.sl-box');

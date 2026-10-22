@@ -269,11 +269,9 @@
         if (!e || e.songSource === '참고') return;
         const ver = slVer(f.songs);
         const who = new Set(rows.filter(r => r.type === '셋리확인' && idOf(r) === id && r.ver === ver && r.by && r.by !== f.by).map(r => r.by));
-        // 시트에 곡이 있던 일정은 빠진 곡만 더하고, 팬 셋리만 있는 일정은 최근 판으로 통째로 바꿔요
-        const own = e.songSource && e.songSource !== '팬 기록' ? e.songs.slice() : [];
-        const list = own.concat(f.songs.filter(n => { const k = songKey(n); return k && !own.some(o => songKey(o) === k); }));
-        e.songs = list; e.songKeys = [...new Set(list.map(songKey).filter(Boolean))];
-        if (!own.length) e.songSource = '팬 기록';
+        // 원래 곡 목록이 있어도 최근 판으로 통째로 바꿔요 (틀린 곡을 고칠 수 있게). 원래 목록은 시트 제보 줄을 지우면 돌아와요
+        e.songs = f.songs.slice(); e.songKeys = [...new Set(f.songs.map(songKey).filter(Boolean))];
+        e.songSource = '팬 기록';
         e.fanSrc = e.fanSrc || { note: '' };
         e.fanSet = { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits };
       });
