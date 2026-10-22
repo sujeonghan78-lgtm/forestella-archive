@@ -948,6 +948,7 @@
     const xp = run.find(x => x.xPost && x.xPost.img);
     return xp ? imgSize(xp.xPost.img, 'thumb') : '';
   }
+  const evThumb = p => p ? `<span class="ev-thumb" aria-hidden="true"><img src="${esc(p)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></span>` : '';
   function groupRuns(list) {
     const runs = [];
     list.forEach(e => {
@@ -1008,7 +1009,7 @@
               <span class="ev-date">${tag(e.category)}${upcoming(e)}${when}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
               <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${liked ? '<span class="liked-mark">♥</span> ' : ''}${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
               ${songs.length ? `<span class="ev-songs">확인된 곡 · ${songs.map(esc).join(', ')}</span>` : ''}
-            </span>${(p => p ? `<span class="ev-thumb" aria-hidden="true"><img src="${esc(p)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></span>` : '')(evPic(run))}
+            </span>${evThumb(evPic(run))}
           </div>`;
       }).join('')}`).join('');
 
@@ -1724,7 +1725,7 @@
               <span class="ev-date">${r ? '' : `<span class="tag">${esc(regionOf(e))}</span>`}${upcoming(e)}<span>${md(e)}</span>${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
               <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${boxHas('e', e.id) ? '<span class="liked-mark">♥</span> ' : ''}${boxHas('w', e.id) ? '🎫 ' : ''}${esc(e.title)}${hasVideo(e) ? ' <span class="ev-count">▶ 영상</span>' : ''}</a>
               ${e.songs.length && e.songSource !== '참고' ? `<span class="ev-songs">확인된 곡 · ${e.songs.map(esc).join(', ')}</span>` : ''}
-            </span>
+            </span>${evThumb(evPic([e]))}
           </div>`;
     const chip = (n, label) => `<a class="chip${n === r ? ' on' : ''}" href="#/local${n ? '?r=' + encodeURIComponent(n) : ''}"${n === r ? ' aria-current="true"' : ''}>${esc(label)}</a>`;
     return `
