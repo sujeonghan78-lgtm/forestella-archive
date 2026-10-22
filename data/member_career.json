@@ -443,7 +443,8 @@
    "type": "공연",
    "title": "UNIVERSE ENCORE",
    "note": "단독 콘서트 (앙코르)",
-   "where": null
+   "where": null,
+   "poster": "covers/poster-pitta-universe-encore-2025.jpg"
   },
   {
    "member": "강형호",
@@ -452,7 +453,7 @@
    "title": "UNIVERSE ENCORE 부산",
    "note": "단독 콘서트 (앙코르)",
    "where": "부산",
-   "poster": "https://ticketimage.interpark.com/Play/image/large/25/25003468_p.gif"
+   "poster": "covers/poster-pitta-universe-encore-2025.jpg"
   },
   {
    "member": "강형호",
@@ -460,7 +461,8 @@
    "type": "공연",
    "title": "PITTA 강형호 콘서트 ORIGINALITY",
    "note": "단독 콘서트",
-   "where": null
+   "where": null,
+   "poster": "covers/poster-pitta-originality-2025.jpg"
   },
   {
    "member": "강형호",
@@ -468,7 +470,8 @@
    "type": "공연",
    "title": "PITTA 강형호 콘서트 UNIVERSE: ECLIPSE",
    "note": "단독 콘서트",
-   "where": null
+   "where": null,
+   "poster": "covers/poster-pitta-eclipse-2026.jpg"
   },
   {
    "member": "조민규",
@@ -750,7 +753,7 @@
    "date": "2023-11-01",
    "type": "공연",
    "title": "The 사랑",
-   "note": "반도문화재단 4주년 기념 단독 콘서트",
+   "note": "반도문화재단 4주년 기념 콘서트",
    "where": "동탄 아이비라운지"
   },
   {

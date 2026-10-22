@@ -516,21 +516,22 @@
   }
 
   function resultCard(e) {
+    const solo = !e.setlist && e.category === '공연' && /^\[/.test(e.title) && soloInfos().find(c => c.evs.includes(e));
     // 영상이 있으면 오른쪽에 썸네일을 보여줘요 (못 불러오면 ▶ 동그라미로)
     const vid = e.videoId || (e.related[0] || {}).videoId || (e.ytMain && e.ytMain.id);
     const thumb = vid ? `<span class="card-thumb" aria-label="영상 있음"><img src="https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><span class="play-dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg></span></span>` : '';
     const card = `
-      <a class="card${e.setlist ? ' card-concert' : ''}${vid ? ' has-thumb' : ''}" href="${e.ytOnly ? (e.link || 'https://www.youtube.com/watch?v=' + encodeURIComponent(e.videoId)) + '" target="_blank" rel="noopener' : '#/e/' + encodeURIComponent(e.id)}">
+      <a class="card${e.setlist || solo ? ' card-concert' : ''}${vid ? ' has-thumb' : ''}" href="${e.ytOnly ? (e.link || 'https://www.youtube.com/watch?v=' + encodeURIComponent(e.videoId)) + '" target="_blank" rel="noopener' : '#/e/' + encodeURIComponent(e.id)}">
         <span class="card-body">
           <span class="meta">${tag(e.category)}<span>${fmtDate(e.date)}</span>${upcoming(e)}</span>
           <span class="card-title">${esc(e.title)}</span>
           ${songsLine(e)}
         </span>${thumb}
       </a>`;
-    if (!e.setlist) return card;
+    if (!e.setlist && !solo) return card;
     return `
       <div class="card-wrap">${card}
-        <a class="card-sl" href="#/tour/${encodeURIComponent(e.setlist.id)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>셋리 보기</a>
+        <a class="card-sl" href="#/tour/${encodeURIComponent(e.setlist ? e.setlist.id : solo.id)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>${e.setlist ? '셋리 보기' : '공연 보기'}</a>
       </div>`;
   }
 
@@ -2464,57 +2465,62 @@
   }
 
 
+  // 멤버 단독 공연(활동 이력)을 콘서트 정보와 같은 모양으로: 콘서트 페이지(#/tour/solo-…)로 열려요
+  const SOLO_SHORT = { 배두훈: '두훈', 강형호: '형호', 조민규: '민규', 고우림: '우림' };
+  let soloCache = null;
+  function soloInfos() {
+    if (soloCache && soloCache.d === data) return soloCache.list;
+    const list = (data.career || []).filter(c => c.type === '공연' && /단독/.test(c.note || '')).map(c => {
+      const [a, b] = c.date.split('~'), to = b || a;
+      const evs = a.length === 10 ? data.events.filter(e => e.date >= a && e.date <= to && (e.title.includes('[' + SOLO_SHORT[c.member] + ']') || e.title.includes(c.member))) : [];
+      const days = a.length === 10 ? (b && b !== a ? `${a}~${b.slice(5)}` : a) : '';
+      return { id: 'solo-' + (c.member === '배두훈' ? 'dh' : c.member === '강형호' ? 'hh' : c.member === '조민규' ? 'mk' : 'wr') + '-' + a.replace(/-/g, ''), solo: true, member: c.member, name: c.title, note: c.note,
+        from: a.length === 10 ? a : '', to: a.length === 10 ? to : '', year: a.slice(0, 4), count: evs.length > 1 ? String(evs.length) : '', org: '',
+        shows: days ? [`${days} ${c.where || (evs.find(e => e.place) || {}).place || ''}`.trim()] : [], facts: [], img: c.poster || '', src: [], ok: true, evs };
+    });
+    soloCache = { d: data, list };
+    return list;
+  }
   function concertsView() {
-    // 시트 "콘서트 정보"가 있으면 셋리스트가 없는 공연까지 다 보여줘요.
-    const list = data.concerts && data.concerts.length
-      ? data.concerts.map(c => ({ id: c.id, name: c.name, img: c.img || tourPic(c.tour), sub: `${concertRange(c)}${/^\d+$/.test(c.count || '') ? ` · ${c.count}회` : ''}${c.tour ? ` · 셋리스트 ${c.tour.songs.length}곡` : ''}` }))
-      : data.tours.slice().reverse().map(t => ({ id: t.id, name: t.name, sub: `${tourRange(t)} · ${t.complete ? '' : '일부 '}${t.songs.length}곡` }));
+    // 포레스텔라 공연(시트 "콘서트 정보")과 멤버 단독 공연(활동 이력)을 포스터 카드로, 해마다 묶어 보여줘요
+    const FULL = { 배두훈: '두훈', 강형호: '형호', 조민규: '민규', 고우림: '우림' };
+    const cover = (img, ph, badge, extra) => `<span class="solo-cover"><span class="con-ph" aria-hidden="true">♪</span>${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}${badge ? `<span class="solo-badge">${esc(badge)}</span>` : ''}${extra || ''}</span>`;
+    // 카드 제목은 짧게: 연도·'포레스텔라'·'PITTA 강형호 콘서트' 같은 앞말은 빼요
+    const short = n => n.replace(/^[\d-]+\s+/, '').replace(/^포레스텔라\s+/, '').replace(/^(PITTA 강형호 콘서트|배두훈 팬미팅|조민규 단독 콘서트)\s*:?\s*/, '') || n;
+    const items = [];
+    (data.concerts || []).forEach(c => {
+      const sub = [concertRange(c), /^\d+$/.test(c.count || '') ? `${c.count}회` : ''].filter(Boolean).join(' · ');
+      const img = c.img ? imgSize(c.img, 'small') : tourPic(c.tour);
+      const seen = !!c.from && data.events.some(e => e.category === '공연' && e.date >= c.from && e.date <= (c.to || c.from) && !/^\[/.test(e.title) && boxHas('w', e.id));
+      items.push({ m: '', date: c.from || '', html: `<a class="solo-card" data-m="" href="#/tour/${encodeURIComponent(c.id)}">${cover(img, c.name, '', (c.tour ? '<span class="con-set">셋리스트</span>' : '') + (seen ? '<span class="solo-seen">🎫</span>' : ''))}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
+    });
+    if (!items.length) data.tours.forEach(t => items.push({ m: '', date: (t.dates || [''])[0] || '', html: `<a class="solo-card" data-m="" href="#/tour/${encodeURIComponent(t.id)}">${cover(tourPic(t), t.name, '', '')}<b>${esc(t.name)}</b><span class="rel-sub">${nw(tourRange(t))}</span></a>` }));
+    soloInfos().forEach(c => {
+      const when = c.from ? concertRange(c) : c.year + '년';
+      const seen = c.evs.some(e => boxHas('w', e.id));
+      const sub = [when, c.count ? `${c.count}회` : ''].filter(Boolean).join(' · ');
+      items.push({ m: c.member, date: c.from || c.year, html: `<a class="solo-card" data-m="${esc(c.member)}" href="#/tour/${encodeURIComponent(c.id)}">${cover(c.img, c.name, FULL[c.member], seen ? '<span class="solo-seen">🎫</span>' : '')}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
+    });
+    items.sort((x, y) => y.date.localeCompare(x.date));
+    const years = [...new Set(items.map(x => x.date.slice(0, 4)))];
+    const tabs = ['', ...Object.keys(FULL).filter(m => items.some(x => x.m === m))];
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">콘서트${help('단독 콘서트와 투어의 일정, 공연장, 부른 곡을 모았어요. 공연 정보는 예매처·기사·위키 중 두 곳 이상 맞는 것만 적었어요. 셋리스트는 나무위키·setlist.fm·뉴스 기사를 모았어요. 틀린 곳이 있으면 제보해 주세요.')}</h1>
-      <div class="stack x-list">
-        ${list.map(c => `
-          <a class="x-card${c.img ? '' : ' no-img'}" href="#/tour/${encodeURIComponent(c.id)}">
-            ${c.img ? `<img src="${esc(imgSize(c.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
-            <span class="x-text"><span class="x-date">${nw(c.sub)}</span><b>${esc(c.name)}</b></span>
-          </a>`).join('')}
-      </div>
-      ${soloConcerts()}`;
-  }
-  // 멤버 단독 콘서트 (활동 이력에서): 일정이 있으면 그 날 일정으로 이어져요
-  function soloConcerts() {
-    const FULL = { 배두훈: '두훈', 강형호: '형호', 조민규: '민규', 고우림: '우림' };
-    const items = (data.career || []).filter(c => c.type === '공연' && /단독/.test(c.note || ''));
-    if (!items.length) return '';
-    // 사진: 활동 이력의 poster(예매처 포스터)만 써요. 없으면 색 배경
-    const card = c => {
-      const [a, b] = c.date.split('~'), to = b || a;
-      const evs = a.length === 10 ? data.events.filter(e => e.date >= a && e.date <= to && (e.title.includes('[' + FULL[c.member] + ']') || e.title.includes(c.member))) : [];
-      const when = a.length === 10 ? (b && b !== a ? `${fmtDate(a, false)} ~ ${b.slice(5).replace('-', '.')}` : fmtDate(a, false)) : a + '년';
-      const img = c.poster || '';
-      const seen = evs.some(e => boxHas('w', e.id));
-      const sub = [when, evs.length > 1 ? `${evs.length}회` : ''].filter(Boolean).join(' · ');
-      const inner = `
-            <span class="solo-cover">${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="solo-badge">${esc(FULL[c.member])}</span>${seen ? '<span class="solo-seen">🎫</span>' : ''}</span>
-            <b>${esc(c.title)}</b>
-            <span class="rel-sub">${nw(sub)}</span>${c.where ? `<span class="rel-sub">${esc(c.where)}</span>` : ''}`;
-      return evs.length ? `<a class="solo-card" data-m="${esc(c.member)}" href="#/e/${encodeURIComponent(evs[0].id)}">${inner}</a>` : `<div class="solo-card solo-nolink" data-m="${esc(c.member)}">${inner}</div>`;
-    };
-    const list = items.slice().sort((x, y) => y.date.localeCompare(x.date));
-    const ms = Object.keys(FULL).filter(m => list.some(c => c.member === m));
-    return `
-      <section class="block solo-sec">
-        <h2 class="h2">멤버 단독 콘서트${help('멤버 활동 이력에 있는 단독 콘서트·팬미팅이에요. 날짜가 있는 공연은 눌러서 직관을 표시할 수 있어요.')}</h2>
-        <div class="chips solo-tabs">${['', ...ms].map(m => `<button type="button" class="chip${m ? '' : ' on'}" data-m="${esc(m)}">${m ? esc(FULL[m]) : '전체'} <b>${m ? list.filter(c => c.member === m).length : list.length}</b></button>`).join('')}</div>
-        <div class="solo-grid">${list.map(card).join('')}</div>
-      </section>`;
+      <h1 class="h1 page-title">콘서트${help('포레스텔라 콘서트·투어와 멤버 단독 콘서트·팬미팅이에요. 공연 정보는 예매처·기사·위키 중 두 곳 이상 맞는 것만 적었어요. 셋리스트는 나무위키·setlist.fm·뉴스 기사를 모았어요. 틀린 곳이 있으면 제보해 주세요.')}</h1>
+      <div class="chips solo-tabs">${tabs.map(m => `<button type="button" class="chip" data-m="${esc(m)}">${m ? esc(FULL[m]) : '포레스텔라'} <b>${items.filter(x => x.m === m).length}</b></button>`).join('')}</div>
+      ${years.map(y => `<section class="con-year"><h2 class="con-y">${y}</h2><div class="solo-grid">${items.filter(x => x.date.slice(0, 4) === y).map(x => x.html).join('')}</div></section>`).join('')}`;
   }
   function bindSolo() {
     const tabs = document.querySelectorAll('.solo-tabs .chip');
-    tabs.forEach(t => t.onclick = () => {
-      tabs.forEach(x => x.classList.toggle('on', x === t));
-      document.querySelectorAll('.solo-card').forEach(c => { c.hidden = !!t.dataset.m && c.dataset.m !== t.dataset.m; });
-    });
+    const pick = m => {
+      tabs.forEach(x => x.classList.toggle('on', x.dataset.m === m));
+      document.querySelectorAll('.solo-card').forEach(c => { c.hidden = c.dataset.m !== m; });
+      document.querySelectorAll('.con-year').forEach(s => { s.hidden = !s.querySelector('.solo-card:not([hidden])'); });
+      try { sessionStorage.setItem('sb-con-tab', m); } catch (e) {}
+    };
+    tabs.forEach(t => t.onclick = () => pick(t.dataset.m));
+    let m = ''; try { m = sessionStorage.getItem('sb-con-tab') || ''; } catch (e) {}
+    pick([...tabs].some(t => t.dataset.m === m) ? m : '');
   }
 
   // X 사진만 크기를 골라 받을 수 있어요. 다른 곳 사진은 주소 그대로 써요.
@@ -2595,22 +2601,22 @@
   function tourView() {
     const id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0];
     const t = data.tours.find(x => x.id === id);
-    const info = (data.concerts || []).find(x => x.id === id);
+    const info = (data.concerts || []).find(x => x.id === id) || soloInfos().find(x => x.id === id);
     if (!t && info) {
       // 셋리스트가 없는 공연도 같은 초록 카드로 보여줘요. 일정은 "날짜 도시 공연장" 글에서 나눠요.
-      const shows = infoShows(info, []);
+      const shows = infoShows(info, info.evs || []);
       return `
       <a class="back" href="#/concerts">‹ 콘서트</a>
       <section class="song-hero">
-        <div class="block-head"><h1 class="song-title">${esc(info.name)}</h1></div>
+        <div class="block-head"><h1 class="song-title">${info.solo ? `<span class="solo-who">${esc(info.member)}</span>` : ''}${esc(info.name)}</h1></div>
         ${info.img ? `<a href="${esc(info.imgPost || info.img)}" target="_blank" rel="noopener"><img class="album-img tour-poster" src="${esc(imgSize(info.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
         <span class="count-pill">셋리스트 준비 중</span>
-        <p class="sub">${concertRange(info)}${info.ok ? '' : ' <span class="tag">확인 중</span>'}</p>
+        <p class="sub">${info.solo ? esc([concertRange(info) || info.year + '년', info.note].filter(Boolean).join(' · ')) : concertRange(info)}${info.ok ? '' : ' <span class="tag">확인 중</span>'}</p>
         ${shows ? `<div class="tour-shows">${foldShows(shows)}</div>` : ''}
-        ${findRow('포레스텔라 ' + info.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
+        ${findRow(info.solo ? `${info.member} ${info.name}` : '포레스텔라 ' + info.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
       <section class="album-head tour-info">${concertInfo(info, true)}</section>
-      ${ytSection((data.official || []).filter(v => v.tour === info.id), '공식 유튜브', '공연 Recap·라이브 클립·비하인드처럼 제목에 이 콘서트 이름이 들어간 공식 영상이에요.')}
+      ${info.solo ? ytSection([...new Set(info.evs.flatMap(e => [...(e.ytStage || []), ...(e.ytBehind || [])]))], '공식 유튜브', '이 공연 날짜에 맞는 공식 채널 영상이에요.') : ytSection((data.official || []).filter(v => v.tour === info.id), '공식 유튜브', '공연 Recap·라이브 클립·비하인드처럼 제목에 이 콘서트 이름이 들어간 공식 영상이에요.')}
       ${tourX(info.id).length ? `<hr class="divider"><div class="block-head"><h2 class="h3 list-title">공식 X</h2>${albumBtn()}</div>${xList(tourX(info.id))}` : ''}
       <hr class="divider">
       <div class="tour-foot"><p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. <a href="${formUrl({ type: '틀린 정보', title: info.name })}" target="_blank" rel="noopener">알고 있는 곡 알려주기 ›</a></p></div>`;

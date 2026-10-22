@@ -876,12 +876,22 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .solo-nolink { color: var(--ink-2); }
 .box-ev b small { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }
 .solo-tabs { margin: 4px 0 12px; }
-.solo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 10px; }
+.solo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 8px; }
 .solo-card { display: flex; flex-direction: column; gap: 2px; color: var(--ink); text-decoration: none; min-width: 0; }
 .solo-card[hidden] { display: none; }
-.solo-card b { font-size: 13px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.solo-cover { position: relative; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #C6EC6B, #62D3A1 55%, #72BCF3); margin-bottom: 6px; }
-.solo-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.solo-card b { font-size: 12.5px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.solo-cover { position: relative; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #C6EC6B, #62D3A1 55%, #72BCF3); margin-bottom: 6px; }
+.solo-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.con-ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.85); font-size: 26px; }
+.con-set { position: absolute; left: 6px; bottom: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.92); color: #1F7A57; font-size: 11px; font-weight: 700; }
+.con-year { margin-top: 18px; }
+.con-year[hidden] { display: none; }
+.con-y { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--ink-2, var(--ink)); letter-spacing: .02em; }
+.solo-grid .rel-sub { font-size: 11.5px; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }
+.solo-badge, .con-set { font-size: 10.5px; padding: 1px 7px; }
 .solo-badge { position: absolute; left: 6px; top: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; font-weight: 600; }
 .solo-seen { position: absolute; right: 6px; top: 4px; font-size: 14px; }
 .solo-nolink b { color: var(--ink-2, var(--ink)); }
+
+.solo-grid .nw { white-space: normal; }
+.solo-who { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
