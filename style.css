@@ -756,6 +756,7 @@ b > .help-pop[hidden] { display: none; }
 .tour-more summary::-webkit-details-marker { display: none; }
 .tour-more summary::after { content: ' ›'; }
 .tour-more[open] summary { display: none; }
+.tour-more > .tour-show { margin-top: 6px; }
 .sync-box { display: grid; gap: 4px; margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--soft); border: 1px solid var(--line); font-size: 13px; }
 .sync-row { display: flex; justify-content: space-between; gap: 8px; }
 .sync-row a { color: inherit; }
