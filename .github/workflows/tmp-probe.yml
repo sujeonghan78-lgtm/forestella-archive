@@ -1,12 +1,16 @@
 name: tmp-probe
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   p:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
           set +e
-          for u in "http://www.playdb.co.kr/artistdb/search_result.asp?sValue=%B0%AD%C7%FC%C8%A3" "https://m.playdb.co.kr/" "https://www.playdb.co.kr/artistdb/search_result.asp?sValue=%EA%B0%95%ED%98%95%ED%98%B8" "https://namu.wiki/w/%EA%B0%95%ED%98%95%ED%98%B8" "https://www.kopis.or.kr/por/db/pblprfr/pblprfr.do?menuId=MNU_00020" "https://tickets.interpark.com/contents/search?keyword=%EA%B0%95%ED%98%95%ED%98%B8" "https://search.naver.com/search.naver?query=%EA%B0%95%ED%98%95%ED%98%B8+%EC%BD%98%EC%84%9C%ED%8A%B8"; do
-            c=$(curl -s -L -A "Mozilla/5.0" -o /tmp/o.html -w "%{http_code}" "$u" || true); s=$(wc -c < /tmp/o.html); t=$(grep -o '<title>[^<]*' /tmp/o.html | head -1)
-            echo "::notice::$c $s $t $u"
-          done
+          mkdir -p probe
+          curl -s -L -A "Mozilla/5.0" -o probe/kopis.html "https://www.kopis.or.kr/por/db/pblprfr/pblprfr.do?menuId=MNU_00020"
+          for f in $(grep -oE 'src="[^"]*\.js[^"]*"' probe/kopis.html | sed 's/src="//;s/"$//' | grep -v http | head -20); do n=$(echo $f | tr '/?' '__'); curl -s -L -A "Mozilla/5.0" -o "probe/$n" "https://www.kopis.or.kr$f"; done
+          git config user.name bot; git config user.email bot@x
+          git checkout -b tmp-probe; git add probe; git commit -qm probe; git push -f origin tmp-probe
