@@ -1700,7 +1700,16 @@
   "160693": "White Night(백야) / Bohemian Rhapsody / Despacito / Love Runs Out / Sweet Dreams / 시월에 어느 멋진 날에",
   "10174": "Je Suis Malade",
   "10178": "Shape Of You",
-  "10187": "Inner Universe"
+  "10187": "Inner Universe",
+  "10020": "사랑의 여정 / 시간여행 / You Are My Star / My Eden",
+  "10040": "Sweet Dreams / My Eden",
+  "10056": "신라의 달밤 / 바람의 노래",
+  "10096": "Sweet Dreams / Bohemian Rhapsody / 바람의 노래",
+  "10149": "Sweet Dreams",
+  "10167": "Phantom of the Opera",
+  "10170": "그대가 그대를",
+  "99036": "바람이 건네준 말",
+  "100051": "Moonlight"
  },
  "hide": [
   "10116"
@@ -3202,7 +3211,7 @@
    "비고": ""
   },
   {
-   "일정ID": "10171",
+   "일정ID": "10170",
    "날짜": "2021-01-16",
    "일정명": "[강형호] MBN 로또싱어",
    "출처": "방송사",
@@ -3951,5 +3960,16 @@
   "2021-time-travel": "https://ticketimage.interpark.com/Play/image/large/21/21001968_p.gif",
   "2021-the-forestella": "https://ticketimage.interpark.com/Play/image/large/21/21004082_p.gif",
   "2022-world-tree": "https://image.toast.com/aaaaab/ticketlink/TKL_7/seoul0524.jpg"
+ },
+ "songSrc": {
+  "10020": "팬 영상",
+  "10040": "팬 영상",
+  "10056": "팬 영상",
+  "10096": "방송사 영상",
+  "10149": "팬 영상",
+  "10167": "방송사 영상",
+  "10170": "방송사 영상",
+  "99036": "방송사 영상",
+  "100051": "방송사 영상"
  }
 }

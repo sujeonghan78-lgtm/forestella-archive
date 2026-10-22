@@ -231,7 +231,7 @@
     Object.entries(extra.placeFix || {}).forEach(([id, p]) => { const e = events.find(x => x.id === id); if (e && !e.place) e.place = p; });
     Object.entries(extra.songs || {}).forEach(([id, s]) => {
       const e = events.find(x => x.id === id);
-      if (e && !e.songs.length) { e.songs = splitSongs(s); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))]; if (!e.songSource) e.songSource = '나무위키'; }
+      if (e && !e.songs.length) { e.songs = splitSongs(s); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))]; e.songSource = (extra.songSrc || {})[id] || e.songSource || '나무위키'; }
     });
     // addSongs: 시트 곡은 그대로 두고 빠진 곡만 더해요
     Object.entries(extra.addSongs || {}).forEach(([id, s]) => {
