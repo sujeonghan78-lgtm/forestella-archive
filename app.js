@@ -1468,7 +1468,6 @@
     const st = boxStats();
     const bestList = [...new Map([...st.wentAll, ...st.liked].map(e => [e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
     const chip = (grp, v, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-grp="${grp}" data-v="${esc(v)}" aria-pressed="${on}">${esc(label)}</button>`;
-    const songNames = [...new Set([...data.songs.values()].map(x => x.name))].sort((a, b) => a.localeCompare(b, 'ko'));
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">숲별 카드${help('내 숲별 기록을 카드 한 장으로 만들어요. 넣은 내용과 사진은 이 폰에만 저장돼요.')}</h1>
@@ -1477,10 +1476,9 @@
         <label><span class="cf-l">입덕 날짜</span><input type="date" id="cf-since" value="${esc(card.since)}" max="${todayIso()}" min="2017-01-01"></label>
         <div class="cf-g"><span class="cf-l">공식 팬클럽 숲별 기수 <small>여러 개 골라도 돼요</small></span><div class="chips cf-chips">${CARD_GENS.map(g => chip('gen', g, g, card.gen.includes(g))).join('')}</div></div>
         <div class="cf-two">
-          <label><span class="cf-l">입덕곡</span><input id="cf-debut" list="cf-songs" maxlength="40" value="${esc(card.debut)}" placeholder="곡 이름" autocomplete="off"></label>
-          <label><span class="cf-l">최애곡</span><input id="cf-fav" list="cf-songs" maxlength="40" value="${esc(card.fav)}" placeholder="곡 이름" autocomplete="off"></label>
+          <label><span class="cf-l">입덕곡</span><span class="cf-ac"><input id="cf-debut" maxlength="40" value="${esc(card.debut)}" placeholder="곡 이름·초성" autocomplete="off"><span class="cf-sug" hidden></span></span></label>
+          <label><span class="cf-l">최애곡</span><span class="cf-ac"><input id="cf-fav" maxlength="40" value="${esc(card.fav)}" placeholder="곡 이름·초성" autocomplete="off"><span class="cf-sug" hidden></span></span></label>
         </div>
-        <datalist id="cf-songs">${songNames.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
         <div class="cf-g"><span class="cf-l">최애 <small>여러 명 골라도 돼요</small></span><div class="chips cf-chips">${CARD_MEMS.map(m => chip('mem', m, m, card.mem.includes(m))).join('')}</div></div>
         <label><span class="cf-l">제일 좋았던 일정 <small>직관·♥ 일정에서 골라요</small></span>
           <select id="cf-best"><option value="">${bestList.length ? '안 넣을래요' : '보관함에 직관·♥ 일정이 아직 없어요'}</option>${bestList.map(e => `<option value="${esc(e.id)}"${e.id === card.best ? ' selected' : ''}>${fmtDate(e.date, false)} ${esc(e.title)}</option>`).join('')}</select></label>
@@ -1530,6 +1528,28 @@
       }
       cardSave(); redraw();
     };
+    // 곡 칸: 치는 대로 곡 목록이 걸러져요 (초성 OK, 목록에 없는 곡도 그대로 써도 돼요)
+    const songNames = [...new Set([...data.songs.values()].map(x => x.name))].sort((a, b) => a.localeCompare(b, 'ko')).map(n => ({ n, k: norm(n), c: chosung(n).replace(/\s+/g, '') }));
+    form.querySelectorAll('.cf-ac').forEach(w => {
+      const inp = w.querySelector('input'), sug = w.querySelector('.cf-sug');
+      const show = () => {
+        const v = inp.value.trim(), q = norm(v), cq = v.replace(/\s+/g, '');
+        const hits = !q ? songNames : isChosungOnly(cq) ? songNames.filter(x => x.c.includes(cq)) : songNames.filter(x => x.k.includes(q));
+        sug.innerHTML = hits.slice(0, 60).map(x => `<button type="button" class="cf-opt" data-n="${esc(x.n)}">${esc(x.n)}</button>`).join('') || '<span class="cf-none">목록에 없어요. 그대로 써도 돼요.</span>';
+        sug.hidden = false;
+      };
+      inp.addEventListener('focus', show);
+      inp.addEventListener('input', show);
+      inp.addEventListener('blur', () => setTimeout(() => { sug.hidden = true; }, 150));
+      sug.onpointerdown = ev => ev.preventDefault();
+      sug.onclick = ev => {
+        const o = ev.target.closest('.cf-opt');
+        if (!o) return;
+        ev.stopPropagation();
+        inp.value = o.dataset.n; sug.hidden = true;
+        inp.dispatchEvent(new Event('input', { bubbles: true })); sug.hidden = true; inp.blur();
+      };
+    });
     // 사진: 긴 쪽 1200px로 줄여서 이 폰에만 저장
     const fi = document.getElementById('cf-photo');
     fi.onchange = () => {

@@ -866,3 +866,10 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .cf-btns .btn.ghost { background: #FFFFFF; color: var(--ink); border: 1px solid #D6E6DC; }
 .cf-msg { margin-top: 8px; text-align: center; }
 .cf-pv canvas.has-photo { touch-action: none; }
+.cf-ac { position: relative; display: block; }
+.cf-sug { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 6; max-height: 240px; overflow-y: auto; background: #FFFFFF; border: 1px solid #D6E6DC; border-radius: 12px; box-shadow: 0 8px 24px rgba(20, 50, 35, .12); padding: 4px; }
+.cf-opt { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px; min-height: 40px; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 400; color: var(--ink); }
+.cf-opt:active { background: var(--soft); }
+.cf-none { display: block; padding: 10px; font-size: 12px; font-weight: 400; color: var(--muted); }
+.cf-two label:first-child .cf-sug { right: calc(-100% - 8px); }
+.cf-two label:last-child .cf-sug { left: calc(-100% - 8px); }
