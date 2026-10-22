@@ -16,6 +16,8 @@ window.CONFIG = {
   },
   // 보관함(♡·직관)을 다른 폰에서 이어 쓰는 Apps Script 웹 앱 주소. 비어 있으면 이 폰에만 저장해요.
   boxApi: 'https://script.google.com/macros/s/AKfycbwYlE1fytf4V0tpm9HkRHvGZqA7Pnv6YwwM2Cek6cKHPFg_RpxCev9vhv8ZdBF3e5Fkfg/exec',
+  // 의견 '처리했어요' 표시는 관리자 기기(#/admin에서 만든 열쇠)의 서명만 인정해요. 여기는 확인용 공개 열쇠예요.
+  adminKey: null,
   // 저장해 둔 데이터를 이 시간(분)이 지나면 새로 받아요.
   cacheMinutes: 30,
   // 시트를 크게 고쳤을 때 이 숫자를 올리면 모든 폰이 저장본을 버리고 바로 새로 받아요.

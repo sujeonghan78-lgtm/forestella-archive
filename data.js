@@ -157,7 +157,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message);
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message);
   }
 
   async function fetchText(url) {
@@ -753,5 +753,12 @@
   }
 
   window.DATA_LINK_SKIP = LINK_SKIP;
-  window.DATA = { load, parseCSV, normDate, songKey, setlistName, slVer };
+  // 의견 탭: 제보 폼 '종류: 의견' 줄과 '종류: 의견처리'(관리자 서명) 줄
+  function buildOpinions(text) {
+    const rows = buildReports(toObjects(text || ''), true);
+    const ops = rows.filter(r => r.type === '의견' && r.message).map(r => ({ id: 'o' + slVer([r.time, r.by, r.message]), time: r.time, cat: line0(r, '분류'), text: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, name: line0(r, '이름'), by: r.by }));
+    const marks = rows.filter(r => r.type === '의견처리').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명') })).filter(m => m.id && m.sig);
+    return { ops, marks };
+  }
+  window.DATA = { load, parseCSV, normDate, songKey, setlistName, slVer, buildOpinions, fetchText };
 })();

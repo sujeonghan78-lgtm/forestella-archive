@@ -1961,6 +1961,7 @@
       </a>
       <nav aria-label="더보기 메뉴">
         ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
+        ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견', '남기기 · 모아보기')}
         ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (box.e.length + box.s.length + box.w.length) ? `♥ ${box.e.length + box.s.length} · 🎫 ${box.w.length}` : '좋아요 · 직관')}
         ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
@@ -1974,7 +1975,8 @@
         ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기', '')}
         ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해', '')}
       </nav>
-      <a class="check-link" href="#/check">자동 연결 점검 (관리용) ›</a>`;
+      <a class="check-link" href="#/check">자동 연결 점검 (관리용) ›</a>
+      <a class="check-link" href="#/admin">관리자 기기 ›</a>`;
   }
 
   // 앨범 보기: 목록을 사진만 바둑판으로 (사이트 전체, 기억해 둬요). 사진 목록이 없는 칸에선 버튼이 회색
@@ -2206,6 +2208,8 @@
     concerts: concertsView,
     tour: tourView,
     add: addView,
+    opinion: opinionView,
+    admin: adminView,
     xfeed: xfeedView,
     yt: ytView,
     releases: releasesView,
@@ -2362,7 +2366,7 @@
     const btn = !f.ok && !mine && !done && (window.CONFIG.form || {}).fields ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(f.ver)}">맞아요</button>` : '';
     const msg = f.ok ? `팬 ${f.n}명이 확인한 셋리예요.`
       : mine ? '내가 올린 셋리예요. 다른 두 분이 맞다고 하면 확정돼요.'
-      : done ? '확인해 줘서 고마워요! 몇 분 뒤 반영돼요.'
+      : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.'
       : "팬이 올린 셋리예요. 맞으면 '맞아요'를, 틀린 곳이 있으면 아래 '셋리 고치기'를 눌러 주세요.";
     return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
   }
@@ -2381,7 +2385,7 @@
           ${evs.length > 1 ? `<select class="sl-ev">${evs.map(e => `<option value="${esc(e.id)}"${e === one ? ' selected' : ''}>${esc(opt(e))}</option>`).join('')}</select>` : `<input type="hidden" class="sl-ev" value="${esc(evs[0].id)}">`}
           <textarea class="sl-in" rows="8" placeholder="한 줄에 한 곡씩 붙여넣어 주세요. 보랩·넬판 같은 줄임말도 알아들어요.&#10;&#10;예)&#10;Save our lives&#10;스카페&#10;넬판&#10;Inner Universe&#10;아리랑">${fs ? esc(fs.songs.join('\n')) : ''}</textarea>
           <ol class="sl-pre"></ol>
-          <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 보내면 바로 '확인 필요'로 붙고, 다른 두 분이 맞다고 하면 확정돼요.${fs && fs.ver ? ' 고쳐서 보내면 확인은 처음부터 다시 받아요.' : ''}</p>
+          <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 보내면 '확인 필요'로 붙고, 다른 두 분이 맞다고 하면 확정돼요.${fs && fs.ver ? ' 고쳐서 보내면 확인은 처음부터 다시 받아요.' : ''} 사이트에 반영되기까지 5~10분쯤 걸려요.</p>
           <button type="button" class="bpill sl-send" disabled>보내기</button>
         </div>
       </details>`;
@@ -2413,7 +2417,7 @@
     const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리스트\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n곡: ${songs.join(' / ')}\n누가: ${myUid()}` });
     b.disabled = true; b.textContent = '보내는 중…';
     fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
-      .then(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${songs.length}곡을 보냈어요. 고마워요! 몇 분 뒤 새로 열면 사이트에 붙어 있어요.`; })
+      .then(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${songs.length}곡을 보냈어요. 고마워요! 5~10분쯤 뒤 새로 열면 사이트에 붙어 있어요.`; })
       .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; box.querySelector('.sl-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
   });
 
@@ -2464,7 +2468,7 @@
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">일정 등록</h1>
-      <p class="sub">빠진 일정을 알려주세요. 한 칸에 일정 하나씩이에요. 보내면 바로 사이트에 '확인 필요'로 뜨고, 다른 두 분이 맞다고 하면 확정돼요.</p>
+      <p class="sub">빠진 일정을 알려주세요. 한 칸에 일정 하나씩이에요. 보내면 사이트에 '확인 필요'로 뜨고, 다른 두 분이 맞다고 하면 확정돼요. 반영되기까지 5~10분쯤 걸려요.</p>
       <div class="add-xl">
         <a class="bpill" id="add-tpl" href="data/schedule_form.xlsx" download="숲별_일정등록_양식.xlsx">엑셀 양식 받기</a>
         <label class="bpill add-up">엑셀로 한 번에 올리기<input type="file" id="add-file" accept=".xlsx,.xls,.csv" hidden></label>
@@ -2557,7 +2561,7 @@
       }
       if (sent === items.length) {
         b.textContent = '보냈어요 ✓';
-        msg.textContent = `${sent}개를 보냈어요. 고마워요! 몇 분 뒤 새로 열면 사이트에 '확인 필요'로 떠요.`;
+        msg.textContent = `${sent}개를 보냈어요. 고마워요! 5~10분쯤 뒤 새로 열면 사이트에 '확인 필요'로 떠요.`;
         list.innerHTML = addCard(); setTimeout(() => { b.disabled = false; b.textContent = '보내기'; }, 3000);
       } else {
         cards.slice(0, sent).forEach(c => c.remove());
@@ -2572,7 +2576,7 @@
     if (!f) return '';
     const mine = f.by && f.by === myUid(), done = slOked('ev:' + e.id);
     const btn = !f.ok && !mine && !done ? `<button type="button" class="bpill ev-ok" data-id="${esc(e.id)}">맞아요</button>` : '';
-    const msg = f.ok ? `팬 ${f.n}명이 확인한 일정이에요.` : mine ? '내가 등록한 일정이에요. 다른 두 분이 맞다고 하면 확정돼요.' : done ? '확인해 줘서 고마워요! 몇 분 뒤 반영돼요.' : "팬이 등록한 일정이에요. 맞으면 '맞아요'를 눌러 주세요.";
+    const msg = f.ok ? `팬 ${f.n}명이 확인한 일정이에요.` : mine ? '내가 등록한 일정이에요. 다른 두 분이 맞다고 하면 확정돼요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "팬이 등록한 일정이에요. 맞으면 '맞아요'를 눌러 주세요.";
     return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
   }
   const evPending = e => e.fanEvent && !e.fanEvent.ok ? ' <span class="new-tag">확인 필요</span>' : '';
@@ -2592,6 +2596,142 @@
       .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
   });
   const addLink = (d, cls = '') => `<a class="bpill add-link${cls ? ' ' + cls : ''}" href="#/add${d ? '?d=' + d : ''}">＋ 일정 등록</a>`;
+
+  // ---------- 의견 ----------
+  // 사이트 안에서 바로 보내는 의견(제보 폼 '종류: 의견'). 의견 탭은 열 때마다 시트를 새로 받아요.
+  // '처리했어요'는 관리자 기기(#/admin에서 만든 열쇠)로 서명한 것만 인정해요
+  const OP_MINE = 'sb-op-mine', ADMIN_KEY = 'sb-admin-key';
+  const opMine = () => { try { return JSON.parse(localStorage.getItem(OP_MINE) || '[]'); } catch (err) { return []; } };
+  const adminJwk = () => { try { return JSON.parse(localStorage.getItem(ADMIN_KEY) || 'null'); } catch (err) { return null; } };
+  const isAdmin = () => { const k = adminJwk(), c = window.CONFIG.adminKey; return !!(k && c && k.x === c.x && k.y === c.y); };
+  const ECDSA = { name: 'ECDSA', namedCurve: 'P-256' }, SIGN = { name: 'ECDSA', hash: 'SHA-256' };
+  const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const opMsg = m => new TextEncoder().encode(`${m.id}:${m.state}:${m.n}`);
+  let opData = null, opDone = new Map(), opLoading = null;
+  async function verifyMarks(marks) {
+    const c = window.CONFIG.adminKey, done = new Map();
+    if (!c || !crypto.subtle) return done;
+    const key = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: c.x, y: c.y, ext: true }, ECDSA, false, ['verify']);
+    // 같은 의견에 여러 번 눌렀으면 번호가 가장 큰(가장 최근) 것만 봐요
+    const last = new Map();
+    for (const m of marks) {
+      let ok = false;
+      try { ok = await crypto.subtle.verify(SIGN, key, unb64u(m.sig), opMsg(m)); } catch (err) { ok = false; }
+      if (ok && (!last.has(m.id) || Number(m.n) > Number(last.get(m.id).n))) last.set(m.id, m);
+    }
+    last.forEach((m, id) => { if (m.state === '처리') done.set(id, m); });
+    return done;
+  }
+  function loadOpinions() {
+    return opLoading = opLoading || window.DATA.fetchText(window.CONFIG.sheets.reports).then(async t => {
+      opData = window.DATA.buildOpinions(t);
+      opDone = await verifyMarks(opData.marks);
+    }).catch(() => { opData = opData || { ops: [], marks: [] }; }).finally(() => { opLoading = null; });
+  }
+  const OP_CATS = ['정보 수정', '오류 신고', '기능 요청', '자유·응원'];
+  const opQs = () => new URLSearchParams(location.hash.split('?')[1] || '');
+  const opFilter = () => opQs().get('f') || '';
+  function opListHtml() {
+    if (!opData) return '<p class="empty">의견 불러오는 중…</p>';
+    // 내가 보낸 의견은 시트에 들어오기 전까지 '방금 보냄'으로 먼저 보여줘요 (같은 사람·같은 글이면 시트 것만)
+    const me = myUid();
+    const list = opMine().filter(o => !opData.ops.some(x => x.by === o.by && x.text === o.text)).reverse().map(o => ({ ...o, local: true })).concat(opData.ops.slice().reverse());
+    const f = opFilter(), c = opQs().get('c') || '';
+    const shown = list.filter(o => (!f || (f === 'done' ? opDone.has(o.id) : !opDone.has(o.id))) && (!c || (o.cat || '자유·응원') === c));
+    const admin = isAdmin();
+    const href = (ff, cc) => '#/opinion' + ((ff || cc) ? '?' + new URLSearchParams(Object.entries({ f: ff, c: cc }).filter(x => x[1])).toString() : '');
+    const chip = (v, l) => `<a class="chip${f === v ? ' on' : ''}" href="${href(v, c)}">${l}</a>`;
+    const cchip = (v, l) => `<a class="chip${c === v ? ' on' : ''}" href="${href(f, v)}">${l}</a>`;
+    return `
+      <div class="chips tl-cats">${chip('', `전체 ${list.length}`)}${chip('todo', `처리 전 ${list.filter(o => !opDone.has(o.id)).length}`)}${chip('done', `처리됨 ${list.filter(o => opDone.has(o.id)).length}`)}</div>
+      <div class="chips tl-cats">${cchip('', '모든 분류')}${OP_CATS.map(x => cchip(x, x)).join('')}</div>
+      ${shown.length ? shown.map(o => `
+        <div class="op-item${opDone.has(o.id) ? ' done' : ''}">
+          <div class="op-head"><span class="op-who"><span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> ${esc(o.name || '익명')}${o.by && o.by === me ? ' · 내 의견' : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
+          <p class="op-text">${esc(o.text)}</p>
+          <div class="op-foot">${opDone.has(o.id) ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${opDone.has(o.id) ? '취소' : '처리'}">${opDone.has(o.id) ? '처리 취소' : '처리했어요'}</button>` : ''}</div>
+        </div>`).join('') : '<p class="empty">아직 의견이 없어요.</p>'}`;
+  }
+  function opinionView() {
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">의견</h1>
+      <p class="sub">사이트에 바라는 점, 틀린 곳, 고마운 말 무엇이든 남겨 주세요. 남긴 의견은 이 화면에 모두에게 보여요.</p>
+      <div class="op-form">
+        <div class="chips a-mem op-cats">${OP_CATS.map((x, i) => `<button type="button" class="chip${i === 3 ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
+        <input type="text" class="op-name" maxlength="20" placeholder="닉네임 (선택)">
+        <textarea class="op-in" rows="4" maxlength="1000" placeholder="의견을 적어 주세요"></textarea>
+        <button type="button" class="bpill add-send op-send" disabled>보내기</button>
+        <p class="src-note op-msg">보낸 의견은 내 화면엔 바로 보이고, 다른 분들 화면엔 5~10분쯤 뒤에 보여요.</p>
+      </div>
+      ${isAdmin() ? '<p class="src-note">관리자 기기예요. 의견마다 \'처리했어요\'를 누를 수 있어요.</p>' : ''}
+      <div id="op-list">${opListHtml()}</div>`;
+  }
+  function bindOpinion() {
+    const fill = () => { const box = document.getElementById('op-list'); if (box && currentRoute() === 'opinion') box.innerHTML = opListHtml(); };
+    loadOpinions().then(fill);
+    const t = view.querySelector('.op-in'), b = view.querySelector('.op-send');
+    try { t.value = sessionStorage.getItem('sb-op-draft') || ''; } catch (err) { /* 괜찮아요 */ }
+    b.disabled = !t.value.trim();
+    t.addEventListener('input', () => { b.disabled = !t.value.trim(); try { sessionStorage.setItem('sb-op-draft', t.value); } catch (err) { /* 괜찮아요 */ } });
+    b.onclick = () => {
+      const text = t.value.trim(), name = view.querySelector('.op-name').value.trim(), cat = (view.querySelector('.op-cats .on') || {}).dataset.c || '자유·응원';
+      if (!text) return;
+      const f = window.CONFIG.form, by = myUid();
+      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}\n내용: ${text}` });
+      b.disabled = true; b.textContent = '보내는 중…';
+      fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }).then(() => {
+        // 시트에 들어간 시각을 몰라서, 시트에서 돌아오면 같은 글인지 글 내용으로 맞춰 봐요
+        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name, cat, by, at: Date.now() });
+        try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); sessionStorage.removeItem('sb-op-draft'); } catch (err) { /* 괜찮아요 */ }
+        t.value = ''; b.textContent = '보냈어요 ✓'; setTimeout(() => { b.textContent = '보내기'; }, 2500);
+        view.querySelector('.op-msg').textContent = '고마워요! 다른 분들 화면엔 5~10분쯤 뒤에 보여요.';
+        fill();
+      }).catch(() => { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
+    };
+    view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (x) view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); });
+    view.addEventListener('click', async ev => {
+      const m = ev.target.closest('.op-mark');
+      if (!m || !isAdmin()) return;
+      m.disabled = true; m.textContent = '보내는 중…';
+      try {
+        const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
+        const mark = { id: m.dataset.id, state: m.dataset.state, n: String(Date.now()) };
+        mark.sig = b64u(await crypto.subtle.sign(SIGN, key, opMsg(mark)));
+        const f = window.CONFIG.form;
+        await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: `종류: 의견처리\n대상: ${mark.id}\n상태: ${mark.state}\n번호: ${mark.n}\n서명: ${mark.sig}` }) });
+        if (mark.state === '처리') opDone.set(mark.id, mark); else opDone.delete(mark.id);
+        fill();
+      } catch (err) { m.disabled = false; m.textContent = '다시 누르기'; }
+    });
+  }
+  // 관리자 기기 정하기: 이 기기 안에서 열쇠를 만들고, 공개 열쇠만 보여줘요
+  function adminView() {
+    const k = adminJwk(), c = window.CONFIG.adminKey;
+    const pub = k ? JSON.stringify({ x: k.x, y: k.y }) : '';
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">관리자 기기</h1>
+      ${!k ? `<p class="sub">이 기기를 관리자 기기로 정하면 의견에 '처리했어요'를 누를 수 있어요. 열쇠는 이 기기 안에만 저장돼요.</p>
+        <button type="button" class="bpill add-send" id="admin-make">이 기기를 관리자 기기로</button>`
+      : isAdmin() ? `<p class="sub">이 기기는 관리자 기기예요. <a href="#/opinion">의견 탭</a>에서 처리 표시를 할 수 있어요.</p>`
+      : `<p class="sub">아래 확인용 번호를 복사해서 보내 주세요. 사이트에 넣으면 이 기기가 관리자 기기가 돼요.</p>
+        <textarea class="op-in" rows="4" readonly>${esc(pub)}</textarea>
+        <button type="button" class="bpill" data-copy="${esc(pub)}">복사</button>${c ? '<p class="src-note">지금 사이트에 들어 있는 번호와 달라요. 다른 기기가 관리자 기기로 정해져 있어요.</p>' : ''}`}`;
+  }
+  function bindAdmin() {
+    const b = document.getElementById('admin-make');
+    if (b) b.onclick = async () => {
+      try {
+        const kp = await crypto.subtle.generateKey(ECDSA, true, ['sign', 'verify']);
+        const j = await crypto.subtle.exportKey('jwk', kp.privateKey);
+        localStorage.setItem(ADMIN_KEY, JSON.stringify({ d: j.d, x: j.x, y: j.y }));
+        renderBase('admin');
+      } catch (err) { b.textContent = '만들지 못했어요. 다시 눌러 주세요.'; }
+    };
+  }
+  const opBtn = () => `<a class="op-fab" href="#/opinion">💬 의견 남기기</a>`;
 
   // ---------- 공식 X 모아보기 ----------
   const X_CATS = ['일정 후기', '일정 현장', '비하인드·직캠', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사', '생일', '투표·이벤트'];
@@ -3209,7 +3349,7 @@
   }
 
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -3245,7 +3385,7 @@
   }
   function renderBase(name) {
     setTabs(name);
-    view.innerHTML = ddayBadge(name) + routes[name]();
+    view.innerHTML = ddayBadge(name) + routes[name]() + (/^(opinion|admin|add|card)$/.test(name) ? '' : opBtn());
     fillSyncNote(name);
     if (name === 'home') bindHome();
     if (name === 'search') bindSearch();
@@ -3261,6 +3401,8 @@
     if (name === 'install') bindInstall();
     if (name === 'check') bindCheck();
     if (name === 'add') bindAdd();
+    if (name === 'opinion') bindOpinion();
+    if (name === 'admin') bindAdmin();
   }
 
   // 반환값: 바탕 화면을 새로 그렸는지 (스크롤을 맨 위로 올릴지)
