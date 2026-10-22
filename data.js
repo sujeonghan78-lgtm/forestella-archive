@@ -377,6 +377,8 @@
     const conRows = toObjects(raw.concerts || '');
     (extra.concerts || []).forEach(r => { if (!conRows.some(c => c['투어ID'] === r['투어ID'])) conRows.push(r); });
     conRows.forEach(c => Object.assign(c, (extra.concertFix || {})[c['투어ID']] || {}));
+    // posterFix: 시트 포스터가 빈 투어만 예매처 포스터로 채워요
+    conRows.forEach(c => { const f = (extra.posterFix || {})[c['투어ID']]; if (f && !c['포스터']) c['포스터'] = f; });
     const concerts = conRows.filter(c => c['투어ID'] && c['공연명']).map(c => {
       const [from, to] = (c['기간'] || '').split('~').map(x => x.trim());
       return {

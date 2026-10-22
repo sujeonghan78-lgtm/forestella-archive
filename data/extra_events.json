@@ -1198,8 +1198,8 @@
    "시작": "",
    "종료": "",
    "분류": "공연",
-   "일정명": "[민규] 조민규 단독 콘서트 MONO",
-   "장소": "블루스퀘어 SOL트래블홀",
+   "일정명": "[민규] 조민규 단독 콘서트 MONO DRAMA 2026 : Sweet Escape",
+   "장소": "블루스퀘어 우리WON뱅킹홀",
    "내용": "",
    "비고": "",
    "영상ID": "",
@@ -1540,6 +1540,23 @@
    "분류": "공연",
    "일정명": "[형호] PITTA 강형호 콘서트 New Normal Life 앙코르",
    "장소": "블루스퀘어 SOL트래블홀",
+   "내용": "",
+   "비고": "",
+   "영상ID": "",
+   "확인된 곡": "",
+   "곡 확인 출처": "",
+   "영상 메모": "",
+   "공개여부": "공개"
+  },
+  {
+   "ID": "20178",
+   "날짜": "2026-09-08",
+   "종료일": "",
+   "시작": "",
+   "종료": "",
+   "분류": "기타",
+   "일정명": "[민규] 조민규 2nd EP [Sweet Escape] 청음회",
+   "장소": "롯데시네마 용산",
    "내용": "",
    "비고": "",
    "영상ID": "",
@@ -3798,5 +3815,17 @@
   "177277": "엑스코 동관 4홀",
   "177278": "엑스코 동관 4홀",
   "10065": "대구 호텔 수성 컨벤션홀"
+ },
+ "posterFix": {
+  "2018-evolution": "https://ticketimage.interpark.com/Play/image/large/18/18001695_p.gif",
+  "2018-forest-and-star": "https://ticketimage.interpark.com/Play/image/large/18/18014966_p.gif",
+  "2018-winter-story": "https://ticketimage.interpark.com/Play/image/large/18/18017520_p.gif",
+  "2018-memories": "https://tkfile.yes24.com/upload2/PerfBlog/201811/20181101/20181101-31501_1.jpg",
+  "2019-mystique": "https://image.toast.com/aaaaab/ticketlink/TKL_4/forestella_main_0510.jpg",
+  "2019-winter-forest": "https://image.toast.com/aaaaab/ticketlink/TKL_10/%ED%8F%AC%EB%A0%88%EC%8A%A4%ED%85%94%EB%9D%BC%ED%8B%B0%EC%BC%93%EB%A7%81%ED%81%AC-%EC%98%A4%ED%94%88%EC%9D%B4%EB%AF%B8%EC%A7%80.jpg",
+  "2020-nella-fantasia": "https://image.toast.com/aaaaab/ticketlink/TKL_2/314X382_%EB%A7%81%ED%81%AC_%ED%8F%AC%EB%A0%88%EC%8A%A4%ED%85%94%EB%9D%BC2020.jpg",
+  "2021-time-travel": "https://ticketimage.interpark.com/Play/image/large/21/21001968_p.gif",
+  "2021-the-forestella": "https://ticketimage.interpark.com/Play/image/large/21/21004082_p.gif",
+  "2022-world-tree": "https://image.toast.com/aaaaab/ticketlink/TKL_7/seoul0524.jpg"
  }
 }
