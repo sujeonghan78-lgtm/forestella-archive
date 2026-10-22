@@ -142,12 +142,12 @@
   const BOX_KEY = 'sb-box', BOX_USER = 'sb-box-user';
   const boxRead = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (err) { return null; } };
   const boxWrite = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (err) { /* 저장 못 해도 괜찮아요 */ } };
-  const boxClean = b => ({ e: (b && b.e) || [], s: (b && b.s) || [], w: (b && b.w) || [], t: (b && b.t) || 0 });
+  const boxClean = b => ({ e: (b && b.e) || [], s: (b && b.s) || [], w: (b && b.w) || [], v: (b && b.v) || [], t: (b && b.t) || 0 });
   let box = boxClean(boxRead(BOX_KEY));
   let boxUser = boxRead(BOX_USER);  // { name, pin, at }
   const boxApi = () => (window.CONFIG || {}).boxApi || '';
   const boxHas = (k, id) => box[k].includes(id);
-  const BOX_LABEL = { e: ['♡ 좋아요', '♥ 좋아요'], s: ['♡', '♥'], w: ['🎫 직관했어요', '🎫 직관 ✓'] };
+  const BOX_LABEL = { e: ['♡ 좋아요', '♥ 좋아요'], s: ['♡', '♥'], w: ['🎫 직관했어요', '🎫 직관 ✓'], v: ['📺 시청했어요', '📺 시청 ✓'] };
   const boxBtn = (k, id, cls = 'act') => `<button type="button" class="${cls} box-btn" data-box="${k}" data-id="${esc(id)}" aria-pressed="${boxHas(k, id)}"${k === 's' ? ' aria-label="이 곡 좋아요"' : ''}>${BOX_LABEL[k][boxHas(k, id) ? 1 : 0]}</button>`;
   async function boxCall(action, extra = {}) {
     const r = await fetch(boxApi(), { method: 'POST', body: JSON.stringify({ action, name: boxUser && boxUser.name, pin: boxUser && boxUser.pin, ...extra }) });
@@ -175,7 +175,7 @@
     boxCall('load').then(r => {
       if (!r.ok || !r.data) return;
       const srv = boxClean(r.data);
-      if (srv.t > box.t) { box = srv; boxWrite(BOX_KEY, box); if (currentRoute() === 'box') renderBase('box'); }
+      if (srv.t > box.t) { box = boxClean(srv); boxWrite(BOX_KEY, box); if (currentRoute() === 'box') renderBase('box'); }
       else if (box.t > srv.t) boxPush();
     }).catch(() => { /* 오프라인이면 폰 저장만 써요 */ });
   }
@@ -660,7 +660,7 @@
     if (!p.q && !p.cat && !p.year && !p.member && !p.video && !showAll) return searchHome();
     if (p.q && p.t !== 'ev') return searchAll(p);
     const { list, fuzzy } = runSearch(p);
-    const desc = [p.q && `'${p.q}'`, p.cat, p.year && `${p.year}년`, p.member, p.video && '영상 있음'].filter(Boolean).join(' · ');
+    const desc = [p.q && `'${p.q}'`, p.cat, p.year && (p.year.length === 10 ? fmtDate(p.year, false) : `${p.year}년`), p.member, p.video && '영상 있음'].filter(Boolean).join(' · ');
     const play = playAllUrl(list);
     // 연도별로 묶어요. 결과가 적으면 다 펼치고, 많으면 첫 해만 펼쳐요
     const part = list.slice(0, shown);
@@ -705,7 +705,8 @@
         <div class="chips" id="filters2">
           ${MEMBER_LIST.map(m => chip('member', m, m.slice(1), p.member === m)).join('')}
         </div>
-        <div class="chips" id="filters3">${years.map(y => chip('year', y, y, p.year === y)).join('')}</div></div>
+        <div class="chips" id="filters3">${years.map(y => chip('year', y, y, p.year === y)).join('')}</div>
+        <label class="f-date">날짜로 찾기 <input type="date" id="f-date" value="${p.year.length === 10 ? esc(p.year) : ''}"></label></div>
       </div>
       <div id="results">${searchResults(p)}</div>`;
   }
@@ -748,9 +749,13 @@
     });
     const v = document.querySelector('#filters .chip[data-video]');
     v.onclick = () => { const on = !readParams().video; update({ video: on }); v.classList.toggle('on', on); v.setAttribute('aria-pressed', on); };
+    // 날짜 고르기: 연도 칸에 날짜를 통째로 넣어요 (날짜로 시작하는 일정만)
+    const fd = document.getElementById('f-date');
+    fd.onchange = () => { update({ year: fd.value }); document.querySelectorAll('.chip[data-year]').forEach(x => { x.classList.remove('on'); x.setAttribute('aria-pressed', false); }); };
     // 연도·멤버 칩: 한 번 더 누르면 풀려요
     ['year', 'member'].forEach(k => document.querySelectorAll(`.chip[data-${k}]`).forEach(b => b.onclick = () => {
       update({ [k]: readParams()[k] === b.dataset[k] ? '' : b.dataset[k] });
+      if (k === 'year') fd.value = '';
       document.querySelectorAll(`.chip[data-${k}]`).forEach(x => { const on = x.dataset[k] === readParams()[k]; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     }));
     bindResults();
@@ -1175,7 +1180,7 @@
     const evs = ids => ids.map(id => data.byId.get(id)).filter(Boolean);
     const wentAll = evs(box.w).sort((a, b) => b.date.localeCompare(a.date));
     const isBc = e => /TV|라디오/.test(e.category);
-    const went = wentAll.filter(e => !isBc(e)), seen = wentAll.filter(isBc);  // 직관 / 시청
+    const went = wentAll, seen = evs(box.v).sort((a, b) => b.date.localeCompare(a.date));  // 직관(방송 현장 포함) / 방송으로 시청
     const liked = evs(box.e).sort((a, b) => b.date.localeCompare(a.date));
     const songs = box.s.map(k => data.songs.get(k)).filter(Boolean);
     // 직관으로 들은 곡: 그날 확인된 곡 (없으면 그 투어 셋리스트)
@@ -1194,7 +1199,7 @@
   function boxView() {
     const { wentAll, went, seen, liked, songs, heardList, topRegion, first } = boxStats();
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
-    const empty = !wentAll.length && !liked.length && !songs.length;
+    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length;
     const LIMIT = 8;
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
     const tabs = [
@@ -1231,9 +1236,9 @@
       </section>`;
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">보관함${help('일정·곡에서 ♡ 좋아요, 🎫 직관했어요를 누르면 여기 모여요. 이 폰에 저장돼요.')}</h1>
+      <h1 class="h1 page-title">보관함${help('일정·곡에서 ♡ 좋아요, 🎫 직관·📺 시청했어요를 누르면 여기 모여요. 이 폰에 저장돼요.')}</h1>
       ${empty ? `<p class="empty">아직 비어 있어요. 일정이나 곡 화면에서 ♡ 좋아요, 🎫 직관했어요를 눌러 보세요.</p>` : ''}
-      ${wentAll.length ? `
+      ${wentAll.length || seen.length ? `
       <section class="block box-stat">
         <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 시청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
@@ -1668,8 +1673,8 @@
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
   const wentBtns = e => {
     const near = data.events.filter(x => x.title === e.title && samePlace(x.place, e.place) && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
-    // 방송은 '시청'으로 불러요
-    if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="시청했어요" data-ic="📺" aria-pressed="${on}">${on ? '✓ ' : '📺 '}시청했어요</button>`; }
+    // 방송은 현장에서 본 '직관'과 방송으로 본 '시청'을 따로 눌러요
+    if (/TV|라디오/.test(e.category)) return boxBtn('w', e.id, 'bpill') + boxBtn('v', e.id, 'bpill');
     if (near.length < 2) return boxBtn('w', e.id, 'bpill');
     return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };

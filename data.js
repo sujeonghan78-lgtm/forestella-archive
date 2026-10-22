@@ -225,6 +225,8 @@
     try { extra = JSON.parse(raw.extra || '{}'); } catch (e) { /* 없으면 넘어가요 */ }
     const sheetIds = new Set(sheetRows.map(r => r['ID']));
     (extra.rows || []).forEach(r => { if (!sheetIds.has(r['ID'])) sheetRows.push(r); });
+    // eventFix: 시트 일정 칸을 고쳐요 {일정ID: {열 이름: 값}} (팬 의견으로 확인된 날짜·이름 고치기)
+    Object.entries(extra.eventFix || {}).forEach(([id, f]) => { const r = sheetRows.find(x => x['ID'] === id); if (r) Object.assign(r, f); });
     const hide = new Set(extra.hide || []);
     const events = buildEvents(sheetRows.filter(r => !hide.has(r['ID']))).concat(raw.cafe ? buildCafe(raw.cafe, sheetRows) : [])
       .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));

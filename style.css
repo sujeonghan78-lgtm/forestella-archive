@@ -982,3 +982,5 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .tl-top .add-bar{margin:0}
 .tl-top .add-quick[open]{max-height:62vh;overflow-y:auto;overscroll-behavior:contain}
 .tl-top .add-quick .add-card{margin:10px 0}
+.f-date{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:8px}
+.f-date input{font:inherit;font-size:15px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit}
