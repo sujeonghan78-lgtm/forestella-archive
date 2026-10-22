@@ -2363,12 +2363,14 @@
       : "팬이 올린 셋리예요. 맞으면 '맞아요'를, 틀린 곳이 있으면 아래 '셋리 고치기'를 눌러 주세요.";
     return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
   }
+  // 하루 두 번 공연은 제목 끝 (낮공)·(밤공)으로 나눠 둬요
+  const showTag = e => { const m = e.title.match(/\((낮공|밤공)\)$/); return m ? ' ' + m[1] : ''; };
   function slForm(evs) {
     if (!evs.length || !(window.CONFIG.form || {}).fields) return '';
     // 곡이 이미 있으면 그 목록을 채워 두고 '셋리 고치기'로 보여줘요
     const one = evs.find(e => e.songs.length && e.songSource !== '참고') || evs[0];
     const fs = one && (one.fanSet || (one.songs.length && one.songSource !== '참고' ? { songs: one.songs } : null));
-    const opt = e => `${e.date.slice(5).replace('-', '.')}${e.place ? ' ' + e.place : ''}`;
+    const opt = e => `${e.date.slice(5).replace('-', '.')}${showTag(e)}${e.place ? ' ' + e.place : ''}`;
     return `
       <details class="sl-add">
         <summary>${fs ? '✏️ 셋리 고치기' : '📝 셋리 알려주기'}</summary>
@@ -2760,7 +2762,7 @@
       if (!rows.has(key)) rows.set(key, { place, days: [] });
       rows.get(key).days.push(...days);
     });
-    return [...rows.values()].map(({ place, days }) => `<div class="tour-show"><span class="tour-place">${esc(place)}</span><span class="ev-days">${days.map(dd => { const e = events.find(x => x.date === dd); const lab = dd.slice(5).replace('-', '.'); return e ? `<a class="ev-day${boxHas('w', e.id) ? ' went' : ''}" href="#/e/${encodeURIComponent(e.id)}">${boxHas('w', e.id) ? '🎫 ' : ''}${lab}</a>` : `<span class="ev-day">${lab}</span>`; }).join('')}</span></div>`).join('');
+    return [...rows.values()].map(({ place, days }) => `<div class="tour-show"><span class="tour-place">${esc(place)}</span><span class="ev-days">${days.map(dd => { const es = events.filter(x => x.date === dd); const lab = dd.slice(5).replace('-', '.'); return es.length ? es.map(e => `<a class="ev-day${boxHas('w', e.id) ? ' went' : ''}" href="#/e/${encodeURIComponent(e.id)}">${boxHas('w', e.id) ? '🎫 ' : ''}${lab}${showTag(e)}</a>`).join('') : `<span class="ev-day">${lab}</span>`; }).join('')}</span></div>`).join('');
   }
 
   function tourView() {
@@ -2776,7 +2778,7 @@
       // 같은 셋리를 나눠 쓰는 날(이틀 공연)은 한 묶음으로
       const sets = new Map();
       sung.forEach(e => { const k = e.fanSet ? e.fanSet.src : e.id; if (!sets.has(k)) sets.set(k, []); sets.get(k).push(e); });
-      const sungHtml = [...sets.values()].map(g => { const e = g[0]; return `<div class="block-head"><h2 class="h3 list-title">${g.map(x => `<a href="#/e/${encodeURIComponent(x.id)}">${x === e ? fmtDate(x.date, false) : x.date.slice(5).replace('-', '.')}</a>`).join(' · ')}${e.place ? ' · ' + esc(e.place) : ''} <span class="count">${e.songs.length}</span></h2></div>${slState(e)}<div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>`; }).join('');
+      const sungHtml = [...sets.values()].map(g => { const e = g[0]; return `<div class="block-head"><h2 class="h3 list-title">${g.map(x => `<a href="#/e/${encodeURIComponent(x.id)}">${x === e ? fmtDate(x.date, false) : x.date.slice(5).replace('-', '.')}${showTag(x)}</a>`).join(' · ')}${e.place ? ' · ' + esc(e.place) : ''} <span class="count">${e.songs.length}</span></h2></div>${slState(e)}<div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>`; }).join('');
       return `
       <a class="back" href="#/concerts">‹ 콘서트</a>
       <section class="song-hero">
