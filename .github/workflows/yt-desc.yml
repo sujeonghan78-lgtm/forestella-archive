@@ -1,0 +1,28 @@
+# 곡 빈 일정 영상 설명 모으기 (입력 파일을 올리면 실행)
+name: yt-desc
+on:
+  workflow_dispatch:
+  push:
+    paths: ['tools/yt_desc_in.json']
+permissions:
+  contents: write
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/yt_desc.mjs
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      - run: |
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/yt_desc_out.json
+          git diff --cached --quiet && exit 0
+          git commit -m "곡 빈 일정 영상 설명 결과"
+          git pull --rebase -q origin main
+          git push
