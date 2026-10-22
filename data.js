@@ -67,7 +67,9 @@
     'magic castle': '마법의 성', 'flower vase': '꽃병', nocturne: '야상곡', 'dear moon': '달하 노피곰 도다샤', 'and spring': '그리고 봄', changgwi: '창귀',
     'bird, bird, blue bird': '새야 새야 파랑새야', 'words from the wind': '바람이 건네준 말', together: '함께라는 이유', ties: '연', '연(緣)': '연',
     'alone with tears': '눈물 속에 홀로', 'the innocent macho': '순정마초', 'i still remember': '아직도 기억하고 있어요', stay: '멀어지지 말아주세요',
-    'the forest song': '숲의 노래', 'your song': '당신이 듣던', 'close your eyes': '눈을 감아도', 'the journey of love': '사랑의 여정' };
+    'the forest song': '숲의 노래', 'your song': '당신이 듣던', 'close your eyes': '눈을 감아도', 'the journey of love': '사랑의 여정',
+    // 같은 곡 표기 차이 (2026-10-22 곡 목록 점검)
+    'the phantom of the opera': 'phantom of the opera', 'bohemian rapsody': 'bohemian rhapsody', '그날들 (the days)': '그날들' };
   // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
   const LINK_SKIP = new Set([
     'ZSleXc9DR_Q>ev:10166', 'r05dSSCyGjc>ev:120245', 'r05dSSCyGjc>ev:120246',
