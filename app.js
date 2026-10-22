@@ -618,7 +618,7 @@
       sec('공식 유튜브', h.vids.length, ytStrip(h.vids.slice(0, 8)), 'yt', '개'),
       sec('음반·콘서트', h.rels.length, `<div class="stack x-list s-group">${h.rels.slice(0, 3).map(relCard).join('')}</div>`, 'rel', '개'),
       sec('공식 X', h.xs.length, `<div class="stack x-list s-group">${h.xs.slice(0, 3).map(xMini).join('')}</div>`, 'x', '개'),
-    ].join('') : `<p class="empty">찾는 기록이 없어요. 혹시 빠진 기록이라면 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`);
+    ].join('') : `<p class="empty">찾는 기록이 없어요. 혹시 빠진 일정이라면 <a href="#/add">일정 등록</a>으로 알려주세요.</p>`);
   }
   function searchVideos(q) {
     const nq = norm(q);
@@ -678,7 +678,7 @@
       </div>
       ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>검색 결과 영상 이어보기</a>` : ''}
       ${list.length ? body :
-        `<p class="empty">찾는 기록이 없어요. 혹시 빠진 기록이라면 <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">제보해 주세요</a>.</p>`}
+        `<p class="empty">찾는 기록이 없어요. 혹시 빠진 일정이라면 <a href="#/add">일정 등록</a>으로 알려주세요.</p>`}
       ${list.length > shown ? `<button type="button" class="btn btn-soft" id="show-more">더 보기 (${list.length - shown}건 남음)</button>` : ''}`;
   }
 
@@ -1005,7 +1005,7 @@
       <div class="gap-card">
         <b>${gapText}</b>
         <span>이 시기 기록은 아직 비어 있어요. 기억나는 무대가 있다면 알려주세요.</span>
-        <a href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">기록 제보하기 ›</a>
+        <a href="#/add">일정 등록하기 ›</a>
       </div>` : '';
 
     const body = [...months.entries()].map(([m, list]) => `
@@ -1023,7 +1023,7 @@
             <span class="dot${songs.length ? '' : ' dot-plain'}" aria-hidden="true"></span>
             <span class="ev-body">
               <span class="ev-date">${tag(e.category)}${upcoming(e)}${when}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
-              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${liked ? '<span class="liked-mark">♥</span> ' : ''}${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
+              <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${liked ? '<span class="liked-mark">♥</span> ' : ''}${esc(e.title)}${evPending(e)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
               ${songs.length ? `<span class="ev-songs">확인된 곡 · ${songsShort(songs)}</span>` : ''}
             </span>${evThumb(evPic(run))}
           </div>`;
@@ -1036,6 +1036,7 @@
           ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="${tlHref(y, cat)}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
         </div>
         ${cats.length > 1 ? `<div class="chips tl-cats">${['', ...cats].map(c => `<a class="chip${c === cat ? ' on' : ''}" href="${tlHref(year, c)}"${c === cat ? ' aria-current="true"' : ''}>${c || '전체'} <b>${c ? yearEvents.filter(e => e.category === c).length : yearEvents.length}</b></a>`).join('')}</div>` : ''}
+        <div class="add-bar">${addLink()}</div>
       </div>
       <div class="tl">
         ${gap}
@@ -1750,7 +1751,7 @@
       <h1 class="h1 page-title">지역 행사${help('축제·지역 공연·기업 행사처럼 단독 콘서트가 아닌 공연을 지역별로 모았어요. 지역은 장소와 행사 이름으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       <div class="stick">
       <div class="chips tl-cats">${chip('', `전체 ${all.length}`)}${names.filter(count).map(n => chip(n, `${n} ${count(n)}`)).join('')}</div>
-      <p class="sub">${list.length}개 · ${list.filter(hasVideo).length}개는 영상이 있어요</p>
+      <p class="sub">${list.length}개 · ${list.filter(hasVideo).length}개는 영상이 있어요 ${addLink('', 'add-mini')}</p>
       </div>
       <div class="tl">${[...years.entries()].map(([y, es]) => `<h2 class="month">${y}년</h2>${groupRuns(es).map(row).join('')}`).join('')}</div>`;
   }
@@ -1959,6 +1960,7 @@
         <span>일정은 공식 팬카페 캘린더(2021년 7월 이전은 나무위키·방송 영상), 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
       </a>
       <nav aria-label="더보기 메뉴">
+        ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
         ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (box.e.length + box.s.length + box.w.length) ? `♥ ${box.e.length + box.s.length} · 🎫 ${box.w.length}` : '좋아요 · 직관')}
         ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
@@ -2203,6 +2205,7 @@
     install: installView,
     concerts: concertsView,
     tour: tourView,
+    add: addView,
     xfeed: xfeedView,
     yt: ytView,
     releases: releasesView,
@@ -2429,6 +2432,166 @@
       })
       .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
   });
+
+  // ---------- 일정 등록 ----------
+  // 한 칸에 일정 하나씩 적어 보내요(제보 폼 '종류: 새일정'). 보내면 바로 '확인 필요'로 뜨고, 다른 두 분이 '맞아요'를 누르면 확정이에요
+  const ADD_CATS = ['공연', '뮤지컬', 'TV', '라디오', '유튜브', '기타'];
+  const ADD_MEM = ['두훈', '형호', '민규', '우림'];
+  const addKey = t => (t || '').replace(/\[[^\]]*\]|\s+/g, '').toLowerCase();
+  const addSame = (date, title) => { const t0 = addKey(title); return t0 && data.events.find(x => x.date === date && (addKey(x.title) === t0 || (t0.length >= 4 && (addKey(x.title).includes(t0) || t0.includes(addKey(x.title)))))); };
+  function addCard(v = {}) {
+    const mem = v.mem || [];
+    return `
+      <div class="add-card">
+        <div class="add-row">
+          <label class="add-f"><span>날짜 *</span><input type="date" class="a-date" value="${esc(v.date || '')}" required></label>
+          <label class="add-f"><span>시간</span><input type="time" class="a-time" value="${esc(v.time || '')}"></label>
+        </div>
+        <div class="add-f"><span>누구</span><div class="chips a-mem">${['포레스텔라', ...ADD_MEM].map(m => `<button type="button" class="chip${(m === '포레스텔라' ? !mem.length : mem.includes(m)) ? ' on' : ''}" data-m="${m}">${m}</button>`).join('')}</div></div>
+        <div class="add-row">
+          <label class="add-f add-cat"><span>종류</span><select class="a-cat">${ADD_CATS.map(c => `<option${c === (v.cat || '공연') ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
+          <label class="add-f add-grow"><span>일정 이름 *</span><input type="text" class="a-title" value="${esc(v.title || '')}" placeholder="예) 불후의 명곡 녹화"></label>
+        </div>
+        <label class="add-f"><span>장소</span><input type="text" class="a-place" value="${esc(v.place || '')}" placeholder="선택"></label>
+        <label class="add-f"><span>관련 영상</span><input type="url" class="a-link" value="${esc(v.link || '')}" placeholder="유튜브 링크 (선택)"></label>
+        <details class="add-sl"${v.songs ? ' open' : ''}><summary>셋리 적기 (선택)</summary><textarea class="a-songs" rows="5" placeholder="한 줄에 한 곡씩. 보랩·넬판 같은 줄임말도 알아들어요.">${esc(v.songs || '')}</textarea></details>
+        <p class="a-dup"></p>
+        <button type="button" class="link-btn a-del">이 칸 지우기</button>
+      </div>`;
+  }
+  function addView() {
+    const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">일정 등록</h1>
+      <p class="sub">빠진 일정을 알려주세요. 한 칸에 일정 하나씩이에요. 보내면 바로 사이트에 '확인 필요'로 뜨고, 다른 두 분이 맞다고 하면 확정돼요.</p>
+      <div class="add-xl">
+        <a class="bpill" id="add-tpl" href="data/schedule_form.xlsx" download="숲별_일정등록_양식.xlsx">엑셀 양식 받기</a>
+        <label class="bpill add-up">엑셀로 한 번에 올리기<input type="file" id="add-file" accept=".xlsx,.xls,.csv" hidden></label>
+      </div>
+      <p class="src-note" id="add-xl-msg">여러 개는 엑셀 양식에 한 줄에 하나씩 채워서 올리면 아래 칸에 들어가요. 확인하고 보내 주세요.</p>
+      <div id="add-list">${addCard({ date: qs.get('d') || '' })}</div>
+      <button type="button" class="bpill add-more" id="add-more">＋ 일정 하나 더</button>
+      <button type="button" class="bpill add-send" id="add-send">보내기</button>
+      <p class="src-note" id="add-msg"></p>`;
+  }
+  const addRead = c => {
+    const mem = [...c.querySelectorAll('.a-mem .chip.on')].map(b => b.dataset.m).filter(m => m !== '포레스텔라');
+    return { date: c.querySelector('.a-date').value, time: c.querySelector('.a-time').value, mem, cat: c.querySelector('.a-cat').value,
+      title: c.querySelector('.a-title').value.trim(), place: c.querySelector('.a-place').value.trim(), link: c.querySelector('.a-link').value.trim(),
+      songs: [...new Set(slParse(c.querySelector('.a-songs').value).map(n => slMatch(n) || n))] };
+  };
+  function addCheck(c) {
+    const v = addRead(c), same = v.date && v.title && addSame(v.date, v.title);
+    c.querySelector('.a-dup').innerHTML = same ? `이미 있는 일정 같아요: <a href="#/e/${encodeURIComponent(same.id)}">${esc(same.title)}</a>${v.songs.length ? ' · 적은 셋리는 이 일정에 붙어요.' : ''}` : '';
+  }
+  // 엑셀 도구는 필요할 때만 불러와요
+  let xlsxP = null;
+  const loadXlsx = () => xlsxP = xlsxP || new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'lib/xlsx.mini.min.js'; s.onload = () => ok(window.XLSX); s.onerror = no; document.head.appendChild(s); });
+  function bindAdd() {
+    const list = document.getElementById('add-list');
+    if (!list) return;
+    list.addEventListener('click', ev => {
+      const chip = ev.target.closest('.a-mem .chip');
+      if (chip) {
+        const box = chip.parentNode, all = chip.dataset.m === '포레스텔라';
+        if (all) box.querySelectorAll('.chip').forEach(b => b.classList.toggle('on', b === chip));
+        else { chip.classList.toggle('on'); const any = box.querySelector('.chip.on:not([data-m="포레스텔라"])'); box.querySelector('[data-m="포레스텔라"]').classList.toggle('on', !any); }
+      }
+      const del = ev.target.closest('.a-del');
+      if (del) { del.closest('.add-card').remove(); if (!list.children.length) list.insertAdjacentHTML('beforeend', addCard()); }
+    });
+    list.addEventListener('input', ev => { const c = ev.target.closest('.add-card'); if (c && ev.target.matches('.a-date,.a-title,.a-songs')) addCheck(c); });
+    list.addEventListener('change', ev => { const c = ev.target.closest('.add-card'); if (c) addCheck(c); });
+    document.getElementById('add-more').onclick = () => {
+      const last = list.lastElementChild, v = last ? addRead(last) : {};
+      list.insertAdjacentHTML('beforeend', addCard({ date: v.date, cat: v.cat, mem: v.mem }));
+      list.lastElementChild.querySelector('.a-title').focus();
+    };
+    const xlMsg = document.getElementById('add-xl-msg');
+    document.getElementById('add-tpl').onclick = () => { xlMsg.textContent = "예시 줄은 지우고 한 줄에 일정 하나씩 채워 주세요. 누구는 '포레스텔라' 또는 '두훈, 형호'처럼, 셋리는 곡 사이에 / 를 넣어요."; };
+    document.getElementById('add-file').onchange = ev => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      xlMsg.textContent = '읽는 중…';
+      Promise.all([loadXlsx(), file.arrayBuffer()]).then(([X, buf]) => {
+        const wb = X.read(buf, { type: 'array', cellDates: true });
+        const rows = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: true, defval: '' });
+        // 엑셀 날짜·시간 칸은 날짜 값으로 와요
+        const p2 = n => String(n).padStart(2, '0');
+        const cell = v => v instanceof Date ? (v.getFullYear() < 1901 ? `${p2(v.getHours())}:${p2(v.getMinutes())}` : `${v.getFullYear()}-${p2(v.getMonth() + 1)}-${p2(v.getDate())}`) : String(v);
+        const g = (r, k) => cell(r[Object.keys(r).find(x => x.replace(/\s/g, '').includes(k)) || ''] || '').trim();
+        const cards = rows.map(r => {
+          const d0 = g(r, '날짜'), us = d0.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+          const date = window.DATA.normDate(us ? `${us[3].length === 2 ? '20' + us[3] : us[3]}-${p2(us[1])}-${p2(us[2])}` : d0.replace(/[./]\s*/g, '-').replace(/-$/, ''));
+          const title = g(r, '일정');
+          if (!date || !title || /^\(예시\)/.test(title)) return '';
+          const who = g(r, '누구');
+          const mem = /포레스텔라|전체/.test(who) ? [] : ADD_MEM.filter(m => who.includes(m));
+          const cat = ADD_CATS.find(c => g(r, '종류').includes(c)) || (g(r, '종류') ? '기타' : '공연');
+          const t = g(r, '시간').match(/(\d{1,2}):(\d\d)/);
+          return addCard({ date, time: t ? t[1].padStart(2, '0') + ':' + t[2] : '', mem, cat, title, place: g(r, '장소'), link: g(r, '영상'), songs: g(r, '셋리').split(/\s*\/\s*|\n/).filter(Boolean).join('\n') });
+        }).filter(Boolean);
+        if (!cards.length) { xlMsg.textContent = '읽을 줄이 없어요. 날짜와 일정 이름이 있는지 확인해 주세요.'; return; }
+        const first = list.firstElementChild;
+        if (list.children.length === 1 && first && !addRead(first).title) first.remove();
+        list.insertAdjacentHTML('beforeend', cards.join(''));
+        list.querySelectorAll('.add-card').forEach(addCheck);
+        xlMsg.textContent = `${cards.length}개를 넣었어요. 확인하고 아래 '보내기'를 눌러 주세요.`;
+      }).catch(() => { xlMsg.textContent = '파일을 읽지 못했어요. 엑셀(.xlsx) 파일인지 확인해 주세요.'; });
+      ev.target.value = '';
+    };
+    document.getElementById('add-send').onclick = async () => {
+      const b = document.getElementById('add-send'), msg = document.getElementById('add-msg');
+      const cards = [...list.querySelectorAll('.add-card')];
+      const items = cards.map(addRead);
+      const bad = items.findIndex(v => !v.date || !v.title);
+      if (bad >= 0) { msg.textContent = `${bad + 1}번째 칸에 날짜와 일정 이름을 적어 주세요.`; cards[bad].scrollIntoView({ block: 'center' }); return; }
+      const f = window.CONFIG.form;
+      b.disabled = true;
+      let sent = 0;
+      for (const v of items) {
+        b.textContent = `보내는 중… ${sent + 1}/${items.length}`;
+        const body = new URLSearchParams({ [f.fields.content]: [`종류: 새일정`, `날짜: ${v.date}`, `시간: ${v.time}`, `누구: ${v.mem.length ? v.mem.join(', ') : '포레스텔라'}`, `분류: ${v.cat}`, `일정: ${v.title}`, `장소: ${v.place}`, `링크: ${v.link}`, `곡: ${v.songs.join(' / ')}`, `누가: ${myUid()}`].join('\n') });
+        try { await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }); sent++; } catch (err) { break; }
+      }
+      if (sent === items.length) {
+        b.textContent = '보냈어요 ✓';
+        msg.textContent = `${sent}개를 보냈어요. 고마워요! 몇 분 뒤 새로 열면 사이트에 '확인 필요'로 떠요.`;
+        list.innerHTML = addCard(); setTimeout(() => { b.disabled = false; b.textContent = '보내기'; }, 3000);
+      } else {
+        cards.slice(0, sent).forEach(c => c.remove());
+        b.disabled = false; b.textContent = '남은 것 다시 보내기';
+        msg.textContent = `${sent}개는 보냈고 나머지는 못 보냈어요. 인터넷 연결을 확인하고 다시 눌러 주세요.`;
+      }
+    };
+  }
+  // 팬이 등록한 일정: 확인 필요 · n/2 와 '맞아요'
+  function evState(e) {
+    const f = e.fanEvent;
+    if (!f) return '';
+    const mine = f.by && f.by === myUid(), done = slOked('ev:' + e.id);
+    const btn = !f.ok && !mine && !done ? `<button type="button" class="bpill ev-ok" data-id="${esc(e.id)}">맞아요</button>` : '';
+    const msg = f.ok ? `팬 ${f.n}명이 확인한 일정이에요.` : mine ? '내가 등록한 일정이에요. 다른 두 분이 맞다고 하면 확정돼요.' : done ? '확인해 줘서 고마워요! 몇 분 뒤 반영돼요.' : "팬이 등록한 일정이에요. 맞으면 '맞아요'를 눌러 주세요.";
+    return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
+  }
+  const evPending = e => e.fanEvent && !e.fanEvent.ok ? ' <span class="new-tag">확인 필요</span>' : '';
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.ev-ok');
+    if (!b) return;
+    const e = data.events.find(x => x.id === b.dataset.id);
+    if (!e) return;
+    const f = window.CONFIG.form;
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 일정확인\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n누가: ${myUid()}` });
+    b.disabled = true; b.textContent = '보내는 중…';
+    fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
+      .then(() => {
+        try { const a = JSON.parse(localStorage.getItem(SL_OK) || '[]'); a.push('ev:' + e.id); localStorage.setItem(SL_OK, JSON.stringify(a.slice(-300))); } catch (err) { /* 괜찮아요 */ }
+        b.closest('.sl-state').outerHTML = evState(e);
+      })
+      .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
+  });
+  const addLink = (d, cls = '') => `<a class="bpill add-link${cls ? ' ' + cls : ''}" href="#/add${d ? '?d=' + d : ''}">＋ 일정 등록</a>`;
 
   // ---------- 공식 X 모아보기 ----------
   const X_CATS = ['일정 후기', '일정 현장', '비하인드·직캠', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사', '생일', '투표·이벤트'];
@@ -2981,6 +3144,7 @@
       <div class="sheet-body">
         <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span>${upcoming(e)}</div>
         <h1 class="d-title">${esc(e.title)}</h1>
+        ${evState(e)}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
         <div class="box-row">${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
@@ -3045,7 +3209,7 @@
   }
 
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -3096,6 +3260,7 @@
     if (name === 'timeline') bindTimeline();
     if (name === 'install') bindInstall();
     if (name === 'check') bindCheck();
+    if (name === 'add') bindAdd();
   }
 
   // 반환값: 바탕 화면을 새로 그렸는지 (스크롤을 맨 위로 올릴지)

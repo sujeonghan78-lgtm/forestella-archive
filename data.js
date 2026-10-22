@@ -135,6 +135,7 @@
   // 구글 폼 응답 탭은 질문 제목이 열 이름이 돼서, 이름 일부로 찾아요.
   // 셋리 판 구분 번호: 곡 목록이 같으면 같은 번호
   const slVer = songs => { let h = 5381; songs.join('/').split('').forEach(ch => { h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0; }); return h.toString(36); };
+  const line0 = (r, key) => (((r.raw || '').match(new RegExp('^[ \\t]*' + key + '[ \\t]*[:：][ \\t]*(.*)$', 'm')) || [])[1] || '').trim();
   function buildReports(rows, all) {
     const pick = (r, word) => {
       const k = Object.keys(r).find(k => k.includes(word));
@@ -153,10 +154,10 @@
         song: line(c, '곡') || pick(r, '곡'),
         link: line(c, '링크') || pick(r, '링크'),
         message: line(c, '내용') || free || pick(r, '말'),
-        by: line(c, '누가'), ver: line(c, '버전'),
+        by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message);
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message);
   }
 
   async function fetchText(url) {
@@ -259,11 +260,33 @@
     if (raw.reports) {
       const rows = buildReports(toObjects(raw.reports), true);
       const idOf = r => (r.title.match(/\[ID ([\w-]+)\]/) || [])[1];
+      // 팬이 사이트 '일정 등록'에서 보낸 새 일정(종류: 새일정): 바로 '확인 필요'로 뜨고, 올린 사람 말고 두 명이 '맞아요'(종류: 일정확인)면 확정이에요
+      const sp0 = x => (x || '').replace(/\[[^\]]*\]|\s+/g, '').toLowerCase();
+      rows.filter(r => r.type === '새일정' && r.date && r.title).forEach(r => {
+        const id = 'u' + slVer([r.time, r.by, r.date, r.title]);
+        if (events.some(x => x.id === id)) return;
+        // 이미 있는 일정(같은 날, 이름이 겹침)이면 새로 만들지 않고 셋리만 그 일정에 붙여요
+        const t0 = sp0(r.title);
+        const same = events.find(x => x.date === r.date && (sp0(x.title) === t0 || (t0.length >= 4 && (sp0(x.title).includes(t0) || t0.includes(sp0(x.title))))));
+        if (!same) {
+          const mem = String(line0(r, '누구')).split(/[,/·\s]+/).map(x => SHORT[x] || (MEMBERS.includes(x) ? x : '')).filter(Boolean);
+          const solo = mem.length && mem.length < 4 ? `[${mem.map(m => m.slice(1)).join('/')}] ` : '';
+          const vid = ((r.link || '').match(/(?:youtu\.be\/|v=|shorts\/|live\/)([\w-]{11})/) || [])[1] || '';
+          const who = new Set(rows.filter(x => x.type === '일정확인' && idOf(x) === id && x.by && x.by !== r.by).map(x => x.by));
+          events.push({
+            id, date: r.date, endDate: '', start: line0(r, '시간'), end: '', category: line0(r, '분류') || '기타',
+            title: solo + r.title.replace(/^\[[^\]]*\]\s*/, ''), place: line0(r, '장소'), content: '', note: '', videoId: vid,
+            songs: [], songSource: '', videoMemo: '', members: mem.length < 4 ? mem : [], songKeys: [],
+            fanEvent: { by: r.by, n: who.size, ok: who.size >= 2 },
+          });
+        }
+        if (r.song) rows.push({ type: '셋리스트', title: `[ID ${same ? same.id : id}]`, song: r.song, by: r.by, newEv: true });
+      });
       const latest = new Map();
       rows.filter(r => r.type === '셋리스트').forEach(r => {
         const id = idOf(r);
         const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
-        if (id && songs.length >= 3) latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1 });
+        if (id && songs.length >= (r.newEv ? 1 : 3)) latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1 });
       });
       latest.forEach((f, id) => {
         const e = events.find(x => x.id === id);
