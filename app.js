@@ -406,6 +406,11 @@
   }
 
   function bindHome() {
+    // 관리자 기기에서만: 아직 안 읽은 의견 수
+    if (isAdmin()) loadOpinions().then(() => {
+      const box = document.getElementById('op-home'), n = opUnread().length;
+      if (box && n) box.innerHTML = `<a class="op-home" href="#/opinion">💬 새 의견 <b>${n}</b>건 <span>바로가기 ›</span></a>`;
+    });
     const f = document.getElementById('home-search');
     if (f) f.onsubmit = ev => {
       ev.preventDefault();
@@ -2182,6 +2187,7 @@
   const routes = {
     home: () => `
       ${header()}
+      <div id="op-home"></div>
       ${homeAsk()}
       ${homeSearchBox()}
       <hr class="divider">
@@ -2639,6 +2645,11 @@
     }).catch(() => { opData = opData || { ops: [], marks: [] }; }).finally(() => { opLoading = null; });
   }
   const OP_CATS = ['정보 수정', '오류 신고', '기능 요청', '자유·응원'];
+  // 읽음 표시: 의견 탭을 열 때 본 의견 번호를 이 기기에 저장해요
+  const OP_SEEN = 'sb-op-seen';
+  const opSeen = () => { try { return new Set(JSON.parse(localStorage.getItem(OP_SEEN) || '[]')); } catch (err) { return new Set(); } };
+  const opUnread = () => { const seen = opSeen(); return opData ? opData.ops.filter(o => !seen.has(o.id)) : []; };
+  let opNewIds = null;  // 이번에 열었을 때 새로 본 의견 (다시 그려도 유지)
   const opQs = () => new URLSearchParams(location.hash.split('?')[1] || '');
   const opFilter = () => opQs().get('f') || '';
   function opListHtml() {
@@ -2655,9 +2666,9 @@
     return `
       <div class="chips tl-cats">${chip('', `전체 ${list.length}`)}${chip('todo', `처리 전 ${list.filter(o => !opDone.has(o.id)).length}`)}${chip('done', `처리됨 ${list.filter(o => opDone.has(o.id)).length}`)}</div>
       <div class="chips tl-cats">${cchip('', '모든 분류')}${OP_CATS.map(x => cchip(x, x)).join('')}</div>
-      ${shown.length ? shown.map(o => `
+      ${shown.length ? shown.map((o, i) => `${!o.local && opNewIds && !opNewIds.has(o.id) && shown.slice(0, i).some(x => opNewIds.has(x.id)) && !shown.slice(0, i).some(x => !x.local && !opNewIds.has(x.id)) ? '<div class="op-read">여기까지 새 의견이에요 · 아래는 읽은 의견</div>' : ''}
         <div class="op-item${opDone.has(o.id) ? ' done' : ''}">
-          <div class="op-head"><span class="op-who"><span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> ${esc(o.name || '익명')}${o.by && o.by === me ? ' · 내 의견' : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
+          <div class="op-head"><span class="op-who">${opNewIds && opNewIds.has(o.id) ? '<span class="op-new">N</span> ' : ''}<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> ${esc(o.name || '익명')}${o.by && o.by === me ? ' · 내 의견' : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
           ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
           <p class="op-text">${esc(o.text)}</p>
           <div class="op-foot">${opDone.has(o.id) ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${opDone.has(o.id) ? '취소' : '처리'}">${opDone.has(o.id) ? '처리 취소' : '처리했어요'}</button>` : ''}</div>
@@ -2680,7 +2691,11 @@
   }
   function bindOpinion() {
     const fill = () => { const box = document.getElementById('op-list'); if (box && currentRoute() === 'opinion') box.innerHTML = opListHtml(); };
-    loadOpinions().then(fill);
+    loadOpinions().then(() => {
+      // 처음 그릴 때 안 읽은 것을 기억해 두고, 바로 읽음으로 저장해요 (다음에 열면 그 뒤에 온 것만 새 의견)
+      if (opData && !opNewIds) { opNewIds = new Set(opUnread().map(o => o.id)); try { localStorage.setItem(OP_SEEN, JSON.stringify(opData.ops.map(o => o.id).slice(-1000))); } catch (err) { /* 괜찮아요 */ } }
+      fill();
+    });
     const t = view.querySelector('.op-in'), b = view.querySelector('.op-send');
     try { t.value = sessionStorage.getItem('sb-op-draft') || ''; } catch (err) { /* 괜찮아요 */ }
     b.disabled = !t.value.trim();
@@ -3416,6 +3431,7 @@
     });
   }
   function renderBase(name) {
+    if (name !== 'opinion') opNewIds = null;
     setTabs(name);
     view.innerHTML = ddayBadge(name) + routes[name]() + (/^(opinion|admin|add|card)$/.test(name) ? '' : opBtn());
     fillSyncNote(name);

@@ -974,3 +974,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .op-ev{display:inline-block;margin-top:6px;font-size:12px;color:var(--green);text-decoration:none}
 .add-more-f{display:flex;flex-direction:column;gap:10px}
 .add-more-f[open]>summary{margin-bottom:4px}
+.op-home{display:flex;align-items:center;gap:6px;margin:4px 0 12px;padding:12px 14px;border-radius:14px;background:#FFF8E3;color:#5E4A12;text-decoration:none;font-size:14px}
+.op-home b{color:#8A6A1E}
+.op-home span{margin-left:auto;font-size:13px}
+.op-new{display:inline-block;min-width:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font-size:10px;font-weight:700;text-align:center;line-height:16px}
+.op-read{margin:14px 0 2px;padding:6px 0;text-align:center;font-size:12px;color:var(--muted);border-top:1px dashed var(--line);border-bottom:1px dashed var(--line)}
