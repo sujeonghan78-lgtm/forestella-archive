@@ -1323,7 +1323,7 @@
   function todayIso() { const t = todayParts(); return `${t.y}-${String(t.m).padStart(2, '0')}-${String(t.d).padStart(2, '0')}`; }
 
   // 카드에 들어갈 기록 (보관함에서 자동)
-  const favList = t => [...new Set((t || '').split(/\s*[·,]\s*/).map(x => x.trim()).filter(Boolean))].slice(0, 5);
+  const favList = t => [...new Set((t || '').split(/\s*[·,]\s*/).map(x => x.trim()).filter(Boolean))].slice(0, 10);
   function cardNums() {
     const st = boxStats(), on = k => card.stats.includes(k);
     const cells = [], lines = [];
@@ -1368,9 +1368,9 @@
     const ops = [];
     const font = (w, px, fam = CARD_SANS) => `${w} ${px}px ${fam}`;
     const fit = (t, max) => { if (ctx.measureText(t).width <= max) return t; while (t && ctx.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; };
-    const wrap = (t, max, n) => {
+    const wrap = (t, max, n, sep = /(\s+)/) => {
       const out = []; let cur = '';
-      for (const w of t.split(/(\s+)/)) {
+      for (const w of t.split(sep)) {
         if (ctx.measureText(cur + w).width <= max || !cur.trim()) cur += w;
         else { out.push(cur.trim()); cur = w.trimStart(); }
       }
@@ -1432,10 +1432,12 @@
       songsRow.forEach(([lb, v], i) => {
         const x = two ? P + i * (colW + 12) : P, yS = y;
         label(lb, x, yS);
-        ctx.font = font(F.w, 16 * F.k, F.f);
-        const ls = two ? [fit(v, colW)] : wrap(v, IN, 2);
-        ls.forEach((l, j) => ops.push(() => { ctx.font = font(F.w, 16 * F.k, F.f); ctx.fillStyle = C.ink; ctx.fillText(l, x, yS + 15 - (F.k > 1 ? 2 : 0) + j * 16 * F.k * 1.25); }));
-        if (!two || i === songsRow.length - 1) y += 15 + 16 * F.k * 1.2 + (ls.length - 1) * 16 * F.k * 1.25 + (two ? 0 : 6);
+        // 최애곡이 많으면(6곡~) 글씨를 줄이고 4줄까지
+        const many = lb === '최애곡' && favs.length > 5, sz = (many ? 13.5 : 16) * F.k;
+        ctx.font = font(F.w, sz, F.f);
+        const ls = two ? [fit(v, colW)] : (lb === '최애곡' ? wrap(v, IN, many ? 4 : 2, /( · )/) : wrap(v, IN, 2));
+        ls.forEach((l, j) => ops.push(() => { ctx.font = font(F.w, sz, F.f); ctx.fillStyle = C.ink; ctx.fillText(l, x, yS + 15 - (F.k > 1 ? 2 : 0) + j * sz * 1.25); }));
+        if (!two || i === songsRow.length - 1) y += 15 + sz * 1.2 + (ls.length - 1) * sz * 1.25 + (two ? 0 : 6);
       });
     }
     // 보관함 기록
@@ -1529,7 +1531,7 @@
         <div class="cf-g"><span class="cf-l">공식 팬클럽 숲별 기수 <small>여러 개 골라도 돼요</small></span><div class="chips cf-chips">${CARD_GENS.map(g => chip('gen', g, g, card.gen.includes(g))).join('')}</div></div>
         <div class="cf-two">
           <label><span class="cf-l">입덕곡</span><span class="cf-ac"><input id="cf-debut" maxlength="40" value="${esc(card.debut)}" placeholder="곡 이름·초성" autocomplete="off"><span class="cf-sug" hidden></span></span></label>
-          <label><span class="cf-l">최애곡</span><span class="cf-ac"><input id="cf-fav" maxlength="120" value="${esc(card.fav)}" placeholder="여러 곡 골라도 돼요" autocomplete="off" data-multi="1"><span class="cf-sug" hidden></span></span></label>
+          <label><span class="cf-l">최애곡</span><span class="cf-ac"><input id="cf-fav" maxlength="300" value="${esc(card.fav)}" placeholder="여러 곡 골라도 돼요" autocomplete="off" data-multi="1"><span class="cf-sug" hidden></span></span></label>
         </div>
         <div class="cf-g"><span class="cf-l">최애 <small>여러 명 골라도 돼요</small></span><div class="chips cf-chips">${CARD_MEMS.map(m => chip('mem', m, m, card.mem.includes(m))).join('')}</div></div>
         <label><span class="cf-l">제일 좋았던 일정 <small>직관·♥ 일정에서 골라요</small></span>
