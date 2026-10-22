@@ -2683,7 +2683,7 @@
   const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
   const opMsg = m => new TextEncoder().encode(`${m.id}:${m.state}:${m.n}`);
   let opData = null, opDone = new Map(), opLoading = null;
-  async function verifyMarks(marks) {
+  async function verifyMarks(marks, msg = opMsg, on = '처리') {
     const c = window.CONFIG.adminKey, done = new Map();
     if (!c || !crypto.subtle) return done;
     const key = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: c.x, y: c.y, ext: true }, ECDSA, false, ['verify']);
@@ -2691,10 +2691,10 @@
     const last = new Map();
     for (const m of marks) {
       let ok = false;
-      try { ok = await crypto.subtle.verify(SIGN, key, unb64u(m.sig), opMsg(m)); } catch (err) { ok = false; }
+      try { ok = await crypto.subtle.verify(SIGN, key, unb64u(m.sig), msg(m)); } catch (err) { ok = false; }
       if (ok && (!last.has(m.id) || Number(m.n) > Number(last.get(m.id).n))) last.set(m.id, m);
     }
-    last.forEach((m, id) => { if (m.state === '처리') done.set(id, m); });
+    last.forEach((m, id) => { if (m.state === on) done.set(id, m); });
     return done;
   }
   function loadOpinions() {
@@ -2844,6 +2844,55 @@
       } catch (err) { m.disabled = false; m.textContent = '다시 누르기'; }
     });
   }
+  // ---------- 일정 숨기기 (관리자) ----------
+  // 관리자 기기에서 '숨기기'를 누르면 폼으로 '종류: 일정숨김' 줄을 보내요.
+  // 서명(사이트용)이 맞으면 모두에게 숨기고, 확인(시트용)이 맞으면 시트 Apps Script가 일정 탭 공개여부를 '숨김'으로 바꿔요
+  const EV_HIDE = 'sb-ev-hide', EV_MARK = 'sb-ev-mark';
+  const evMsg = m => new TextEncoder().encode(`ev:${m.id}:${m.state}:${m.n}`);
+  const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  async function sheetKey() { const k = adminJwk(); return k && k.d ? hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sb-sheet:' + k.d))) : ''; }
+  async function sheetCheck(m) {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(await sheetKey()), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${m.id}:${m.state}:${m.n}`)));
+  }
+  const evMarkLocal = () => { try { return JSON.parse(localStorage.getItem(EV_MARK) || '[]'); } catch (err) { return []; } };
+  try { window.SB_EV_HIDE = new Set(JSON.parse(localStorage.getItem(EV_HIDE) || '[]')); } catch (err) { window.SB_EV_HIDE = new Set(); }
+  async function syncHides() {
+    if (!data || !data.evMarks) return;
+    const local = evMarkLocal().filter(m => !data.evMarks.some(x => x.id === m.id && x.n === m.n) && Date.now() - Number(m.n) < 864e5);
+    try { localStorage.setItem(EV_MARK, JSON.stringify(local)); } catch (err) { /* 괜찮아요 */ }
+    const set = new Set((await verifyMarks(data.evMarks.concat(local), evMsg, '숨김')).keys());
+    const old = window.SB_EV_HIDE;
+    if (set.size === old.size && [...set].every(x => old.has(x))) return;
+    window.SB_EV_HIDE = set;
+    try { localStorage.setItem(EV_HIDE, JSON.stringify([...set])); } catch (err) { /* 괜찮아요 */ }
+    const next = window.DATA.rebuild();
+    if (next) { data = next; searchIndex = null; baseHash = null; render(); }
+  }
+  async function sendEvMark(id, state) {
+    const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
+    const m = { id, state, n: String(Date.now()) };
+    m.sig = b64u(await crypto.subtle.sign(SIGN, key, evMsg(m)));
+    const check = await sheetCheck(m);
+    const f = window.CONFIG.form;
+    await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: `종류: 일정숨김\n대상: ${id}\n상태: ${state}\n번호: ${m.n}\n서명: ${m.sig}\n확인: ${check}` }) });
+    try { localStorage.setItem(EV_MARK, JSON.stringify(evMarkLocal().concat(m).slice(-100))); } catch (err) { /* 괜찮아요 */ }
+    await syncHides();
+  }
+  const hideBtn = e => isAdmin() ? `<button type="button" class="link-btn ev-hide" data-id="${esc(e.id)}">🙈 이 일정 숨기기 (관리자)</button>` : '';
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.ev-hide, .ev-unhide');
+    if (!b || !isAdmin()) return;
+    const hide = b.classList.contains('ev-hide');
+    if (hide && !b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = '정말 숨길까요? 한 번 더 누르면 모두에게 안 보여요'; return; }
+    b.disabled = true; b.textContent = '보내는 중…';
+    try {
+      await sendEvMark(b.dataset.id, hide ? '숨김' : '보이기');
+      if (hide) { if (currentRoute() === 'e') history.back(); }
+      else if (currentRoute() === 'admin') renderBase('admin');
+    } catch (err) { b.disabled = false; b.textContent = '다시 누르기'; }
+  });
+
   // 관리자 기기 정하기: 이 기기 안에서 열쇠를 만들고, 공개 열쇠만 보여줘요
   function adminView() {
     const k = adminJwk(), c = window.CONFIG.adminKey;
@@ -2853,12 +2902,19 @@
       <h1 class="h1 page-title">관리자 기기</h1>
       ${!k ? `<p class="sub">이 기기를 관리자 기기로 정하면 의견에 '처리했어요'를 누를 수 있어요. 열쇠는 이 기기 안에만 저장돼요.</p>
         <button type="button" class="bpill add-send" id="admin-make">이 기기를 관리자 기기로</button>`
-      : isAdmin() ? `<p class="sub">이 기기는 관리자 기기예요. <a href="#/opinion">의견 탭</a>에서 처리 표시를 할 수 있어요.</p>`
+      : isAdmin() ? `<p class="sub">이 기기는 관리자 기기예요. <a href="#/opinion">의견 탭</a>에서 처리 표시를, 일정 화면에서 숨기기를 할 수 있어요.</p>
+        <h2 class="h3 list-title">숨긴 일정</h2>
+        ${(data.hidden || []).length ? data.hidden.map(h => `<div class="op-item"><div class="op-head"><span class="op-who">${esc(h.date)} ${esc(h.title)}</span></div><div class="op-foot"><button type="button" class="link-btn ev-unhide" data-id="${esc(h.id)}">다시 보이기</button></div></div>`).join('') : '<p class="src-note">숨긴 일정이 없어요.</p>'}
+        <h2 class="h3 list-title">시트 연결 번호</h2>
+        <p class="src-note">시트 Apps Script의 KEY 칸에 넣는 번호예요. 다른 사람에게 보내지 마세요.</p>
+        <button type="button" class="bpill" id="sheet-key">번호 보기·복사</button>`
       : `<p class="sub">아래 확인용 번호를 복사해서 보내 주세요. 사이트에 넣으면 이 기기가 관리자 기기가 돼요.</p>
         <textarea class="op-in" rows="4" readonly>${esc(pub)}</textarea>
         <button type="button" class="bpill" data-copy="${esc(pub)}">복사</button>${c ? '<p class="src-note">지금 사이트에 들어 있는 번호와 달라요. 다른 기기가 관리자 기기로 정해져 있어요.</p>' : ''}`}`;
   }
   function bindAdmin() {
+    const sk = document.getElementById('sheet-key');
+    if (sk) sk.onclick = async () => { const v = await sheetKey(); sk.insertAdjacentHTML('afterend', `<textarea class="op-in" rows="3" readonly>${esc(v)}</textarea>`); try { await navigator.clipboard.writeText(v); sk.textContent = '복사했어요 ✓'; } catch (err) { sk.textContent = '아래 번호를 길게 눌러 복사해 주세요'; } sk.disabled = true; };
     const b = document.getElementById('admin-make');
     if (b) b.onclick = async () => {
       try {
@@ -3455,6 +3511,7 @@
         </div>
         ${findRow(findQuery(e.title))}
         ${fixBox(e)}
+        ${hideBtn(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
         ${(e.ytStage || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">방송 영상 <span class="song-count">${e.ytStage.length}</span>${help('방송사 공식 유튜브 영상 중 제목의 프로그램 이름과 방송 날짜로 이 일정에 붙인 거예요. 가끔 다른 회차일 수 있어요.')}</h2></div>${ytStrip(e.ytStage)}</section>` : ''}
         ${xBlock(e)}
@@ -3606,8 +3663,9 @@
   async function start() {
     showLoading();
     try {
-      data = await window.DATA.load(next => { data = next; searchIndex = null; if (currentRoute() !== 'e') baseHash = null; render(); });
+      data = await window.DATA.load(next => { data = next; searchIndex = null; if (currentRoute() !== 'e') baseHash = null; render(); syncHides(); });
       render();
+      syncHides();
       boxPull();
     } catch (err) {
       showError(err);
