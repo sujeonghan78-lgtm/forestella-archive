@@ -1128,7 +1128,8 @@
   }
 
   // ---------- 보관함 화면 ----------
-  function boxView() {
+  // 보관함 숫자 (보관함 화면과 숲별 카드가 같이 써요)
+  function boxStats() {
     const evs = ids => ids.map(id => data.byId.get(id)).filter(Boolean);
     const wentAll = evs(box.w).sort((a, b) => b.date.localeCompare(a.date));
     const isBc = e => /TV|라디오/.test(e.category);
@@ -1146,6 +1147,10 @@
     went.forEach(e => { const r = regionOf(e); if (r !== '그 외') regions.set(r, (regions.get(r) || 0) + 1); });
     const topRegion = [...regions.entries()].sort((a, b) => b[1] - a[1])[0];
     const first = went[went.length - 1];
+    return { evs, wentAll, isBc, went, seen, liked, songs, heardList, topRegion, first };
+  }
+  function boxView() {
+    const { wentAll, went, seen, liked, songs, heardList, topRegion, first } = boxStats();
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
     const empty = !wentAll.length && !liked.length && !songs.length;
     const LIMIT = 8;
@@ -1209,6 +1214,381 @@
       </div>`}
       ${sync}`;
   }
+  // ---------- 숲별 카드 · 입덕일 D+ (이 폰에만 저장) ----------
+  const CARD_KEY = 'sb-card', PHOTO_KEY = 'sb-card-photo';
+  const CARD_MEMS = ['두훈', '형호', '민규', '우림'];
+  const CARD_GENS = ['1기', '2기', '2.5기', '3기'];
+  const CARD_STATS = [['w', '직관 횟수'], ['b', '방청 횟수'], ['first', '첫 직관'], ['h', '들은 곡 수'], ['top', '제일 많이 들은 곡'], ['r', '많이 간 곳'], ['stage', '입덕 후 포레 무대 수']];
+  const CARD_COLORS = {
+    forest: { bg: ['#1F3A30'], ink: '#F2EEDF', mute: 'rgba(242,238,223,.6)', line: 'rgba(242,238,223,.18)', acc: '#C6EC6B', name: '숲' },
+    paper: { bg: ['#F4EFE4'], ink: '#22342B', mute: 'rgba(34,52,43,.55)', line: 'rgba(34,52,43,.15)', acc: '#2F7A5A', name: '종이' },
+    dusk: { bg: ['#F3E2DA', '#E6DAE8'], ink: '#45303A', mute: 'rgba(69,48,58,.55)', line: 'rgba(69,48,58,.15)', acc: '#B0567A', name: '노을' },
+    night: { bg: ['#141A2E'], ink: '#ECE8F7', mute: 'rgba(236,232,247,.55)', line: 'rgba(236,232,247,.16)', acc: '#E8C77A', name: '밤' },
+  };
+  // 글씨체: 이름·D+·곡 이름·한마디에 써요 (k: 손글씨는 글자가 작아 보여서 키워요)
+  const CARD_FONTS = {
+    myeong: { f: '"Nanum Myeongjo", serif', w: 700, big: 800, k: 1, name: '명조' },
+    plex: { f: '"IBM Plex Sans KR", sans-serif', w: 700, big: 700, k: 1, name: '고딕' },
+    dodum: { f: '"Gowun Dodum", sans-serif', w: 400, big: 400, k: 1, name: '둥근' },
+    pen: { f: '"Nanum Pen Script", cursive', w: 400, big: 400, k: 1.3, name: '손글씨' },
+  };
+  const CARD_SANS = '"Pretendard Variable", Pretendard, system-ui, sans-serif';
+  const cardDefault = () => ({ nick: '', since: '', gen: [], debut: '', fav: '', mem: [], best: '', line: '', color: 'forest', font: 'myeong', stats: ['w', 'b', 'first', 'h', 'r'], hideAsk: false });
+  let card = Object.assign(cardDefault(), boxRead(CARD_KEY) || {});
+  let cardPhoto = boxRead(PHOTO_KEY);  // { src, x, y }
+  const cardSave = () => boxWrite(CARD_KEY, card);
+  const ddayOf = since => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(since || '')) return 0;
+    const t = todayParts(), [y, m, d] = since.split('-').map(Number);
+    return Math.round((Date.UTC(t.y, t.m - 1, t.d) - Date.UTC(y, m - 1, d)) / 864e5) + 1;  // 입덕한 날이 D+1
+  };
+  const ddayText = () => { const n = ddayOf(card.since); return n > 0 ? 'D+' + n.toLocaleString('en-US') : ''; };
+
+  // 오른쪽 위 작은 D+ (입덕일을 정한 뒤에만, 누르면 숲별 카드)
+  function ddayBadge(name) {
+    const t = ddayText();
+    return t && !['search', 'card', 'timeline'].includes(name) ? `<a class="dday-badge" href="#/card" aria-label="숲별 ${t}, 숲별 카드 만들기">숲별 <b>${t}</b></a>` : '';
+  }
+  // 처음 온 폰: 홈 위에 입덕일 정하기 (정하거나 ✕ 누르면 다시 안 떠요)
+  function homeAsk() {
+    if (card.since || card.hideAsk) return '';
+    return `
+      <section class="dday-ask" id="dday-ask">
+        <button type="button" class="dday-x" id="dday-x" aria-label="닫기">✕</button>
+        <b>입덕일을 알려 주세요</b>
+        <span>숲별이 된 지 며칠째인지 세어 드려요. 이 폰에만 저장돼요.</span>
+        <form class="dday-form" id="dday-form" onsubmit="return false">
+          <input type="date" id="dday-in" max="${todayIso()}" min="2017-01-01" aria-label="입덕 날짜" required>
+          <button type="submit" class="chip on">입덕일 설정하기</button>
+        </form>
+      </section>`;
+  }
+  function bindAsk() {
+    const x = document.getElementById('dday-x'), f = document.getElementById('dday-form');
+    if (!f) return;
+    x.onclick = () => { card.hideAsk = true; cardSave(); document.getElementById('dday-ask').remove(); };
+    f.onsubmit = () => {
+      const v = document.getElementById('dday-in').value;
+      if (ddayOf(v) > 0) { card.since = v; cardSave(); renderBase('home'); }
+      return false;
+    };
+  }
+  function todayIso() { const t = todayParts(); return `${t.y}-${String(t.m).padStart(2, '0')}-${String(t.d).padStart(2, '0')}`; }
+
+  // 카드에 들어갈 기록 (보관함에서 자동)
+  function cardNums() {
+    const st = boxStats(), on = k => card.stats.includes(k);
+    const cells = [], lines = [];
+    if (on('w') && st.went.length) cells.push(['직관', st.went.length, '번']);
+    if (on('b') && st.seen.length) cells.push(['방청', st.seen.length, '번']);
+    if (on('h') && st.heardList.length) cells.push(['들은 곡', st.heardList.length, '곡']);
+    if (on('r') && st.topRegion) cells.push(['많이 간 곳', st.topRegion[0], '']);
+    if (on('stage') && card.since) {
+      const today = todayIso();
+      const n = data.events.filter(e => e.date >= card.since && e.date <= today && !/생일|유튜브|네이버TV|기념/.test(e.category || '')).length;
+      cells.push(['입덕 후 무대', n, '번']);
+    }
+    if (on('first') && st.first) lines.push(['첫 직관', fmtDate(st.first.date, false) + ' ' + st.first.title]);
+    if (on('top') && st.heardList.length) lines.push(['제일 많이 들은 곡', st.heardList[0][0].name + (st.heardList[0][1] > 1 ? ` (${st.heardList[0][1]}번)` : '')]);
+    return { cells, lines, st };
+  }
+
+  let cardFontsP = null;
+  function cardFontsReady(text) {
+    if (!cardFontsP) cardFontsP = new Promise(res => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@700;800&family=Gowun+Dodum&family=Nanum+Pen+Script&display=swap';
+      l.onload = l.onerror = res;
+      document.head.appendChild(l);
+      setTimeout(res, 4000);
+    });
+    const F = CARD_FONTS[card.font] || CARD_FONTS.myeong;
+    return cardFontsP.then(() => document.fonts ? Promise.all([
+      document.fonts.load(`${F.big} 50px ${F.f}`, text), document.fonts.load(`${F.w} 25px ${F.f}`, text),
+      document.fonts.load(`400 12px ${CARD_SANS}`, text), document.fonts.load(`700 12px ${CARD_SANS}`, text),
+    ]).catch(() => {}) : null);
+  }
+
+  let cardImg = null, cardImgSrc = '';
+  // 카드 그리기: 미리보기와 저장 이미지가 같은 그림이에요 (340 너비 기준, 3배로 그려요)
+  function drawCard(cv) {
+    const C = CARD_COLORS[card.color] || CARD_COLORS.forest, F = CARD_FONTS[card.font] || CARD_FONTS.myeong;
+    const W = 340, P = 22, IN = W - P * 2, S = 3, PH = 190;
+    const hasPhoto = !!(cardPhoto && cardImg && cardImg.complete && cardImg.naturalWidth);
+    const ctx = cv.getContext('2d');
+    const ops = [];
+    const font = (w, px, fam = CARD_SANS) => `${w} ${px}px ${fam}`;
+    const fit = (t, max) => { if (ctx.measureText(t).width <= max) return t; while (t && ctx.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; };
+    const wrap = (t, max, n) => {
+      const out = []; let cur = '';
+      for (const w of t.split(/(\s+)/)) {
+        if (ctx.measureText(cur + w).width <= max || !cur.trim()) cur += w;
+        else { out.push(cur.trim()); cur = w.trimStart(); }
+      }
+      if (cur.trim()) out.push(cur.trim());
+      if (out.length > n) { out.length = n; out[n - 1] = fit(out[n - 1] + '…', max).replace(/……$/, '…'); }
+      return out.map(l => fit(l, max));
+    };
+    const spaced = (t, x, y, ls, align = 'left') => {
+      let w = 0; for (const ch of t) w += ctx.measureText(ch).width + ls; w -= ls;
+      let cx = align === 'right' ? x - w : x;
+      for (const ch of t) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + ls; }
+    };
+    const label = (t, x, y, align) => ops.push(() => { ctx.font = font(500, 9); ctx.fillStyle = C.mute; spaced(t, x, y, 1.4, align); });
+    const hline = y => ops.push(() => { ctx.fillStyle = C.line; ctx.fillRect(P, y, IN, 1); });
+    ctx.textBaseline = 'top';
+    let y = hasPhoto ? PH + 14 : P;
+    ops.push(() => { ctx.font = font(500, 9.5); ctx.fillStyle = C.mute; spaced('FORESTELLA', P, y0, 2.2); spaced('SOOPBYEOL CARD', W - P, y0, 2.2, 'right'); });
+    const y0 = y; y += 14 + 12;
+    // 닉네임
+    const nick = card.nick.trim() || '숲별';
+    ctx.font = font(F.w, 25 * F.k, F.f);
+    const nickT = fit(nick, IN), yN = y;
+    ops.push(() => { ctx.font = font(F.w, 25 * F.k, F.f); ctx.fillStyle = C.ink; ctx.fillText(nickT, P, yN); });
+    y += 25 * F.k * 1.25;
+    // 입덕일 · 기수
+    const gens = CARD_GENS.filter(g => card.gen.includes(g));
+    const meta = [card.since ? card.since.replace(/-/g, '.') + ' 입덕' : '', gens.length ? '공식 팬클럽 숲별 ' + gens.join(' · ') : ''].filter(Boolean).join(' · ');
+    if (meta) {
+      ctx.font = font(400, 11);
+      wrap(meta, IN, 2).forEach(l => { const yy = y + 2; ops.push(() => { ctx.font = font(400, 11); ctx.fillStyle = C.mute; ctx.fillText(l, P, yy); }); y += 15; });
+    }
+    // 큰 D+
+    y += 10;
+    const dd = ddayText() || 'D+';
+    const big = 50 * F.k, yB = y;
+    ctx.font = font(F.big, big, F.f);
+    const bw = ctx.measureText(dd).width;
+    ops.push(() => {
+      ctx.font = font(F.big, big, F.f); ctx.fillStyle = C.ink; ctx.textBaseline = 'alphabetic'; ctx.fillText(dd, P, yB + big * 0.86);
+      ctx.font = font(500, 9.5); ctx.fillStyle = C.mute;
+      if (bw + 100 < IN) { spaced('DAYS WITH', P + bw + 10, yB + big * 0.86 - 13, 1.5); spaced('FORESTELLA', P + bw + 10, yB + big * 0.86, 1.5); }
+      ctx.textBaseline = 'top';
+    });
+    y += big + 4;
+    // 최애
+    const mems = CARD_MEMS.filter(m => card.mem.includes(m));
+    if (mems.length) {
+      const yM = y + 6;
+      ops.push(() => { ctx.font = font(400, 12.5); ctx.fillStyle = C.acc; ctx.fillText('♥', P, yM); ctx.fillStyle = C.ink; ctx.fillText(mems.join(' · '), P + 16, yM); });
+      y += 6 + 18;
+    }
+    // 입덕곡 · 최애곡
+    const songsRow = [['입덕곡', card.debut.trim()], ['최애곡', card.fav.trim()]].filter(x => x[1]);
+    if (songsRow.length) {
+      y += 10; hline(y); y += 11;
+      const colW = (IN - 12) / 2, yS = y;
+      songsRow.forEach(([lb, v], i) => {
+        const x = P + i * (colW + 12);
+        label(lb, x, yS);
+        ops.push(() => { ctx.font = font(F.w, 16 * F.k, F.f); ctx.fillStyle = C.ink; ctx.fillText(fit(v, songsRow.length > 1 ? colW : IN), x, yS + 15 - (F.k > 1 ? 2 : 0)); });
+      });
+      y += 15 + 16 * F.k * 1.2;
+    }
+    // 보관함 기록
+    const { cells, lines } = cardNums();
+    if (cells.length || lines.length) {
+      y += 10; hline(y); y += 11;
+      for (let r = 0; r < cells.length; r += 4) {
+        const row = cells.slice(r, r + 4), cw = IN / row.length, yR = y;
+        row.forEach(([lb, v, unit], i) => {
+          const x = P + i * cw + (i ? 10 : 0);
+          label(lb, x, yR);
+          ops.push(() => {
+            if (i) { ctx.fillStyle = C.line; ctx.fillRect(P + i * cw, yR, 1, 34); }
+            ctx.fillStyle = C.ink; ctx.font = font(700, 17);
+            const vt = fit(String(v), cw - (i ? 14 : 4) - (unit ? 12 : 0));
+            ctx.fillText(vt, x, yR + 14);
+            if (unit) { const vw = ctx.measureText(vt).width; ctx.font = font(400, 10); ctx.fillText(unit, x + vw + 1.5, yR + 21); }
+          });
+        });
+        y += 38 + (r + 4 < cells.length ? 8 : 0);
+      }
+      lines.forEach(([lb, v]) => {
+        const yL = y + 4;
+        ops.push(() => {
+          ctx.font = font(400, 11); ctx.fillStyle = C.mute; ctx.fillText(lb, P, yL);
+          const lw = ctx.measureText(lb + ' ').width; ctx.fillStyle = C.ink; ctx.fillText(fit(v, IN - lw), P + lw, yL);
+        });
+        y += 18;
+      });
+    }
+    // 제일 좋았던 일정 (절취선 아래)
+    const best = card.best && data.byId.get(card.best);
+    let yCut = 0;
+    if (best) {
+      y += 12; yCut = y; y += 13;
+      label('제일 좋았던 일정 · ' + best.date.replace(/-/g, '.'), P, y);
+      y += 15;
+      ctx.font = font(700, 12.5);
+      wrap(best.title, IN, 2).forEach(l => { const yy = y; ops.push(() => { ctx.font = font(700, 12.5); ctx.fillStyle = C.ink; ctx.fillText(l, P, yy); }); y += 18; });
+    }
+    // 한마디 · 아래 줄은 맨 아래에 붙여요
+    const lineT = card.line.trim();
+    const qH = lineT ? 15 * F.k * 1.7 + 6 : 0;
+    const H = Math.ceil(Math.max(y + 14 + qH + 26, hasPhoto ? 690 : 520));
+    if (lineT) {
+      const yQ = H - 26 - qH;
+      ops.push(() => { ctx.font = font(F.w, 15 * F.k, F.f); ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.fillText(fit('“' + lineT + '”', IN), W / 2, yQ); ctx.textAlign = 'left'; });
+    }
+    ops.push(() => { ctx.font = font(400, 8.5); ctx.fillStyle = C.mute; ctx.fillText('숲별 기록장', P, H - 26); ctx.textAlign = 'right'; ctx.fillText('sujeonghan78-lgtm.github.io/forestella-archive', W - P, H - 26); ctx.textAlign = 'left'; });
+
+    // 실제로 그리기
+    cv.width = W * S; cv.height = H * S;
+    cv.dataset.h = H;
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    ctx.textBaseline = 'top';
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(0, 0, W, H, 20) : ctx.rect(0, 0, W, H); ctx.clip();
+    if (C.bg.length > 1) { const g = ctx.createLinearGradient(0, 0, W * 0.35, H); g.addColorStop(0, C.bg[0]); g.addColorStop(1, C.bg[1]); ctx.fillStyle = g; } else ctx.fillStyle = C.bg[0];
+    ctx.fillRect(0, 0, W, H);
+    if (hasPhoto) {
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, PH); ctx.clip();
+      const iw = cardImg.naturalWidth, ih = cardImg.naturalHeight, sc = Math.max(W / iw, PH / ih);
+      const dw = iw * sc, dh = ih * sc;
+      ctx.drawImage(cardImg, -(dw - W) * (cardPhoto.x ?? .5), -(dh - PH) * (cardPhoto.y ?? .5), dw, dh);
+      ctx.restore();
+    }
+    const tg = ctx.createLinearGradient(0, 0, W, 0); tg.addColorStop(0, '#C6EC6B'); tg.addColorStop(.5, '#62D3A1'); tg.addColorStop(1, '#72BCF3');
+    ctx.fillStyle = tg; ctx.fillRect(0, 0, W, 4);
+    ops.forEach(f => f());
+    if (yCut) {
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(10, yCut); ctx.lineTo(W - 10, yCut); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalCompositeOperation = 'destination-out';
+      [0, W].forEach(x => { ctx.beginPath(); ctx.arc(x, yCut, 8, 0, Math.PI * 2); ctx.fill(); });
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
+    return { PH: hasPhoto ? PH : 0 };
+  }
+
+  function cardView() {
+    const st = boxStats();
+    const bestList = [...new Map([...st.wentAll, ...st.liked].map(e => [e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
+    const chip = (grp, v, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-grp="${grp}" data-v="${esc(v)}" aria-pressed="${on}">${esc(label)}</button>`;
+    const songNames = [...new Set([...data.songs.values()].map(x => x.name))].sort((a, b) => a.localeCompare(b, 'ko'));
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">숲별 카드${help('내 숲별 기록을 카드 한 장으로 만들어요. 넣은 내용과 사진은 이 폰에만 저장돼요.')}</h1>
+      <form class="card-form" id="card-form" onsubmit="return false">
+        <label><span class="cf-l">닉네임</span><input id="cf-nick" maxlength="16" value="${esc(card.nick)}" placeholder="숲별홍길동" autocomplete="off"></label>
+        <label><span class="cf-l">입덕 날짜</span><input type="date" id="cf-since" value="${esc(card.since)}" max="${todayIso()}" min="2017-01-01"></label>
+        <div class="cf-g"><span class="cf-l">공식 팬클럽 숲별 기수 <small>여러 개 골라도 돼요</small></span><div class="chips cf-chips">${CARD_GENS.map(g => chip('gen', g, g, card.gen.includes(g))).join('')}</div></div>
+        <div class="cf-two">
+          <label><span class="cf-l">입덕곡</span><input id="cf-debut" list="cf-songs" maxlength="40" value="${esc(card.debut)}" placeholder="곡 이름" autocomplete="off"></label>
+          <label><span class="cf-l">최애곡</span><input id="cf-fav" list="cf-songs" maxlength="40" value="${esc(card.fav)}" placeholder="곡 이름" autocomplete="off"></label>
+        </div>
+        <datalist id="cf-songs">${songNames.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+        <div class="cf-g"><span class="cf-l">최애 <small>여러 명 골라도 돼요</small></span><div class="chips cf-chips">${CARD_MEMS.map(m => chip('mem', m, m, card.mem.includes(m))).join('')}</div></div>
+        <label><span class="cf-l">제일 좋았던 일정 <small>직관·♥ 일정에서 골라요</small></span>
+          <select id="cf-best"><option value="">${bestList.length ? '안 넣을래요' : '보관함에 직관·♥ 일정이 아직 없어요'}</option>${bestList.map(e => `<option value="${esc(e.id)}"${e.id === card.best ? ' selected' : ''}>${fmtDate(e.date, false)} ${esc(e.title)}</option>`).join('')}</select></label>
+        <div class="cf-g"><span class="cf-l">사진 <small>안 넣어도 돼요</small></span>
+          <div class="cf-photo"><label class="chip cf-file">📷 ${cardPhoto ? '사진 바꾸기' : '폰에서 사진 고르기'}<input type="file" id="cf-photo" accept="image/*" hidden></label>${cardPhoto ? '<button type="button" class="link-btn" id="cf-photo-x">사진 빼기</button>' : ''}</div>
+          <p class="src-note">직접 찍었거나 공유해도 되는 사진을 넣어 주세요. 사진은 이 폰에만 있어요.${cardPhoto ? ' 미리보기에서 사진을 끌어서 위치를 맞출 수 있어요.' : ''}</p></div>
+        <label><span class="cf-l">한마디 <small>안 써도 돼요</small></span><input id="cf-line" maxlength="24" value="${esc(card.line)}" placeholder="숲별이라 행복해" autocomplete="off"></label>
+        <div class="cf-g"><span class="cf-l">글씨체</span><div class="cf-fonts">${Object.entries(CARD_FONTS).map(([k, f]) => `<button type="button" class="cf-font${card.font === k ? ' on' : ''}" data-grp="font" data-v="${k}" aria-pressed="${card.font === k}" style="font-family:${esc(f.f)};font-weight:${f.w}${k === 'pen' ? ';font-size:21px' : ''}">${f.name} 숲별</button>`).join('')}</div></div>
+        <div class="cf-g"><span class="cf-l">카드 색</span><div class="cf-colors">${Object.entries(CARD_COLORS).map(([k, c]) => `<button type="button" class="cf-color${card.color === k ? ' on' : ''}" data-grp="color" data-v="${k}" aria-pressed="${card.color === k}" style="background:${c.bg.length > 1 ? `linear-gradient(135deg,${c.bg.join(',')})` : c.bg[0]}"><span class="sr">${c.name}</span></button>`).join('')}</div></div>
+        <div class="cf-g"><span class="cf-l">카드에 넣을 기록 <small>보관함에서 자동</small></span><div class="chips cf-chips">${CARD_STATS.map(([k, l]) => chip('stats', k, l, card.stats.includes(k))).join('')}</div></div>
+      </form>
+      <div class="cf-l cf-pv-l">미리보기</div>
+      <div class="cf-pv"><canvas id="card-cv"${cardPhoto ? ' class="has-photo"' : ''} aria-label="숲별 카드 미리보기"></canvas></div>
+      <div class="cf-btns"><button type="button" class="btn" id="card-save">이미지로 저장</button><button type="button" class="btn ghost" id="card-x">X에 올리기</button></div>
+      <p class="src-note cf-msg" id="card-msg">X에 올릴 땐 저장한 카드 이미지를 글에 붙여 주세요.</p>`;
+  }
+
+  function bindCard() {
+    const cv = document.getElementById('card-cv');
+    if (!cv) return;
+    let geo = { PH: 0 }, tick = 0;
+    const redraw = () => {
+      const my = ++tick;
+      const text = [card.nick, card.debut, card.fav, card.line, ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 방청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
+      geo = drawCard(cv);
+      cardFontsReady(text).then(() => { if (my === tick) geo = drawCard(cv); });
+    };
+    if (cardPhoto && cardImgSrc !== cardPhoto.src) { cardImg = new Image(); cardImg.onload = redraw; cardImg.src = cardImgSrc = cardPhoto.src; }
+    const form = document.getElementById('card-form');
+    const txt = { 'cf-nick': 'nick', 'cf-debut': 'debut', 'cf-fav': 'fav', 'cf-line': 'line', 'cf-since': 'since', 'cf-best': 'best' };
+    form.oninput = form.onchange = ev => {
+      const k = txt[ev.target.id];
+      if (!k) return;
+      card[k] = ev.target.value;
+      cardSave(); redraw();
+    };
+    form.onclick = ev => {
+      const b = ev.target.closest('[data-grp]');
+      if (!b) return;
+      const g = b.dataset.grp, v = b.dataset.v;
+      if (g === 'font' || g === 'color') {
+        card[g] = v;
+        form.querySelectorAll(`[data-grp="${g}"]`).forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+      } else {
+        card[g] = card[g].includes(v) ? card[g].filter(x => x !== v) : [...card[g], v];
+        b.classList.toggle('on'); b.setAttribute('aria-pressed', card[g].includes(v));
+      }
+      cardSave(); redraw();
+    };
+    // 사진: 긴 쪽 1200px로 줄여서 이 폰에만 저장
+    const fi = document.getElementById('cf-photo');
+    fi.onchange = () => {
+      const f = fi.files && fi.files[0];
+      if (!f) return;
+      const img = new Image(), url = URL.createObjectURL(f);
+      img.onload = () => {
+        const sc = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        cardPhoto = { src: c.toDataURL('image/jpeg', 0.85), x: 0.5, y: 0.5 };
+        boxWrite(PHOTO_KEY, cardPhoto);
+        cardImgSrc = '';
+        renderBase('card');
+      };
+      img.src = url;
+    };
+    const px = document.getElementById('cf-photo-x');
+    if (px) px.onclick = () => { cardPhoto = null; cardImg = null; cardImgSrc = ''; boxWrite(PHOTO_KEY, null); renderBase('card'); };
+    // 미리보기에서 사진 끌어서 위치 맞추기
+    let drag = null;
+    cv.onpointerdown = ev => {
+      if (!geo.PH || !cardImg) return;
+      const r = cv.getBoundingClientRect(), k = 340 / r.width;
+      if ((ev.clientY - r.top) * k > geo.PH) return;
+      drag = { x: ev.clientX, y: ev.clientY, px: cardPhoto.x ?? .5, py: cardPhoto.y ?? .5, k };
+      cv.setPointerCapture(ev.pointerId);
+    };
+    cv.onpointermove = ev => {
+      if (!drag) return;
+      const iw = cardImg.naturalWidth, ih = cardImg.naturalHeight, sc = Math.max(340 / iw, geo.PH / ih);
+      const ox = iw * sc - 340, oy = ih * sc - geo.PH;
+      const cl = v => Math.min(1, Math.max(0, v));
+      cardPhoto.x = ox > 1 ? cl(drag.px - (ev.clientX - drag.x) * drag.k / ox) : .5;
+      cardPhoto.y = oy > 1 ? cl(drag.py - (ev.clientY - drag.y) * drag.k / oy) : .5;
+      drawCard(cv);
+    };
+    cv.onpointerup = cv.onpointercancel = () => { if (drag) { drag = null; boxWrite(PHOTO_KEY, cardPhoto); } };
+    // 저장: 공유 창이 되면 공유 창(사진 앱에 저장 가능), 아니면 내려받기
+    const msg = document.getElementById('card-msg');
+    const blobOf = () => new Promise(res => cv.toBlob(res, 'image/png'));
+    const download = b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = '숲별카드.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); };
+    document.getElementById('card-save').onclick = async () => {
+      const b = await blobOf(); if (!b) return;
+      const file = new File([b], '숲별카드.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file] }); return; } catch (err) { if (err.name === 'AbortError') return; }
+      }
+      download(b);
+      msg.textContent = '카드 이미지를 저장했어요.';
+    };
+    document.getElementById('card-x').onclick = () => {
+      const t = `숲별 ${ddayText()} 🌲 내 숲별 카드\n#포레스텔라 #Forestella #숲별카드\n`;
+      window.open('https://x.com/intent/post?text=' + encodeURIComponent(t) + '&url=' + encodeURIComponent('https://sujeonghan78-lgtm.github.io/forestella-archive/'), '_blank', 'noopener');
+    };
+    redraw();
+  }
+
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
   const wentBtns = e => {
     const near = data.events.filter(x => x.title === e.title && x.place === e.place && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
@@ -1510,6 +1890,7 @@
       </a>
       <nav aria-label="더보기 메뉴">
         ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (box.e.length + box.s.length + box.w.length) ? `♥ ${box.e.length + box.s.length} · 🎫 ${box.w.length}` : '좋아요 · 직관')}
+        ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '지역 행사', '축제 · 지역 공연')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
@@ -1726,6 +2107,7 @@
   const routes = {
     home: () => `
       ${header()}
+      ${homeAsk()}
       ${homeSearchBox()}
       <hr class="divider">
       ${homeRandom()}
@@ -1741,6 +2123,7 @@
     program: programView,
     local: localView,
     box: boxView,
+    card: cardView,
     songs: songsView,
     song: songView,
     timeline: timelineView,
@@ -2427,7 +2810,7 @@
   }
 
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -2463,7 +2846,7 @@
   }
   function renderBase(name) {
     setTabs(name);
-    view.innerHTML = routes[name]();
+    view.innerHTML = ddayBadge(name) + routes[name]();
     fillSyncNote(name);
     if (name === 'home') bindHome();
     if (name === 'search') bindSearch();
@@ -2471,6 +2854,8 @@
     if (name === 'releases') bindReleases();
     if (name === 'program') bindPrograms();
     if (name === 'box') bindBox();
+    if (name === 'card') bindCard();
+    if (name === 'home') bindAsk();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
     if (name === 'install') bindInstall();
