@@ -914,3 +914,10 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .card-wrap .card.has-thumb { padding-right: 16px; align-items: flex-start; min-height: 122px; }
 .card-wrap:has(.card.has-thumb) .card-sl { top: 76px; right: 16px; }
 @media (max-width: 420px) { .card-wrap:has(.card.has-thumb) .card-sl { top: 68px; } .card-wrap .card.has-thumb { min-height: 114px; } }
+
+/* 팬이 올린 셋리 상태 */
+.sl-state { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: #FFF8E3; font-size: 13px; line-height: 1.45; }
+.sl-state.ok { background: #EEF7E6; }
+.sl-state.ok .src-badge { color: #2F5B12; background: #D7EDC2; }
+.sl-state-msg { flex: 1 1 100%; min-width: 0; color: var(--ink-2); }
+.sl-state .sl-ok { flex: none; margin: 0; }

@@ -132,6 +132,8 @@
   }
 
   // 구글 폼 응답 탭은 질문 제목이 열 이름이 돼서, 이름 일부로 찾아요.
+  // 셋리 판 구분 번호: 곡 목록이 같으면 같은 번호
+  const slVer = songs => { let h = 5381; songs.join('/').split('').forEach(ch => { h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0; }); return h.toString(36); };
   function buildReports(rows, all) {
     const pick = (r, word) => {
       const k = Object.keys(r).find(k => k.includes(word));
@@ -150,9 +152,10 @@
         song: line(c, '곡') || pick(r, '곡'),
         link: line(c, '링크') || pick(r, '링크'),
         message: line(c, '내용') || free || pick(r, '말'),
+        by: line(c, '누가'), ver: line(c, '버전'),
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message);
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message);
   }
 
   async function fetchText(url) {
@@ -245,32 +248,36 @@
       add.forEach(n => { e.songs.push(n); e.songKeys.push(songKey(n)); });
       e.fanSrc = f;
     });
-    // 팬이 사이트에서 보낸 셋리(제보 폼 '종류: 셋리스트'): 일정마다 가장 최근 것만, 곡의 60% 이상이 아는 곡이면 바로 붙여요
-    if (raw.reports) {
-      const known = new Set(events.flatMap(e => e.songKeys));
-      try { (JSON.parse(raw.setlists || '{}').tours || []).forEach(t => t.songs.forEach(x => x.t.split(' / ').forEach(n => known.add(songKey(setlistName(n)))))); } catch (err) { /* 없으면 넘어가요 */ }
-      const latest = new Map();
-      buildReports(toObjects(raw.reports), true).filter(r => r.type === '셋리스트').forEach(r => {
-        const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1];
-        const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
-        if (id && songs.length >= 3) latest.set(id, songs);
-      });
-      latest.forEach((songs, id) => {
-        const e = events.find(x => x.id === id);
-        if (!e || e.songSource === '참고') return;
-        if (songs.filter(n => known.has(songKey(n))).length < songs.length * 0.6) return;
-        const add = songs.filter(n => { const k = songKey(n); return k && !e.songKeys.includes(k); });
-        if (!add.length) return;
-        if (!e.songs.length) e.songSource = '팬 기록';
-        add.forEach(n => { e.songs.push(n); e.songKeys.push(songKey(n)); });
-        e.fanSrc = e.fanSrc || { note: '' };
-      });
-    }
     // 이틀 공연이 한 줄로 적혀 있으면 날마다 따로 나눠요 (직관·날짜 버튼을 날마다 누를 수 있게). 둘째 날 ID는 '원래ID-d2'
     events.filter(e => e.category === '공연' && e.endDate && (new Date(e.endDate) - new Date(e.date)) / 864e5 === 1).forEach(e => {
       events.push({ ...e, id: e.id + '-d2', date: e.endDate, endDate: '', songs: e.songs.slice(), songKeys: e.songKeys.slice() });
       e.endDate = '';
     });
+    // 팬이 사이트에서 보낸 셋리(제보 폼 '종류: 셋리스트'): 보내면 바로 '확인 필요'로 붙고, 누구나 고쳐 다시 보낼 수 있어요.
+    // 가장 최근 판을 다른 두 사람이 '맞아요'(종류: 셋리확인, 같은 버전)로 누르면 확정이에요. 사람 구분은 브라우저마다 만든 임의 번호(누가:)로 해요
+    if (raw.reports) {
+      const rows = buildReports(toObjects(raw.reports), true);
+      const idOf = r => (r.title.match(/\[ID ([\w-]+)\]/) || [])[1];
+      const latest = new Map();
+      rows.filter(r => r.type === '셋리스트').forEach(r => {
+        const id = idOf(r);
+        const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
+        if (id && songs.length >= 3) latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1 });
+      });
+      latest.forEach((f, id) => {
+        const e = events.find(x => x.id === id);
+        if (!e || e.songSource === '참고') return;
+        const ver = slVer(f.songs);
+        const who = new Set(rows.filter(r => r.type === '셋리확인' && idOf(r) === id && r.ver === ver && r.by && r.by !== f.by).map(r => r.by));
+        // 시트에 곡이 있던 일정은 빠진 곡만 더하고, 팬 셋리만 있는 일정은 최근 판으로 통째로 바꿔요
+        const own = e.songSource && e.songSource !== '팬 기록' ? e.songs.slice() : [];
+        const list = own.concat(f.songs.filter(n => { const k = songKey(n); return k && !own.some(o => songKey(o) === k); }));
+        e.songs = list; e.songKeys = [...new Set(list.map(songKey).filter(Boolean))];
+        if (!own.length) e.songSource = '팬 기록';
+        e.fanSrc = e.fanSrc || { note: '' };
+        e.fanSet = { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits };
+      });
+    }
     events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     const videos = buildVideos(toObjects(raw.videos));
     // 시트에 없는 관련 영상(보충 파일 videos): 같은 영상이 시트에 있으면 시트 우선
@@ -717,5 +724,5 @@
   }
 
   window.DATA_LINK_SKIP = LINK_SKIP;
-  window.DATA = { load, parseCSV, normDate, songKey, setlistName };
+  window.DATA = { load, parseCSV, normDate, songKey, setlistName, slVer };
 })();

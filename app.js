@@ -2328,17 +2328,34 @@
     const hit = [...data.songs.values()].find(s => has(s.name) || (s.match && has(s.match)));
     return hit ? hit.name : '';
   }
+  // 이 브라우저를 구분하는 임의 번호 (셋리 '맞아요'를 같은 사람이 여러 번 세지 않게)
+  const myUid = () => { try { let u = localStorage.getItem('sb-uid'); if (!u) { u = Math.random().toString(36).slice(2, 10); localStorage.setItem('sb-uid', u); } return u; } catch (err) { return ''; } };
+  const SL_OK = 'sb-slok';
+  const slOked = k => { try { return JSON.parse(localStorage.getItem(SL_OK) || '[]').includes(k); } catch (err) { return false; } };
+  // 팬이 올린 셋리 상태: 확인 필요(맞아요 버튼) 또는 확정
+  function slState(e) {
+    const f = e.fanSet;
+    if (!f) return '';
+    const mine = f.by && f.by === myUid(), done = slOked(e.id + ':' + f.ver);
+    const btn = !f.ok && !mine && !done && (window.CONFIG.form || {}).fields ? `<button type="button" class="bpill sl-ok" data-id="${esc(e.id)}" data-ver="${esc(f.ver)}">맞아요</button>` : '';
+    const msg = f.ok ? `팬 ${f.n}명이 확인한 셋리예요.`
+      : mine ? '내가 올린 셋리예요. 다른 두 분이 맞다고 하면 확정돼요.'
+      : done ? '확인해 줘서 고마워요! 몇 분 뒤 반영돼요.'
+      : "팬이 올린 셋리예요. 맞으면 '맞아요'를, 틀린 곳이 있으면 아래 '셋리 고치기'를 눌러 주세요.";
+    return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
+  }
   function slForm(evs) {
     if (!evs.length || !(window.CONFIG.form || {}).fields) return '';
+    const fs = evs.length === 1 && evs[0].fanSet;
     const opt = e => `${e.date.slice(5).replace('-', '.')}${e.place ? ' ' + e.place : ''}`;
     return `
       <details class="sl-add">
-        <summary>📝 셋리 알려주기</summary>
+        <summary>${fs ? '✏️ 셋리 고치기' : '📝 셋리 알려주기'}</summary>
         <div class="sl-box">
           ${evs.length > 1 ? `<select class="sl-ev">${evs.map(e => `<option value="${esc(e.id)}">${esc(opt(e))}</option>`).join('')}</select>` : `<input type="hidden" class="sl-ev" value="${esc(evs[0].id)}">`}
-          <textarea class="sl-in" rows="8" placeholder="한 줄에 한 곡씩 붙여넣어 주세요. 보랩·넬판 같은 줄임말도 알아들어요.&#10;&#10;예)&#10;Save our lives&#10;스카페&#10;넬판&#10;Inner Universe&#10;아리랑"></textarea>
+          <textarea class="sl-in" rows="8" placeholder="한 줄에 한 곡씩 붙여넣어 주세요. 보랩·넬판 같은 줄임말도 알아들어요.&#10;&#10;예)&#10;Save our lives&#10;스카페&#10;넬판&#10;Inner Universe&#10;아리랑">${fs ? esc(fs.songs.join('\n')) : ''}</textarea>
           <ol class="sl-pre"></ol>
-          <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 곡 대부분이 ✓면 보내자마자 사이트에 붙어요.</p>
+          <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 보내면 바로 '확인 필요'로 붙고, 다른 두 분이 맞다고 하면 확정돼요.${fs ? ' 고쳐서 보내면 확인은 처음부터 다시 받아요.' : ''}</p>
           <button type="button" class="bpill sl-send" disabled>보내기</button>
         </div>
       </details>`;
@@ -2358,11 +2375,27 @@
     const songs = [...new Set(slParse(box.querySelector('.sl-in').value).map(n => slMatch(n) || n))];
     if (!e || songs.length < 3) return;
     const f = window.CONFIG.form;
-    const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리스트\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n곡: ${songs.join(' / ')}` });
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리스트\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n곡: ${songs.join(' / ')}\n누가: ${myUid()}` });
     b.disabled = true; b.textContent = '보내는 중…';
     fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
       .then(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${songs.length}곡을 보냈어요. 고마워요! 몇 분 뒤 새로 열면 사이트에 붙어 있어요.`; })
       .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; box.querySelector('.sl-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
+  });
+
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.sl-ok');
+    if (!b) return;
+    const e = data.events.find(x => x.id === b.dataset.id);
+    if (!e) return;
+    const f = window.CONFIG.form;
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리확인\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n버전: ${b.dataset.ver}\n누가: ${myUid()}` });
+    b.disabled = true; b.textContent = '보내는 중…';
+    fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
+      .then(() => {
+        try { const a = JSON.parse(localStorage.getItem(SL_OK) || '[]'); a.push(e.id + ':' + b.dataset.ver); localStorage.setItem(SL_OK, JSON.stringify(a.slice(-300))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
+        b.closest('.sl-state').outerHTML = slState(e);
+      })
+      .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
   });
 
   // ---------- 공식 X 모아보기 ----------
@@ -2864,8 +2897,9 @@
         </div>`;
     } else if (e.songs.length) {
       songs = `
+        ${slState(e)}
         <div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>
-        ${e.fanSrc ? `<p class="src-note">${e.songSource !== '팬 기록' ? '일부 곡은 ' : ''}${e.fanSrc.note ? `${esc(e.fanSrc.note)} 때 ` : ''}인터넷에 올라온 정보를 모은 거라 실제와 다를 수 있어요.</p>` : SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
+        ${e.fanSrc && !e.fanSet ? `<p class="src-note">${e.songSource !== '팬 기록' ? '일부 곡은 ' : ''}${e.fanSrc.note ? `${esc(e.fanSrc.note)} 때 ` : ''}인터넷에 올라온 정보를 모은 거라 실제와 다를 수 있어요.</p>` : SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
     } else {
       songs = `<p class="src-note">아직 확인된 곡이 없어요.</p>`;
     }
