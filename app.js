@@ -770,7 +770,8 @@
   };
   let songSort = 'name';
   let songFilter = '';
-  const SONG_FILTERS = [['', '분류 전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡'], ['solo', '멤버 개인 곡']];
+  const songMem = new Set();   // 멤버 개인 곡 필터 (여러 명 고르면 그중 누구라도)
+  const SONG_FILTERS = [['', '분류 전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
   // 멤버 혼자만 부른 곡: 무대가 모두 멤버 개인 일정([형호] …, 강형호 단독 콘서트)이고, 음반도 멤버 솔로 음반뿐이고, 포레스텔라 콘서트 셋리에 없는 곡
   const evMember = e => { const m = (e.title.match(/^\[(두훈|형호|민규|우림)\]/) || [])[1]; if (m) return m; const f = Object.keys(SOLO_SHORT).find(n => e.title.includes(n)); return f && !/포레스텔라|forestella/i.test(e.title) ? SOLO_SHORT[f] : ''; };
   const soloOf = so => {
@@ -830,7 +831,7 @@
   }
 
   function songsView() {
-    const pass = so => !songFilter || (songFilter === 'video' ? so.events.length || (so.official || []).length : songFilter === 'album' ? so.albums.length : songFilter === 'solo' ? soloOf(so).length : so.tours.length);
+    const pass = so => (!songFilter || (songFilter === 'video' ? so.events.length || (so.official || []).length : songFilter === 'album' ? so.albums.length : so.tours.length)) && (!songMem.size || soloOf(so).some(m => songMem.has(m)));
     const list = [...data.songs.values()].filter(pass).sort((a, b) =>
       songSort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
         : songSort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
@@ -847,6 +848,7 @@
         ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}
       </div>
       <div class="chips tl-cats" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v).replace(v ? '' : 'class="chip', v ? '' : 'class="chip chip-all') + (v ? '' : '<span class="chip-br"></span>')).join('')}</div>
+      <div class="chips tl-cats" id="song-mem">${['두훈', '형호', '민규', '우림'].map(m => chip('mem', m, m, songMem.has(m))).join('')}</div>
       <div class="view-row"><p class="sub">${list.length.toLocaleString()}곡</p>${chipsBtn()}</div>
       </div>
       <div>
@@ -866,6 +868,7 @@
   function bindSongs() {
     document.querySelectorAll('#song-sort .chip').forEach(b => b.onclick = () => { songSort = b.dataset.sort; renderBase('songs'); });
     document.querySelectorAll('#song-filter .chip').forEach(b => b.onclick = () => { songFilter = b.dataset.filter; renderBase('songs'); });
+    document.querySelectorAll('#song-mem .chip').forEach(b => b.onclick = () => { const m = b.dataset.mem; if (songMem.has(m)) songMem.delete(m); else songMem.add(m); renderBase('songs'); });
     // 곡 이름 찾기: 다시 그리지 않고 목록에서 숨기기만 해요 (입력 중 자판이 닫히지 않게)
     const q = document.getElementById('song-q');
     if (q) q.oninput = () => {
