@@ -932,6 +932,22 @@
 
   // 같은 공연이 이틀 연속 열리면 연표에서 한 줄로 묶어요
   const samePlace = (a, b) => (a || '').replace(/\s+/g, '') === (b || '').replace(/\s+/g, '');
+  // 연표 썸네일: 콘서트 포스터 → 무대·공식 영상 → 공식 X 후기 사진 (확실히 이어진 것만)
+  function evPic(run) {
+    const e = run[0];
+    if (e.category === '공연') {
+      const solo = /^\[/.test(e.title) ? soloInfos().find(c => c.evs.includes(e)) : null;
+      if (solo && solo.img) return solo.img;
+      const c = !/^\[/.test(e.title) && (data.concerts || []).find(c => c.from && e.date >= c.from && e.date <= (c.to || c.from));
+      if (c && c.img) return imgSize(c.img, 'small');
+    }
+    for (const x of run) {
+      const v = x.videoId || (x.related[0] || {}).videoId || (x.ytMain && x.ytMain.id);
+      if (v) return `https://i.ytimg.com/vi/${encodeURIComponent(v)}/mqdefault.jpg`;
+    }
+    const xp = run.find(x => x.xPost && x.xPost.img);
+    return xp ? imgSize(xp.xPost.img, 'thumb') : '';
+  }
   function groupRuns(list) {
     const runs = [];
     list.forEach(e => {
@@ -992,7 +1008,7 @@
               <span class="ev-date">${tag(e.category)}${upcoming(e)}${when}${e.place ? `<span class="ev-place">${esc(e.place)}</span>` : ''}</span>
               <a class="ev-title" href="#/e/${encodeURIComponent(e.id)}">${liked ? '<span class="liked-mark">♥</span> ' : ''}${esc(e.title)}${run.length > 1 ? ` <span class="ev-count">${run.length}회</span>` : ''}</a>
               ${songs.length ? `<span class="ev-songs">확인된 곡 · ${songs.map(esc).join(', ')}</span>` : ''}
-            </span>
+            </span>${(p => p ? `<span class="ev-thumb" aria-hidden="true"><img src="${esc(p)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></span>` : '')(evPic(run))}
           </div>`;
       }).join('')}`).join('');
 
