@@ -157,7 +157,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message);
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^의견(처리|삭제)$/.test(r.type)));
   }
 
   async function fetchText(url) {
@@ -263,13 +263,15 @@
       const rows = buildReports(toObjects(raw.reports), true);
       const idOf = r => (r.title.match(/\[ID ([\w-]+)\]/) || [])[1];
       // 팬이 사이트 '일정 등록'에서 보낸 새 일정(종류: 새일정): 바로 '확인 필요'로 뜨고, 올린 사람 말고 두 명이 '맞아요'(종류: 일정확인)면 확정이에요
-      const sp0 = x => (x || '').replace(/\[[^\]]*\]|\s+/g, '').toLowerCase();
+      const sp0 = x => (x || '').replace(/\[[^\]]*\]|[\s\-–·:：,.()<>'"!~]+/g, '').toLowerCase();
       rows.filter(r => r.type === '새일정' && r.date && r.title).forEach(r => {
         const id = 'u' + slVer([r.time, r.by, r.date, r.title]);
         if (events.some(x => x.id === id)) return;
         // 이미 있는 일정(같은 날, 이름이 겹침)이면 새로 만들지 않고 셋리만 그 일정에 붙여요
         const t0 = sp0(r.title);
-        const same = events.find(x => x.date === r.date && (sp0(x.title) === t0 || (t0.length >= 4 && (sp0(x.title).includes(t0) || t0.includes(sp0(x.title))))));
+        // extra.eventMerge {날짜: {낱말: 일정ID}}: 이름이 많이 달라도 같은 일정이면 여기로 붙여요
+        const mg = Object.entries((extra.eventMerge || {})[r.date] || {}).find(([w]) => t0.includes(sp0(w)));
+        const same = (mg && events.find(x => x.id === mg[1])) || events.find(x => x.date === r.date && (sp0(x.title) === t0 || (t0.length >= 4 && (sp0(x.title).includes(t0) || t0.includes(sp0(x.title))))));
         if (!same) {
           const mem = String(line0(r, '누구')).split(/[,/·\s]+/).map(x => SHORT[x] || (MEMBERS.includes(x) ? x : '')).filter(Boolean);
           const solo = mem.length && mem.length < 4 ? `[${mem.map(m => m.slice(1)).join('/')}] ` : '';
@@ -281,6 +283,13 @@
             songs: [], songSource: '', videoMemo: '', members: mem.length < 4 ? mem : [], songKeys: [],
             fanEvent: { by: r.by, n: who.size, ok: who.size >= 2 },
           });
+        }
+        // 이미 있는 일정에 붙을 때도 비어 있는 시간·장소·영상은 팬이 적은 걸로 채워요
+        if (same) {
+          const vid = ((r.link || '').match(/(?:youtu\.be\/|v=|shorts\/|live\/)([\w-]{11})/) || [])[1] || '';
+          if (!same.start && line0(r, '시간')) same.start = line0(r, '시간');
+          if (!same.place && line0(r, '장소')) same.place = line0(r, '장소');
+          if (!same.videoId && vid) same.videoId = vid;
         }
         if (r.song) rows.push({ type: '셋리스트', title: `[ID ${same ? same.id : id}]`, song: r.song, by: r.by, newEv: true });
       });
@@ -758,9 +767,11 @@
   // 의견 탭: 제보 폼 '종류: 의견' 줄과 '종류: 의견처리'(관리자 서명) 줄
   function buildOpinions(text) {
     const rows = buildReports(toObjects(text || ''), true);
-    const ops = rows.filter(r => r.type === '의견' && r.message).map(r => ({ id: 'o' + slVer([r.time, r.by, r.message]), time: r.time, cat: line0(r, '분류'), ev: r.title, text: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, name: line0(r, '이름'), by: r.by }));
+    const ops = rows.filter(r => r.type === '의견' && r.message).map(r => ({ id: 'o' + slVer([r.time, r.by, r.message]), time: r.time, cat: line0(r, '분류'), ev: r.title, text: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, name: line0(r, '이름'), by: r.by, parent: line0(r, '답글') }));
     const marks = rows.filter(r => r.type === '의견처리').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명') })).filter(m => m.id && m.sig);
-    return { ops, marks };
+    // 지우기: 쓴 사람(누가)이 같을 때만 앱에서 인정해요
+    const dels = rows.filter(r => r.type === '의견삭제').map(r => ({ id: line0(r, '대상'), by: r.by })).filter(d => d.id && d.by);
+    return { ops, marks, dels };
   }
   window.DATA = { load, parseCSV, normDate, songKey, setlistName, slVer, buildOpinions, fetchText };
 })();

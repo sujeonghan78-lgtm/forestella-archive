@@ -997,38 +997,51 @@
     return runs;
   }
 
-  function timelineView() {
-    const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+  // 연표·공연·행사 공통: 멤버 칩(포레스텔라 = 그룹 일정)과 검색창
+  const MEM_CHIPS = [['', '모든 멤버'], ['g', '포레스텔라'], ['배두훈', '두훈'], ['강형호', '형호'], ['조민규', '민규'], ['고우림', '우림']];
+  const memChips = (m, href) => MEM_CHIPS.map(([v, l]) => `<a class="chip${v === m ? ' on' : ''}" href="${href(v)}">${l}</a>`).join('');
+  const memOk = m => e => !m || (m === 'g' ? !(e.members || []).length : (e.members || []).includes(m));
+  const qMatch = q => { if (!q.trim()) return null; return new Set(runSearch({ q, cat: '', year: '', from: '', to: '', member: '', video: '', sort: 'old' }).list.map(e => e.id)); };
+  const filterBox = (id, ph, v) => `<form class="searchbox song-search" role="search" onsubmit="return false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="${id}" aria-label="${ph}" placeholder="${ph}" autocomplete="off" value="${esc(v)}">
+      </form>`;
+  const bindFilterBox = (id, set, fill) => {
+    const q = document.getElementById(id); if (!q) return;
+    let t = 0;
+    q.oninput = () => { clearTimeout(t); t = setTimeout(() => { set(q.value); fill(); }, 200); };
+  };
+  let tlQ = '';
+  const tlParams = () => { const qs = new URLSearchParams(location.hash.split('?')[1] || ''); return { qs, cat: qs.get('cat') || '', m: qs.get('m') || '' }; };
+  function tlLastYear() { return data.events.length ? Number(data.events[data.events.length - 1].date.slice(0, 4)) : new Date().getFullYear(); }
+  function tlContent() {
+    const { qs, cat, m } = tlParams();
     const ym = qs.get('ym') || '';
-    const years = [];
-    const lastYear = data.events.length ? Number(data.events[data.events.length - 1].date.slice(0, 4)) : new Date().getFullYear();
-    for (let y = FIRST_YEAR; y <= lastYear; y++) years.push(String(y));
-    const has = new Set(data.events.map(e => e.date.slice(0, 4)));
-    const year = qs.get('y') || (ym ? ym.slice(0, 4) : String(lastYear));
-
-    const cat = qs.get('cat') || '';
-    const yearEvents = data.events.filter(e => e.date.startsWith(year));
-    const cats = [...new Set(yearEvents.map(e => e.category).concat(cat || []).filter(Boolean))];
-    const events = cat ? yearEvents.filter(e => e.category === cat) : yearEvents;
-    const tlHref = (y, c) => `#/timeline?y=${y}${c ? '&cat=' + encodeURIComponent(c) : ''}`;
+    const year = qs.get('y') || (ym ? ym.slice(0, 4) : String(tlLastYear()));
+    const hit = qMatch(tlQ);
+    // 검색할 땐 모든 해에서 찾아요
+    const events = data.events.filter(e => (hit ? hit.has(e.id) : e.date.startsWith(year)) && memOk(m)(e) && (!cat || e.category === cat));
     const months = new Map();
     events.forEach(e => {
       const m = e.date.slice(0, 7);
       if (!months.has(m)) months.set(m, []);
       months.get(m).push(e);
     });
-
+    if (hit) return `<p class="sub tl-found">모든 해에서 찾은 일정 ${events.length}개</p>${months.size ? tlMonths(months) : '<p class="empty">찾는 일정이 없어요. 다른 말로 찾아보거나 일정을 등록해 주세요.</p>'}`;
     const gapText = year < CALENDAR_START.slice(0, 4) ? `${year}년` :
       year === CALENDAR_START.slice(0, 4) ? `${year}년 1~${Number(CALENDAR_START.slice(5)) - 1}월` : '';
-    const gapHas = yearEvents.some(e => e.date.slice(0, 7) < CALENDAR_START);
+    const gapHas = data.events.some(e => e.date.startsWith(year) && e.date.slice(0, 7) < CALENDAR_START);
     const gap = gapText && !gapHas ? `
       <div class="gap-card">
         <b>${gapText}</b>
         <span>이 시기 기록은 아직 비어 있어요. 기억나는 무대가 있다면 알려주세요.</span>
         <a href="#/add">일정 등록하기 ›</a>
       </div>` : '';
-
-    const body = [...months.entries()].map(([m, list]) => `
+    const body = tlMonths(months);
+    return `${gap}${body || (gap ? '' : `<p class="empty">${cat || m ? '조건에 맞는 기록이 이 해엔 없어요.' : '이 해의 기록이 아직 없어요.'}</p>`)}`;
+  }
+  function tlMonths(months) {
+    return [...months.entries()].map(([m, list]) => `
       <h2 class="month" id="m-${m}">${Number(m.slice(0, 4))}년 ${Number(m.slice(5))}월</h2>
       ${groupRuns(list).map(run => {
         const e = run[0];
@@ -1049,22 +1062,33 @@
           </div>`;
       }).join('')}`).join('');
 
+  }
+  function timelineView() {
+    const { qs, cat, m } = tlParams();
+    const ym = qs.get('ym') || '';
+    const years = [];
+    const lastYear = tlLastYear();
+    for (let y = FIRST_YEAR; y <= lastYear; y++) years.push(String(y));
+    const has = new Set(data.events.map(e => e.date.slice(0, 4)));
+    const year = qs.get('y') || (ym ? ym.slice(0, 4) : String(lastYear));
+    const yearEvents = data.events.filter(e => e.date.startsWith(year) && memOk(m)(e));
+    const cats = [...new Set(yearEvents.map(e => e.category).concat(cat || []).filter(Boolean))];
+    const tlHref = (y, c, mm) => `#/timeline?y=${y}${c ? '&cat=' + encodeURIComponent(c) : ''}${mm ? '&m=' + encodeURIComponent(mm) : ''}`;
     return `
       <div class="tl-top">
         <h1 class="h1">연표</h1>
+        ${filterBox('tl-q', '일정 찾기 · 이름, 장소, 곡', tlQ)}
         <div class="chips" id="years">
-          ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="${tlHref(y, cat)}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
+          ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="${tlHref(y, cat, m)}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
         </div>
-        ${cats.length > 1 ? `<div class="chips tl-cats">${['', ...cats].map(c => `<a class="chip${c === cat ? ' on' : ''}" href="${tlHref(year, c)}"${c === cat ? ' aria-current="true"' : ''}>${c || '전체'} <b>${c ? yearEvents.filter(e => e.category === c).length : yearEvents.length}</b></a>`).join('')}</div>` : ''}
+        <div class="chips tl-cats">${cats.length > 1 ? ['', ...cats].map(c => `<a class="chip${c === cat ? ' on' : ''}" href="${tlHref(year, c, m)}"${c === cat ? ' aria-current="true"' : ''}>${c || '전체'} <b>${c ? yearEvents.filter(e => e.category === c).length : yearEvents.length}</b></a>`).join('') + '<span class="chip-sep" aria-hidden="true"></span>' : ''}${memChips(m, v => tlHref(year, cat, v))}</div>
         <div class="add-bar">${addQuick()}</div>
       </div>
-      <div class="tl">
-        ${gap}
-        ${body || (gap ? '' : `<p class="empty">${cat ? `이 해의 ${esc(cat)} 기록이 없어요.` : '이 해의 기록이 아직 없어요.'}</p>`)}
-      </div>`;
+      <div class="tl" id="tl-body">${tlContent()}</div>`;
   }
   function bindTimeline() {
     const q = view.querySelector('.add-quick'); if (q) bindAdd(q);
+    bindFilterBox('tl-q', v => { tlQ = v; }, () => { const b = document.getElementById('tl-body'); if (b) b.innerHTML = tlContent(); });
     const on = document.querySelector('#years .yr.on');
     if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
     const ym = new URLSearchParams(location.hash.split('?')[1] || '').get('ym');
@@ -1749,12 +1773,34 @@
   };
   const isLocalEvent = e => e.category === '공연' && !e.ytOnly;
   const hasVideo = e => !!(e.videoId || e.related.length || e.ytMain || (e.ytStage || []).length);
+  let localQ = '';
+  const localParams = () => { const qs = new URLSearchParams(location.hash.split('?')[1] || ''); return { r: qs.get('r') || '', y: qs.get('y') || '', m: qs.get('m') || '' }; };
+  const localHref = o => '#/local' + (Object.values(o).some(Boolean) ? '?' + new URLSearchParams(Object.entries(o).filter(x => x[1])).toString() : '');
+  function localList() {
+    const { r, y, m } = localParams(), hit = qMatch(localQ);
+    return data.events.filter(e => isLocalEvent(e) && (!r || regionOf(e) === r) && (!y || e.date.startsWith(y)) && memOk(m)(e) && (!hit || hit.has(e.id))).slice().reverse();
+  }
   function localView() {
-    const r = decodeURIComponent((location.hash.split('?r=')[1] || '').split('&')[0]);
+    const { r, y, m } = localParams();
     const all = data.events.filter(isLocalEvent);
     const names = ['서울', '경기·인천', '강원', '충청', '전라', '경상', '제주', '해외', '그 외'];
     const count = n => all.filter(e => regionOf(e) === n).length;
-    const list = (r ? all.filter(e => regionOf(e) === r) : all).slice().reverse();
+    const yrs = [...new Set(all.map(e => e.date.slice(0, 4)))].sort().reverse();
+    const chip = (n, label) => `<a class="chip${n === r ? ' on' : ''}" href="${localHref({ r: n, y, m })}"${n === r ? ' aria-current="true"' : ''}>${esc(label)}</a>`;
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">공연·행사${help('축제·기획 공연·기업 행사처럼 단독 콘서트가 아닌 공연을 지역별로 모았어요. 지역은 장소와 행사 이름으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
+      <div class="stick">
+      ${filterBox('local-q', '행사 찾기 · 이름, 장소, 곡', localQ)}
+      <div class="chips tl-cats">${chip('', `전체 ${all.length}`)}${names.filter(count).map(n => chip(n, `${n} ${count(n)}`)).join('')}</div>
+      <div class="chips tl-cats" id="local-yr">${memChips(m, v => localHref({ r, y, m: v }))}<span class="chip-sep" aria-hidden="true"></span>${['', ...yrs].map(v => `<a class="chip${v === y ? ' on' : ''}" href="${localHref({ r, y: v, m })}">${v || '모든 해'}</a>`).join('')}</div>
+      <p class="sub" id="local-count">${localCount()}</p>
+      </div>
+      <div class="tl" id="local-body">${localBody()}</div>`;
+  }
+  const localCount = () => { const list = localList(); return `${list.length}개 · ${list.filter(hasVideo).length}개는 영상이 있어요 ${addLink('', 'add-mini')}`; };
+  function localBody() {
+    const { r } = localParams(), list = localList();
     const years = new Map();
     list.forEach(e => { const y = e.date.slice(0, 4); if (!years.has(y)) years.set(y, []); years.get(y).push(e); });
     const md = x => x.date.slice(5).replace('-', '.');
@@ -1768,15 +1814,10 @@
               ${songs ? `<span class="ev-songs">확인된 곡 · ${songsShort(songs.songs)}</span>` : ''}
             </span>${evThumb(evPic(run))}
           </div>`; };
-    const chip = (n, label) => `<a class="chip${n === r ? ' on' : ''}" href="#/local${n ? '?r=' + encodeURIComponent(n) : ''}"${n === r ? ' aria-current="true"' : ''}>${esc(label)}</a>`;
-    return `
-      <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">공연·행사${help('축제·기획 공연·기업 행사처럼 단독 콘서트가 아닌 공연을 지역별로 모았어요. 지역은 장소와 행사 이름으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
-      <div class="stick">
-      <div class="chips tl-cats">${chip('', `전체 ${all.length}`)}${names.filter(count).map(n => chip(n, `${n} ${count(n)}`)).join('')}</div>
-      <p class="sub">${list.length}개 · ${list.filter(hasVideo).length}개는 영상이 있어요 ${addLink('', 'add-mini')}</p>
-      </div>
-      <div class="tl">${[...years.entries()].map(([y, es]) => `<h2 class="month">${y}년</h2>${groupRuns(es).map(row).join('')}`).join('')}</div>`;
+    return list.length ? [...years.entries()].map(([y, es]) => `<h2 class="month">${y}년</h2>${groupRuns(es).map(row).join('')}`).join('') : '<p class="empty">조건에 맞는 행사가 없어요.</p>';
+  }
+  function bindLocal() {
+    bindFilterBox('local-q', v => { localQ = v; }, () => { const b = document.getElementById('local-body'); if (b) b.innerHTML = localBody(); document.getElementById('local-count').innerHTML = localCount(); });
   }
 
   function programView() {
@@ -2665,15 +2706,38 @@
   // 읽음 표시: 의견 탭을 열 때 본 의견 번호를 이 기기에 저장해요
   const OP_SEEN = 'sb-op-seen';
   const opSeen = () => { try { return new Set(JSON.parse(localStorage.getItem(OP_SEEN) || '[]')); } catch (err) { return new Set(); } };
-  const opUnread = () => { const seen = opSeen(); return opData ? opData.ops.filter(o => !seen.has(o.id)) : []; };
+  const opUnread = () => { const seen = opSeen(); if (!opData) return []; const gone = opGone(); return opData.ops.filter(o => !seen.has(o.id) && !gone.has(o.id)); };
   let opNewIds = null;  // 이번에 열었을 때 새로 본 의견 (다시 그려도 유지)
   const opQs = () => new URLSearchParams(location.hash.split('?')[1] || '');
   const opFilter = () => opQs().get('f') || '';
+  // 지운 의견: 쓴 사람이 보낸 '의견삭제'만 인정하고, 처리했어요가 붙은 의견은 못 지워요
+  const OP_DEL = 'sb-op-del';
+  const opDelMine = () => { try { return JSON.parse(localStorage.getItem(OP_DEL) || '[]'); } catch (err) { return []; } };
+  function opGone() {
+    const gone = new Set(opDelMine()), by = new Map(opData.ops.map(o => [o.id, o.by]));
+    (opData.dels || []).forEach(d => { if (by.get(d.id) === d.by) gone.add(d.id); });
+    opDone.forEach((m, id) => gone.delete(id));
+    return gone;
+  }
+  function opItem(o, me, admin, isNew, kids) {
+    const done = opDone.has(o.id), mine = o.by && o.by === me;
+    return `<div class="op-item${done ? ' done' : ''}${o.parent ? ' op-reply' : ''}">
+          <div class="op-head"><span class="op-who">${isNew ? '<span class="op-new">N</span> ' : ''}${o.parent ? '' : `<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> `}${esc(o.name || '익명')}${mine ? (o.parent ? ' · 내 답글' : ' · 내 의견') : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
+          ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
+          <p class="op-text">${esc(o.text)}</p>
+          <div class="op-foot">${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.parent && !o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${kids && kids.length ? ' ' + kids.length : ''}</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
+          ${o.parent ? '' : `${(kids || []).map(k => opItem(k, me, admin, opNewIds && opNewIds.has(k.id))).join('')}
+          <div class="op-form op-re-box" data-id="${esc(o.id)}" hidden><textarea class="op-in op-re-in" rows="2" maxlength="1000" placeholder="답글을 적어 주세요"></textarea><button type="button" class="bpill add-send op-re-send" data-id="${esc(o.id)}">답글 달기</button></div>`}
+        </div>`;
+  }
   function opListHtml() {
     if (!opData) return '<p class="empty">의견 불러오는 중…</p>';
     // 내가 보낸 의견은 시트에 들어오기 전까지 '방금 보냄'으로 먼저 보여줘요 (같은 사람·같은 글이면 시트 것만)
-    const me = myUid();
-    const list = opMine().filter(o => !opData.ops.some(x => x.by === o.by && x.text === o.text)).reverse().map(o => ({ ...o, local: true })).concat(opData.ops.slice().reverse());
+    const me = myUid(), gone = opGone();
+    const all = opMine().filter(o => !opData.ops.some(x => x.by === o.by && x.text === o.text)).reverse().map(o => ({ ...o, local: true })).concat(opData.ops.slice().reverse()).filter(o => !gone.has(o.id));
+    const kids = new Map();
+    all.slice().reverse().forEach(o => { if (o.parent) kids.set(o.parent, (kids.get(o.parent) || []).concat(o)); });
+    const list = all.filter(o => !o.parent);
     const f = opFilter(), c = opQs().get('c') || '';
     const shown = list.filter(o => (!f || (f === 'done' ? opDone.has(o.id) : !opDone.has(o.id))) && (!c || (o.cat || '자유·응원') === c));
     const admin = isAdmin();
@@ -2684,12 +2748,7 @@
       <div class="chips tl-cats">${chip('', `전체 ${list.length}`)}${chip('todo', `처리 전 ${list.filter(o => !opDone.has(o.id)).length}`)}${chip('done', `처리됨 ${list.filter(o => opDone.has(o.id)).length}`)}</div>
       <div class="chips tl-cats">${cchip('', '모든 분류')}${OP_CATS.map(x => cchip(x, x)).join('')}</div>
       ${shown.length ? shown.map((o, i) => `${!o.local && opNewIds && !opNewIds.has(o.id) && shown.slice(0, i).some(x => opNewIds.has(x.id)) && !shown.slice(0, i).some(x => !x.local && !opNewIds.has(x.id)) ? '<div class="op-read">여기까지 새 의견이에요 · 아래는 읽은 의견</div>' : ''}
-        <div class="op-item${opDone.has(o.id) ? ' done' : ''}">
-          <div class="op-head"><span class="op-who">${opNewIds && opNewIds.has(o.id) ? '<span class="op-new">N</span> ' : ''}<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> ${esc(o.name || '익명')}${o.by && o.by === me ? ' · 내 의견' : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
-          ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
-          <p class="op-text">${esc(o.text)}</p>
-          <div class="op-foot">${opDone.has(o.id) ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${opDone.has(o.id) ? '취소' : '처리'}">${opDone.has(o.id) ? '처리 취소' : '처리했어요'}</button>` : ''}</div>
-        </div>`).join('') : '<p class="empty">아직 의견이 없어요.</p>'}`;
+        ${opItem(o, me, admin, opNewIds && opNewIds.has(o.id), kids.get(o.id))}`).join('') : '<p class="empty">아직 의견이 없어요.</p>'}`;
   }
   function opinionView() {
     return `
@@ -2733,6 +2792,38 @@
       }).catch(() => { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
     };
     view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (x) view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); });
+    // view는 화면이 바뀌어도 그대로라서 한 번만 붙여요 (두 번 붙으면 두 번 보내져요)
+    if (bindOpinion.bound) return;
+    bindOpinion.bound = true;
+    const post = text => { const f = window.CONFIG.form; return fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: text }) }); };
+    view.addEventListener('click', ev => {
+      if (currentRoute() !== 'opinion') return;
+      const r = ev.target.closest('.op-re');
+      if (r) { const box = view.querySelector(`.op-re-box[data-id="${r.dataset.id}"]`); if (box) { box.hidden = !box.hidden; if (!box.hidden) box.querySelector('textarea').focus(); } return; }
+      const s = ev.target.closest('.op-re-send');
+      if (s) {
+        const t = s.parentNode.querySelector('.op-re-in'), text = t.value.trim(), by = myUid(), name = view.querySelector('.op-name').value.trim();
+        if (!text) return;
+        s.disabled = true; s.textContent = '보내는 중…';
+        post(`종류: 의견\n답글: ${s.dataset.id}\n이름: ${name}\n누가: ${by}\n내용: ${text}`).then(() => {
+          const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name, by, parent: s.dataset.id, at: Date.now() });
+          try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
+          fill();
+        }).catch(() => { s.disabled = false; s.textContent = '다시 보내기'; });
+        return;
+      }
+      const d = ev.target.closest('.op-del');
+      if (d) {
+        // 한 번 더 눌러야 지워져요
+        if (!d.classList.contains('sure')) { d.classList.add('sure'); d.textContent = '정말 삭제할까요?'; return; }
+        d.disabled = true; d.textContent = '지우는 중…';
+        post(`종류: 의견삭제\n대상: ${d.dataset.id}\n누가: ${myUid()}`).then(() => {
+          const del = opDelMine(); del.push(d.dataset.id);
+          try { localStorage.setItem(OP_DEL, JSON.stringify(del.slice(-200))); } catch (err) { /* 괜찮아요 */ }
+          fill();
+        }).catch(() => { d.disabled = false; d.textContent = '다시 삭제'; });
+      }
+    });
     view.addEventListener('click', async ev => {
       const m = ev.target.closest('.op-mark');
       if (!m || !isAdmin()) return;
@@ -3463,6 +3554,7 @@
     if (name === 'home') bindAsk();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
+    if (name === 'local') bindLocal();
     if (name === 'install') bindInstall();
     if (name === 'check') bindCheck();
     if (name === 'add') bindAdd();
