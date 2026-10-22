@@ -846,7 +846,7 @@
           return `
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(songText(so) + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(songText(so)))}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
-            <span class="song-name">${esc(so.name)}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
+            <span class="song-name">${esc(so.name)}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
             ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}
             <span class="song-n">${meta} ›</span>
           </a>`;
@@ -908,6 +908,7 @@
       <section class="song-hero">
         <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>
         <span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>
+        ${songPending(so) ? '<p class="src-note">팬이 올린 셋리에서 새로 들어온 곡이에요. 셋리가 확정되면 이 표시도 사라져요.</p>' : ''}
         ${albumRow}
         ${so.first ? `<div class="facts">
           <div class="fact"><b>처음 확인</b><span>${fmtDate(so.first.date, false)} · ${esc(so.first.title)}</span></div>
@@ -2213,14 +2214,16 @@
   const ytThumb = id => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`;
 
   // 일정 상세 '이날 부른 곡' 한 줄: 곡 요약 + 그날 무대 영상이 있으면 ▶
+  // 아직 확정 안 된 팬 셋리에만 나온 곡
+  const songPending = so => !(so.albums || []).length && !(so.tours || []).length && !(so.official || []).length && so.events.length > 0 && so.events.every(x => x.fanSet && !x.fanSet.ok);
   function songRow(name, e) {
     const so = data.songs.get(window.DATA.songKey(name));
     const ytq = e ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`포레스텔라 ${name} ${e.title.replace(/\[[^\]]*\]|\([^)]*\)|<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}`)}` : '';
     const ytBtn = ytq ? `<a class="day-yt" href="${ytq}" target="_blank" rel="noopener" aria-label="${esc(name)} 유튜브에서 찾기">${YT_FIND}</a>` : '';
     // 사이트에 없는 곡은 검은 글씨, 있는 곡은 초록 글씨로 곡 페이지에 이어요
-    // 확인 안 된 팬 셋리에만 나온 곡은 아직 사이트에 없는 곡으로 봐요
-    const known = so && ((so.albums || []).length || (so.tours || []).length || (so.official || []).length || so.events.some(x => !x.fanSet || x.fanSet.ok));
-    if (!known) return `<div class="day-song"><span class="day-song-name"><b>${esc(name)}</b></span>${ytBtn}</div>`;
+    if (!so) return `<div class="day-song"><span class="day-song-name"><b>${esc(name)}</b></span>${ytBtn}</div>`;
+    // 확인 안 된 팬 셋리에만 나온 새 곡은 검은 글씨 + '확인 필요' (셋리가 확정되면 자동으로 초록)
+    if (songPending(so)) return `<div class="day-song"><a class="day-song-name" href="#/song/${encodeURIComponent(so.key)}"><b>${esc(name)} <span class="new-tag">확인 필요</span></b></a>${ytBtn}</div>`;
     const day = e && ((so.official || []).find(v => v.event === e) || (so.official || []).find(v => v.date === e.date && ['무대', '직캠', '라이브'].includes(v.kind)));
     const vid = day ? day.id : e && e.videoId && e.songs.length === 1 ? e.videoId : '';
     return `<div class="day-song"><a class="day-song-name day-song-link" href="#/song/${encodeURIComponent(so.key)}"><b>${esc(name)} ›</b></a>${vid ? `<a class="day-thumb" href="${ytWatch(vid)}" target="_blank" rel="noopener" aria-label="${esc(name)} 이날 영상 보기"><img src="${ytThumbUrl(vid)}" alt="" loading="lazy" onerror="this.remove()"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></a>` : ytBtn}</div>`;

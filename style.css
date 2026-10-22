@@ -924,3 +924,4 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .day-song-link b { color: var(--green); }
 .day-yt { flex: none; display: flex; align-items: center; min-height: 44px; }
 .day-yt .yt-find { margin-left: 0; }
+.new-tag { display: inline-block; font-size: 11px; font-weight: 700; color: #6B4A00; background: #FFF1C9; border-radius: 6px; padding: 1px 6px; vertical-align: 2px; }
