@@ -982,5 +982,10 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .tl-top .add-bar{margin:0}
 .tl-top .add-quick[open]{max-height:62vh;overflow-y:auto;overscroll-behavior:contain}
 .tl-top .add-quick .add-card{margin:10px 0}
-.f-date{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:8px}
-.f-date input{font:inherit;font-size:15px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit}
+.f-date{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);margin-top:8px}
+.f-date-h{display:flex;justify-content:space-between;align-items:center}
+.f-date-in{display:flex;align-items:center;gap:6px}
+.f-date input{font:inherit;font-size:14px;padding:5px 8px;min-width:0;flex:1 1 0;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit}
+.f-tog{display:block;margin:6px 0 0 auto;font-size:12px}
+.f-date-in>span{flex:none}
+.search-top.f-folded .f-date,.search-top.f-folded #fwrap{display:none!important}

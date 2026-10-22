@@ -460,14 +460,17 @@
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     // 팬들이 부르는 멤버 별명 한 글자(듄·클·밍·욺)로 치면 그 멤버로 걸러요
     const q = qs.get('q') || '', nick = MEMBER_NICK[q.trim()];
-    if (nick) return { q: '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: nick, video: qs.get('video') === '1', t: qs.get('t') || '', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
-    return { q: qs.get('q') || '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: qs.get('member') || '', video: qs.get('video') === '1', t: qs.get('t') || '', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
+    const range = { from: qs.get('from') || '', to: qs.get('to') || '' };
+    if (nick) return { ...range, q: '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: nick, video: qs.get('video') === '1', t: qs.get('t') || '', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
+    return { ...range, q: qs.get('q') || '', cat: qs.get('cat') || '', year: qs.get('year') || '', member: qs.get('member') || '', video: qs.get('video') === '1', t: qs.get('t') || '', sort: qs.get('sort') === 'old' ? 'old' : 'new' };
   }
   function writeParams(p) {
     const qs = new URLSearchParams();
     if (p.q) qs.set('q', p.q);
     if (p.cat) qs.set('cat', p.cat);
     if (p.year) qs.set('year', p.year);
+    if (p.from) qs.set('from', p.from);
+    if (p.to) qs.set('to', p.to);
     if (p.member) qs.set('member', p.member);
     if (p.video) qs.set('video', '1');
     if (p.t) qs.set('t', p.t);
@@ -516,6 +519,7 @@
     list = list.filter(e =>
       (!p.cat || e.category === p.cat) &&
       (!p.year || e.date.startsWith(p.year)) &&
+      (!p.from || e.date >= p.from) && (!p.to || e.date <= p.to) &&
       (!p.member || e.members.includes(p.member)) &&
       (!p.video || e.videoId || e.related.length));
     if (!fuzzy) list = list.slice().sort((a, b) => p.sort === 'old' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
@@ -581,7 +585,7 @@
     const m = ok && matcher(p.q);
     const hit = name => !!m && m(name);
     const songs = [...data.songs.values()].filter(so => hit(songText(so))).sort((a, b) => playCount(b) - playCount(a));
-    const vids = (data.official || []).filter(v => hit(vidText(v)) && (!p.member || v.members.includes(p.member)) && (!p.year || v.date.startsWith(p.year)));
+    const vids = (data.official || []).filter(v => hit(vidText(v)) && (!p.member || v.members.includes(p.member)) && (!p.year || v.date.startsWith(p.year)) && (!p.from || v.date >= p.from) && (!p.to || v.date <= p.to));
     const rels = [
       ...(data.albums || []).filter(a => hit(a.name) && (!p.member || a.member === p.member)).map(a => ({ href: albHref(a), kind: a.member ? a.member + ' 음반' : '음반', name: a.name, sub: a.date.replace(/-/g, '.'), img: a.img && imgSize(a.img, 'thumb') })),
       ...(data.concerts && data.concerts.length ? data.concerts : data.tours).filter(c => hit(c.name)).map(c => ({ href: '#/tour/' + encodeURIComponent(c.id), kind: '콘서트', name: c.name, sub: c.from ? c.from.replace(/-/g, '.') : '', img: c.img ? imgSize(c.img, 'thumb') : c.tour ? tourPic(c.tour) : c.events ? tourPic(c) : '' })),
@@ -590,7 +594,7 @@
     // 공식 X: 글에 검색어가 있거나, 찾은 곡이 나온 글
     const xset = new Set((data.xFeed || []).filter(x => hit(x.raw)));
     songs.forEach(so => songX(so).forEach(x => xset.add(x)));
-    const xs = [...xset].filter(x => (!p.member || x.m.includes(p.member)) && (!p.year || x.date.startsWith(p.year))).sort((a, b) => b.date.localeCompare(a.date));
+    const xs = [...xset].filter(x => (!p.member || x.m.includes(p.member)) && (!p.year || x.date.startsWith(p.year)) && (!p.from || x.date >= p.from) && (!p.to || x.date <= p.to)).sort((a, b) => b.date.localeCompare(a.date));
     return { songs, vids, rels, xs };
   }
   const xMini = x => `<a class="x-card${x.img ? '' : ' no-img'}" href="${esc(x.url)}" target="_blank" rel="noopener">${x.img ? `<img src="${esc(x.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="x-text"><span class="x-date">${esc(x.date.replace(/-/g, '.'))} · ${esc(x.cat)}</span>${esc(x.text || '(글 없음)')}</span></a>`;
@@ -655,12 +659,12 @@
 
   let showAll = false;
   // 필터는 일정을 볼 때만: 검색 전 첫 화면이나 일정 말고 다른 탭에선 숨겨요
-  const fHide = p => p.q ? p.t !== 'ev' : !(p.cat || p.year || p.member || p.video || showAll);
+  const fHide = p => p.q ? p.t !== 'ev' : !(p.cat || p.year || p.from || p.to || p.member || p.video || showAll);
   function searchResults(p) {
-    if (!p.q && !p.cat && !p.year && !p.member && !p.video && !showAll) return searchHome();
+    if (!p.q && !p.cat && !p.year && !p.from && !p.to && !p.member && !p.video && !showAll) return searchHome();
     if (p.q && p.t !== 'ev') return searchAll(p);
     const { list, fuzzy } = runSearch(p);
-    const desc = [p.q && `'${p.q}'`, p.cat, p.year && (p.year.length === 10 ? fmtDate(p.year, false) : `${p.year}년`), p.member, p.video && '영상 있음'].filter(Boolean).join(' · ');
+    const desc = [p.q && `'${p.q}'`, p.cat, p.year && `${p.year}년`, (p.from || p.to) && `${p.from ? fmtDate(p.from, false) : ''} ~ ${p.to ? fmtDate(p.to, false) : ''}`, p.member, p.video && '영상 있음'].filter(Boolean).join(' · ');
     const play = playAllUrl(list);
     // 연도별로 묶어요. 결과가 적으면 다 펼치고, 많으면 첫 해만 펼쳐요
     const part = list.slice(0, shown);
@@ -687,26 +691,29 @@
       ${list.length > shown ? `<button type="button" class="btn btn-soft" id="show-more">더 보기 (${list.length - shown}건 남음)</button>` : ''}`;
   }
 
+  // 검색 필터 접기 (기억해 둬요)
+  const searchFold = () => { try { return localStorage.getItem('sb-sfold') === '1'; } catch (err) { return false; } };
   function searchView() {
     const p = readParams();
     const cats = [...new Set(data.events.map(e => e.category).filter(Boolean))];
     const years = [...new Set(data.events.map(e => e.date.slice(0, 4)))].sort().reverse();
     const chip = (attr, val, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-${attr}="${esc(val)}" aria-pressed="${on}">${esc(label)}</button>`;
     return `
-      <div class="search-top">
+      <div class="search-top${searchFold() ? ' f-folded' : ''}">
         <a class="back" href="#/">‹ 홈</a>
         <form class="searchbox" role="search" id="search-form">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
           <input type="search" name="q" aria-label="검색어" placeholder="곡·방송·영상·음반 찾기 · 초성 OK" value="${esc(p.q)}" autocomplete="off">
         </form>
+        <button type="button" class="link-btn f-tog" id="f-tog">${searchFold() ? '필터 펼치기 ▾' : '필터 접기 ▴'}</button>
+        <div class="f-date"><div class="f-date-h"><span>기간으로 찾기</span><button type="button" class="link-btn" id="f-clear"${p.from || p.to ? '' : ' hidden'}>지우기</button></div><div class="f-date-in"><input type="date" id="f-from" aria-label="언제부터" value="${esc(p.from)}"><span>~</span><input type="date" id="f-to" aria-label="언제까지" value="${esc(p.to)}"></div></div>
         <div id="fwrap"${fHide(p) ? ' hidden' : ''}><div class="chips" id="filters">
           ${chip('video', '1', '▶ 영상 있음', p.video)}${cats.map(c => chip('cat', c, c, p.cat === c)).join('')}
         </div>
         <div class="chips" id="filters2">
           ${MEMBER_LIST.map(m => chip('member', m, m.slice(1), p.member === m)).join('')}
         </div>
-        <div class="chips" id="filters3">${years.map(y => chip('year', y, y, p.year === y)).join('')}</div>
-        <label class="f-date">날짜로 찾기 <input type="date" id="f-date" value="${p.year.length === 10 ? esc(p.year) : ''}"></label></div>
+        <div class="chips" id="filters3">${years.map(y => chip('year', y, y, p.year === y)).join('')}</div></div>
       </div>
       <div id="results">${searchResults(p)}</div>`;
   }
@@ -749,13 +756,16 @@
     });
     const v = document.querySelector('#filters .chip[data-video]');
     v.onclick = () => { const on = !readParams().video; update({ video: on }); v.classList.toggle('on', on); v.setAttribute('aria-pressed', on); };
-    // 날짜 고르기: 연도 칸에 날짜를 통째로 넣어요 (날짜로 시작하는 일정만)
-    const fd = document.getElementById('f-date');
-    fd.onchange = () => { update({ year: fd.value }); document.querySelectorAll('.chip[data-year]').forEach(x => { x.classList.remove('on'); x.setAttribute('aria-pressed', false); }); };
+    // 기간: 언제부터~언제까지 (한쪽만 골라도 돼요). 검색어가 있어도 항상 보여요
+    const tog = document.getElementById('f-tog');
+    tog.onclick = () => { const f = !searchFold(); try { localStorage.setItem('sb-sfold', f ? '1' : '0'); } catch (err) { /* 괜찮아요 */ } tog.closest('.search-top').classList.toggle('f-folded', f); tog.textContent = f ? '필터 펼치기 ▾' : '필터 접기 ▴'; };
+    const ff = document.getElementById('f-from'), ft = document.getElementById('f-to'), fc = document.getElementById('f-clear');
+    const setRange = () => { update({ from: ff.value, to: ft.value }); fc.hidden = !(ff.value || ft.value); };
+    ff.onchange = setRange; ft.onchange = setRange;
+    fc.onclick = () => { ff.value = ''; ft.value = ''; setRange(); };
     // 연도·멤버 칩: 한 번 더 누르면 풀려요
     ['year', 'member'].forEach(k => document.querySelectorAll(`.chip[data-${k}]`).forEach(b => b.onclick = () => {
       update({ [k]: readParams()[k] === b.dataset[k] ? '' : b.dataset[k] });
-      if (k === 'year') fd.value = '';
       document.querySelectorAll(`.chip[data-${k}]`).forEach(x => { const on = x.dataset[k] === readParams()[k]; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     }));
     bindResults();
