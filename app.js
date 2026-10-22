@@ -2629,7 +2629,7 @@
       const evs = a.length === 10 ? data.events.filter(e => e.date >= a && e.date <= to && (e.title.includes('[' + SOLO_SHORT[c.member] + ']') || e.title.includes(c.member))) : [];
       const days = a.length === 10 ? (b && b !== a ? `${a}~${b.slice(5)}` : a) : '';
       return { id: 'solo-' + (c.member === '배두훈' ? 'dh' : c.member === '강형호' ? 'hh' : c.member === '조민규' ? 'mk' : 'wr') + '-' + a.replace(/-/g, ''), solo: true, member: c.member, name: c.title, note: c.note,
-        from: a.length === 10 ? a : '', to: a.length === 10 ? to : '', year: a.slice(0, 4), count: evs.length > 1 ? String(evs.length) : '', org: '',
+        from: a.length === 10 ? a : '', to: a.length === 10 ? to : '', year: a.slice(0, 4), count: c.shows ? String(c.shows) : evs.length > 1 ? String(evs.length) : '', org: '',  // shows: 하루 낮공·밤공처럼 일정 수보다 회차가 많을 때
         shows: days ? [`${days} ${c.where || (evs.find(e => e.place) || {}).place || ''}`.trim()] : [], facts: [], img: c.poster || '', src: [], ok: true, evs };
     });
     soloCache = { d: data, list };
@@ -2660,7 +2660,7 @@
       const when = c.from ? concertRange(c) : c.year + '년';
       const seen = c.evs.some(e => boxHas('w', e.id));
       const sub = [when, c.count ? `${c.count}회` : ''].filter(Boolean).join(' · ');
-      items.push({ m: c.member, date: c.from || c.year, r: c.evs.length || 1, html: `<a class="solo-card" data-m="${esc(c.member)}" href="#/tour/${encodeURIComponent(c.id)}">${cover(c.img, c.name, FULL[c.member], fanPill(c.evs) + (seen ? '<span class="solo-seen">🎫</span>' : ''))}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
+      items.push({ m: c.member, date: c.from || c.year, r: Number(c.count) || c.evs.length || 1, html: `<a class="solo-card" data-m="${esc(c.member)}" href="#/tour/${encodeURIComponent(c.id)}">${cover(c.img, c.name, FULL[c.member], fanPill(c.evs) + (seen ? '<span class="solo-seen">🎫</span>' : ''))}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
     });
     items.sort((x, y) => y.date.localeCompare(x.date));
     const years = [...new Set(items.map(x => x.date.slice(0, 4)))];
