@@ -2673,7 +2673,8 @@
   // ---------- 의견 ----------
   // 사이트 안에서 바로 보내는 의견(제보 폼 '종류: 의견'). 의견 탭은 열 때마다 시트를 새로 받아요.
   // '처리했어요'는 관리자 기기(#/admin에서 만든 열쇠)로 서명한 것만 인정해요
-  const OP_MINE = 'sb-op-mine', ADMIN_KEY = 'sb-admin-key';
+  const OP_MINE = 'sb-op-mine', ADMIN_KEY = 'sb-admin-key', OP_MARK = 'sb-op-mark';
+  const opMarkLocal = () => { try { return JSON.parse(localStorage.getItem(OP_MARK) || '[]'); } catch (err) { return []; } };
   const opMine = () => { try { return JSON.parse(localStorage.getItem(OP_MINE) || '[]'); } catch (err) { return []; } };
   const adminJwk = () => { try { return JSON.parse(localStorage.getItem(ADMIN_KEY) || 'null'); } catch (err) { return null; } };
   const isAdmin = () => { const k = adminJwk(), c = window.CONFIG.adminKey; return !!(k && c && k.x === c.x && k.y === c.y); };
@@ -2699,7 +2700,10 @@
   function loadOpinions() {
     return opLoading = opLoading || window.DATA.fetchText(window.CONFIG.sheets.reports).then(async t => {
       opData = window.DATA.buildOpinions(t);
-      opDone = await verifyMarks(opData.marks);
+      // 이 기기에서 방금 누른 처리 표시는 시트에 들어오기 전까지 이 기기에 들고 있어요 (시트에 같은 번호가 오면 지워요)
+      const local = opMarkLocal().filter(m => !opData.marks.some(x => x.id === m.id && x.n === m.n) && Date.now() - Number(m.n) < 864e5);
+      try { localStorage.setItem(OP_MARK, JSON.stringify(local)); } catch (err) { /* 괜찮아요 */ }
+      opDone = await verifyMarks(opData.marks.concat(local));
     }).catch(() => { opData = opData || { ops: [], marks: [] }; }).finally(() => { opLoading = null; });
   }
   const OP_CATS = ['정보 수정', '오류 신고', '기능 요청', '자유·응원'];
@@ -2835,6 +2839,7 @@
         const f = window.CONFIG.form;
         await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: `종류: 의견처리\n대상: ${mark.id}\n상태: ${mark.state}\n번호: ${mark.n}\n서명: ${mark.sig}` }) });
         if (mark.state === '처리') opDone.set(mark.id, mark); else opDone.delete(mark.id);
+        try { localStorage.setItem(OP_MARK, JSON.stringify(opMarkLocal().concat(mark).slice(-100))); } catch (err) { /* 괜찮아요 */ }
         fill();
       } catch (err) { m.disabled = false; m.textContent = '다시 누르기'; }
     });
