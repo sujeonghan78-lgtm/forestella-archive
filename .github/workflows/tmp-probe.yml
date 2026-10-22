@@ -1,0 +1,11 @@
+name: tmp-probe
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for u in "https://www.playdb.co.kr/Search/PlaySearchList?searchText=%EA%B0%95%ED%98%95%ED%98%B8" "https://www.playdb.co.kr/artistdb/search_result.asp?sValue=%EA%B0%95%ED%98%95%ED%98%B8" "https://namu.wiki/w/%EA%B0%95%ED%98%95%ED%98%B8" "https://www.kopis.or.kr/por/db/pblprfr/pblprfr.do?menuId=MNU_00020" "https://tickets.interpark.com/contents/search?keyword=%EA%B0%95%ED%98%95%ED%98%B8" "https://search.naver.com/search.naver?query=%EA%B0%95%ED%98%95%ED%98%B8+%EC%BD%98%EC%84%9C%ED%8A%B8"; do
+            c=$(curl -s -L -A "Mozilla/5.0" -o /tmp/o.html -w '%{http_code}' "$u"); s=$(wc -c < /tmp/o.html); t=$(grep -o '<title>[^<]*' /tmp/o.html | head -1)
+            echo "::notice::$c $s $t $u"
+          done
