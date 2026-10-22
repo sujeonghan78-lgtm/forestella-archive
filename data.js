@@ -765,9 +765,20 @@
 
   window.DATA_LINK_SKIP = LINK_SKIP;
   // 의견 탭: 제보 폼 '종류: 의견' 줄과 '종류: 의견처리'(관리자 서명) 줄
+  // 시트 시간대가 미국 시간이던 동안 들어온 줄은 16시간 늦게 찍혀 있어요 → 화면에선 한국 시간으로 고쳐 보여줘요 (config.tsFix)
+  function fixTs(t) {
+    const fx = (window.CONFIG || {}).tsFix, m = String(t || '').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})\D+(오전|오후)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (!fx || !m) return t;
+    const h = Number(m[5]) % 12 + (m[4] === '오후' ? 12 : 0);
+    const d = new Date(Date.UTC(+m[1], m[2] - 1, +m[3], h, +m[6], +(m[7] || 0)));
+    if (d.toISOString().slice(0, 16).replace('T', ' ') >= fx.before) return t;
+    d.setUTCHours(d.getUTCHours() + fx.hours);
+    const H = d.getUTCHours(), p2 = n => String(n).padStart(2, '0');
+    return `${d.getUTCFullYear()}. ${d.getUTCMonth() + 1}. ${d.getUTCDate()} ${H < 12 ? '오전' : '오후'} ${H % 12 || 12}:${p2(d.getUTCMinutes())}:${p2(d.getUTCSeconds())}`;
+  }
   function buildOpinions(text) {
     const rows = buildReports(toObjects(text || ''), true);
-    const ops = rows.filter(r => r.type === '의견' && r.message).map(r => ({ id: 'o' + slVer([r.time, r.by, r.message]), time: r.time, cat: line0(r, '분류'), ev: r.title, text: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, name: line0(r, '이름'), by: r.by, parent: line0(r, '답글') }));
+    const ops = rows.filter(r => r.type === '의견' && r.message).map(r => ({ id: 'o' + slVer([r.time, r.by, r.message]), time: fixTs(r.time), cat: line0(r, '분류'), ev: r.title, text: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, name: line0(r, '이름'), by: r.by, parent: line0(r, '답글') }));
     const marks = rows.filter(r => r.type === '의견처리').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명') })).filter(m => m.id && m.sig);
     // 지우기: 쓴 사람(누가)이 같을 때만 앱에서 인정해요
     const dels = rows.filter(r => r.type === '의견삭제').map(r => ({ id: line0(r, '대상'), by: r.by })).filter(d => d.id && d.by);
