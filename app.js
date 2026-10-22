@@ -1716,7 +1716,7 @@
     };
   }
 
-  // ---------- 지역 행사 (축제·기업 행사·지역 공연) ----------
+  // ---------- 공연·행사 (축제·기업 행사·지역 공연) ----------
   // 단독 투어·게스트·셋리스트 있는 콘서트는 빼고, 장소·행사명 낱말로 지역을 나눠요 (보충 파일 region으로 고칠 수 있어요)
   const REGIONS = [
     ['해외', /두바이|해외|일본|미국|도쿄|N\.?AMERICA|Atlanta|Dallas|New York|Vancouver|\bin LA\b/i],
@@ -1759,7 +1759,7 @@
     const chip = (n, label) => `<a class="chip${n === r ? ' on' : ''}" href="#/local${n ? '?r=' + encodeURIComponent(n) : ''}"${n === r ? ' aria-current="true"' : ''}>${esc(label)}</a>`;
     return `
       <a class="back" href="#/more">‹ 더보기</a>
-      <h1 class="h1 page-title">지역 행사${help('축제·지역 공연·기업 행사처럼 단독 콘서트가 아닌 공연을 지역별로 모았어요. 지역은 장소와 행사 이름으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
+      <h1 class="h1 page-title">공연·행사${help('축제·기획 공연·기업 행사처럼 단독 콘서트가 아닌 공연을 지역별로 모았어요. 지역은 장소와 행사 이름으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       <div class="stick">
       <div class="chips tl-cats">${chip('', `전체 ${all.length}`)}${names.filter(count).map(n => chip(n, `${n} ${count(n)}`)).join('')}</div>
       <p class="sub">${list.length}개 · ${list.filter(hasVideo).length}개는 영상이 있어요 ${addLink('', 'add-mini')}</p>
@@ -1976,7 +1976,7 @@
         ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (box.e.length + box.s.length + box.w.length) ? `♥ ${box.e.length + box.s.length} · 🎫 ${box.w.length}` : '좋아요 · 직관')}
         ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
-        ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '지역 행사', '축제 · 지역 공연')}
+        ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사', '축제 · 기획 공연 · 지역별')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
         ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표', '연도·월별 기록')}
         ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범 · 싱글별 공식 X')}
