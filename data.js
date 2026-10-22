@@ -243,6 +243,12 @@
       add.forEach(n => { e.songs.push(n); e.songKeys.push(songKey(n)); });
       e.fanSrc = f;
     });
+    // 이틀 공연이 한 줄로 적혀 있으면 날마다 따로 나눠요 (직관·날짜 버튼을 날마다 누를 수 있게). 둘째 날 ID는 '원래ID-d2'
+    events.filter(e => e.category === '공연' && e.endDate && (new Date(e.endDate) - new Date(e.date)) / 864e5 === 1).forEach(e => {
+      events.push({ ...e, id: e.id + '-d2', date: e.endDate, endDate: '', songs: e.songs.slice(), songKeys: e.songKeys.slice() });
+      e.endDate = '';
+    });
+    events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     const videos = buildVideos(toObjects(raw.videos));
     // 시트에 없는 관련 영상(보충 파일 videos): 같은 영상이 시트에 있으면 시트 우선
     const sheetVids = new Set(videos.map(v => v.videoId));

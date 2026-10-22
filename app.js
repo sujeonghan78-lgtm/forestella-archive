@@ -931,13 +931,14 @@
   const CALENDAR_START = '2021-08';   // 팬카페 캘린더가 시작된 달
 
   // 같은 공연이 이틀 연속 열리면 연표에서 한 줄로 묶어요
+  const samePlace = (a, b) => (a || '').replace(/\s+/g, '') === (b || '').replace(/\s+/g, '');
   function groupRuns(list) {
     const runs = [];
     list.forEach(e => {
       const last = runs[runs.length - 1];
       const prev = last && last[last.length - 1];
       const close = prev && (new Date(e.date) - new Date(prev.date)) / 864e5 <= 3;
-      if (prev && close && prev.title === e.title && prev.place === e.place) last.push(e);
+      if (prev && close && prev.title === e.title && samePlace(prev.place, e.place)) last.push(e);
       else runs.push([e]);
     });
     return runs;
@@ -1001,7 +1002,7 @@
         <div class="chips" id="years">
           ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="${tlHref(y, cat)}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
         </div>
-        ${cats.length > 1 ? `<div class="chips tl-cats">${['', ...cats].map(c => `<a class="chip${c === cat ? ' on' : ''}" href="${tlHref(year, c)}"${c === cat ? ' aria-current="true"' : ''}>${c || '전체'}</a>`).join('')}</div>` : ''}
+        ${cats.length > 1 ? `<div class="chips tl-cats">${['', ...cats].map(c => `<a class="chip${c === cat ? ' on' : ''}" href="${tlHref(year, c)}"${c === cat ? ' aria-current="true"' : ''}>${c || '전체'} <b>${c ? yearEvents.filter(e => e.category === c).length : yearEvents.length}</b></a>`).join('')}</div>` : ''}
       </div>
       <div class="tl">
         ${gap}
@@ -1277,6 +1278,7 @@
   function todayIso() { const t = todayParts(); return `${t.y}-${String(t.m).padStart(2, '0')}-${String(t.d).padStart(2, '0')}`; }
 
   // 카드에 들어갈 기록 (보관함에서 자동)
+  const favList = t => [...new Set((t || '').split(/\s*[·,]\s*/).map(x => x.trim()).filter(Boolean))].slice(0, 5);
   function cardNums() {
     const st = boxStats(), on = k => card.stats.includes(k);
     const cells = [], lines = [];
@@ -1375,17 +1377,21 @@
       ops.push(() => { ctx.font = font(400, 12.5); ctx.fillStyle = C.acc; ctx.fillText('♥', P, yM); ctx.fillStyle = C.ink; ctx.fillText(mems.join(' · '), P + 16, yM); });
       y += 6 + 18;
     }
-    // 입덕곡 · 최애곡
-    const songsRow = [['입덕곡', card.debut.trim()], ['최애곡', card.fav.trim()]].filter(x => x[1]);
+    // 입덕곡 · 최애곡 (최애곡은 ' · '로 여러 곡)
+    const favs = favList(card.fav);
+    const songsRow = [['입덕곡', card.debut.trim()], ['최애곡', favs.join(' · ')]].filter(x => x[1]);
     if (songsRow.length) {
       y += 10; hline(y); y += 11;
-      const colW = (IN - 12) / 2, yS = y;
+      const two = songsRow.length > 1 && favs.length < 2;
+      const colW = (IN - 12) / 2;
       songsRow.forEach(([lb, v], i) => {
-        const x = P + i * (colW + 12);
+        const x = two ? P + i * (colW + 12) : P, yS = y;
         label(lb, x, yS);
-        ops.push(() => { ctx.font = font(F.w, 16 * F.k, F.f); ctx.fillStyle = C.ink; ctx.fillText(fit(v, songsRow.length > 1 ? colW : IN), x, yS + 15 - (F.k > 1 ? 2 : 0)); });
+        ctx.font = font(F.w, 16 * F.k, F.f);
+        const ls = two ? [fit(v, colW)] : wrap(v, IN, 2);
+        ls.forEach((l, j) => ops.push(() => { ctx.font = font(F.w, 16 * F.k, F.f); ctx.fillStyle = C.ink; ctx.fillText(l, x, yS + 15 - (F.k > 1 ? 2 : 0) + j * 16 * F.k * 1.25); }));
+        if (!two || i === songsRow.length - 1) y += 15 + 16 * F.k * 1.2 + (ls.length - 1) * 16 * F.k * 1.25 + (two ? 0 : 6);
       });
-      y += 15 + 16 * F.k * 1.2;
     }
     // 보관함 기록
     const { cells, lines } = cardNums();
@@ -1478,7 +1484,7 @@
         <div class="cf-g"><span class="cf-l">공식 팬클럽 숲별 기수 <small>여러 개 골라도 돼요</small></span><div class="chips cf-chips">${CARD_GENS.map(g => chip('gen', g, g, card.gen.includes(g))).join('')}</div></div>
         <div class="cf-two">
           <label><span class="cf-l">입덕곡</span><span class="cf-ac"><input id="cf-debut" maxlength="40" value="${esc(card.debut)}" placeholder="곡 이름·초성" autocomplete="off"><span class="cf-sug" hidden></span></span></label>
-          <label><span class="cf-l">최애곡</span><span class="cf-ac"><input id="cf-fav" maxlength="40" value="${esc(card.fav)}" placeholder="곡 이름·초성" autocomplete="off"><span class="cf-sug" hidden></span></span></label>
+          <label><span class="cf-l">최애곡</span><span class="cf-ac"><input id="cf-fav" maxlength="120" value="${esc(card.fav)}" placeholder="여러 곡 골라도 돼요" autocomplete="off" data-multi="1"><span class="cf-sug" hidden></span></span></label>
         </div>
         <div class="cf-g"><span class="cf-l">최애 <small>여러 명 골라도 돼요</small></span><div class="chips cf-chips">${CARD_MEMS.map(m => chip('mem', m, m, card.mem.includes(m))).join('')}</div></div>
         <label><span class="cf-l">제일 좋았던 일정 <small>직관·♥ 일정에서 골라요</small></span>
@@ -1534,20 +1540,27 @@
     form.querySelectorAll('.cf-ac').forEach(w => {
       const inp = w.querySelector('input'), sug = w.querySelector('.cf-sug');
       const show = () => {
-        const v = inp.value.trim(), q = norm(v), cq = v.replace(/\s+/g, '');
+        const v = (inp.dataset.multi ? inp.value.split(/[·,]/).pop() : inp.value).trim(), q = norm(v), cq = v.replace(/\s+/g, '');
         const hits = !q ? songNames : isChosungOnly(cq) ? songNames.filter(x => x.c.includes(cq)) : songNames.filter(x => x.k.includes(q));
         sug.innerHTML = hits.slice(0, 60).map(x => `<button type="button" class="cf-opt" data-n="${esc(x.n)}">${esc(x.n)}</button>`).join('') || '<span class="cf-none">목록에 없어요. 그대로 써도 돼요.</span>';
         sug.hidden = false;
       };
-      inp.addEventListener('focus', show);
+      inp.addEventListener('focus', () => { if (inp.dataset.multi && inp.value.trim() && !/[·,]\s*$/.test(inp.value)) { inp.value = inp.value.trim() + ' · '; setTimeout(() => { const n = inp.value.length; inp.setSelectionRange(n, n); show(); }, 0); } show(); });
       inp.addEventListener('input', show);
-      inp.addEventListener('blur', () => setTimeout(() => { sug.hidden = true; }, 150));
+      // 여러 곡 칸은 눌렀을 때 커서를 맨 뒤로 (다음 곡을 이어서 쓰게)
+      if (inp.dataset.multi) inp.addEventListener('click', () => { if (/·\s*$/.test(inp.value)) { const n = inp.value.length; inp.setSelectionRange(n, n); show(); } });
+      inp.addEventListener('blur', () => setTimeout(() => {
+        sug.hidden = true;
+        // 여러 곡 칸은 끝에 남은 ' · '를 정리해서 저장해요
+        if (inp.dataset.multi && document.activeElement !== inp) { const t = favList(inp.value).join(' · '); if (t !== inp.value) { inp.value = t; inp.dispatchEvent(new Event('input', { bubbles: true })); sug.hidden = true; } }
+      }, 150));
       sug.onpointerdown = ev => ev.preventDefault();
       sug.onclick = ev => {
         const o = ev.target.closest('.cf-opt');
         if (!o) return;
         ev.stopPropagation();
-        inp.value = o.dataset.n; sug.hidden = true;
+        if (inp.dataset.multi) { const segs = inp.value.split(/\s*[·,]\s*/); segs.pop(); inp.value = favList([...segs, o.dataset.n].join(' · ')).join(' · ') + ' · '; } else inp.value = o.dataset.n;
+        sug.hidden = true;
         inp.dispatchEvent(new Event('input', { bubbles: true })); sug.hidden = true; inp.blur();
       };
     });
@@ -1614,7 +1627,7 @@
 
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
   const wentBtns = e => {
-    const near = data.events.filter(x => x.title === e.title && x.place === e.place && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
+    const near = data.events.filter(x => x.title === e.title && samePlace(x.place, e.place) && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
     // 방송은 '방청'으로 불러요
     if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="방청했어요" data-ic="📺" aria-pressed="${on}">${on ? '✓ ' : '📺 '}방청했어요</button>`; }
     if (near.length < 2) return boxBtn('w', e.id, 'bpill');
