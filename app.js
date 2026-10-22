@@ -1596,11 +1596,13 @@
     document.getElementById('card-save').onclick = async () => {
       const b = await blobOf(); if (!b) return;
       const file = new File([b], '숲별카드.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // 아이폰은 공유 창의 '이미지 저장'으로, 안드로이드·컴퓨터는 바로 내려받기
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (ios && navigator.canShare && navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file] }); return; } catch (err) { if (err.name === 'AbortError') return; }
       }
       download(b);
-      msg.textContent = '카드 이미지를 저장했어요.';
+      msg.textContent = '카드 이미지를 저장했어요. 갤러리나 다운로드 폴더에서 볼 수 있어요.';
     };
     document.getElementById('card-x').onclick = () => {
       const t = `숲별 ${ddayText()} 🌲 내 숲별 카드\n#포레스텔라 #Forestella #숲별카드\n`;
