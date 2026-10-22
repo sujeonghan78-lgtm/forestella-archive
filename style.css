@@ -873,7 +873,15 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .cf-none { display: block; padding: 10px; font-size: 12px; font-weight: 400; color: var(--muted); }
 .cf-two label:first-child .cf-sug { right: calc(-100% - 8px); }
 .cf-two label:last-child .cf-sug { left: calc(-100% - 8px); }
-.solo-group { display: grid; gap: 2px; }
-.solo-m { margin: 8px 0 2px; font-size: 13px; color: var(--green); }
 .solo-nolink { color: var(--ink-2); }
 .box-ev b small { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }
+.solo-tabs { margin: 4px 0 12px; }
+.solo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 10px; }
+.solo-card { display: flex; flex-direction: column; gap: 2px; color: var(--ink); text-decoration: none; min-width: 0; }
+.solo-card[hidden] { display: none; }
+.solo-card b { font-size: 13px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.solo-cover { position: relative; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #C6EC6B, #62D3A1 55%, #72BCF3); margin-bottom: 6px; }
+.solo-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.solo-badge { position: absolute; left: 6px; top: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; font-weight: 600; }
+.solo-seen { position: absolute; right: 6px; top: 4px; font-size: 14px; }
+.solo-nolink b { color: var(--ink-2, var(--ink)); }

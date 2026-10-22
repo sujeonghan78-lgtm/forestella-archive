@@ -2486,20 +2486,46 @@
     const FULL = { 배두훈: '두훈', 강형호: '형호', 조민규: '민규', 고우림: '우림' };
     const items = (data.career || []).filter(c => c.type === '공연' && /단독/.test(c.note || ''));
     if (!items.length) return '';
-    const groups = Object.keys(FULL).map(m => [m, items.filter(c => c.member === m).sort((a, b) => b.date.localeCompare(a.date))]).filter(g => g[1].length);
-    const row = c => {
+    // 사진: 그 공연 일정의 공식 X 사진 → 무대 영상 썸네일 → 공연 이름이 들어간 공식 X 사진
+    const GENERIC = /^(배두훈|강형호|조민규|고우림|pitta|포레스텔라|콘서트|팬미팅|단독|앙코르|encore|in|the|-|:)$/i;
+    const xPic = (c, a, to) => {
+      const key = c.title.replace(/[<>\[\]'"‘’“”:]/g, ' ').split(/\s+/).filter(w => w.length > 1 && !GENERIC.test(w)).sort((x, y) => y.length - x.length)[0];
+      if (!key || a.length !== 10) return '';
+      const from = new Date(new Date(a) - 120 * 864e5).toISOString().slice(0, 10);
+      const p = (data.xFeed || []).find(x => x.img && x.date >= from && x.date <= to && x.m.includes(c.member) && x.raw.toLowerCase().includes(key.toLowerCase()));
+      return p ? imgSize(p.img, 'small') : '';
+    };
+    const card = c => {
       const [a, b] = c.date.split('~'), to = b || a;
       const evs = a.length === 10 ? data.events.filter(e => e.date >= a && e.date <= to && (e.title.includes('[' + FULL[c.member] + ']') || e.title.includes(c.member))) : [];
-      const when = a.length === 10 ? (b && b !== a ? `${fmtDate(a, false)} ~ ${b.slice(5).replace('-', '.')}` : fmtDate(a, false)) : a;
-      const mark = evs.some(e => boxHas('w', e.id)) ? '🎫 ' : '';
-      const inner = `<span>${esc(when)}</span><b>${mark}${esc(c.title)}${c.where ? ` <small>${esc(c.where)}</small>` : ''}</b>`;
-      return evs.length ? `<a class="box-ev" href="#/e/${encodeURIComponent(evs[0].id)}">${inner}</a>` : `<div class="box-ev solo-nolink">${inner}</div>`;
+      const when = a.length === 10 ? (b && b !== a ? `${fmtDate(a, false)} ~ ${b.slice(5).replace('-', '.')}` : fmtDate(a, false)) : a + '년';
+      const xe = evs.find(e => (e.xPost && e.xPost.img) || (e.xBehind || []).some(p => p.img));
+      const ve = evs.find(e => e.videoId || e.related.length || e.ytMain);
+      const vid = ve && (ve.videoId || (ve.related[0] || {}).videoId || (ve.ytMain && ve.ytMain.id));
+      const img = xe ? imgSize((xe.xPost && xe.xPost.img) || xe.xBehind.find(p => p.img).img, 'small') : vid ? `https://i.ytimg.com/vi/${encodeURIComponent(vid)}/mqdefault.jpg` : xPic(c, a, to);
+      const seen = evs.some(e => boxHas('w', e.id));
+      const sub = [when, evs.length > 1 ? `${evs.length}회` : ''].filter(Boolean).join(' · ');
+      const inner = `
+            <span class="solo-cover">${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="solo-badge">${esc(FULL[c.member])}</span>${seen ? '<span class="solo-seen">🎫</span>' : ''}</span>
+            <b>${esc(c.title)}</b>
+            <span class="rel-sub">${nw(sub)}</span>${c.where ? `<span class="rel-sub">${esc(c.where)}</span>` : ''}`;
+      return evs.length ? `<a class="solo-card" data-m="${esc(c.member)}" href="#/e/${encodeURIComponent(evs[0].id)}">${inner}</a>` : `<div class="solo-card solo-nolink" data-m="${esc(c.member)}">${inner}</div>`;
     };
+    const list = items.slice().sort((x, y) => y.date.localeCompare(x.date));
+    const ms = Object.keys(FULL).filter(m => list.some(c => c.member === m));
     return `
-      <section class="block">
+      <section class="block solo-sec">
         <h2 class="h2">멤버 단독 콘서트${help('멤버 활동 이력에 있는 단독 콘서트·팬미팅이에요. 날짜가 있는 공연은 눌러서 직관을 표시할 수 있어요.')}</h2>
-        ${groups.map(([m, list]) => `<div class="solo-group"><h3 class="solo-m">${esc(FULL[m])}</h3>${list.map(row).join('')}</div>`).join('')}
+        <div class="chips solo-tabs">${['', ...ms].map(m => `<button type="button" class="chip${m ? '' : ' on'}" data-m="${esc(m)}">${m ? esc(FULL[m]) : '전체'} <b>${m ? list.filter(c => c.member === m).length : list.length}</b></button>`).join('')}</div>
+        <div class="solo-grid">${list.map(card).join('')}</div>
       </section>`;
+  }
+  function bindSolo() {
+    const tabs = document.querySelectorAll('.solo-tabs .chip');
+    tabs.forEach(t => t.onclick = () => {
+      tabs.forEach(x => x.classList.toggle('on', x === t));
+      document.querySelectorAll('.solo-card').forEach(c => { c.hidden = !!t.dataset.m && c.dataset.m !== t.dataset.m; });
+    });
   }
 
   // X 사진만 크기를 골라 받을 수 있어요. 다른 곳 사진은 주소 그대로 써요.
@@ -2895,6 +2921,7 @@
     if (name === 'search') bindSearch();
     if (name === 'songs') bindSongs();
     if (name === 'releases') bindReleases();
+    if (name === 'concerts') bindSolo();
     if (name === 'program') bindPrograms();
     if (name === 'box') bindBox();
     if (name === 'card') bindCard();
