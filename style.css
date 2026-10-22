@@ -873,3 +873,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .cf-none { display: block; padding: 10px; font-size: 12px; font-weight: 400; color: var(--muted); }
 .cf-two label:first-child .cf-sug { right: calc(-100% - 8px); }
 .cf-two label:last-child .cf-sug { left: calc(-100% - 8px); }
+.solo-group { display: grid; gap: 2px; }
+.solo-m { margin: 8px 0 2px; font-size: 13px; color: var(--green); }
+.solo-nolink { color: var(--ink-2); }
+.box-ev b small { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }

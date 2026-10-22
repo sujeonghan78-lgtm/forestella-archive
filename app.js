@@ -2478,7 +2478,28 @@
             ${c.img ? `<img src="${esc(imgSize(c.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
             <span class="x-text"><span class="x-date">${nw(c.sub)}</span><b>${esc(c.name)}</b></span>
           </a>`).join('')}
-      </div>`;
+      </div>
+      ${soloConcerts()}`;
+  }
+  // 멤버 단독 콘서트 (활동 이력에서): 일정이 있으면 그 날 일정으로 이어져요
+  function soloConcerts() {
+    const FULL = { 배두훈: '두훈', 강형호: '형호', 조민규: '민규', 고우림: '우림' };
+    const items = (data.career || []).filter(c => c.type === '공연' && /단독/.test(c.note || ''));
+    if (!items.length) return '';
+    const groups = Object.keys(FULL).map(m => [m, items.filter(c => c.member === m).sort((a, b) => b.date.localeCompare(a.date))]).filter(g => g[1].length);
+    const row = c => {
+      const [a, b] = c.date.split('~'), to = b || a;
+      const evs = a.length === 10 ? data.events.filter(e => e.date >= a && e.date <= to && e.title.includes('[' + FULL[c.member] + ']')) : [];
+      const when = a.length === 10 ? (b && b !== a ? `${fmtDate(a, false)} ~ ${b.slice(5).replace('-', '.')}` : fmtDate(a, false)) : a;
+      const mark = evs.some(e => boxHas('w', e.id)) ? '🎫 ' : '';
+      const inner = `<span>${esc(when)}</span><b>${mark}${esc(c.title)}${c.where ? ` <small>${esc(c.where)}</small>` : ''}</b>`;
+      return evs.length ? `<a class="box-ev" href="#/e/${encodeURIComponent(evs[0].id)}">${inner}</a>` : `<div class="box-ev solo-nolink">${inner}</div>`;
+    };
+    return `
+      <section class="block">
+        <h2 class="h2">멤버 단독 콘서트${help('멤버 활동 이력에 있는 단독 콘서트·팬미팅이에요. 날짜가 있는 공연은 눌러서 직관을 표시할 수 있어요.')}</h2>
+        ${groups.map(([m, list]) => `<div class="solo-group"><h3 class="solo-m">${esc(FULL[m])}</h3>${list.map(row).join('')}</div>`).join('')}
+      </section>`;
   }
 
   // X 사진만 크기를 골라 받을 수 있어요. 다른 곳 사진은 주소 그대로 써요.
