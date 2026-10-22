@@ -2347,14 +2347,14 @@
   function slForm(evs) {
     if (!evs.length || !(window.CONFIG.form || {}).fields) return '';
     // 곡이 이미 있으면 그 목록을 채워 두고 '셋리 고치기'로 보여줘요
-    const one = evs.length === 1 && evs[0];
+    const one = evs.find(e => e.songs.length && e.songSource !== '참고') || evs[0];
     const fs = one && (one.fanSet || (one.songs.length && one.songSource !== '참고' ? { songs: one.songs } : null));
     const opt = e => `${e.date.slice(5).replace('-', '.')}${e.place ? ' ' + e.place : ''}`;
     return `
       <details class="sl-add">
         <summary>${fs ? '✏️ 셋리 고치기' : '📝 셋리 알려주기'}</summary>
         <div class="sl-box">
-          ${evs.length > 1 ? `<select class="sl-ev">${evs.map(e => `<option value="${esc(e.id)}">${esc(opt(e))}</option>`).join('')}</select>` : `<input type="hidden" class="sl-ev" value="${esc(evs[0].id)}">`}
+          ${evs.length > 1 ? `<select class="sl-ev">${evs.map(e => `<option value="${esc(e.id)}"${e === one ? ' selected' : ''}>${esc(opt(e))}</option>`).join('')}</select>` : `<input type="hidden" class="sl-ev" value="${esc(evs[0].id)}">`}
           <textarea class="sl-in" rows="8" placeholder="한 줄에 한 곡씩 붙여넣어 주세요. 보랩·넬판 같은 줄임말도 알아들어요.&#10;&#10;예)&#10;Save our lives&#10;스카페&#10;넬판&#10;Inner Universe&#10;아리랑">${fs ? esc(fs.songs.join('\n')) : ''}</textarea>
           <ol class="sl-pre"></ol>
           <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 보내면 바로 '확인 필요'로 붙고, 다른 두 분이 맞다고 하면 확정돼요.${fs && fs.ver ? ' 고쳐서 보내면 확인은 처음부터 다시 받아요.' : ''}</p>
@@ -2362,6 +2362,13 @@
         </div>
       </details>`;
   }
+  // 날짜를 바꾸면 그날 곡으로 다시 채워요
+  document.addEventListener('change', ev => {
+    if (!ev.target.matches('.sl-ev')) return;
+    const e = data.events.find(x => x.id === ev.target.value), t = ev.target.closest('.sl-box').querySelector('.sl-in');
+    t.value = e && e.songSource !== '참고' ? e.songs.join('\n') : '';
+    t.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   // 미리 채워 둔 목록은 열자마자 ✓/? 미리보기를 보여줘요
   document.addEventListener('toggle', ev => { const t = ev.target.matches && ev.target.matches('.sl-add') && ev.target.open && ev.target.querySelector('.sl-in'); if (t && t.value) t.dispatchEvent(new Event('input', { bubbles: true })); }, true);
   document.addEventListener('input', ev => {
@@ -2736,13 +2743,17 @@
     const info = (data.concerts || []).find(x => x.id === id) || soloInfos().find(x => x.id === id);
     if (!t && info) {
       // 셋리스트가 없는 공연도 같은 초록 카드로 보여줘요. 일정은 "날짜 도시 공연장" 글에서 나눠요.
-      const shows = infoShows(info, info.evs || concertEvents(info));
+      const evs = info.evs || concertEvents(info);
+      const shows = infoShows(info, evs);
+      // 팬이 올린 셋리(또는 시트 곡)가 있는 날은 날짜별로 바로 보여줘요
+      const sung = evs.filter(e => e.songs.length && e.songSource !== '참고');
+      const sungHtml = sung.map(e => `<div class="block-head"><h2 class="h3 list-title"><a href="#/e/${encodeURIComponent(e.id)}">${fmtDate(e.date, false)}${e.place ? ' · ' + esc(e.place) : ''}</a> <span class="count">${e.songs.length}</span></h2></div>${slState(e)}<div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>`).join('');
       return `
       <a class="back" href="#/concerts">‹ 콘서트</a>
       <section class="song-hero">
         <div class="block-head"><h1 class="song-title">${info.solo ? `<span class="solo-who">${esc(info.member)}</span>` : ''}${esc(info.name)}</h1></div>
         ${info.img ? `<a href="${esc(info.imgPost || info.img)}" target="_blank" rel="noopener"><img class="album-img tour-poster" src="${esc(imgSize(info.img, 'medium'))}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}
-        <span class="count-pill">셋리스트 준비 중</span>
+        <span class="count-pill">${sung.length ? `${Math.max(...sung.map(e => e.songs.length))}곡` : '셋리스트 준비 중'}</span>
         <p class="sub">${info.solo ? esc([concertRange(info) || info.year + '년', info.note].filter(Boolean).join(' · ')) : concertRange(info)}${info.ok ? '' : ' <span class="tag">확인 중</span>'}</p>
         ${shows ? `<div class="tour-shows">${foldShows(shows)}</div>` : ''}
         ${findRow(info.solo ? `${info.member} ${info.name}` : '포레스텔라 ' + info.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
@@ -2751,7 +2762,8 @@
       ${info.solo ? ytSection([...new Set(info.evs.flatMap(e => [...(e.ytStage || []), ...(e.ytBehind || [])]))], '공식 유튜브', '이 공연 날짜에 맞는 공식 채널 영상이에요.') : ytSection((data.official || []).filter(v => v.tour === info.id), '공식 유튜브', '공연 Recap·라이브 클립·비하인드처럼 제목에 이 콘서트 이름이 들어간 공식 영상이에요.')}
       ${tourX(info.id).length ? `<hr class="divider"><div class="block-head"><h2 class="h3 list-title">공식 X</h2>${albumBtn()}</div>${xList(tourX(info.id))}` : ''}
       <hr class="divider">
-      <div class="tour-foot"><p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. 아는 분은 알려주세요.</p>${slForm(info.evs || concertEvents(info))}</div>`;
+      ${sung.length ? `${sungHtml}<hr class="divider">` : ''}
+      <div class="tour-foot">${sung.length ? '' : '<p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. 아는 분은 알려주세요.</p>'}${slForm(evs)}</div>`;
     }
     if (!t) return `<p class="empty">이 콘서트를 찾지 못했어요. <a href="#/concerts">콘서트 목록으로 ›</a></p>`;
     // 같은 장소는 한 줄로 모아요 (띄어쓰기만 다른 장소 이름도 같은 곳으로 봐요)
