@@ -130,7 +130,7 @@
   }
 
   // 구글 폼 응답 탭은 질문 제목이 열 이름이 돼서, 이름 일부로 찾아요.
-  function buildReports(rows) {
+  function buildReports(rows, all) {
     const pick = (r, word) => {
       const k = Object.keys(r).find(k => k.includes(word));
       return k ? r[k] : '';
@@ -150,7 +150,7 @@
         message: line(c, '내용') || free || pick(r, '말'),
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => r.type !== '공식X' && !/^공식X\s/.test(r.title)).filter(r => r.title || r.song || r.date || r.message);
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message);
   }
 
   async function fetchText(url) {
@@ -243,6 +243,27 @@
       add.forEach(n => { e.songs.push(n); e.songKeys.push(songKey(n)); });
       e.fanSrc = f;
     });
+    // 팬이 사이트에서 보낸 셋리(제보 폼 '종류: 셋리스트'): 일정마다 가장 최근 것만, 곡의 60% 이상이 아는 곡이면 바로 붙여요
+    if (raw.reports) {
+      const known = new Set(events.flatMap(e => e.songKeys));
+      try { (JSON.parse(raw.setlists || '{}').tours || []).forEach(t => t.songs.forEach(x => x.t.split(' / ').forEach(n => known.add(songKey(setlistName(n)))))); } catch (err) { /* 없으면 넘어가요 */ }
+      const latest = new Map();
+      buildReports(toObjects(raw.reports), true).filter(r => r.type === '셋리스트').forEach(r => {
+        const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1];
+        const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
+        if (id && songs.length >= 3) latest.set(id, songs);
+      });
+      latest.forEach((songs, id) => {
+        const e = events.find(x => x.id === id);
+        if (!e || e.songSource === '참고') return;
+        if (songs.filter(n => known.has(songKey(n))).length < songs.length * 0.6) return;
+        const add = songs.filter(n => { const k = songKey(n); return k && !e.songKeys.includes(k); });
+        if (!add.length) return;
+        if (!e.songs.length) e.songSource = '팬 기록';
+        add.forEach(n => { e.songs.push(n); e.songKeys.push(songKey(n)); });
+        e.fanSrc = e.fanSrc || { note: '' };
+      });
+    }
     // 이틀 공연이 한 줄로 적혀 있으면 날마다 따로 나눠요 (직관·날짜 버튼을 날마다 누를 수 있게). 둘째 날 ID는 '원래ID-d2'
     events.filter(e => e.category === '공연' && e.endDate && (new Date(e.endDate) - new Date(e.date)) / 864e5 === 1).forEach(e => {
       events.push({ ...e, id: e.id + '-d2', date: e.endDate, endDate: '', songs: e.songs.slice(), songKeys: e.songKeys.slice() });

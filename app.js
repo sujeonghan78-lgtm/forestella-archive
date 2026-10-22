@@ -2287,6 +2287,62 @@
     };
   }
 
+  // ---------- 셋리 알려주기 ----------
+  // 팬이 셋리 글을 통째로 붙여넣으면 곡으로 나눠 사이트 곡과 맞춰 보여주고, 제보 폼("종류: 셋리스트")으로 보내요.
+  // 곡의 60% 이상이 사이트에 있는 곡이면 data.js가 그 일정에 바로 붙여요.
+  const SL_SKIP = /^(앵콜|앵코르|앙코르|encore|vcr|ment|멘트|토크|인트로|intro|인터미션|intermission|셋리스트|셋리|setlist|오프닝|엔딩|\d+부|part\s*\d+)$/i;
+  function slParse(t) {
+    let lines = t.split(/\n+/);
+    if (lines.filter(l => l.trim()).length < 3) lines = t.split(/\s*(?:\/|,|→|>|\|)\s*/);
+    return lines.map(l => l
+      .replace(/[\u{1F000}-\u{1FAFF}☀-➿️‍]/gu, '')
+      .replace(/^[\s\d.)\]:\-–—•·*#~|>]+/, '')
+      .replace(/\s*[(（[][^)）\]]*(앵콜|앙코르|encore|솔로|듀엣|ver|버전)[^)）\]]*[)）\]]\s*$/i, '')
+      .replace(/^["'“‘「『]|["'”’」』]$/g, '')
+      .trim())
+      .filter(l => l && l.length <= 60 && !SL_SKIP.test(l) && !/셋리|setlist|^https?:|^[@#]/i.test(l));
+  }
+  function slMatch(n) {
+    const so = data.songs.get(window.DATA.songKey(window.DATA.setlistName(n)));
+    return so ? so.name : '';
+  }
+  function slForm(evs) {
+    if (!evs.length || !(window.CONFIG.form || {}).fields) return '';
+    const opt = e => `${e.date.slice(5).replace('-', '.')}${e.place ? ' ' + e.place : ''}`;
+    return `
+      <details class="sl-add">
+        <summary>📝 셋리 알려주기</summary>
+        <div class="sl-box">
+          ${evs.length > 1 ? `<select class="sl-ev">${evs.map(e => `<option value="${esc(e.id)}">${esc(opt(e))}</option>`).join('')}</select>` : `<input type="hidden" class="sl-ev" value="${esc(evs[0].id)}">`}
+          <textarea class="sl-in" rows="7" placeholder="X 글이나 메모를 그대로 붙여넣어 주세요. 한 줄에 한 곡이면 제일 좋아요."></textarea>
+          <ol class="sl-pre"></ol>
+          <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 곡 대부분이 ✓면 보내자마자 사이트에 붙어요.</p>
+          <button type="button" class="bpill sl-send" disabled>보내기</button>
+        </div>
+      </details>`;
+  }
+  document.addEventListener('input', ev => {
+    if (!ev.target.matches('.sl-in')) return;
+    const box = ev.target.closest('.sl-box');
+    const list = slParse(ev.target.value);
+    box.querySelector('.sl-pre').innerHTML = list.map(n => { const m = slMatch(n); return `<li class="${m ? 'ok' : 'new'}">${m ? '✓' : '?'} ${esc(m || n)}</li>`; }).join('');
+    box.querySelector('.sl-send').disabled = list.length < 3;
+  });
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.sl-send');
+    if (!b) return;
+    const box = b.closest('.sl-box');
+    const id = box.querySelector('.sl-ev').value, e = data.events.find(x => x.id === id);
+    const songs = [...new Set(slParse(box.querySelector('.sl-in').value).map(n => slMatch(n) || n))];
+    if (!e || songs.length < 3) return;
+    const f = window.CONFIG.form;
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리스트\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n곡: ${songs.join(' / ')}` });
+    b.disabled = true; b.textContent = '보내는 중…';
+    fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
+      .then(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${songs.length}곡을 보냈어요. 고마워요! 몇 분 뒤 새로 열면 사이트에 붙어 있어요.`; })
+      .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; box.querySelector('.sl-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
+  });
+
   // ---------- 공식 X 모아보기 ----------
   const X_CATS = ['일정 후기', '일정 현장', '비하인드·직캠', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사', '생일', '투표·이벤트'];
   const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
@@ -2595,6 +2651,8 @@
     if (rows.length <= 6) return html;
     return rows.slice(0, 5).join('') + `<details class="tour-more"><summary>전체 일정 보기 (${rows.length}곳)</summary>${rows.slice(5).join('')}</details>`;
   };
+  // 콘서트 기간 안의 포레스텔라 공연 일정 ([멤버] 표시 일정은 빼요)
+  const concertEvents = c => c.from ? data.events.filter(e => e.category === '공연' && e.date >= c.from && e.date <= (c.to || c.from) && !/^\[/.test(e.title)) : [];
   function infoShows(info, events) {
     const rows = new Map();  // 같은 장소는 한 줄로
     info.shows.forEach(x => {
@@ -2617,7 +2675,7 @@
     const info = (data.concerts || []).find(x => x.id === id) || soloInfos().find(x => x.id === id);
     if (!t && info) {
       // 셋리스트가 없는 공연도 같은 초록 카드로 보여줘요. 일정은 "날짜 도시 공연장" 글에서 나눠요.
-      const shows = infoShows(info, info.evs || []);
+      const shows = infoShows(info, info.evs || concertEvents(info));
       return `
       <a class="back" href="#/concerts">‹ 콘서트</a>
       <section class="song-hero">
@@ -2632,7 +2690,7 @@
       ${info.solo ? ytSection([...new Set(info.evs.flatMap(e => [...(e.ytStage || []), ...(e.ytBehind || [])]))], '공식 유튜브', '이 공연 날짜에 맞는 공식 채널 영상이에요.') : ytSection((data.official || []).filter(v => v.tour === info.id), '공식 유튜브', '공연 Recap·라이브 클립·비하인드처럼 제목에 이 콘서트 이름이 들어간 공식 영상이에요.')}
       ${tourX(info.id).length ? `<hr class="divider"><div class="block-head"><h2 class="h3 list-title">공식 X</h2>${albumBtn()}</div>${xList(tourX(info.id))}` : ''}
       <hr class="divider">
-      <div class="tour-foot"><p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. <a href="${formUrl({ type: '틀린 정보', title: info.name })}" target="_blank" rel="noopener">알고 있는 곡 알려주기 ›</a></p></div>`;
+      <div class="tour-foot"><p class="src-note">이 공연은 아직 셋리스트를 정리하지 못했어요. 아는 분은 알려주세요.</p>${slForm(info.evs || concertEvents(info))}</div>`;
     }
     if (!t) return `<p class="empty">이 콘서트를 찾지 못했어요. <a href="#/concerts">콘서트 목록으로 ›</a></p>`;
     // 같은 장소는 한 줄로 모아요 (띄어쓰기만 다른 장소 이름도 같은 곳으로 봐요)
@@ -2646,7 +2704,7 @@
     });
     // 콘서트 정보에 회차가 더 많이 적혀 있으면 그걸로 (셋리스트 출처는 일부 날짜만 있을 때가 있어요)
     const infoN = t.info ? t.info.shows.filter(x => /^\d{4}-/.test(x)).length : 0;
-    const shows = infoN > places.size ? infoShows(t.info, t.events) : [...places.values()].map(({ label, list }) =>
+    const shows = infoN > places.size ? infoShows(t.info, [...t.events, ...concertEvents(t.info)]) : [...places.values()].map(({ label, list }) =>
       `<div class="tour-show"><span class="tour-place">${esc(label)}</span><span class="ev-days">${list.map(x => `<a class="ev-day" href="#/e/${encodeURIComponent(x.id)}">${x.date.slice(5).replace('-', '.')}</a>`).join('')}</span></div>`).join('');
     const top = t.songs.slice(0, 3).map(x => x.t).join(', ');
     return `
@@ -2843,6 +2901,7 @@
               <a href="${formUrl({ type: '틀린 정보', date: e.date, title: e.title })}" target="_blank" rel="noopener">틀린 정보 알려주기 ›</a>
             </span>
           </div>
+          ${e.category === '공연' && !e.setlist ? slForm([e]) : ''}
         </section>
         ${reportList}
       </div>`;

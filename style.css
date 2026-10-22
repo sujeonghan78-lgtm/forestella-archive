@@ -896,3 +896,14 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 
 .solo-grid .nw { white-space: normal; }
 .solo-who { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+.sl-add { margin-top: 12px; }
+.sl-add summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: var(--soft); border: 1px solid var(--line); color: var(--green); font-size: 14px; font-weight: 600; }
+.sl-add summary::-webkit-details-marker { display: none; }
+.sl-box { display: grid; gap: 8px; margin-top: 10px; }
+.sl-box select, .sl-box textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card, #fff); color: var(--ink); }
+.sl-pre { margin: 0; padding-left: 22px; font-size: 13px; line-height: 1.6; }
+.sl-pre:empty { display: none; }
+.sl-pre .ok { color: var(--ink); }
+.sl-pre .new { color: var(--muted); }
+.sl-send { justify-self: start; }
+.sl-send:disabled { opacity: .5; }
