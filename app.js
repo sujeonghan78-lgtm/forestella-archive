@@ -2963,7 +2963,7 @@
               <a href="${formUrl({ type: '틀린 정보', date: e.date, title: e.title })}" target="_blank" rel="noopener">틀린 정보 알려주기 ›</a>
             </span>
           </div>
-          ${e.category === '공연' && !e.setlist ? slForm([e]) : ''}
+          ${!e.setlist && e.songSource !== '참고' ? slForm([e]) : ''}
         </section>
         ${reportList}
       </div>`;
