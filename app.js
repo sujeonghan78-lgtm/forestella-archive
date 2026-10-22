@@ -770,7 +770,17 @@
   };
   let songSort = 'name';
   let songFilter = '';
-  const SONG_FILTERS = [['', '분류 전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
+  const SONG_FILTERS = [['', '분류 전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡'], ['solo', '멤버 개인 곡']];
+  // 멤버 혼자만 부른 곡: 무대가 모두 멤버 개인 일정([형호] …, 강형호 단독 콘서트)이고, 음반도 멤버 솔로 음반뿐이고, 포레스텔라 콘서트 셋리에 없는 곡
+  const evMember = e => { const m = (e.title.match(/^\[(두훈|형호|민규|우림)\]/) || [])[1]; if (m) return m; const f = Object.keys(SOLO_SHORT).find(n => e.title.includes(n)); return f && !/포레스텔라|forestella/i.test(e.title) ? SOLO_SHORT[f] : ''; };
+  const soloOf = so => {
+    if (so._solo !== undefined) return so._solo;
+    const ms = new Set();
+    let group = (so.tours || []).length > 0;
+    so.albums.forEach(a => { if (a.member) ms.add(SOLO_SHORT[a.member] || a.member); else group = true; });
+    so.events.forEach(e => { const m = evMember(e); if (m) ms.add(m); else group = true; });
+    return (so._solo = !group && ms.size ? ['두훈', '형호', '민규', '우림'].filter(m => ms.has(m)) : []);
+  };
   const playCount = so => so.events.length + so.tours.length;
 
   // 곡 이름이 나온 공식 X 글 (짧은 이름은 엉뚱한 글이 섞여서 한글 2자·영문 4자 이상만)
@@ -820,7 +830,7 @@
   }
 
   function songsView() {
-    const pass = so => !songFilter || (songFilter === 'video' ? so.events.length || (so.official || []).length : songFilter === 'album' ? so.albums.length : so.tours.length);
+    const pass = so => !songFilter || (songFilter === 'video' ? so.events.length || (so.official || []).length : songFilter === 'album' ? so.albums.length : songFilter === 'solo' ? soloOf(so).length : so.tours.length);
     const list = [...data.songs.values()].filter(pass).sort((a, b) =>
       songSort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
         : songSort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
@@ -846,7 +856,7 @@
           return `
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(songText(so) + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(songText(so)))}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
-            <span class="song-name">${esc(so.name)}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
+            <span class="song-name">${esc(so.name)}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
             ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}
             <span class="song-n">${meta} ›</span>
           </a>`;
@@ -2619,6 +2629,13 @@
     soloCache = { d: data, list };
     return list;
   }
+  // 포스터 위 작은 표시: 팬이 올린 셋리가 있으면 '확인 필요 n/2' 또는 '셋리스트'(확정)
+  function fanPill(evs) {
+    const fs = [...new Set((evs || []).map(e => e.fanSet).filter(Boolean))];
+    if (!fs.length) return '';
+    const open = fs.filter(f => !f.ok);
+    return open.length ? `<span class="con-set con-check">확인 필요 ${Math.min(...open.map(f => f.n))}/2</span>` : '<span class="con-set">셋리스트</span>';
+  }
   function concertsView() {
     // 포레스텔라 공연(시트 "콘서트 정보")과 멤버 단독 공연(활동 이력)을 포스터 카드로, 해마다 묶어 보여줘요
     const FULL = { 배두훈: '두훈', 강형호: '형호', 조민규: '민규', 고우림: '우림' };
@@ -2630,14 +2647,14 @@
       const sub = [concertRange(c), /^\d+$/.test(c.count || '') ? `${c.count}회` : ''].filter(Boolean).join(' · ');
       const img = c.img ? imgSize(c.img, 'small') : tourPic(c.tour);
       const seen = !!c.from && data.events.some(e => e.category === '공연' && e.date >= c.from && e.date <= (c.to || c.from) && !/^\[/.test(e.title) && boxHas('w', e.id));
-      items.push({ m: '', date: c.from || '', r: /^\d+$/.test(c.count || '') ? Number(c.count) : concertEvents(c).length, html: `<a class="solo-card" data-m="" href="#/tour/${encodeURIComponent(c.id)}">${cover(img, c.name, '', (c.tour ? '<span class="con-set">셋리스트</span>' : '') + (seen ? '<span class="solo-seen">🎫</span>' : ''))}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
+      items.push({ m: '', date: c.from || '', r: /^\d+$/.test(c.count || '') ? Number(c.count) : concertEvents(c).length, html: `<a class="solo-card" data-m="" href="#/tour/${encodeURIComponent(c.id)}">${cover(img, c.name, '', (c.tour ? '<span class="con-set">셋리스트</span>' : fanPill(concertEvents(c))) + (seen ? '<span class="solo-seen">🎫</span>' : ''))}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
     });
     if (!items.length) data.tours.forEach(t => items.push({ m: '', date: (t.dates || [''])[0] || '', html: `<a class="solo-card" data-m="" href="#/tour/${encodeURIComponent(t.id)}">${cover(tourPic(t), t.name, '', '')}<b>${esc(t.name)}</b><span class="rel-sub">${nw(tourRange(t))}</span></a>` }));
     soloInfos().forEach(c => {
       const when = c.from ? concertRange(c) : c.year + '년';
       const seen = c.evs.some(e => boxHas('w', e.id));
       const sub = [when, c.count ? `${c.count}회` : ''].filter(Boolean).join(' · ');
-      items.push({ m: c.member, date: c.from || c.year, r: c.evs.length || 1, html: `<a class="solo-card" data-m="${esc(c.member)}" href="#/tour/${encodeURIComponent(c.id)}">${cover(c.img, c.name, FULL[c.member], seen ? '<span class="solo-seen">🎫</span>' : '')}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
+      items.push({ m: c.member, date: c.from || c.year, r: c.evs.length || 1, html: `<a class="solo-card" data-m="${esc(c.member)}" href="#/tour/${encodeURIComponent(c.id)}">${cover(c.img, c.name, FULL[c.member], fanPill(c.evs) + (seen ? '<span class="solo-seen">🎫</span>' : ''))}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
     });
     items.sort((x, y) => y.date.localeCompare(x.date));
     const years = [...new Set(items.map(x => x.date.slice(0, 4)))];
