@@ -2314,7 +2314,7 @@
         <summary>📝 셋리 알려주기</summary>
         <div class="sl-box">
           ${evs.length > 1 ? `<select class="sl-ev">${evs.map(e => `<option value="${esc(e.id)}">${esc(opt(e))}</option>`).join('')}</select>` : `<input type="hidden" class="sl-ev" value="${esc(evs[0].id)}">`}
-          <textarea class="sl-in" rows="7" placeholder="X 글이나 메모를 그대로 붙여넣어 주세요. 한 줄에 한 곡이면 제일 좋아요."></textarea>
+          <textarea class="sl-in" rows="8" placeholder="한 줄에 한 곡씩 붙여넣어 주세요.&#10;&#10;예)&#10;Save our lives&#10;Scarborough Fair&#10;넬라 판타지아&#10;Inner Universe&#10;아리랑"></textarea>
           <ol class="sl-pre"></ol>
           <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 곡 대부분이 ✓면 보내자마자 사이트에 붙어요.</p>
           <button type="button" class="bpill sl-send" disabled>보내기</button>
