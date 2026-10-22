@@ -1041,8 +1041,8 @@
           ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="${tlHref(y, cat)}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
         </div>
         ${cats.length > 1 ? `<div class="chips tl-cats">${['', ...cats].map(c => `<a class="chip${c === cat ? ' on' : ''}" href="${tlHref(year, c)}"${c === cat ? ' aria-current="true"' : ''}>${c || '전체'} <b>${c ? yearEvents.filter(e => e.category === c).length : yearEvents.length}</b></a>`).join('')}</div>` : ''}
+        <div class="add-bar">${addQuick()}</div>
       </div>
-      <div class="add-bar">${addQuick()}</div>
       <div class="tl">
         ${gap}
         ${body || (gap ? '' : `<p class="empty">${cat ? `이 해의 ${esc(cat)} 기록이 없어요.` : '이 해의 기록이 아직 없어요.'}</p>`)}
@@ -1175,7 +1175,7 @@
     const evs = ids => ids.map(id => data.byId.get(id)).filter(Boolean);
     const wentAll = evs(box.w).sort((a, b) => b.date.localeCompare(a.date));
     const isBc = e => /TV|라디오/.test(e.category);
-    const went = wentAll.filter(e => !isBc(e)), seen = wentAll.filter(isBc);  // 직관 / 방청
+    const went = wentAll.filter(e => !isBc(e)), seen = wentAll.filter(isBc);  // 직관 / 시청
     const liked = evs(box.e).sort((a, b) => b.date.localeCompare(a.date));
     const songs = box.s.map(k => data.songs.get(k)).filter(Boolean);
     // 직관으로 들은 곡: 그날 확인된 곡 (없으면 그 투어 셋리스트)
@@ -1199,7 +1199,7 @@
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
     const tabs = [
       ['w', '🎫 직관', went.length, went.map(row).join('')],
-      ['b', '📺 방청', seen.length, seen.map(row).join('')],
+      ['b', '📺 시청', seen.length, seen.map(row).join('')],
       ['e', '♥ 일정', liked.length, liked.map(row).join('')],
       ['s', '♥ 곡', songs.length, `<div class="chips box-songs">${songs.map(so => songChip(so)).join('')}</div>`],
       ['h', '들은 곡', heardList.length, `<div class="chips box-songs">${heardList.map(([so, n]) => songChip(so, n)).join('')}</div>`],
@@ -1235,7 +1235,7 @@
       ${empty ? `<p class="empty">아직 비어 있어요. 일정이나 곡 화면에서 ♡ 좋아요, 🎫 직관했어요를 눌러 보세요.</p>` : ''}
       ${wentAll.length ? `
       <section class="block box-stat">
-        <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 방청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
+        <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 시청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
       </section>` : ''}
       ${empty ? '' : `
@@ -1260,7 +1260,7 @@
   const CARD_KEY = 'sb-card', PHOTO_KEY = 'sb-card-photo';
   const CARD_MEMS = ['두훈', '형호', '민규', '우림'];
   const CARD_GENS = ['1기', '2기', '2.5기', '3기'];
-  const CARD_STATS = [['w', '직관 횟수'], ['b', '방청 횟수'], ['first', '첫 직관'], ['h', '들은 곡 수'], ['top', '제일 많이 들은 곡'], ['r', '많이 간 곳'], ['stage', '입덕 후 포레 무대 수']];
+  const CARD_STATS = [['w', '직관 횟수'], ['b', '시청 횟수'], ['first', '첫 직관'], ['h', '들은 곡 수'], ['top', '제일 많이 들은 곡'], ['r', '많이 간 곳'], ['stage', '입덕 후 포레 무대 수']];
   const CARD_COLORS = {
     forest: { bg: ['#1F3A30'], ink: '#F2EEDF', mute: 'rgba(242,238,223,.6)', line: 'rgba(242,238,223,.18)', acc: '#C6EC6B', name: '숲' },
     paper: { bg: ['#F4EFE4'], ink: '#22342B', mute: 'rgba(34,52,43,.55)', line: 'rgba(34,52,43,.15)', acc: '#2F7A5A', name: '종이' },
@@ -1323,7 +1323,7 @@
     const st = boxStats(), on = k => card.stats.includes(k);
     const cells = [], lines = [];
     if (on('w') && st.went.length) cells.push(['직관', st.went.length, '번']);
-    if (on('b') && st.seen.length) cells.push(['방청', st.seen.length, '번']);
+    if (on('b') && st.seen.length) cells.push(['시청', st.seen.length, '번']);
     if (on('h') && st.heardList.length) cells.push(['들은 곡', st.heardList.length, '곡']);
     if (on('r') && st.topRegion) cells.push(['많이 간 곳', st.topRegion[0], '']);
     if (on('stage') && card.since) {
@@ -1549,7 +1549,7 @@
     let geo = { PH: 0 }, tick = 0;
     const redraw = () => {
       const my = ++tick;
-      const text = [card.nick, card.debut, card.fav, card.line, ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 방청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
+      const text = [card.nick, card.debut, card.fav, card.line, ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 시청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
       geo = drawCard(cv);
       cardFontsReady(text).then(() => { if (my === tick) geo = drawCard(cv); });
     };
@@ -1668,8 +1668,8 @@
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
   const wentBtns = e => {
     const near = data.events.filter(x => x.title === e.title && samePlace(x.place, e.place) && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
-    // 방송은 '방청'으로 불러요
-    if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="방청했어요" data-ic="📺" aria-pressed="${on}">${on ? '✓ ' : '📺 '}방청했어요</button>`; }
+    // 방송은 '시청'으로 불러요
+    if (/TV|라디오/.test(e.category)) { const on = boxHas('w', e.id); return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(e.id)}" data-label="시청했어요" data-ic="📺" aria-pressed="${on}">${on ? '✓ ' : '📺 '}시청했어요</button>`; }
     if (near.length < 2) return boxBtn('w', e.id, 'bpill');
     return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };

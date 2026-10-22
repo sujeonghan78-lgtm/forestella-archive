@@ -979,3 +979,6 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .op-home span{margin-left:auto;font-size:13px}
 .op-new{display:inline-block;min-width:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font-size:10px;font-weight:700;text-align:center;line-height:16px}
 .op-read{margin:14px 0 2px;padding:6px 0;text-align:center;font-size:12px;color:var(--muted);border-top:1px dashed var(--line);border-bottom:1px dashed var(--line)}
+.tl-top .add-bar{margin:0}
+.tl-top .add-quick[open]{max-height:62vh;overflow-y:auto;overscroll-behavior:contain}
+.tl-top .add-quick .add-card{margin:10px 0}
