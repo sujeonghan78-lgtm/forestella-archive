@@ -921,3 +921,6 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .sl-state.ok .src-badge { color: #2F5B12; background: #D7EDC2; }
 .sl-state-msg { flex: 1 1 100%; min-width: 0; color: var(--ink-2); }
 .sl-state .sl-ok { flex: none; margin: 0; }
+.day-song-link b { color: var(--green); }
+.day-yt { flex: none; display: flex; align-items: center; min-height: 44px; }
+.day-yt .yt-find { margin-left: 0; }

@@ -273,7 +273,14 @@
         e.songs = f.songs.slice(); e.songKeys = [...new Set(f.songs.map(songKey).filter(Boolean))];
         e.songSource = '팬 기록';
         e.fanSrc = e.fanSrc || { note: '' };
-        e.fanSet = { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits };
+        e.fanSet = { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits, src: e.id };
+      });
+      // 같은 공연 여러 날(같은 제목·장소, 3일 안): 하루치만 올라와도 곡이 없는 다른 날에 같이 붙고, 확인도 같이 세요
+      const sp = x => (x || '').replace(/\s+/g, '');
+      events.filter(e => e.fanSet && e.fanSet.src === e.id && e.category === '공연').forEach(e => {
+        events.filter(x => x !== e && x.category === '공연' && !x.fanSet && !x.songs.length && x.title === e.title && sp(x.place) === sp(e.place) && Math.abs(new Date(x.date) - new Date(e.date)) <= 3 * 864e5).forEach(x => {
+          x.songs = e.songs.slice(); x.songKeys = e.songKeys.slice(); x.songSource = '팬 기록'; x.fanSrc = e.fanSrc; x.fanSet = e.fanSet;
+        });
       });
     }
     events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));

@@ -2215,15 +2215,15 @@
   // 일정 상세 '이날 부른 곡' 한 줄: 곡 요약 + 그날 무대 영상이 있으면 ▶
   function songRow(name, e) {
     const so = data.songs.get(window.DATA.songKey(name));
-    if (!so) return `<div class="day-song"><span class="day-song-name">${esc(name)}</span></div>`;
+    const ytq = e ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`포레스텔라 ${name} ${e.title.replace(/\[[^\]]*\]|\([^)]*\)|<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}`)}` : '';
+    const ytBtn = ytq ? `<a class="day-yt" href="${ytq}" target="_blank" rel="noopener" aria-label="${esc(name)} 유튜브에서 찾기">${YT_FIND}</a>` : '';
+    // 사이트에 없는 곡은 검은 글씨, 있는 곡은 초록 글씨로 곡 페이지에 이어요
+    // 확인 안 된 팬 셋리에만 나온 곡은 아직 사이트에 없는 곡으로 봐요
+    const known = so && ((so.albums || []).length || (so.tours || []).length || (so.official || []).length || so.events.some(x => !x.fanSet || x.fanSet.ok));
+    if (!known) return `<div class="day-song"><span class="day-song-name"><b>${esc(name)}</b></span>${ytBtn}</div>`;
     const day = e && ((so.official || []).find(v => v.event === e) || (so.official || []).find(v => v.date === e.date && ['무대', '직캠', '라이브'].includes(v.kind)));
     const vid = day ? day.id : e && e.videoId && e.songs.length === 1 ? e.videoId : '';
-    // 이날 영상이 없으면 곡 이름을 누를 때 유튜브 검색이 열려요 (곡 · 일정 이름으로)
-    if (!vid && e) {
-      const q = `포레스텔라 ${name} ${e.title.replace(/\[[^\]]*\]|\([^)]*\)|<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}`;
-      return `<div class="day-song"><a class="day-song-name day-song-find" href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" rel="noopener" aria-label="${esc(name)} 유튜브에서 찾기"><b>${esc(name)}</b>${YT_FIND}</a></div>`;
-    }
-    return `<div class="day-song"><a class="day-song-name" href="#/song/${encodeURIComponent(so.key)}"><b>${esc(name)} ›</b></a>${vid ? `<a class="day-thumb" href="${ytWatch(vid)}" target="_blank" rel="noopener" aria-label="${esc(name)} 이날 영상 보기"><img src="${ytThumbUrl(vid)}" alt="" loading="lazy" onerror="this.remove()"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></a>` : ''}</div>`;
+    return `<div class="day-song"><a class="day-song-name day-song-link" href="#/song/${encodeURIComponent(so.key)}"><b>${esc(name)} ›</b></a>${vid ? `<a class="day-thumb" href="${ytWatch(vid)}" target="_blank" rel="noopener" aria-label="${esc(name)} 이날 영상 보기"><img src="${ytThumbUrl(vid)}" alt="" loading="lazy" onerror="this.remove()"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span></a>` : ytBtn}</div>`;
   }
 
   // ---------- 콘서트 셋리스트 ----------
@@ -2336,8 +2336,8 @@
   function slState(e) {
     const f = e.fanSet;
     if (!f) return '';
-    const mine = f.by && f.by === myUid(), done = slOked(e.id + ':' + f.ver);
-    const btn = !f.ok && !mine && !done && (window.CONFIG.form || {}).fields ? `<button type="button" class="bpill sl-ok" data-id="${esc(e.id)}" data-ver="${esc(f.ver)}">맞아요</button>` : '';
+    const mine = f.by && f.by === myUid(), done = slOked((f.src || e.id) + ':' + f.ver);
+    const btn = !f.ok && !mine && !done && (window.CONFIG.form || {}).fields ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(f.ver)}">맞아요</button>` : '';
     const msg = f.ok ? `팬 ${f.n}명이 확인한 셋리예요.`
       : mine ? '내가 올린 셋리예요. 다른 두 분이 맞다고 하면 확정돼요.'
       : done ? '확인해 줘서 고마워요! 몇 분 뒤 반영돼요.'
@@ -2404,7 +2404,7 @@
     fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
       .then(() => {
         try { const a = JSON.parse(localStorage.getItem(SL_OK) || '[]'); a.push(e.id + ':' + b.dataset.ver); localStorage.setItem(SL_OK, JSON.stringify(a.slice(-300))); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
-        b.closest('.sl-state').outerHTML = slState(e);
+        document.querySelectorAll(`.sl-ok[data-id="${CSS.escape(e.id)}"]`).forEach(x => { x.closest('.sl-state').outerHTML = slState(e); });
       })
       .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
   });
@@ -2747,7 +2747,10 @@
       const shows = infoShows(info, evs);
       // 팬이 올린 셋리(또는 시트 곡)가 있는 날은 날짜별로 바로 보여줘요
       const sung = evs.filter(e => e.songs.length && e.songSource !== '참고');
-      const sungHtml = sung.map(e => `<div class="block-head"><h2 class="h3 list-title"><a href="#/e/${encodeURIComponent(e.id)}">${fmtDate(e.date, false)}${e.place ? ' · ' + esc(e.place) : ''}</a> <span class="count">${e.songs.length}</span></h2></div>${slState(e)}<div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>`).join('');
+      // 같은 셋리를 나눠 쓰는 날(이틀 공연)은 한 묶음으로
+      const sets = new Map();
+      sung.forEach(e => { const k = e.fanSet ? e.fanSet.src : e.id; if (!sets.has(k)) sets.set(k, []); sets.get(k).push(e); });
+      const sungHtml = [...sets.values()].map(g => { const e = g[0]; return `<div class="block-head"><h2 class="h3 list-title">${g.map(x => `<a href="#/e/${encodeURIComponent(x.id)}">${x === e ? fmtDate(x.date, false) : x.date.slice(5).replace('-', '.')}</a>`).join(' · ')}${e.place ? ' · ' + esc(e.place) : ''} <span class="count">${e.songs.length}</span></h2></div>${slState(e)}<div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>`; }).join('');
       return `
       <a class="back" href="#/concerts">‹ 콘서트</a>
       <section class="song-hero">
