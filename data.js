@@ -756,7 +756,7 @@
   // 의견 탭: 제보 폼 '종류: 의견' 줄과 '종류: 의견처리'(관리자 서명) 줄
   function buildOpinions(text) {
     const rows = buildReports(toObjects(text || ''), true);
-    const ops = rows.filter(r => r.type === '의견' && r.message).map(r => ({ id: 'o' + slVer([r.time, r.by, r.message]), time: r.time, cat: line0(r, '분류'), text: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, name: line0(r, '이름'), by: r.by }));
+    const ops = rows.filter(r => r.type === '의견' && r.message).map(r => ({ id: 'o' + slVer([r.time, r.by, r.message]), time: r.time, cat: line0(r, '분류'), ev: r.title, text: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, name: line0(r, '이름'), by: r.by }));
     const marks = rows.filter(r => r.type === '의견처리').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명') })).filter(m => m.id && m.sig);
     return { ops, marks };
   }

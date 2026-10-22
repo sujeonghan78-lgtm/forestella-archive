@@ -1036,14 +1036,15 @@
           ${years.map(y => `<a class="yr${y === year ? ' on' : ''}${has.has(y) ? '' : ' gap'}" href="${tlHref(y, cat)}"${y === year ? ' aria-current="true"' : ''}>${y}</a>`).join('')}
         </div>
         ${cats.length > 1 ? `<div class="chips tl-cats">${['', ...cats].map(c => `<a class="chip${c === cat ? ' on' : ''}" href="${tlHref(year, c)}"${c === cat ? ' aria-current="true"' : ''}>${c || '전체'} <b>${c ? yearEvents.filter(e => e.category === c).length : yearEvents.length}</b></a>`).join('')}</div>` : ''}
-        <div class="add-bar">${addLink()}</div>
       </div>
+      <div class="add-bar">${addQuick()}</div>
       <div class="tl">
         ${gap}
         ${body || (gap ? '' : `<p class="empty">${cat ? `이 해의 ${esc(cat)} 기록이 없어요.` : '이 해의 기록이 아직 없어요.'}</p>`)}
       </div>`;
   }
   function bindTimeline() {
+    const q = view.querySelector('.add-quick'); if (q) bindAdd(q);
     const on = document.querySelector('#years .yr.on');
     if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
     const ym = new URLSearchParams(location.hash.split('?')[1] || '').get('ym');
@@ -2443,7 +2444,7 @@
   const ADD_MEM = ['두훈', '형호', '민규', '우림'];
   const addKey = t => (t || '').replace(/\[[^\]]*\]|\s+/g, '').toLowerCase();
   const addSame = (date, title) => { const t0 = addKey(title); return t0 && data.events.find(x => x.date === date && (addKey(x.title) === t0 || (t0.length >= 4 && (addKey(x.title).includes(t0) || t0.includes(addKey(x.title)))))); };
-  function addCard(v = {}) {
+  function addCard(v = {}, quick = false) {
     const mem = v.mem || [];
     return `
       <div class="add-card">
@@ -2456,9 +2457,10 @@
           <label class="add-f add-cat"><span>종류</span><select class="a-cat">${ADD_CATS.map(c => `<option${c === (v.cat || '공연') ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
           <label class="add-f add-grow"><span>일정 이름 *</span><input type="text" class="a-title" value="${esc(v.title || '')}" placeholder="예) 불후의 명곡 녹화"></label>
         </div>
+        ${quick ? '<details class="add-sl add-more-f"><summary>장소 · 영상 · 셋리 더 적기 (선택)</summary>' : ''}
         <label class="add-f"><span>장소</span><input type="text" class="a-place" value="${esc(v.place || '')}" placeholder="선택"></label>
         <label class="add-f"><span>관련 영상</span><input type="url" class="a-link" value="${esc(v.link || '')}" placeholder="유튜브 링크 (선택)"></label>
-        <details class="add-sl"${v.songs ? ' open' : ''}><summary>셋리 적기 (선택)</summary><textarea class="a-songs" rows="5" placeholder="한 줄에 한 곡씩. 보랩·넬판 같은 줄임말도 알아들어요.">${esc(v.songs || '')}</textarea></details>
+        <details class="add-sl"${v.songs ? ' open' : ''}><summary>셋리 적기 (선택)</summary><textarea class="a-songs" rows="5" placeholder="한 줄에 한 곡씩. 보랩·넬판 같은 줄임말도 알아들어요.">${esc(v.songs || '')}</textarea></details>${quick ? '</details>' : ''}
         <p class="a-dup"></p>
         <button type="button" class="link-btn a-del">이 칸 지우기</button>
       </div>`;
@@ -2470,14 +2472,14 @@
       <h1 class="h1 page-title">일정 등록</h1>
       <p class="sub">빠진 일정을 알려주세요. 한 칸에 일정 하나씩이에요. 보내면 사이트에 '확인 필요'로 뜨고, 다른 두 분이 맞다고 하면 확정돼요. 반영되기까지 5~10분쯤 걸려요.</p>
       <div class="add-xl">
-        <a class="bpill" id="add-tpl" href="data/schedule_form.xlsx" download="숲별_일정등록_양식.xlsx">엑셀 양식 받기</a>
-        <label class="bpill add-up">엑셀로 한 번에 올리기<input type="file" id="add-file" accept=".xlsx,.xls,.csv" hidden></label>
+        <a class="bpill add-tpl" href="data/schedule_form.xlsx" download="숲별_일정등록_양식.xlsx">엑셀 양식 받기</a>
+        <label class="bpill add-up">엑셀로 한 번에 올리기<input type="file" class="add-file" accept=".xlsx,.xls,.csv" hidden></label>
       </div>
-      <p class="src-note" id="add-xl-msg">여러 개는 엑셀 양식에 한 줄에 하나씩 채워서 올리면 아래 칸에 들어가요. 확인하고 보내 주세요.</p>
-      <div id="add-list">${addCard({ date: qs.get('d') || '' })}</div>
-      <button type="button" class="bpill add-more" id="add-more">＋ 일정 하나 더</button>
-      <button type="button" class="bpill add-send" id="add-send">보내기</button>
-      <p class="src-note" id="add-msg"></p>`;
+      <p class="src-note add-xl-msg">여러 개는 엑셀 양식에 한 줄에 하나씩 채워서 올리면 아래 칸에 들어가요. 확인하고 보내 주세요.</p>
+      <div class="add-list">${addCard({ date: qs.get('d') || '' })}</div>
+      <button type="button" class="bpill add-more">＋ 일정 하나 더</button>
+      <button type="button" class="bpill add-send">보내기</button>
+      <p class="src-note add-msg"></p>`;
   }
   const addRead = c => {
     const mem = [...c.querySelectorAll('.a-mem .chip.on')].map(b => b.dataset.m).filter(m => m !== '포레스텔라');
@@ -2492,8 +2494,9 @@
   // 엑셀 도구는 필요할 때만 불러와요
   let xlsxP = null;
   const loadXlsx = () => xlsxP = xlsxP || new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'lib/xlsx.mini.min.js'; s.onload = () => ok(window.XLSX); s.onerror = no; document.head.appendChild(s); });
-  function bindAdd() {
-    const list = document.getElementById('add-list');
+  function bindAdd(root = view) {
+    const $ = sel => root.querySelector(sel);
+    const list = $('.add-list');
     if (!list) return;
     list.addEventListener('click', ev => {
       const chip = ev.target.closest('.a-mem .chip');
@@ -2503,18 +2506,18 @@
         else { chip.classList.toggle('on'); const any = box.querySelector('.chip.on:not([data-m="포레스텔라"])'); box.querySelector('[data-m="포레스텔라"]').classList.toggle('on', !any); }
       }
       const del = ev.target.closest('.a-del');
-      if (del) { del.closest('.add-card').remove(); if (!list.children.length) list.insertAdjacentHTML('beforeend', addCard()); }
+      if (del) { del.closest('.add-card').remove(); if (!list.children.length) list.insertAdjacentHTML('beforeend', addCard({}, root.matches && root.matches('.add-quick'))); }
     });
     list.addEventListener('input', ev => { const c = ev.target.closest('.add-card'); if (c && ev.target.matches('.a-date,.a-title,.a-songs')) addCheck(c); });
     list.addEventListener('change', ev => { const c = ev.target.closest('.add-card'); if (c) addCheck(c); });
-    document.getElementById('add-more').onclick = () => {
+    $('.add-more').onclick = () => {
       const last = list.lastElementChild, v = last ? addRead(last) : {};
-      list.insertAdjacentHTML('beforeend', addCard({ date: v.date, cat: v.cat, mem: v.mem }));
+      list.insertAdjacentHTML('beforeend', addCard({ date: v.date, cat: v.cat, mem: v.mem }, !!root.closest && root.matches('.add-quick')));
       list.lastElementChild.querySelector('.a-title').focus();
     };
-    const xlMsg = document.getElementById('add-xl-msg');
-    document.getElementById('add-tpl').onclick = () => { xlMsg.textContent = "예시 줄은 지우고 한 줄에 일정 하나씩 채워 주세요. 누구는 '포레스텔라' 또는 '두훈, 형호'처럼, 셋리는 곡 사이에 / 를 넣어요."; };
-    document.getElementById('add-file').onchange = ev => {
+    const xlMsg = $('.add-xl-msg');
+    if ($('.add-tpl')) $('.add-tpl').onclick = () => { xlMsg.textContent = "예시 줄은 지우고 한 줄에 일정 하나씩 채워 주세요. 누구는 '포레스텔라' 또는 '두훈, 형호'처럼, 셋리는 곡 사이에 / 를 넣어요."; };
+    if ($('.add-file')) $('.add-file').onchange = ev => {
       const file = ev.target.files[0];
       if (!file) return;
       xlMsg.textContent = '읽는 중…';
@@ -2545,8 +2548,8 @@
       }).catch(() => { xlMsg.textContent = '파일을 읽지 못했어요. 엑셀(.xlsx) 파일인지 확인해 주세요.'; });
       ev.target.value = '';
     };
-    document.getElementById('add-send').onclick = async () => {
-      const b = document.getElementById('add-send'), msg = document.getElementById('add-msg');
+    $('.add-send').onclick = async () => {
+      const b = $('.add-send'), msg = $('.add-msg');
       const cards = [...list.querySelectorAll('.add-card')];
       const items = cards.map(addRead);
       const bad = items.findIndex(v => !v.date || !v.title);
@@ -2562,7 +2565,7 @@
       if (sent === items.length) {
         b.textContent = '보냈어요 ✓';
         msg.textContent = `${sent}개를 보냈어요. 고마워요! 5~10분쯤 뒤 새로 열면 사이트에 '확인 필요'로 떠요.`;
-        list.innerHTML = addCard(); setTimeout(() => { b.disabled = false; b.textContent = '보내기'; }, 3000);
+        list.innerHTML = addCard({}, root.matches && root.matches('.add-quick')); setTimeout(() => { b.disabled = false; b.textContent = '보내기'; }, 3000);
       } else {
         cards.slice(0, sent).forEach(c => c.remove());
         b.disabled = false; b.textContent = '남은 것 다시 보내기';
@@ -2595,6 +2598,12 @@
       })
       .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
   });
+  // 연표 같은 곳에서 화면을 안 옮기고 바로 적는 칸
+  const addQuick = () => `<details class="add-quick"><summary class="bpill">＋ 일정 등록</summary>
+      <div class="add-list">${addCard({}, true)}</div>
+      <div class="add-acts"><button type="button" class="bpill add-more">＋ 하나 더</button><button type="button" class="bpill add-send">보내기</button></div>
+      <p class="src-note add-msg">보내면 '확인 필요'로 뜨고, 반영까지 5~10분쯤 걸려요. <a href="#/add">엑셀로 여러 개 올리기 ›</a></p>
+    </details>`;
   const addLink = (d, cls = '') => `<a class="bpill add-link${cls ? ' ' + cls : ''}" href="#/add${d ? '?d=' + d : ''}">＋ 일정 등록</a>`;
 
   // ---------- 의견 ----------
@@ -2649,6 +2658,7 @@
       ${shown.length ? shown.map(o => `
         <div class="op-item${opDone.has(o.id) ? ' done' : ''}">
           <div class="op-head"><span class="op-who"><span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> ${esc(o.name || '익명')}${o.by && o.by === me ? ' · 내 의견' : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
+          ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
           <p class="op-text">${esc(o.text)}</p>
           <div class="op-foot">${opDone.has(o.id) ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${opDone.has(o.id) ? '취소' : '처리'}">${opDone.has(o.id) ? '처리 취소' : '처리했어요'}</button>` : ''}</div>
         </div>`).join('') : '<p class="empty">아직 의견이 없어요.</p>'}`;
@@ -2731,6 +2741,27 @@
       } catch (err) { b.textContent = '만들지 못했어요. 다시 눌러 주세요.'; }
     };
   }
+  // 일정 상세에서 바로 '틀린 곳 알려주기' (의견 · 정보 수정으로 들어가요)
+  const fixBox = e => `<details class="fix-box"><summary>✏️ 틀린 곳 알려주기</summary><div class="op-form">
+      <textarea class="op-in fix-in" rows="3" maxlength="1000" placeholder="예) 날짜가 03.15예요 / 이 곡은 안 불렀어요"></textarea>
+      <button type="button" class="bpill add-send fix-send" data-id="${esc(e.id)}">보내기</button>
+      <p class="src-note fix-msg">의견 탭에 '정보 수정'으로 올라가요. 반영까지 5~10분쯤 걸려요.</p></div></details>`;
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.fix-send');
+    if (!b) return;
+    const box = b.closest('.op-form'), t = box.querySelector('.fix-in'), text = t.value.trim();
+    const e = data.events.find(x => x.id === b.dataset.id);
+    if (!text || !e) return;
+    const f = window.CONFIG.form, by = myUid();
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: 정보 수정\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n이름: \n누가: ${by}\n내용: ${text}` });
+    b.disabled = true; b.textContent = '보내는 중…';
+    fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }).then(() => {
+      const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name: '', cat: '정보 수정', ev: `[ID ${e.id}] ${e.title}`, by, at: Date.now() });
+      try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
+      t.value = ''; b.textContent = '보냈어요 ✓';
+      box.querySelector('.fix-msg').innerHTML = '고마워요! <a href="#/opinion">의견 탭</a>에서 처리됐는지 볼 수 있어요.';
+    }).catch(() => { b.disabled = false; b.textContent = '다시 보내기'; });
+  });
   const opBtn = () => `<a class="op-fab" href="#/opinion">💬 의견 남기기</a>`;
 
   // ---------- 공식 X 모아보기 ----------
@@ -3295,6 +3326,7 @@
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
         ${findRow(findQuery(e.title))}
+        ${fixBox(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
         ${(e.ytStage || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">방송 영상 <span class="song-count">${e.ytStage.length}</span>${help('방송사 공식 유튜브 영상 중 제목의 프로그램 이름과 방송 날짜로 이 일정에 붙인 거예요. 가끔 다른 회차일 수 있어요.')}</h2></div>${ytStrip(e.ytStage)}</section>` : ''}
         ${xBlock(e)}
