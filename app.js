@@ -2561,14 +2561,14 @@
       const sub = [concertRange(c), /^\d+$/.test(c.count || '') ? `${c.count}회` : ''].filter(Boolean).join(' · ');
       const img = c.img ? imgSize(c.img, 'small') : tourPic(c.tour);
       const seen = !!c.from && data.events.some(e => e.category === '공연' && e.date >= c.from && e.date <= (c.to || c.from) && !/^\[/.test(e.title) && boxHas('w', e.id));
-      items.push({ m: '', date: c.from || '', html: `<a class="solo-card" data-m="" href="#/tour/${encodeURIComponent(c.id)}">${cover(img, c.name, '', (c.tour ? '<span class="con-set">셋리스트</span>' : '') + (seen ? '<span class="solo-seen">🎫</span>' : ''))}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
+      items.push({ m: '', date: c.from || '', r: /^\d+$/.test(c.count || '') ? Number(c.count) : concertEvents(c).length, html: `<a class="solo-card" data-m="" href="#/tour/${encodeURIComponent(c.id)}">${cover(img, c.name, '', (c.tour ? '<span class="con-set">셋리스트</span>' : '') + (seen ? '<span class="solo-seen">🎫</span>' : ''))}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
     });
     if (!items.length) data.tours.forEach(t => items.push({ m: '', date: (t.dates || [''])[0] || '', html: `<a class="solo-card" data-m="" href="#/tour/${encodeURIComponent(t.id)}">${cover(tourPic(t), t.name, '', '')}<b>${esc(t.name)}</b><span class="rel-sub">${nw(tourRange(t))}</span></a>` }));
     soloInfos().forEach(c => {
       const when = c.from ? concertRange(c) : c.year + '년';
       const seen = c.evs.some(e => boxHas('w', e.id));
       const sub = [when, c.count ? `${c.count}회` : ''].filter(Boolean).join(' · ');
-      items.push({ m: c.member, date: c.from || c.year, html: `<a class="solo-card" data-m="${esc(c.member)}" href="#/tour/${encodeURIComponent(c.id)}">${cover(c.img, c.name, FULL[c.member], seen ? '<span class="solo-seen">🎫</span>' : '')}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
+      items.push({ m: c.member, date: c.from || c.year, r: c.evs.length || 1, html: `<a class="solo-card" data-m="${esc(c.member)}" href="#/tour/${encodeURIComponent(c.id)}">${cover(c.img, c.name, FULL[c.member], seen ? '<span class="solo-seen">🎫</span>' : '')}<b>${esc(short(c.name))}</b><span class="rel-sub">${nw(sub)}</span></a>` });
     });
     items.sort((x, y) => y.date.localeCompare(x.date));
     const years = [...new Set(items.map(x => x.date.slice(0, 4)))];
@@ -2577,6 +2577,7 @@
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">콘서트${help('포레스텔라 콘서트·투어와 멤버 단독 콘서트·팬미팅이에요. 공연 정보는 예매처·기사·위키 중 두 곳 이상 맞는 것만 적었어요. 셋리스트는 나무위키·setlist.fm·뉴스 기사를 모았어요. 틀린 곳이 있으면 제보해 주세요.')}</h1>
       <div class="chips solo-tabs">${tabs.map(m => `<button type="button" class="chip" data-m="${esc(m)}">${m ? esc(FULL[m]) : '포레스텔라'} <b>${items.filter(x => x.m === m).length}</b></button>`).join('')}</div>
+      ${tabs.map(m => { const l = items.filter(x => x.m === m); return `<p class="con-sum" data-m="${esc(m)}" hidden>${l.length}건 · 총 회차 ${l.reduce((a, x) => a + (x.r || 0), 0)}회</p>`; }).join('')}
       ${years.map(y => `<section class="con-year"><h2 class="con-y">${y}</h2><div class="solo-grid">${items.filter(x => x.date.slice(0, 4) === y).map(x => x.html).join('')}</div></section>`).join('')}`;
   }
   function bindSolo() {
@@ -2585,6 +2586,7 @@
       tabs.forEach(x => x.classList.toggle('on', x.dataset.m === m));
       document.querySelectorAll('.solo-card').forEach(c => { c.hidden = c.dataset.m !== m; });
       document.querySelectorAll('.con-year').forEach(s => { s.hidden = !s.querySelector('.solo-card:not([hidden])'); });
+      document.querySelectorAll('.con-sum').forEach(p => { p.hidden = p.dataset.m !== m; });
       try { sessionStorage.setItem('sb-con-tab', m); } catch (e) {}
     };
     tabs.forEach(t => t.onclick = () => pick(t.dataset.m));
