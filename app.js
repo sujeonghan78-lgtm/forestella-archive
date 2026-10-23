@@ -1474,16 +1474,19 @@
   // 일정 장소 이름: 장소 칸, 없으면 내용의 '장소:' 줄
   const placeOf = e => (e.place || '').trim() || (((e.content || '').match(/장소\s*[:：]\s*(.+)/) || [])[1] || '').trim();
   function locOf(e, found) {
-    if (e.placeLoc) return { ...e.placeLoc, exact: true, place: placeOf(e) };
+    // 큰 지역은 일정 글자(장소·제목)로 먼저 정하고, 모르면 좌표로
+    const r = regionOf(e), rk = REGION_C[r] ? r : '';
+    if (e.placeLoc) return { ...e.placeLoc, exact: true, place: placeOf(e), region: rk || regionNear(e.placeLoc) };
     const p = placeOf(e), pin = p && (data.pins || {})[p];
-    if (pin && pin.ok) return { ...pin.ok, exact: true, place: p };
-    if (p && found[p]) return { lat: found[p].lat, lng: found[p].lng, exact: true, place: p };
-    const r = regionOf(e);
+    if (pin && pin.ok) return { ...pin.ok, exact: true, place: p, region: rk || regionNear(pin.ok) };
+    if (p && found[p]) return { lat: found[p].lat, lng: found[p].lng, exact: true, place: p, region: rk || regionNear(found[p]) };
     if (r && REGION_C[r]) return { lat: REGION_C[r][0], lng: REGION_C[r][1], exact: false, place: p, region: r };
     return { lat: null, lng: null, exact: false, place: p, region: r || '' };
   }
   // 정확한 좌표도 '큰 지역'에 묶어 멀리서 볼 때 숫자로 보여요 (지역을 모르면 가장 가까운 중심으로)
   function regionNear(l) {
+    // 서울은 대략 네모 칸 안이면 서울 (가까운 중심만 보면 관악·서초가 경기로 잡혀요)
+    if (l.lat > 37.42 && l.lat < 37.70 && l.lng > 126.79 && l.lng < 127.18) return '서울';
     let best = '', d0 = 1e9;
     Object.entries(REGION_C).forEach(([k, [a, b]]) => { const d = (a - l.lat) ** 2 + (b - l.lng) ** 2; if (d < d0) { d0 = d; best = k; } });
     return best;
