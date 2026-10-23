@@ -1020,3 +1020,5 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .del-quiet:not([open])>summary{text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line)}
 .op-auto{display:inline-block;margin-top:4px;padding:1px 7px;border-radius:999px;font-size:11px;color:var(--muted);background:var(--soft);border:1px solid var(--line)}
 .op-text-auto{color:var(--ink-2)}
+.op-photo{display:inline-flex;align-self:flex-start;cursor:pointer;font-size:13px;color:var(--muted);padding:6px 10px;border:1px dashed var(--line);border-radius:999px}
+.op-photo-has{font-size:12px;color:var(--muted)}

@@ -2835,7 +2835,7 @@
           <div class="op-head"><span class="op-who">${isNew ? '<span class="op-new">N</span> ' : ''}${o.parent ? '' : `<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> `}${toName ? `<span class="op-to">↳ ${esc(toName)}</span> ` : ''}${esc(o.name || '익명')}${mine ? (o.parent ? ' · 내 답글' : ' · 내 의견') : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
           ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
           ${o.text.startsWith(OP_ASK_TAG) ? `<span class="op-auto">양식으로 답변</span><p class="op-text op-text-auto">${esc(o.text.slice(OP_ASK_TAG.length).replace(/^\s+/, ''))}</p>` : `<p class="op-text">${esc(o.text)}</p>`}
-          <div class="op-foot">${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${admin && !o.parent && !o.local && !done ? `<button type="button" class="link-btn op-ask" data-id="${esc(o.id)}">양식으로 묻기</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
+          <div class="op-foot">${photoLink(o)}${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${admin && !o.parent && !o.local && !done ? `<button type="button" class="link-btn op-ask" data-id="${esc(o.id)}">양식으로 묻기</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
           ${o.local ? '' : `<div class="op-form op-re-box" data-id="${esc(o.id)}" hidden><textarea class="op-in op-re-in" rows="2" maxlength="1000" placeholder="${o.parent ? `${esc(o.name || '익명')}님에게 답글` : '답글을 적어 주세요'}"></textarea><button type="button" class="bpill add-send op-re-send" data-id="${esc(o.id)}">답글 달기</button></div>`}
           ${kids.map(k => opItem(k, me, admin, opNewIds && opNewIds.has(k.id), kidsMap, o.parent ? (o.name || '익명') : '')).join('')}
         </div>`;
@@ -2869,6 +2869,7 @@
         <div class="chips a-mem op-cats">${OP_CATS.map((x, i) => `<button type="button" class="chip${i === 3 ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
         <input type="text" class="op-name" maxlength="20" placeholder="닉네임 (선택)">
         <textarea class="op-in" rows="4" maxlength="1000" placeholder="의견을 적어 주세요"></textarea>
+        ${photoPick()}
         <button type="button" class="bpill add-send op-send" disabled>보내기</button>
         <p class="src-note op-msg">보낸 의견은 내 화면엔 바로 보이고, 다른 분들 화면엔 5~10분쯤 뒤에 보여요.</p>
         ${HOW_TIP}
@@ -2887,15 +2888,18 @@
     try { t.value = sessionStorage.getItem('sb-op-draft') || ''; } catch (err) { /* 괜찮아요 */ }
     b.disabled = !t.value.trim();
     t.addEventListener('input', () => { b.disabled = !t.value.trim(); try { sessionStorage.setItem('sb-op-draft', t.value); } catch (err) { /* 괜찮아요 */ } });
-    b.onclick = () => {
+    b.onclick = async () => {
       const text = t.value.trim(), name = view.querySelector('.op-name').value.trim(), cat = (view.querySelector('.op-cats .on') || {}).dataset.c || '자유·응원';
       if (!text) return;
       const f = window.CONFIG.form, by = myUid();
-      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}\n내용: ${text}` });
       b.disabled = true; b.textContent = '보내는 중…';
+      let photo = '';
+      try { photo = await photoSend(b.closest('.op-form')); } catch (err) { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '사진을 올리지 못했어요. 사진을 빼거나 잠시 뒤 다시 보내 주세요.'; return; }
+      const pi = b.closest('.op-form').querySelector('.op-photo-in'); if (pi) { pi.value = ''; pi.dispatchEvent(new Event('change', { bubbles: true })); }
+      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}${photo ? `\n사진: ${photo}` : ''}\n내용: ${text}` });
       fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }).then(() => {
         // 시트에 들어간 시각을 몰라서, 시트에서 돌아오면 같은 글인지 글 내용으로 맞춰 봐요
-        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name, cat, by, at: Date.now() });
+        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name, cat, by, photo, at: Date.now() });
         try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); sessionStorage.removeItem('sb-op-draft'); } catch (err) { /* 괜찮아요 */ }
         t.value = ''; b.textContent = '보냈어요 ✓'; setTimeout(() => { b.textContent = '보내기'; }, 2500);
         view.querySelector('.op-msg').textContent = '고마워요! 다른 분들 화면엔 5~10분쯤 뒤에 보여요.';
@@ -3086,23 +3090,53 @@
     };
   }
   // 일정 상세에서 바로 '틀린 곳 알려주기' (의견 · 정보 수정으로 들어가요)
+  // ---------- 의견·제보 사진 ----------
+  // 사진은 보관함 Apps Script가 수정 드라이브(공유 안 함)에 저장하고, 폼엔 '사진: 파일번호'만 남겨요. 관리자 기기에서만 '사진 보기'가 떠요
+  const photoOn = () => !!(window.CONFIG.photoUpload && boxApi());
+  const photoPick = () => photoOn() ? `<label class="op-photo"><input type="file" accept="image/*" class="op-photo-in" hidden><span class="op-photo-lab">📷 사진 붙이기 (선택)</span></label>` : '';
+  document.addEventListener('change', ev => {
+    const i = ev.target.closest('.op-photo-in');
+    if (!i) return;
+    const f = i.files[0], lab = i.parentNode.querySelector('.op-photo-lab');
+    if (f && f.size > 15 * 1024 * 1024) { i.value = ''; lab.textContent = '사진이 너무 커요 (15MB까지)'; return; }
+    lab.textContent = f ? `📷 ${f.name.length > 18 ? f.name.slice(0, 16) + '…' : f.name} · 다시 고르기` : '📷 사진 붙이기 (선택)';
+  });
+  // 고른 사진을 긴 쪽 1600px JPEG로 줄여서 올리고 파일번호를 돌려줘요 (없으면 '')
+  async function photoSend(box) {
+    const i = box && box.querySelector('.op-photo-in'), f = i && i.files[0];
+    if (!f) return '';
+    const url = URL.createObjectURL(f);
+    try {
+      const img = await new Promise((ok, no) => { const m = new Image(); m.onload = () => ok(m); m.onerror = no; m.src = url; });
+      const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const r = await fetch(boxApi(), { method: 'POST', body: JSON.stringify({ action: 'photo', img: c.toDataURL('image/jpeg', 0.82) }) }).then(x => x.json());
+      if (!r.ok) throw new Error(r.err || 'fail');
+      return r.id;
+    } finally { URL.revokeObjectURL(url); }
+  }
+  const photoLink = o => o.photo && /^[\w-]{20,}$/.test(o.photo) ? (isAdmin() ? `<a class="link-btn op-photo-view" href="https://drive.google.com/file/d/${esc(o.photo)}/view" target="_blank" rel="noopener">📷 사진 보기</a>` : '<span class="op-photo-has">📷 사진 있음</span>') : '';
   // 날짜 변경·삭제는 일정 화면에서 바로 요청할 수 있다는 작은 안내 (의견·정보 수정·제보 쓰는 곳)
   const HOW_TIP = '<p class="src-note how-tip">날짜가 틀렸거나 지워야 하는 일정이면, 그 일정 화면 아래 \'날짜가 달라요\' · \'이 일정 삭제 요청\'으로 보내 주세요. 더 빨리 반영돼요.</p>';
   const fixBox = e => `<details class="fix-box"><summary>✏️ 틀린 곳 알려주기</summary><div class="op-form">
       <textarea class="op-in fix-in" rows="4" maxlength="1000" placeholder="${esc(OP_FIX_EX)}"></textarea>
+      ${photoPick()}
       <button type="button" class="bpill add-send fix-send" data-id="${esc(e.id)}">보내기</button>
       <p class="src-note fix-msg">의견 탭에 '정보 수정'으로 올라가요. 반영까지 5~10분쯤 걸려요.</p><p class="src-note how-tip">날짜가 틀렸으면 위 \'날짜가 달라요\', 지워야 하면 맨 아래 \'이 일정 삭제 요청\'이 더 빨라요.</p></div></details>`;
-  document.addEventListener('click', ev => {
+  document.addEventListener('click', async ev => {
     const b = ev.target.closest('.fix-send');
     if (!b) return;
     const box = b.closest('.op-form'), t = box.querySelector('.fix-in'), text = t.value.trim();
     const e = data.events.find(x => x.id === b.dataset.id);
     if (!text || !e) return;
     const f = window.CONFIG.form, by = myUid();
-    const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: 정보 수정\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n이름: \n누가: ${by}\n내용: ${text}` });
     b.disabled = true; b.textContent = '보내는 중…';
+    let photo = '';
+    try { photo = await photoSend(box); } catch (err) { b.disabled = false; b.textContent = '다시 보내기'; box.querySelector('.fix-msg').textContent = '사진을 올리지 못했어요. 사진을 빼거나 잠시 뒤 다시 보내 주세요.'; return; }
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: 정보 수정\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n이름: \n누가: ${by}${photo ? `\n사진: ${photo}` : ''}\n내용: ${text}` });
     fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }).then(() => {
-      const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name: '', cat: '정보 수정', ev: `[ID ${e.id}] ${e.title}`, by, at: Date.now() });
+      const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name: '', cat: '정보 수정', ev: `[ID ${e.id}] ${e.title}`, by, photo, at: Date.now() });
       try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
       t.value = ''; b.textContent = '보냈어요 ✓';
       box.querySelector('.fix-msg').innerHTML = '고마워요! <a href="#/opinion">의견 탭</a>에서 처리됐는지 볼 수 있어요.';
