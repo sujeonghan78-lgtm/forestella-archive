@@ -3018,7 +3018,7 @@
     const box = ev.target.closest('.sl-box');
     const list = slParse(ev.target.value);
     box.querySelector('.sl-pre').innerHTML = list.map(n => { const m = slMatch(n); return `<li class="${m ? 'ok' : 'new'}">${m ? '✓' : '?'} ${esc(m || n)}</li>`; }).join('');
-    box.querySelector('.sl-send').disabled = list.length < 3;
+    box.querySelector('.sl-send').disabled = !list.length;
   });
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.sl-send');
@@ -3026,7 +3026,7 @@
     const box = b.closest('.sl-box');
     const id = box.querySelector('.sl-ev').value, e = data.events.find(x => x.id === id);
     const songs = [...new Set(slParse(box.querySelector('.sl-in').value).map(n => slMatch(n) || n))];
-    if (!e || songs.length < 3) return;
+    if (!e || !songs.length) return;
     const f = window.CONFIG.form;
     const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리스트\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n곡: ${songs.join(' / ')}\n누가: ${myUid()}` });
     b.disabled = true; b.textContent = '보내는 중…';

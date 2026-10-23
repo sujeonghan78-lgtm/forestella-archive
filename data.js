@@ -314,7 +314,7 @@
       rows.filter(r => r.type === '셋리스트').forEach(r => {
         const id = idOf(r);
         const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
-        if (id && songs.length >= (r.newEv ? 1 : 3)) {
+        if (id && songs.length) {
           if (!r.newEv) fanLog.push({ k: latest.has(id) ? 'slfix' : 'sl', id, at: tsMs(r.time), by: r.by, ver: slVer(songs), songs: songs.length });
           latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1, fromEv: !!r.newEv });
         }
