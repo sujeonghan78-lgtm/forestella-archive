@@ -1358,21 +1358,21 @@
     "2024-12-28",
     "2024-12-29"
    ],
-   "complete": false,
+   "complete": true,
    "source": {
-    "name": "뉴스 기사",
+    "name": "팬 제보 · 뉴스 기사",
     "url": "https://www.seattlen.com/ent/11028"
    },
-   "caution": "11월 장충체육관 공연 기사에 나온 곡만 모았어요. 순서와 12월 앙코르 공연 곡은 다를 수 있어요.",
+   "caution": "앵콜 마지막 곡은 11월 본공연과 12월 앵콜 공연이 달라요.",
    "songs": [
     {
      "t": "My Favorite Things",
-     "note": "오프닝",
+     "note": "1부 첫 곡",
      "ok": true
     },
     {
      "t": "딴따라 블루스",
-     "note": "오프닝",
+     "note": "",
      "ok": true
     },
     {
@@ -1386,22 +1386,27 @@
      "ok": true
     },
     {
-     "t": "세이브 아워 라이브즈",
+     "t": "Save Our Lives",
      "note": "",
      "ok": true
     },
     {
-     "t": "Love Runs Out",
+     "t": "Bohemian Rhapsody",
      "note": "",
-     "ok": false
+     "ok": true
     },
     {
-     "t": "Sweet Dreams",
+     "t": "Shape of You",
      "note": "",
-     "ok": false
+     "ok": true
     },
     {
-     "t": "The Show Must Go On",
+     "t": "Viva la Vida",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Snow Globe",
      "note": "",
      "ok": true
     },
@@ -1411,7 +1416,17 @@
      "ok": true
     },
     {
+     "t": "Earth Song",
+     "note": "",
+     "ok": true
+    },
+    {
      "t": "Nella Fantasia",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "아직도 기억하고 있어요",
      "note": "",
      "ok": true
     },
@@ -1421,14 +1436,44 @@
      "ok": true
     },
     {
-     "t": "피아노맨",
+     "t": "Love Runs Out",
      "note": "",
      "ok": true
     },
     {
-     "t": "샤갈스 드림",
+     "t": "Sweet Dreams",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "The Show Must Go On",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Piano Man",
+     "note": "",
+     "ok": true
+    },
+    {
+     "t": "Chagall's Dream",
      "note": "본공연 마지막 곡",
-     "ok": false
+     "ok": true
+    },
+    {
+     "t": "사랑의 찬가",
+     "note": "앵콜 · 조민규 솔로",
+     "ok": true
+    },
+    {
+     "t": "Champions",
+     "note": "앵콜 · 11월 본공연",
+     "ok": true
+    },
+    {
+     "t": "그리고 봄",
+     "note": "앵콜 · 12월 앵콜 공연",
+     "ok": true
     }
    ],
    "id": "2024-the-illusionist",
