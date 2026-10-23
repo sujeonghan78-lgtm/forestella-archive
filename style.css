@@ -1127,3 +1127,9 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .cast-list { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 8px 10px; }
 .cast-row { display: contents; }
 .cast-row .src-note, .cast-row .link-btn { flex-basis: 100%; margin: -2px 0 4px; }
+/* 확정 배지: 작게, 누르면 설명 */
+.ok-mini { display: inline-block; margin: 0 6px 8px 0; font-size: 12px; vertical-align: top; }
+.ok-mini summary { list-style: none; cursor: pointer; display: inline-block; padding: 2px 9px; border-radius: 999px; color: #2F5B12; background: #D7EDC2; font-weight: 700; }
+.ok-mini summary::-webkit-details-marker { display: none; }
+.ok-mini[open] { display: block; }
+.ok-mini span { display: block; margin-top: 4px; color: var(--ink-2); }

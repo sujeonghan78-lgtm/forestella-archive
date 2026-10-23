@@ -2883,6 +2883,7 @@
       : mine ? '내가 올린 셋리예요. 다른 두 분이 맞다고 하면 확정돼요.'
       : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.'
       : "팬이 올린 셋리예요. 맞으면 '맞아요'를, 틀린 곳이 있으면 아래 '셋리 고치기'를 눌러 주세요.";
+    if (f.ok) return okMini('확정', msg);
     return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
   }
   // 하루 두 번 공연은 제목 끝 (낮공)·(밤공)으로 나눠 둬요
@@ -3113,12 +3114,15 @@
     };
   }
   // 팬이 등록한 일정: 확인 필요 · n/2 와 '맞아요'
+  // 확정된 건 작은 배지만, 누르면 설명이 보여요
+  const okMini = (label, msg) => `<details class="ok-mini"><summary>✓ ${label}</summary><span>${msg}</span></details>`;
   function evState(e) {
     const f = e.fanEvent;
     if (!f) return '';
     const mine = f.by && f.by === myUid(), done = slOked('ev:' + e.id);
     const btn = !f.ok && !mine && !done ? `<button type="button" class="bpill ev-ok" data-id="${esc(e.id)}">맞아요</button>` : '';
     const msg = f.ok ? `팬 ${f.n}명이 확인한 일정이에요.` : mine ? '내가 등록한 일정이에요. 다른 두 분이 맞다고 하면 확정돼요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "팬이 등록한 일정이에요. 맞으면 '맞아요'를 눌러 주세요.";
+    if (f.ok) return okMini('확정', msg);
     return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
   }
   const evPending = e => e.fanEvent && !e.fanEvent.ok ? ' <span class="new-tag">확인 필요</span>' : '';
@@ -3142,7 +3146,7 @@
   // 올린 사람 말고 두 명이 '맞아요'(종류: 날짜확인)를 누르거나 관리자가 확정하면 사이트와 시트(Apps Script) 날짜가 바뀌어요
   const md2 = d => d.slice(5).replace('-', '.');
   function dtState(e) {
-    const was = e.dateWas ? `<div class="sl-state ok"><span class="src-badge">날짜 고침</span><span class="sl-state-msg">확인을 받아 날짜를 고쳤어요. (원래 ${esc(md2(e.dateWas))})</span></div>` : '';
+    const was = e.dateWas ? okMini('날짜 고침', `확인을 받아 날짜를 고쳤어요. (원래 ${esc(md2(e.dateWas))})`) : '';
     return was + (e.dateProps || []).map(p => {
       const mine = p.by === myUid(), done = slOked(`dt:${e.id}:${p.to}`);
       const btn = !mine && !done ? `<button type="button" class="bpill dt-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>` : '';
