@@ -409,7 +409,8 @@
     // 관리자 기기에서만: 아직 안 읽은 의견 수
     if (isAdmin()) loadOpinions().then(() => {
       const box = document.getElementById('op-home'), n = opUnread().length;
-      if (box && n) box.innerHTML = `<a class="op-home" href="#/opinion">💬 새 의견 <b>${n}</b>건 <span>바로가기 ›</span></a>`;
+      const d = delPending().length;
+      if (box && (n || d)) box.innerHTML = (n ? `<a class="op-home" href="#/opinion">💬 새 의견 <b>${n}</b>건 <span>바로가기 ›</span></a>` : '') + (d ? `<a class="op-home" href="#/admin">🗑 삭제 요청 <b>${d}</b>건 <span>바로가기 ›</span></a>` : '');
     });
     const f = document.getElementById('home-search');
     if (f) f.onsubmit = ev => {
@@ -2982,7 +2983,41 @@
       <p class="src-note">원본 일정을 고르면 이 일정의 장소·시간·영상·셋리가 원본의 빈 칸으로 옮겨지고, 이 일정은 숨겨져요.</p>
       ${near.map(x => `<button type="button" class="link-btn ev-merge" data-id="${esc(e.id)}" data-to="${esc(x.id)}">${esc(x.date.slice(5).replace('-', '.'))} ${esc(x.title)} ← 여기로 합치기</button>`).join('')}</div></details>` : '';
   };
-  const hideBtn = e => isAdmin() ? `${mergeBox(e)}<button type="button" class="link-btn ev-hide" data-id="${esc(e.id)}">🙈 이 일정 숨기기 (관리자)</button>` : '';
+  const hideBtn = e => isAdmin() ? `${delAdminBox(e)}${mergeBox(e)}<button type="button" class="link-btn ev-hide" data-id="${esc(e.id)}">🙈 이 일정 숨기기 (관리자)</button>` : '';
+  // ---------- 삭제 요청 ----------
+  // 누구나 이유를 적어 삭제 요청(종류: 삭제요청)을 보내요. 요청은 관리자 기기에만 보이고, 승인하면 일정 숨기기와 같아요(시트 공개여부도 숨김)
+  const delPending = () => {
+    if (!data.delReqs) return [];
+    const marks = (data.evMarks || []).concat(evMarkLocal());
+    return data.delReqs.filter(q => data.events.some(e => e.id === q.id) && !marks.some(m => m.id === q.id && Number(m.n) > q.at));
+  };
+  const delReqHtml = (q, withEv) => `<div class="op-item del-req"><div class="op-head"><span class="op-who">${withEv ? `<a href="#/e/${encodeURIComponent(q.id)}">${esc(q.date ? q.date.slice(5).replace('-', '.') + ' ' : '')}${esc(q.title)}</a>` : '삭제 요청'}</span><span class="op-time">${esc(String(q.time).replace(/:\d\d$/, ''))}</span></div><p class="op-text">${esc(q.reason || '(이유 없음)')}</p></div>`;
+  const delActs = id => `<div class="op-foot"><button type="button" class="link-btn ev-hide del-ok" data-id="${esc(id)}">승인 (숨기기)</button><button type="button" class="link-btn del-no" data-id="${esc(id)}">거절</button></div>`;
+  const delAdminBox = e => {
+    const qs = delPending().filter(q => q.id === e.id);
+    return qs.length ? `<div class="del-box"><b>🗑 삭제 요청 ${qs.length}건</b>${qs.map(q => delReqHtml(q, false)).join('')}${delActs(e.id)}</div>` : '';
+  };
+  const delBox = e => isAdmin() || e.ytOnly ? '' : `<details class="fix-box"><summary>🗑 삭제 요청</summary><div class="op-form">
+      <textarea class="op-in del-in" rows="3" maxlength="1000" placeholder="왜 지워야 하는지 적어 주세요. 예) 다른 일정과 중복이에요 / 없던 일정이에요"></textarea>
+      <button type="button" class="bpill add-send del-send" data-id="${esc(e.id)}">요청 보내기</button>
+      <p class="src-note del-msg">관리자가 확인하고 지워요.</p></div></details>`;
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.del-send');
+    if (!b) return;
+    const box = b.closest('.op-form'), text = box.querySelector('.del-in').value.trim(), e = data.events.find(x => x.id === b.dataset.id);
+    if (!e) return;
+    if (!text) { box.querySelector('.del-msg').textContent = '지워야 하는 이유를 적어 주세요.'; return; }
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: 삭제요청\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n누가: ${myUid()}\n내용: ${text}`)
+      .then(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.del-in').value = ''; box.querySelector('.del-msg').textContent = '고마워요! 관리자가 확인하고 지울게요.'; })
+      .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; });
+  });
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.del-no');
+    if (!b || !isAdmin()) return;
+    b.disabled = true; b.textContent = '보내는 중…';
+    try { await sendEvMark(b.dataset.id, '보이기'); if (currentRoute() === 'admin') renderBase('admin'); else b.closest('.del-box').remove(); } catch (err) { b.disabled = false; b.textContent = '다시 누르기'; }
+  });
   document.addEventListener('click', async ev => {
     const b = ev.target.closest('.ev-hide, .ev-unhide, .ev-merge');
     if (!b || !isAdmin()) return;
@@ -2991,7 +3026,7 @@
     b.disabled = true; b.textContent = '보내는 중…';
     try {
       await sendEvMark(b.dataset.id, hide ? '숨김' : '보이기', b.dataset.to || '');
-      if (hide) { if (currentRoute() === 'e') history.back(); }
+      if (hide) { if (currentRoute() === 'e') history.back(); else if (currentRoute() === 'admin') renderBase('admin'); }
       else if (currentRoute() === 'admin') renderBase('admin');
     } catch (err) { b.disabled = false; b.textContent = '다시 누르기'; }
   });
@@ -3006,6 +3041,8 @@
       ${!k ? `<p class="sub">이 기기를 관리자 기기로 정하면 의견에 '처리했어요'를 누를 수 있어요. 열쇠는 이 기기 안에만 저장돼요.</p>
         <button type="button" class="bpill add-send" id="admin-make">이 기기를 관리자 기기로</button>`
       : isAdmin() ? `<p class="sub">이 기기는 관리자 기기예요. <a href="#/opinion">의견 탭</a>에서 처리 표시를, 일정 화면에서 숨기기를 할 수 있어요.</p>
+        <h2 class="h3 list-title">삭제 요청</h2>
+        ${(q => q.length ? [...new Set(q.map(x => x.id))].map(id => `<div class="del-box">${q.filter(x => x.id === id).map(x => delReqHtml(x, true)).join('')}${delActs(id)}</div>`).join('') : '<p class="src-note">새 삭제 요청이 없어요.</p>')(delPending())}
         <h2 class="h3 list-title">숨긴 일정</h2>
         ${(data.hidden || []).length ? data.hidden.map(h => `<div class="op-item"><div class="op-head"><span class="op-who">${esc(h.date)} ${esc(h.title)}</span></div><div class="op-foot"><button type="button" class="link-btn ev-unhide" data-id="${esc(h.id)}">다시 보이기</button></div></div>`).join('') : '<p class="src-note">숨긴 일정이 없어요.</p>'}
         <h2 class="h3 list-title">시트 연결 번호</h2>
@@ -3615,6 +3652,7 @@
         </div>
         ${findRow(findQuery(e.title))}
         ${dtForm(e)}
+        ${delBox(e)}
         ${fixBox(e)}
         ${hideBtn(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}

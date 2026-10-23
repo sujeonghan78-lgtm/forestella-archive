@@ -159,7 +159,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
   }
 
   async function fetchText(url) {
@@ -361,6 +361,8 @@
     });
     for (let i = events.length - 1; i >= 0; i--) if (evHide.has(events[i].id)) hidden.push(events.splice(i, 1)[0]);
     const dtMarks = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '날짜확정').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), to: normDate(line0(r, '후')), sig: line0(r, '서명') })).filter(m => m.id && m.sig) : [];
+    // 삭제 요청(종류: 삭제요청): 관리자 화면에만 보여요. 관리자가 숨기거나 거절하면(그 뒤에 찍힌 숨김·보이기 줄) 끝난 요청이에요
+    const delReqs = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '삭제요청').map(r => ({ id: (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], title: r.title.replace(/^\[ID [^\]]+\]\s*/, ''), date: r.date, reason: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, by: r.by, time: fixTs(r.time), at: tsMs(r.time) })).filter(q => q.id) : [];
     const evMarks = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '일정숨김').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명'), ...(line0(r, '원본') ? { to: line0(r, '원본') } : {}) })).filter(m => m.id && m.sig) : [];
     events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     const videos = buildVideos(toObjects(raw.videos));
@@ -785,7 +787,7 @@
     songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
@@ -823,6 +825,12 @@
     d.setUTCHours(d.getUTCHours() + fx.hours);
     const H = d.getUTCHours(), p2 = n => String(n).padStart(2, '0');
     return `${d.getUTCFullYear()}. ${d.getUTCMonth() + 1}. ${d.getUTCDate()} ${H < 12 ? '오전' : '오후'} ${H % 12 || 12}:${p2(d.getUTCMinutes())}:${p2(d.getUTCSeconds())}`;
+  }
+  // 시트 시간 글자 → 숫자(ms, 한국 시간)
+  function tsMs(t) {
+    const m = String(fixTs(t) || '').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})\D+(오전|오후)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (!m) return 0;
+    return Date.UTC(+m[1], m[2] - 1, +m[3], Number(m[5]) % 12 + (m[4] === '오후' ? 12 : 0), +m[6], +(m[7] || 0)) - 9 * 3600e3;
   }
   function buildOpinions(text) {
     const rows = buildReports(toObjects(text || ''), true);
