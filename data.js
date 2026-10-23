@@ -159,7 +159,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김)$/.test(r.type)));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
   }
 
   async function fetchText(url) {
@@ -325,6 +325,29 @@
         });
       });
     }
+    // 날짜 고치기(종류: 날짜수정 전/후 → 다른 사람 '맞아요'는 종류: 날짜확인 후): 올린 사람 말고 두 명이 맞다고 하거나
+    // (같은 날짜로 고치자고 한 사람도 셈) 관리자가 확정하면 날짜가 바뀌어요. 확정 전에는 원래 날짜 그대로 두고 상세에 같이 보여줘요
+    if (raw.reports) {
+      const fx = {}, isD = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if ((r.type !== '날짜수정' && r.type !== '날짜확인') || !r.by) return;
+        const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = normDate(line0(r, '후'));
+        if (!id || !isD(to)) return;
+        const o = fx[id] = fx[id] || {}, p = o[to] = o[to] || { to, from: '', by: '', who: new Set() };
+        if (r.type === '날짜수정' && !p.by) { p.by = r.by; p.from = normDate(line0(r, '전')); } else p.who.add(r.by);
+      });
+      const adm = window.SB_DT_ADMIN || {};
+      events.forEach(e => {
+        const a = adm[e.id], cur = e.date;
+        const ps = Object.values(fx[e.id] || {}).filter(p => p.by && p.to !== cur && (!p.from || p.from === cur) && !(a && a.state === '거절' && a.to === p.to));
+        ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); });
+        const done = a && a.state === '확정' && a.to !== cur ? a.to : ((ps.filter(p => p.who.size >= 2).sort((x, y) => y.who.size - x.who.size)[0]) || {}).to;
+        if (done) {
+          if (e.endDate) e.endDate = new Date(new Date(e.endDate).getTime() + (new Date(done) - new Date(cur))).toISOString().slice(0, 10);
+          e.date = done; e.dateWas = cur;
+        } else if (ps.length) e.dateProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n }));
+      });
+    }
     // 관리자가 숨긴 일정: 사이트가 서명을 확인한 번호만 window.SB_EV_HIDE에 들어와요
     // 관리자가 '원본에 합치기'를 한 일정은 장소·시간·영상·셋리를 원본의 빈 칸에 옮기고 숨겨요
     const evHide = window.SB_EV_HIDE || new Set(), evTo = window.SB_EV_MERGE || {}, hidden = [];
@@ -337,6 +360,7 @@
       if (!t.songs.length && e.songs.length) Object.assign(t, { songs: e.songs.slice(), songKeys: e.songKeys.slice(), songSource: e.songSource, fanSet: e.fanSet, fanSrc: e.fanSrc });
     });
     for (let i = events.length - 1; i >= 0; i--) if (evHide.has(events[i].id)) hidden.push(events.splice(i, 1)[0]);
+    const dtMarks = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '날짜확정').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), to: normDate(line0(r, '후')), sig: line0(r, '서명') })).filter(m => m.id && m.sig) : [];
     const evMarks = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '일정숨김').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명'), ...(line0(r, '원본') ? { to: line0(r, '원본') } : {}) })).filter(m => m.id && m.sig) : [];
     events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     const videos = buildVideos(toObjects(raw.videos));
@@ -761,7 +785,7 @@
     songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

@@ -2689,6 +2689,64 @@
       })
       .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
   });
+  // ---------- 날짜 고치기 ----------
+  // 누구나 '날짜가 달라요'로 바뀐 날짜를 보내요(종류: 날짜수정). 확정 전엔 원래 날짜 그대로 두고 '원래 → 바뀔 날짜'를 같이 보여줘요.
+  // 올린 사람 말고 두 명이 '맞아요'(종류: 날짜확인)를 누르거나 관리자가 확정하면 사이트와 시트(Apps Script) 날짜가 바뀌어요
+  const md2 = d => d.slice(5).replace('-', '.');
+  function dtState(e) {
+    const was = e.dateWas ? `<div class="sl-state ok"><span class="src-badge">날짜 고침</span><span class="sl-state-msg">확인을 받아 날짜를 고쳤어요. (원래 ${esc(md2(e.dateWas))})</span></div>` : '';
+    return was + (e.dateProps || []).map(p => {
+      const mine = p.by === myUid(), done = slOked(`dt:${e.id}:${p.to}`);
+      const btn = !mine && !done ? `<button type="button" class="bpill dt-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>` : '';
+      const adm = isAdmin() ? `<button type="button" class="link-btn dt-adm" data-id="${esc(e.id)}" data-to="${esc(p.to)}" data-state="확정">바로 확정 (관리자)</button><button type="button" class="link-btn dt-adm" data-id="${esc(e.id)}" data-to="${esc(p.to)}" data-state="거절">거절 (관리자)</button>` : '';
+      const msg = mine ? '내가 보낸 날짜예요. 다른 두 분이 맞다고 하면 바뀌어요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "새 날짜가 맞으면 '맞아요'를 눌러 주세요.";
+      return `<div class="sl-state dt-state"><span class="src-badge">날짜 확인 · ${p.n}/2</span><span class="sl-state-msg"><b class="dt-chg">${esc(md2(e.date))} → ${esc(md2(p.to))}</b>${p.to.slice(0, 4) !== e.date.slice(0, 4) ? ` (${esc(p.to.slice(0, 4))}년)` : ''} 날짜가 바뀔 수도 있어요. ${msg}</span>${btn}${adm}</div>`;
+    }).join('');
+  }
+  const dtForm = e => e.ytOnly ? '' : `<details class="fix-box"><summary>📅 날짜가 달라요</summary><div class="op-form">
+      <label class="add-f"><span>지금 날짜</span><input type="date" value="${esc(e.date)}" disabled></label>
+      <label class="add-f"><span>맞는 날짜</span><input type="date" class="dt-in" value="${esc(e.date)}"></label>
+      <button type="button" class="bpill add-send dt-send" data-id="${esc(e.id)}">보내기</button>
+      <p class="src-note dt-msg">다른 두 분이 맞다고 하면 날짜가 바뀌어요. 그 전엔 원래 날짜 옆에 같이 보여요.</p></div></details>`;
+  const formPost = text => { const f = window.CONFIG.form; return fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: text }) }); };
+  const slOkAdd = k => { try { const a = JSON.parse(localStorage.getItem(SL_OK) || '[]'); a.push(k); localStorage.setItem(SL_OK, JSON.stringify(a.slice(-300))); } catch (err) { /* 괜찮아요 */ } };
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.dt-send, .dt-ok');
+    if (!b) return;
+    const e = data.events.find(x => x.id === b.dataset.id);
+    if (!e) return;
+    const send = b.classList.contains('dt-send'), box = b.closest('.op-form');
+    const to = send ? box.querySelector('.dt-in').value : b.dataset.to;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(to)) return;
+    if (send && to === e.date) { box.querySelector('.dt-msg').textContent = '지금 날짜와 같아요. 맞는 날짜를 골라 주세요.'; return; }
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: ${send ? '날짜수정' : '날짜확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.date}\n후: ${to}\n누가: ${myUid()}`)
+      .then(() => {
+        slOkAdd(`dt:${e.id}:${to}`);
+        if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.dt-msg').textContent = `보냈어요: ${md2(e.date)} → ${md2(to)}. 5~10분쯤 뒤 일정에 같이 떠요.`; }
+        else b.closest('.dt-state').outerHTML = dtState({ ...e, dateWas: '', dateProps: (e.dateProps || []).filter(p => p.to === to) });
+      })
+      .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; });
+  });
+  // 관리자 확정·거절: 사이트용 서명 + 시트용 확인을 같이 보내요
+  const DT_MARK = 'sb-dt-mark';
+  const dtMsg = m => new TextEncoder().encode(`dt:${m.id}:${m.state}:${m.n}:${m.to}`);
+  const dtMarkLocal = () => { try { return JSON.parse(localStorage.getItem(DT_MARK) || '[]'); } catch (err) { return []; } };
+  try { window.SB_DT_ADMIN = JSON.parse(localStorage.getItem(DT_MARK + '-ok') || '{}'); } catch (err) { window.SB_DT_ADMIN = {}; }
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.dt-adm');
+    if (!b || !isAdmin()) return;
+    b.disabled = true; b.textContent = '보내는 중…';
+    try {
+      const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
+      const m = { id: b.dataset.id, state: b.dataset.state, n: String(Date.now()), to: b.dataset.to };
+      m.sig = b64u(await crypto.subtle.sign(SIGN, key, dtMsg(m)));
+      const check = await sheetCheck({ id: 'dt:' + m.id, state: m.state, n: m.n, to: m.to });
+      await formPost(`종류: 날짜확정\n대상: ${m.id}\n후: ${m.to}\n상태: ${m.state}\n번호: ${m.n}\n서명: ${m.sig}\n확인: ${check}`);
+      try { localStorage.setItem(DT_MARK, JSON.stringify(dtMarkLocal().concat(m).slice(-100))); } catch (err) { /* 괜찮아요 */ }
+      await syncHides();
+    } catch (err) { b.disabled = false; b.textContent = '다시 누르기'; }
+  });
   // 연표 같은 곳에서 화면을 안 옮기고 바로 적는 칸
   const addQuick = () => `<details class="add-quick"><summary class="bpill">＋ 일정 등록</summary>
       <div class="add-list">${addCard({}, true)}</div>
@@ -2892,9 +2950,15 @@
     const ok = await verifyMarks(data.evMarks.concat(local), evMsg, '숨김');
     const set = new Set(ok.keys()), merge = {};
     ok.forEach((m, id) => { if (m.to) merge[id] = m.to; });
-    const old = window.SB_EV_HIDE, oldM = JSON.stringify(window.SB_EV_MERGE || {});
-    if (set.size === old.size && [...set].every(x => old.has(x)) && oldM === JSON.stringify(merge)) return;
-    window.SB_EV_HIDE = set; window.SB_EV_MERGE = merge;
+    // 날짜 확정·거절(관리자): 일정마다 가장 최근 것만 써요
+    const dl = dtMarkLocal().filter(m => !(data.dtMarks || []).some(x => x.id === m.id && x.n === m.n) && Date.now() - Number(m.n) < 864e5);
+    try { localStorage.setItem(DT_MARK, JSON.stringify(dl)); } catch (err) { /* 괜찮아요 */ }
+    const dm = (data.dtMarks || []).concat(dl), dt = {};
+    for (const st of ['확정', '거절']) (await verifyMarks(dm, dtMsg, st)).forEach((m, id) => { dt[id] = { to: m.to, state: m.state }; });
+    const old = window.SB_EV_HIDE, oldM = JSON.stringify(window.SB_EV_MERGE || {}), oldD = JSON.stringify(window.SB_DT_ADMIN || {});
+    if (set.size === old.size && [...set].every(x => old.has(x)) && oldM === JSON.stringify(merge) && oldD === JSON.stringify(dt)) return;
+    window.SB_EV_HIDE = set; window.SB_EV_MERGE = merge; window.SB_DT_ADMIN = dt;
+    try { localStorage.setItem(DT_MARK + '-ok', JSON.stringify(dt)); } catch (err) { /* 괜찮아요 */ }
     try { localStorage.setItem(EV_HIDE, JSON.stringify([...set])); localStorage.setItem(EV_HIDE + '-to', JSON.stringify(merge)); } catch (err) { /* 괜찮아요 */ }
     const next = window.DATA.rebuild();
     if (next) { data = next; searchIndex = null; baseHash = null; render(); }
@@ -3537,6 +3601,7 @@
         <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span>${upcoming(e)}</div>
         <h1 class="d-title">${esc(e.title)}</h1>
         ${evState(e)}
+        ${dtState(e)}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
         <div class="box-row">${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
@@ -3547,6 +3612,7 @@
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
         ${findRow(findQuery(e.title))}
+        ${dtForm(e)}
         ${fixBox(e)}
         ${hideBtn(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
