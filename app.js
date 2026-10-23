@@ -3490,42 +3490,107 @@
   }
 
   // ---------- 공식 유튜브 모아보기 ----------
+  // 필터 2.0: 한 줄 버튼(채널·종류·연도·멤버·정렬) → 아래에서 올라오는 선택 창, 고른 건 ✕ 알약으로. 마지막 필터는 이 폰에 기억(sb-yt-f)
   const YT_KINDS = ['M/V', '무대', '직캠', '라이브', '클립', '가사 영상', '비하인드', '티저', '쇼츠', '영상'];
-  function ytView() {
+  const YT_KEY = 'sb-yt-f';
+  const YT_CH_NAMES = { 강형호: '[PITTA]강형호 & 이용우', 조민규: '조민규 ChoMinGyu', 고우림: 'Official KOWOORIM' };
+  const ytChLabel = c => c === '포레스텔라' || c === '방송사' ? c : YT_CH_NAMES[c] || c + ' 채널';
+  const YT_SORTS = { '': '최신순', old: '오래된순' };
+  function ytState() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-    const q = qs.get('q') || '';
-    const st = { ch: multiOf(qs, 'ch'), kind: multiOf(qs, 'kind'), y: multiOf(qs, 'y'), m: multiOf(qs, 'm'), q };
+    return { ch: multiOf(qs, 'ch'), kind: multiOf(qs, 'kind'), y: multiOf(qs, 'y'), m: multiOf(qs, 'm'), o: qs.get('o') || '', q: qs.get('q') || '' };
+  }
+  const ytLink = st => { const s = new URLSearchParams(Object.entries(st).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v]).filter(x => x[1])).toString(); return '#/yt' + (s ? '?' + s : ''); };
+  function ytOpts(all) {
+    return {
+      ch: ['포레스텔라', ...MEMBER_LIST.filter(m => all.some(v => v.ch === m)), ...(all.some(v => v.bc) ? ['방송사'] : [])],
+      kind: YT_KINDS.filter(k => all.some(v => v.kind === k)),
+      y: [...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse(),
+      m: MEMBER_LIST,
+    };
+  }
+  const YT_F = { ch: ['채널', ytChLabel], kind: ['종류', x => x], y: ['연도', x => x], m: ['멤버', m => m.slice(1)] };
+  // 연도가 3해 넘게 이어지면 '2019~2022'처럼 줄여 보여줘요
+  const yRange = ys => { const n = ys.map(Number).sort((a, b) => a - b); return n.length > 2 && n[n.length - 1] - n[0] === n.length - 1 ? `${n[0]}~${n[n.length - 1]}` : ''; };
+  // 고른 건 아래 알약에 다 보이니 버튼엔 이름과 개수만
+  const ytBtnLabel = (k, sel) => `${YT_F[k][0]}${sel.length ? `<b>${sel.length}</b>` : ' ▾'}`;
+  function ytView() {
+    // 다른 화면에서 그냥 들어오면 마지막에 고른 필터로 열어요 (유튜브 화면 안에서 지운 건 그대로)
+    const saved = boxRead(YT_KEY);
+    if (location.hash === '#/yt' && !document.getElementById('yt-form') && typeof saved === 'string' && saved.startsWith('#/yt?')) { location.replace(saved); return ''; }
+    const st = ytState();
     const all = data.official || [];
-    const chans = [...MEMBER_LIST.filter(m => all.some(v => v.ch === m)), ...(all.some(v => v.bc) ? ['방송사'] : [])];
-    const CH_NAMES = { 강형호: '[PITTA]강형호 & 이용우', 조민규: '조민규 ChoMinGyu', 고우림: 'Official KOWOORIM' };
-    const qm = matcher(q);
+    const qm = matcher(st.q);
     const chOk = v => !st.ch.length || st.ch.some(c => c === '포레스텔라' ? !v.ch && !v.bc : c === '방송사' ? v.bc : v.ch === c);
-    const list = all.filter(v => chOk(v) && (!st.kind.length || st.kind.includes(v.kind)) && (!st.y.length || st.y.includes(v.date.slice(0, 4))) && (!st.m.length || st.m.some(m => v.members.includes(m))) && (!qm || qm(vidText(v))));
+    let list = all.filter(v => chOk(v) && (!st.kind.length || st.kind.includes(v.kind)) && (!st.y.length || st.y.includes(v.date.slice(0, 4))) && (!st.m.length || st.m.some(m => v.members.includes(m))) && (!qm || qm(vidText(v))));
+    list = [...list].sort((a, b) => st.o === 'old' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
+    const btn = k => `<button type="button" class="yf-btn${st[k].length ? ' on' : ''}" data-yf="${k}">${ytBtnLabel(k, st[k])}</button>`;
+    const pill = (lab, next) => `<a class="yf-pill" href="${ytLink(next)}">${esc(lab)} <span aria-hidden="true">✕</span></a>`;
+    const pills = [];
+    Object.keys(YT_F).forEach(k => {
+      if (k === 'y' && yRange(st.y)) { pills.push(pill(yRange(st.y), { ...st, y: [] })); return; }
+      st[k].forEach(x => pills.push(pill(YT_F[k][1](x), { ...st, [k]: st[k].filter(z => z !== x) })));
+    });
     return `
       <h1 class="h1 page-title">공식 유튜브${help('포레스텔라 공식 유튜브 채널(@officialforestella)과 강형호·조민규·고우림 공식 채널, 그리고 KBS·MBC·JTBC·Mnet 같은 방송사 공식 채널에 올라온 포레스텔라 영상(조회수 1만 이상)을 매일 자동으로 모아요. 종류와 멤버는 제목으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       <div class="stick">
       <form class="searchbox song-search" role="search" id="yt-form">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="yt-q" value="${esc(q)}" placeholder="영상 찾기 · 초성 OK" aria-label="영상 찾기" autocomplete="off">
+        <input type="search" id="yt-q" value="${esc(st.q)}" placeholder="영상 찾기 · 초성 OK" aria-label="영상 찾기" autocomplete="off">
       </form>
-      ${chans.length ? multiChips('#/yt', st, 'ch', ['포레스텔라', ...chans], '채널 전체', c => c === '포레스텔라' || c === '방송사' ? c : CH_NAMES[c] || c + ' 채널') : ''}
-      ${multiChips('#/yt', st, 'kind', YT_KINDS.filter(k => all.some(v => v.kind === k)), '종류 전체')}
-      ${multiChips('#/yt', st, 'y', [...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse(), '연도 전체')}
-      ${multiChips('#/yt', st, 'm', MEMBER_LIST, '멤버 전체', m => m.slice(1))}
-      <div class="view-row"><p class="sub">${list.length.toLocaleString()}개</p>${chipsBtn()}${albumBtn()}</div>
+      <div class="yf-row">${['ch', 'kind', 'y', 'm'].map(btn).join('')}<button type="button" class="yf-btn yf-sort" data-yf="o">${st.o === 'old' ? '오래된' : '최신'} ⇅</button></div>
+      ${pills.length ? `<div class="yf-pills">${pills.join('')}</div>` : ''}
+      <div class="view-row"><p class="sub">${list.length.toLocaleString()}개${pills.length ? ` · <a class="yf-clear" href="${ytLink({ q: st.q })}">모두 지우기</a>` : ''}</p>${albumBtn()}</div>
       </div>
-      ${list.length ? moreList(list.map(ytCard), 20) : '<p class="empty">해당하는 영상이 없어요.</p>'}`;
+      ${list.length ? moreList(list.map(ytCard), 20) : '<p class="empty">해당하는 영상이 없어요.</p>'}
+      <div class="yf-wrap" id="yf-wrap" hidden></div>`;
+  }
+  // 아래에서 올라오는 선택 창: 여러 개 고르고 '적용'
+  function ytSheet(k) {
+    const st = ytState(), all = data.official || [];
+    const w = document.getElementById('yf-wrap');
+    if (!w) return;
+    if (k === 'o') {
+      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="정렬"><div class="yf-head"><b>정렬</b></div>
+        <div class="yf-opts">${Object.entries(YT_SORTS).map(([v, t]) => `<a class="chip${st.o === v ? ' on' : ''}" href="${ytLink({ ...st, o: v })}">${t}</a>`).join('')}</div></section>`;
+    } else {
+      const opts = ytOpts(all)[k], [name, lab] = YT_F[k];
+      const cnt = x => all.filter(v => k === 'ch' ? (x === '포레스텔라' ? !v.ch && !v.bc : x === '방송사' ? v.bc : v.ch === x) : k === 'kind' ? v.kind === x : k === 'y' ? v.date.startsWith(x) : v.members.includes(x)).length;
+      const asc = [...opts].sort();
+      const range = k === 'y' ? `<div class="yf-range"><span>기간</span><select id="yf-from">${asc.map(y => `<option${y === asc[0] ? ' selected' : ''}>${y}</option>`).join('')}</select><span>~</span><select id="yf-to">${asc.map(y => `<option${y === asc[asc.length - 1] ? ' selected' : ''}>${y}</option>`).join('')}</select><button type="button" class="bpill yf-rng">기간으로 고르기</button></div>` : '';
+      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="${name} 고르기">
+        <div class="yf-head"><b>${name}</b><span class="sub">여러 개 고를 수 있어요</span><button type="button" class="link-btn yf-none">전체</button></div>
+        ${range}
+        <div class="yf-opts">${opts.map(x => `<button type="button" class="chip${st[k].includes(x) ? ' on' : ''}" data-v="${esc(x)}">${esc(lab(x))} <small>${cnt(x).toLocaleString()}</small></button>`).join('')}</div>
+        <button type="button" class="bpill yf-ok">적용</button></section>`;
+      const sheet = w.querySelector('.yf-sheet');
+      sheet.querySelectorAll('.yf-opts .chip').forEach(c => { c.onclick = () => c.classList.toggle('on'); });
+      sheet.querySelector('.yf-none').onclick = () => sheet.querySelectorAll('.yf-opts .chip').forEach(c => c.classList.remove('on'));
+      const rng = sheet.querySelector('.yf-rng');
+      if (rng) rng.onclick = () => {
+        let a = +sheet.querySelector('#yf-from').value, b = +sheet.querySelector('#yf-to').value;
+        if (a > b) [a, b] = [b, a];
+        sheet.querySelectorAll('.yf-opts .chip').forEach(c => c.classList.toggle('on', +c.dataset.v >= a && +c.dataset.v <= b));
+      };
+      sheet.querySelector('.yf-ok').onclick = () => {
+        const sel = [...sheet.querySelectorAll('.yf-opts .chip.on')].map(c => c.dataset.v);
+        location.hash = ytLink({ ...st, [k]: sel.length === opts.length && k !== 'y' ? [] : sel });
+      };
+    }
+    w.hidden = false;
+    w.querySelector('.yf-back').onclick = () => { w.hidden = true; };
   }
   function bindYt() {
     const f = document.getElementById('yt-form');
     if (!f) return;
+    // 마지막으로 고른 필터 기억 (검색어는 빼고)
+    const st = ytState();
+    boxWrite(YT_KEY, ytLink({ ...st, q: '' }));
     f.onsubmit = ev => {
       ev.preventDefault();
-      const qs = new URLSearchParams(location.hash.split('?')[1] || '');
-      const v = document.getElementById('yt-q').value.trim();
-      if (v) qs.set('q', v); else qs.delete('q');
-      location.hash = '#/yt' + (qs.toString() ? '?' + qs : '');
+      location.hash = ytLink({ ...ytState(), q: document.getElementById('yt-q').value.trim() });
     };
+    document.querySelectorAll('.yf-btn').forEach(b => { b.onclick = () => ytSheet(b.dataset.yf); });
   }
 
   // ---------- 셋리 알려주기 ----------
