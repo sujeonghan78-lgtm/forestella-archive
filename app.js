@@ -1783,7 +1783,8 @@
     const r = REGIONS.find(([, rx]) => rx.test(t));
     return r ? r[0] : '그 외';
   };
-  const isLocalEvent = e => e.category === '공연' && !e.ytOnly;
+  // 공연 + '기타'로 들어온 축제·행사·팬사인회도 같이 보여줘요 (방송 녹화·영화 개봉은 빼요)
+  const isLocalEvent = e => !e.ytOnly && (e.category === '공연' || (e.category === '기타' && !/녹화|개봉/.test(e.title)));
   const hasVideo = e => !!(e.videoId || e.related.length || e.ytMain || (e.ytStage || []).length);
   let localQ = '';
   const localParams = () => { const qs = new URLSearchParams(location.hash.split('?')[1] || ''); return { r: qs.get('r') || '', y: qs.get('y') || '', m: qs.get('m') || '' }; };
