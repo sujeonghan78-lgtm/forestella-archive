@@ -1746,9 +1746,20 @@
         <form class="pin-find" id="pin-find"><input type="search" id="pin-q" value="${esc(x.l.place)}" placeholder="장소 이름이나 주소" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
         <div class="pin-res" id="pin-res"></div>
         <span class="src-note">찾은 곳을 고르거나 지도를 직접 눌러 핀을 찍어 주세요. 다시 누르면 핀이 옮겨져요.</span>
+        <label class="add-f pl-nv"><span>또는 네이버 지도 링크</span><input type="url" id="pin-link" inputmode="url" placeholder="네이버 지도 앱 → 장소 → 공유 → 링크 복사" autocomplete="off"></label>
+        <span class="src-note" id="pin-lmsg"></span>
         <button type="button" class="chip on" id="pin-send" disabled>이 위치로 보내기</button><button type="button" class="link-btn" id="pin-no">취소</button>`;
       bar.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      let link = '';
       const put = ll => { at = ll; if (mk) mk.setLatLng(at); else mk = L.marker(at, { icon: pinIcon }).addTo(m); document.getElementById('pin-send').disabled = false; };
+      // 네이버 지도 링크를 붙이면 핀 대신 링크로 보내요 (깃허브가 15분마다 좌표를 읽어 와요)
+      const li = document.getElementById('pin-link'), lm = document.getElementById('pin-lmsg');
+      li.addEventListener('input', () => {
+        const mm = li.value.match(/https?:\/\/(?:naver\.me\/[\w-]+|(?:m\.)?map\.naver\.com\/[^\s"'<>]+|(?:m|pcmap)\.place\.naver\.com\/[^\s"'<>]+)/);
+        link = mm ? mm[0] : '';
+        lm.textContent = link ? '네이버 지도 링크예요. 보내면 15~30분쯤 뒤 지도 위치가 들어가요.' : li.value.trim() ? '네이버 지도 링크가 아니에요. 장소 화면의 공유 → 링크 복사로 받은 주소를 붙여 주세요.' : '';
+        document.getElementById('pin-send').disabled = !(link || at);
+      });
       const onClick = ev => put(ev.latlng);
       m.on('click', onClick);
       // 장소 이름·주소로 찾기 (OpenStreetMap 검색). '37.51, 127.12'처럼 좌표를 붙여 넣어도 돼요
@@ -1768,6 +1779,13 @@
       const end = () => { m.off('click', onClick); if (mk) mk.remove(); bar.hidden = true; };
       document.getElementById('pin-no').onclick = end;
       document.getElementById('pin-send').onclick = async () => {
+        if (link) {
+          await formPost(`종류: 장소수정\n날짜: ${x.e.date}\n일정: [ID ${x.e.id}] ${x.e.title}\n전: ${x.e.place || ''}\n후: \n링크: ${link}\n누가: ${myUid()}`).catch(() => {});
+          end();
+          const fb = document.getElementById('map-fix');
+          if (fb) fb.innerHTML = '<p class="src-note">보냈어요! 15~30분쯤 뒤 지도 위치가 들어가요.</p>';
+          return;
+        }
         const c = at.lat.toFixed(5) + ',' + at.lng.toFixed(5);
         await formPost(`종류: 장소좌표\n장소: ${x.l.place}\n좌표: ${c}\n일정: [ID ${x.e.id}] ${x.e.title}\n누가: ${myUid()}`).catch(() => {});
         end();
