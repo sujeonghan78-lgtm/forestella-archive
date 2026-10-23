@@ -409,6 +409,7 @@
 
   // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
   const NEWS = [
+    { d: '2026-10-23', t: '두훈 님 뮤지컬 일정이 들어왔어요', s: '공연 기간으로 들어가 있고, 출연한 회차는 팬분들이 직접 올려 주실 수 있어요. 내가 본 회차를 누르면 보관함 직관에 들어가요.', a: '#/e/20222' },
     { d: '2026-10-23', t: '팬 제보 현황을 한눈에 볼 수 있어요', s: '팬분들이 올린 일정 · 셋리 · 날짜 고치기가 몇 개인지, 확인이 필요한 게 뭔지 모아 봐요.', a: '#/fan' },
     { d: '2026-10-23', t: '의견에 사진을 붙일 수 있어요', s: '의견 남기기 · 틀린 곳 알려주기에서 "📷 사진 붙이기"로 캡처를 같이 보내 주세요. 사진은 관리자만 보고 30일 뒤 지워져요.', a: '#/opinion' },
     { d: '2026-10-23', t: '숲별 카드 한마디가 40자까지 늘었어요', s: '길면 글씨가 조금 작아지고 두 줄로 나와요. 좋아하는 가사도 넣어 보세요.', a: '#/card' },
@@ -451,7 +452,7 @@
   }
 
   // ---------- 팬 제보 현황: 팬들이 올린 일정 · 셋리 · 날짜 고치기를 최근 순으로 ----------
-  const FAN_K = { ev: '새 일정', join: '정보 더함', sl: '셋리 올림', slfix: '셋리 고침', dt: '날짜 고치기', slok: '셋리 맞아요', evok: '일정 맞아요', dtok: '날짜 맞아요' };
+  const FAN_K = { ev: '새 일정', join: '정보 더함', sl: '셋리 올림', slfix: '셋리 고침', dt: '날짜 고치기', slok: '셋리 맞아요', evok: '일정 맞아요', dtok: '날짜 맞아요', cast: '캐스팅 회차' };
   function fanState(l, e) {
     if (l.k === 'ev') return e.fanEvent && e.fanEvent.ok ? ['ok', '확정'] : ['wait', `확인 필요 ${(e.fanEvent || {}).n || 0}/2`];
     if (l.k === 'sl' || l.k === 'slfix') {
@@ -481,7 +482,7 @@
       const e = data.byId.get(l.id);
       if (!e) return '';
       const [cls, st] = fanState(l, e);
-      const what = l.k === 'dt' ? `${md2(l.from || e.dateWas || e.date)} → ${md2(l.to)}` : l.k === 'dtok' ? `→ ${md2(l.to)}` : (l.k === 'sl' || l.k === 'slfix' || (l.k === 'join' && l.songs)) ? `${l.songs}곡` : '';
+      const what = l.k === 'cast' ? md2(l.to) : l.k === 'dt' ? `${md2(l.from || e.dateWas || e.date)} → ${md2(l.to)}` : l.k === 'dtok' ? `→ ${md2(l.to)}` : (l.k === 'sl' || l.k === 'slfix' || (l.k === 'join' && l.songs)) ? `${l.songs}곡` : '';
       return `<a class="fan-item${/ok$/.test(l.k) ? ' fan-small' : ''}" href="#/e/${encodeURIComponent(l.id)}">
         <span class="fan-top"><span class="fan-k fan-k-${l.k}">${FAN_K[l.k]}</span>${what ? `<span class="fan-what">${esc(what)}</span>` : ''}${st ? `<span class="fan-st fan-${cls}">${esc(st)}</span>` : ''}</span>
         <span class="fan-title">${esc(e.title)}</span>
@@ -1350,7 +1351,9 @@
   // 보관함 숫자 (보관함 화면과 숲별 카드가 같이 써요)
   function boxStats() {
     // 숨긴 일정은 data.byId에 없어서 빠지고, 원본에 합친 중복은 원본 하나로 세요
-    const evs = ids => [...new Map(ids.map(id => data.byId.get(id) || data.byId.get(boxMg()[id])).filter(Boolean).map(e => [e.id, e])).values()];
+    // 뮤지컬 회차 직관은 'ID@날짜' 또는 'ID@날짜T시간'으로 저장해서, 그 회차 날짜의 일정으로 쳐요
+    const one = id => { const [b, k] = id.split('@'), e = data.byId.get(b) || data.byId.get(boxMg()[b]); return e && k ? { ...e, date: k.slice(0, 10), start: k.slice(11) || e.start, endDate: '', castKey: id } : e; };
+    const evs = ids => [...new Map(ids.map(one).filter(Boolean).map(e => [e.castKey || e.id, e])).values()];
     const wentAll = evs(box.w).sort((a, b) => b.date.localeCompare(a.date));
     const isBc = e => /TV|라디오/.test(e.category);
     const went = wentAll, seen = evs(box.v).sort((a, b) => b.date.localeCompare(a.date));  // 직관(방송 현장 포함) / 방송으로 시청
@@ -1388,8 +1391,8 @@
     const cur = { n: curTab[2], html: curTab[3] };
     // 검색용: 직관·좋아요 일정과 곡을 한 목록에
     const findAttr = t => `data-n="${esc(norm(t))}" data-c="${esc(chosung(t))}"`;
-    const allEv = [...new Map([...wentAll, ...liked].map(e => [e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
-    const allItems = allEv.map(e => `<a class="box-ev box-hit" ${findAttr(e.title + ' ' + (e.place || ''))} href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${boxHas('w', e.id) ? '🎫 ' : ''}${boxHas('e', e.id) ? '♥ ' : ''}${esc(e.title)}</b></a>`).join('')
+    const allEv = [...new Map([...liked, ...wentAll].map(e => [e.castKey || e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
+    const allItems = allEv.map(e => `<a class="box-ev box-hit" ${findAttr(e.title + ' ' + (e.place || ''))} href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${e.castKey || boxHas('w', e.id) ? '🎫 ' : ''}${boxHas('e', e.id) ? '♥ ' : ''}${esc(e.title)}</b></a>`).join('')
       + (songs.length ? `<div class="chips box-songs">${songs.map(so => `<a class="chip box-hit" ${findAttr(so.name)} href="#/song/${encodeURIComponent(so.key)}">♥ ${esc(so.name)}</a>`).join('')}</div>` : '');
     const sync = !boxApi() ? '' : boxUser ? `
       <section class="box-sync">
@@ -1940,7 +1943,7 @@
 
   function cardView() {
     const st = boxStats();
-    const bestList = [...new Map([...st.wentAll, ...st.liked].map(e => [e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
+    const bestList = [...new Map([...st.liked, ...st.wentAll].map(e => [e.castKey || e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
     const chip = (grp, v, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-grp="${grp}" data-v="${esc(v)}" aria-pressed="${on}">${esc(label)}</button>`;
     return `
       <a class="back" href="#/more">‹ 더보기</a>
@@ -2092,11 +2095,62 @@
     redraw();
   }
 
+  const isRun = e => e.category === '뮤지컬' && e.endDate && e.endDate > e.date;
+  // ---------- 뮤지컬 캐스팅 회차: 누구나 회차를 올리고, 직관은 그 회차 중에서 골라요 ----------
+  const CAST_ADD = 'sb-cast-added';
+  const castLocal = () => { try { return JSON.parse(localStorage.getItem(CAST_ADD) || '{}'); } catch (err) { return {}; } };
+  const castKey = (e, c) => `${e.id}@${c.d}${c.t ? 'T' + c.t : ''}`;
+  const castList = e => {
+    const have = e.casts || [], mine = (castLocal()[e.id] || []).filter(c => !have.some(x => x.d === c.d && x.t === c.t));
+    return [...have, ...mine.map(c => ({ ...c, wait: true }))].sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t));
+  };
+  const wd = d => '일월화수목금토'[new Date(d + 'T00:00:00').getDay()];
+  function castBlock(e) {
+    if (!isRun(e)) return '';
+    const list = castList(e), went = list.filter(c => boxHas('w', castKey(e, c))).length;
+    const rows = list.map(c => { const k = castKey(e, c), on = boxHas('w', k), lab = `${md2(c.d)}(${wd(c.d)})${c.t ? ' ' + c.t : ''}`;
+      return `<div class="cast-row"><button type="button" class="bpill box-btn cast-btn" data-box="w" data-id="${esc(k)}" data-label="${esc(lab)}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${esc(lab)}</button>${c.wait ? '<span class="src-note">올리는 중 · 5~10분 뒤 모두에게 보여요</span>' : ''}${isAdmin() && c.id ? `<button type="button" class="link-btn cast-del" data-id="${esc(c.id)}">지우기 (관리자)</button>` : ''}</div>`; }).join('');
+    return `<hr class="divider"><section class="d-block cast">
+      <div class="block-head"><h2 class="h3">캐스팅 회차 <span class="song-count">${list.length}</span>${help('공연 기간 중 출연한 날을 팬들이 올려 주신 거예요. 내가 본 회차를 누르면 보관함 직관에 들어가요.')}</h2></div>
+      ${list.length ? `<p class="sub">${went ? `🎫 ${went}회 봤어요 · ` : ''}본 회차를 눌러 주세요.</p><div class="cast-list">${rows}</div>` : '<p class="sub">아직 올라온 회차가 없어요. 아는 회차를 올려 주세요.</p>'}
+      <details class="fix-box"><summary>＋ 회차 올리기</summary><div class="op-form">
+        <label class="add-f"><span>날짜</span><input type="date" class="cast-d" min="${esc(e.date)}" max="${esc(e.endDate)}" value="${esc(e.date)}"></label>
+        <label class="add-f"><span>시간 (몰라도 돼요)</span><input type="time" class="cast-t"></label>
+        <button type="button" class="bpill add-send cast-send" data-id="${esc(e.id)}">보내기</button>
+        <p class="src-note cast-msg">캐스팅 일정표에서 확인한 날만 올려 주세요.</p></div></details>
+    </section>`;
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.cast-send');
+    if (!b) return;
+    const e = data.byId.get(b.dataset.id), f = b.closest('.op-form');
+    if (!e) return;
+    const d = f.querySelector('.cast-d').value, t = f.querySelector('.cast-t').value, msg = f.querySelector('.cast-msg');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d < e.date || d > e.endDate) { msg.textContent = `공연 기간(${md2(e.date)}~${md2(e.endDate)}) 안의 날짜를 골라 주세요.`; return; }
+    if (castList(e).some(c => c.d === d && c.t === t)) { msg.textContent = '이미 있는 회차예요.'; return; }
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: 캐스팅\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n회차: ${d}\n시간: ${t}\n누가: ${myUid()}`)
+      .then(() => {
+        const all = castLocal(); all[e.id] = [...(all[e.id] || []), { d, t }].slice(-60);
+        try { localStorage.setItem(CAST_ADD, JSON.stringify(all)); } catch (err) { /* 괜찮아요 */ }
+        const sec = b.closest('.cast'); sec.outerHTML = castBlock(e).replace(/^<hr class="divider">/, '');
+      })
+      .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; });
+  });
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.cast-del');
+    if (!b || !isAdmin()) return;
+    b.disabled = true; b.textContent = '지우는 중…';
+    try { await sendEvMark(b.dataset.id, '숨김'); b.closest('.cast-row').remove(); } catch (err) { b.disabled = false; b.textContent = '다시 눌러 주세요'; }
+  });
+
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
   const wentBtns = e => {
     const near = data.events.filter(x => x.title === e.title && samePlace(x.place, e.place) && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
     // 방송은 현장에서 본 '직관'과 방송으로 본 '시청'을 따로 눌러요
     if (/TV|라디오/.test(e.category)) return boxBtn('w', e.id, 'bpill') + boxBtn('v', e.id, 'bpill');
+    // 기간 공연(뮤지컬)은 아래 '캐스팅 회차'에서 본 회차를 골라요
+    if (isRun(e)) return '';
     if (near.length < 2) return boxBtn('w', e.id, 'bpill');
     return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };
@@ -4096,6 +4150,7 @@
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
         ${findRow(findQuery(e.title))}
+        ${castBlock(e)}
         ${dtForm(e)}
         ${fixBox(e)}
         ${hideBtn(e)}

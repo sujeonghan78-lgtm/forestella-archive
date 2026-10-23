@@ -159,7 +159,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '캐스팅' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
   }
 
   async function fetchText(url) {
@@ -386,6 +386,22 @@
     const delReqs = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '삭제요청').map(r => ({ id: (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], title: r.title.replace(/^\[ID [^\]]+\]\s*/, ''), date: r.date, reason: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, by: r.by, time: fixTs(r.time), at: tsMs(r.time) })).filter(q => q.id) : [];
     const evMarks = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '일정숨김').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명'), ...(line0(r, '원본') ? { to: line0(r, '원본') } : {}) })).filter(m => m.id && m.sig) : [];
     events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    // 뮤지컬 캐스팅 회차(종류: 캐스팅 일정/날짜/시간): 누구나 올리면 바로 그 일정에 회차로 붙고, 직관은 회차 중에서 골라요.
+    // 관리자가 지우면(서명된 숨김 줄, 번호 'c'+일정·날짜·시간) 빠져요
+    if (raw.reports) {
+      const gone = window.SB_EV_HIDE || new Set(), byEv = new Map(events.map(e => [e.id, e]));
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if (r.type !== '캐스팅' || !r.by) return;
+        const e = byEv.get((r.title.match(/\[ID ([\w-]+)\]/) || [])[1]), d = normDate(line0(r, '회차'));
+        const t = (line0(r, '시간').match(/^\d{1,2}:\d{2}$/) || [''])[0].padStart(5, '0').replace(/^0{5}$/, '');
+        if (!e || !/^\d{4}-\d{2}-\d{2}$/.test(d) || d < e.date || d > (e.endDate || e.date)) return;
+        const id = 'c' + slVer([e.id, d, t]);
+        if (gone.has(id) || (e.casts || []).some(c => c.id === id)) return;
+        (e.casts = e.casts || []).push({ d, t, id, by: r.by, at: tsMs(r.time) });
+        fanLog.push({ k: 'cast', id: e.id, at: tsMs(r.time), by: r.by, to: d });
+      });
+      events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));
+    }
     // 숨기거나 지운 일정에 대한 제보는 빼고, 최근 것부터
     const evIds = new Set(events.map(e => e.id));
     const fan = fanLog.filter(l => evIds.has(l.id)).sort((a, b) => b.at - a.at);

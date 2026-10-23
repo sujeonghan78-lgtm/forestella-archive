@@ -1123,3 +1123,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-intro-t{margin:0;font-size:19px;font-weight:700;line-height:1.45;color:var(--ink);text-wrap:balance}
 .map-intro-s{font-size:13px;color:var(--muted)}
 .map-intro-go{margin-top:6px;padding:12px 28px;border:0;border-radius:999px;background:#1F7A4C;color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+/* 뮤지컬 캐스팅 회차 */
+.cast-list { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 8px 10px; }
+.cast-row { display: contents; }
+.cast-row .src-note, .cast-row .link-btn { flex-basis: 100%; margin: -2px 0 4px; }
