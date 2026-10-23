@@ -1788,17 +1788,17 @@
     ['walk', '🌿', '숲길 산책', '직관 5번', s => s.went.length >= 5],
     ['keeper', '🌲', '숲지기', '직관 10번', s => s.went.length >= 10],
     ['grand', '🏕️', '숲의 터줏대감', '직관 30번', s => s.went.length >= 30],
-    ['trip', '🧭', '숲 원정대', '3곳 넘는 지역에서 직관', s => s.regionN >= 3],
-    ['ncha', '🎟️', 'N차 숲별', '같은 투어 2번 넘게 직관', s => { const m = new Map(); s.went.forEach(e => { const t = tourOfDate(e.date); if (t) m.set(t.id, (m.get(t.id) || 0) + 1); }); const n = Math.max(0, ...m.values()); return n >= 2 && `${n}차 숲별`; }],
-    ['studio', '📺', '방청 요정', '방송 현장에서 1번', s => s.went.some(s.isBc)],
+    ['trip', '🧭', '숲 원정대', '직관 지역 3곳 이상', s => s.regionN >= 3],
+    ['ncha', '🎟️', 'N차 숲별', '같은 투어 2번 이상', s => { const m = new Map(); s.went.forEach(e => { const t = tourOfDate(e.date); if (t) m.set(t.id, (m.get(t.id) || 0) + 1); }); const n = Math.max(0, ...m.values()); return n >= 2 && `${n}차 숲별`; }],
+    ['studio', '📺', '방청 요정', '방송 방청 1번', s => s.went.some(s.isBc)],
     ['og', '🌰', '원조 숲별', '2018년까지 직관', s => s.went.some(e => e.date < '2019')],
-    ['ear', '🎧', '귀명창', '직관으로 들은 곡 50곡', s => s.heardList.length >= 50],
+    ['ear', '🎧', '귀명창', '들은 곡 50곡', s => s.heardList.length >= 50],
     ['heart', '💚', '최애곡 부자', '♥ 곡 20곡', s => s.songs.length >= 20],
     ['y1', '⭐', '1년차 숲별', '입덕 1년', () => ddayOf(card.since) > 365],
     ['y3', '🌟', '3년차 숲별', '입덕 3년', () => ddayOf(card.since) > 365 * 3],
     ['y5', '✨', '5년차 숲별', '입덕 5년', () => ddayOf(card.since) > 365 * 5],
   ];
-  const cardBadges = (st = boxStats()) => CARD_BADGES.map(([k, ic, name, how, f]) => { const r = f(st); return { k, ic, name: typeof r === 'string' ? r : name, how, got: !!r }; });
+  const cardBadges = (st = boxStats()) => CARD_BADGES.map(([k, ic, name, how, f]) => { const r = f(st); return { k, ic, name: typeof r === 'string' ? r : name, how: typeof r === 'string' ? `같은 투어 ${parseInt(r, 10)}번 직관` : how, got: !!r }; });
   const STK_KEY = 'sb-card-stk';
   let cardStk = boxRead(STK_KEY) || [];  // [{ src, x, y, w, r, shape }] 카드 바깥 틀 기준 위치
   let cardStkImg = new Map(), cardSel = -1, cardExport = false;
@@ -1990,7 +1990,7 @@
     block('최애곡', B.favs.slice(0, 6));
     block('소취곡', B.wishes.slice(0, 6));
     if (B.best) block('최고의 날', [B.best.date.replace(/-/g, '.'), B.best.title]);
-    if (B.bdg.length) block('뱃지', B.bdg.map(b => b.ic + ' ' + b.name));
+    if (B.bdg.length) block('뱃지', B.bdg.map(b => `${b.ic} ${b.name} (${b.how})`));
     if (card.debut.trim() || B.favs.length || B.wishes.length || B.best || B.bdg.length) dash();
     row('합계', B.dd || 'D+', { b: true, sz: 20 });
     row('결제', '평생 할부 · 숲별카드', { c: MUTE, sz: 11 });
@@ -2161,15 +2161,19 @@
     const bdg = cardBadges().filter(b => b.got && (card.badges || []).includes(b.k));
     if (bdg.length) {
       y += 6;
-      ctx.font = font(600, 10.5);
+      // 뱃지 이름 옆에 받은 기준을 작게 (예: 🌱 첫 발자국 직관 1번)
       let bx = P, by = y;
       bdg.forEach(b => {
-        const t = b.ic + ' ' + b.name, w = ctx.measureText(t).width + 18;
+        const t = b.ic + ' ' + b.name;
+        ctx.font = font(600, 10.5); const tw = ctx.measureText(t).width;
+        ctx.font = font(400, 8.5); const hw = ctx.measureText(b.how).width;
+        const w = tw + 5 + hw + 18;
         if (bx > P && bx + w > P + IN) { bx = P; by += 26; }
         const x0 = bx, y1 = by;
         ops.push(() => {
           ctx.strokeStyle = C.acc; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0 + .5, y1 + .5, w - 1, 21, 11) : ctx.rect(x0, y1, w, 21); ctx.stroke();
           ctx.font = font(600, 10.5); ctx.fillStyle = C.ink; ctx.fillText(t, x0 + 9, y1 + 5);
+          ctx.font = font(400, 8.5); ctx.fillStyle = C.mute; ctx.fillText(b.how, x0 + 9 + tw + 5, y1 + 6.5);
         });
         bx += w + 6;
       });
@@ -2338,8 +2342,6 @@
         <div class="cf-g"><span class="cf-l">사진 <small>안 넣어도 돼요</small></span>
           <div class="cf-photo"><label class="chip cf-file">📷 ${cardPhoto ? '사진 바꾸기' : '폰에서 사진 고르기'}<input type="file" id="cf-photo" accept="image/*" hidden></label>${cardPhoto ? '<button type="button" class="link-btn" id="cf-photo-x">사진 빼기</button>' : ''}</div>
           <p class="src-note">직접 찍었거나 공유해도 되는 사진을 넣어 주세요. 사진은 이 폰에만 있어요.${cardPhoto ? ' 미리보기에서 사진을 끌어서 위치를 맞출 수 있어요.' : ''}</p></div>
-        <div class="cf-g"><span class="cf-l">내 사진 스티커 <small>여러 장, 미리보기에서 끌어서 옮겨요</small></span>
-          <div class="cf-photo"><label class="chip cf-file">🖼 스티커 붙이기<input type="file" id="cf-stk" accept="image/*" multiple hidden></label>${cardStk.length ? `<span class="src-note">${cardStk.length}장 붙였어요</span>` : ''}</div></div>
         <div class="cf-g"><span class="cf-l">뱃지 <small>보관함 기록으로 받은 뱃지, 3개까지</small></span><div class="cf-badges">${cardBadges(st).map(b => `<button type="button" class="cf-badge${(card.badges || []).includes(b.k) && b.got ? ' on' : ''}" data-grp="badges" data-v="${b.k}" aria-pressed="${(card.badges || []).includes(b.k) && b.got}"${b.got ? '' : ' disabled'}><span>${b.ic}</span><b>${esc(b.name)}</b><small>${esc(b.got ? '받았어요' : b.how)}</small></button>`).join('')}</div></div>
         <label><span class="cf-l">한마디 <small>안 써도 돼요</small></span><input id="cf-line" maxlength="40" value="${esc(card.line)}" placeholder="숲별이라 행복해" autocomplete="off"></label>
         <div class="cf-g"><span class="cf-l">글씨체</span><div class="cf-fonts">${Object.entries(CARD_FONTS).map(([k, f]) => `<button type="button" class="cf-font${card.font === k ? ' on' : ''}" data-grp="font" data-v="${k}" aria-pressed="${card.font === k}" style="font-family:${esc(f.f)};font-weight:${f.w}${k === 'pen' ? ';font-size:21px' : ''}">${f.name} 숲별</button>`).join('')}</div></div>
@@ -2349,10 +2351,14 @@
       </form>
       <div class="cf-l cf-pv-l">미리보기</div>
       <div class="cf-pv"><canvas id="card-cv"${cardPhoto || cardStk.length ? ' class="has-photo"' : ''} aria-label="숲별 카드 미리보기"></canvas></div>
+      <div class="stk-bar">
+        <div class="stk-head"><b>🖼 내 사진 스티커</b><label class="chip cf-file">＋ 스티커 붙이기<input type="file" id="cf-stk" accept="image/*" multiple hidden></label></div>
+        <p class="src-note">${cardStk.length ? '스티커를 누르면 크기·모양을 바꿀 수 있어요. 끌어서 옮기고, 두 손가락으로 키우거나 돌려도 돼요.' : '갤러리 사진을 카드 위에 스티커로 붙여요. 사진은 이 폰에만 있어요.'}</p>
       <div class="stk-tools" id="stk-tools" hidden>
         <label><span>크기</span><input type="range" id="stk-w" min="40" max="300"></label>
         <label><span>돌리기</span><input type="range" id="stk-r" min="-180" max="180"></label>
         <div class="chips">${[['circle', '동그라미'], ['heart', '하트'], ['rect', '네모']].map(([k, n]) => `<button type="button" class="chip stk-shape" data-v="${k}">${n}</button>`).join('')}<button type="button" class="chip stk-del">스티커 빼기</button><button type="button" class="link-btn stk-done">다 했어요</button></div>
+      </div>
       </div>
       <div class="cf-btns"><button type="button" class="btn" id="card-save">이미지로 저장</button><button type="button" class="btn ghost" id="card-x">X에 올리기</button></div>
       <p class="src-note cf-msg" id="card-msg">X에 올릴 땐 저장한 카드 이미지를 글에 붙여 주세요.</p>`;

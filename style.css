@@ -1187,6 +1187,9 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .cf-badge small { font-size: 10px; color: var(--ink-2); }
 .cf-badge.on { border-color: #2F7A5A; background: #EDF7EF; box-shadow: inset 0 0 0 1px #2F7A5A; }
 .cf-badge:disabled { opacity: .42; }
-.stk-tools { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: #F2F7F3; }
+.stk-bar { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: #F2F7F3; }
+.stk-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.stk-tools { display: flex; flex-direction: column; gap: 8px; padding-top: 6px; border-top: 1px solid #DDE8E0; }
 .stk-tools label { display: grid; grid-template-columns: 4em 1fr; align-items: center; font-size: 12px; color: var(--ink-2); }
 .stk-tools .chips { flex-wrap: wrap; }
+.stk-tools[hidden] { display: none; }
