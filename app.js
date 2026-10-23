@@ -1438,7 +1438,7 @@
   // ---------- 직관 지도: 내가 간 일정을 지도에 찍고, 날짜순으로 따라가며 되돌아봐요 ----------
   // 지도 프로그램(Leaflet)과 공연장 좌표(data/places.json)는 이 화면을 열 때만 불러와요
   const REGION_C = { '서울': [37.5665, 126.978], '경기·인천': [37.42, 126.95], '강원': [37.75, 128.3], '충청': [36.55, 127.2], '전라': [35.35, 127.0], '경상': [35.75, 128.75], '제주': [33.42, 126.55] };
-  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null }, lmap = null;
+  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', intro: true }, lmap = null, mapPlay = null;
   function loadLeaflet() {
     if (window.L) return Promise.resolve(window.L);
     return leafletP = leafletP || new Promise((ok, no) => {
@@ -1472,8 +1472,11 @@
     const mine = st.wentAll.slice().sort((a, b) => a.date.localeCompare(b.date));
     if (!mapSt.mode) mapSt.mode = mine.length ? 'w' : 'all';
     const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !/^\[/.test(e.title)).sort((a, b) => a.date.localeCompare(b.date));
-    const items = list.map(e => ({ e, l: locOf(e, found) }));
-    return { all: items, on: items.filter(x => x.l.lat != null), off: items.filter(x => x.l.lat == null), mine: mine.length };
+    const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort();
+    // 기간 고르기: from/to는 'YYYY-MM'
+    const inRange = e => (!mapSt.from || e.date.slice(0, 7) >= mapSt.from) && (!mapSt.to || e.date.slice(0, 7) <= mapSt.to);
+    const items = list.filter(inRange).map(e => ({ e, l: locOf(e, found) }));
+    return { all: items, on: items.filter(x => x.l.lat != null), off: items.filter(x => x.l.lat == null), mine: mine.length, years, first: list[0], last: list[list.length - 1] };
   }
   function mapView() {
     return `
@@ -1481,32 +1484,45 @@
       <h1 class="h1 page-title">숲별 발자국${help('🎫 직관했어요를 누른 일정이 지도에 떠요. 정확한 공연장을 모르는 곳은 큰 지역으로 묶어 보여요. 위치가 틀리면 📍 위치 고치기로 알려 주세요. 다른 두 분이 맞다고 하면 바뀌어요.')}</h1>
       <div id="map-root"><p class="empty">지도를 불러오는 중…</p></div>`;
   }
+  let mapGen = 0;
   async function bindMap() {
-    const root = document.getElementById('map-root');
+    const root = document.getElementById('map-root'), gen = ++mapGen;
     let L, found;
     try { [L, found] = await Promise.all([loadLeaflet(), loadPlaces()]); } catch (err) { if (root) root.innerHTML = '<p class="empty">지도를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</p>'; return; }
-    if (!root || !root.isConnected) return;
+    if (!root || !root.isConnected || gen !== mapGen) return;
+    if (lmap) { mapStop(); try { lmap.stop(); lmap.off(); lmap.remove(); } catch (err) { /* 이미 없어요 */ } lmap = null; }
     const ml = mapList(found);
     if (mapSt.i < 0 || mapSt.i >= ml.on.length) mapSt.i = ml.on.length - 1;
     root.innerHTML = `
-      <div class="chips map-modes"><button type="button" class="chip${mapSt.mode === 'w' ? ' on' : ''}" data-mode="w">🎫 내 직관 ${ml.mine}</button><button type="button" class="chip${mapSt.mode === 'all' ? ' on' : ''}" data-mode="all">포레스텔라 공연 전체</button></div>
+      <div class="chips map-modes"><button type="button" class="chip${mapSt.mode === 'w' ? ' on' : ''}" data-mode="w">👣 내 발자국 ${ml.mine}</button><button type="button" class="chip${mapSt.mode === 'all' ? ' on' : ''}" data-mode="all">포레스텔라 공연 전체</button></div>
+      ${mapPeriod(ml)}
       ${ml.on.length ? `
       <div class="map-car" id="map-car"></div>
-      <div class="map-box"><div id="map"></div><div class="map-pinbar" id="map-pinbar" hidden></div></div>
-      <div class="map-nav" id="map-nav"></div>
+      <div class="map-stage">
+        <div id="map"></div>
+        <div class="map-tools"><button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button></div>
+        <div class="map-pinbar" id="map-pinbar" hidden></div>
+        <div class="map-panel" id="map-nav"></div>
+        ${mapSt.intro ? mapIntro(ml) : ''}
+      </div>
+      <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
       ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개 (해외 · 장소 모름)</summary>${ml.off.map(x => `<a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>`).join('')}</details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
-      : `<p class="empty">${mapSt.mode === 'w' ? '아직 직관 기록이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 떠요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
-    root.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mapSt.mode = b.dataset.mode; mapSt.i = -1; mapSt.pin = null; bindMap(); });
+      : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
+    const reset = () => { mapSt.i = -1; mapSt.intro = true; mapStop(); bindMap(); };
+    root.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mapSt.mode = b.dataset.mode; mapSt.from = mapSt.to = ''; reset(); });
+    root.querySelectorAll('[data-year]').forEach(b => b.onclick = () => { const y = b.dataset.year; mapSt.from = y ? y + '-01' : ''; mapSt.to = y ? y + '-12' : ''; reset(); });
+    const pf = document.getElementById('map-from'), pt = document.getElementById('map-to'), rb = document.getElementById('map-range-btn');
+    if (rb) rb.onclick = () => { const r = document.getElementById('map-range'); r.hidden = !r.hidden; };
+    if (pf) pf.onchange = pt.onchange = () => { mapSt.from = pf.value; mapSt.to = pt.value; if (mapSt.from && mapSt.to && mapSt.from > mapSt.to) [mapSt.from, mapSt.to] = [mapSt.to, mapSt.from]; reset(); };
     if (!ml.on.length) return;
-    if (lmap) { try { lmap.remove(); } catch (err) { /* 이미 없어요 */ } }
-    const m = lmap = L.map('map', { zoomControl: true, attributionControl: false, minZoom: 5, maxZoom: 18 }).setView([36.3, 127.8], 7);
+    const m = lmap = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 5, maxZoom: 18 }).setView([36.3, 127.8], 7);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
     const layer = L.layerGroup().addTo(m);
     const pinIcon = L.divIcon({ className: '', html: '<span class="map-pin">📍</span>', iconSize: null });
     let curMark = null;
-    const bubble = (n, cls, label) => L.divIcon({ className: '', html: `<span class="map-b ${cls}">${label ? `<small>${esc(label)}</small>` : ''}<b>${n}</b></span>`, iconSize: null });
+    const bubble = (n, cls, label) => L.divIcon({ className: '', html: `<span class="map-b ${cls}"><b>${n}</b>${label ? `<small>${esc(label)}</small>` : ''}</span>`, iconSize: null });
     const draw = () => {
       layer.clearLayers();
       const z = m.getZoom(), groups = new Map();
@@ -1518,20 +1534,20 @@
       groups.forEach(g => {
         const reg = g.key.startsWith('r:'), name = g.key.slice(2), first = g.items[0].l;
         const at = reg ? REGION_C[name] || [first.lat, first.lng] : [first.lat, first.lng];
-        const mk = L.marker(at, { icon: bubble(g.items.length, reg ? (z < 9 ? 'big' : 'fuzzy') : 'pin', reg ? (z < 9 ? name : name + ' 일대') : '') }).addTo(layer);
+        const mk = L.marker(at, { icon: bubble(g.items.length, reg ? (z < 9 ? 'big' : 'fuzzy') : 'pin', reg ? (z < 9 ? name : name + ' 어딘가') : '') }).addTo(layer);
         mk.on('click', () => {
           if (reg && z < 9) { m.flyTo(at, 10, { duration: 0.8 }); return; }
-          showVenue(g.items, reg ? name + ' 일대 (정확한 장소 모름)' : first.place);
+          showVenue(g.items, reg ? name + ' 어딘가 (정확한 장소 모름)' : first.place);
         });
       });
       const cur = ml.on[mapSt.i];
       if (curMark) curMark.remove();
-      curMark = L.circleMarker([cur.l.lat, cur.l.lng], { radius: 16, color: '#1F7A4C', weight: 3, fillOpacity: 0.12, className: 'map-now' }).addTo(m);
+      curMark = L.marker([cur.l.lat, cur.l.lng], { icon: L.divIcon({ className: '', html: '<span class="map-now"></span>', iconSize: null }), interactive: false, zIndexOffset: -100 }).addTo(m);
     };
     m.on('zoomend', draw);
     const showVenue = (items, name) => {
       const box = document.getElementById('map-venue');
-      box.innerHTML = `<section class="block map-venue"><div class="map-venue-h"><b>${esc(name || '장소')}</b><span>${items.length}번</span></div>${items.slice().reverse().map(x => `<button type="button" class="box-ev map-go" data-id="${esc(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></button>`).join('')}</section>`;
+      box.innerHTML = `<section class="map-venue"><div class="map-venue-h"><b>${esc(name || '장소')}</b><span>${items.length}번</span></div>${items.slice().reverse().map(x => `<button type="button" class="box-ev map-go" data-id="${esc(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></button>`).join('')}</section>`;
       box.querySelectorAll('.map-go').forEach(b => b.onclick = () => { go(ml.on.findIndex(x => x.e.id === b.dataset.id)); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     };
     const car = e => {
@@ -1542,35 +1558,38 @@
       const vids = [...new Map([e.videoId && { id: e.videoId, t: '영상' }, e.ytMain && { id: e.ytMain.id, t: '공식 영상' }, ...(e.ytStage || []).map(v => ({ id: v.id, t: '무대' })), ...(e.ytBehind || []).map(v => ({ id: v.id, t: '비하인드' })), ...e.related.map(v => ({ id: v.videoId, t: v.source || '영상' }))].filter(v => v && v.id).map(v => [v.id, v])).values()].slice(0, 8);
       vids.forEach(v => it.push(`<a class="map-c" href="${ytWatch(v.id)}" target="_blank" rel="noopener"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.parentNode.remove()"><span>▶ ${esc(v.t)}</span></a>`));
       const songs = e.songSource !== '참고' && e.songs.length ? e.songs : e.setlist ? e.setlist.songs.map(x => x.t) : [];
-      if (songs.length) it.push(`<a class="map-c map-c-sl" href="#/e/${encodeURIComponent(e.id)}"><b>셋리 ${songs.length}곡</b><small>${esc(songs.slice(0, 4).join(' · '))}${songs.length > 4 ? ' …' : ''}</small></a>`);
+      if (songs.length) it.push(`<a class="map-c map-c-sl" href="#/e/${encodeURIComponent(e.id)}"><b>셋리 ${songs.length}곡</b><small>${esc(songs.slice(0, 3).join(' · '))}${songs.length > 3 ? ' …' : ''}</small></a>`);
       return it.length ? it.join('') : `<a class="map-c map-c-sl" href="#/e/${encodeURIComponent(e.id)}"><b>자세히 보기</b><small>아직 모인 자료가 없어요</small></a>`;
     };
-    const pinBox = (x) => {
+    const fixHtml = x => {
       const p = x.l.place, pin = p && (data.pins || {})[p], me = myUid();
       if (!p) return '';
       const pend = ((pin && pin.pend) || []).map(k => `<div class="map-pend"><span>📍 팬이 고친 위치 · 확인 ${k.n}/2</span><button type="button" class="link-btn map-see" data-c="${k.c}">보기</button>${k.by !== me && !slOked('gp:' + p + ':' + k.c) ? `<button type="button" class="chip map-ok" data-c="${k.c}">맞아요</button>` : ''}${isAdmin() ? `<button type="button" class="link-btn map-adm" data-id="${k.id}">바로 확정 (관리자)</button>` : ''}</div>`).join('');
       return `${pend}<button type="button" class="link-btn map-fix">📍 ${x.l.exact ? '위치가 달라요' : '정확한 위치 알려주기'}</button>`;
     };
+    const dots = () => {
+      const n = ml.on.length, i = mapSt.i;
+      if (n <= 14) return `<div class="map-dots">${ml.on.map((x, k) => `<button type="button" class="map-dot${k === i ? ' on' : k < i ? ' past' : ''}" data-k="${k}" aria-label="${k + 1}번째"></button>`).join('')}</div>`;
+      return `<div class="map-track"><span style="width:${Math.round((i + 1) / n * 100)}%"></span></div>`;
+    };
     const nav = () => {
       const x = ml.on[mapSt.i], prev = ml.on[mapSt.i - 1], next = ml.on[mapSt.i + 1];
-      document.getElementById('map-car').innerHTML = car(x.e);
-      document.getElementById('map-car').scrollLeft = 0;
+      const carEl = document.getElementById('map-car');
+      carEl.innerHTML = car(x.e); carEl.scrollLeft = 0;
       document.getElementById('map-nav').innerHTML = `
-        <div class="map-now-card">
-          <span class="map-step">${mapSt.i + 1} / ${ml.on.length}</span>
+        <button type="button" class="map-arrow" id="map-prev"${prev ? '' : ' disabled'} aria-label="이전 발자국">‹</button>
+        <div class="map-info">
+          <span class="map-meta">${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}</span>
           <a href="#/e/${encodeURIComponent(x.e.id)}" class="map-now-t">${esc(x.e.title)}</a>
-          <span class="map-now-s">${fmtDate(x.e.date)}${x.l.place ? ' · ' + esc(x.l.place) : ''}${x.l.exact ? '' : ` <em>(${esc(x.l.region)} 어딘가)</em>`}</span>
-          <div class="map-fixbox">${pinBox(x)}</div>
+          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}</span>
+          ${dots()}
         </div>
-        <div class="map-btns">
-          <button type="button" class="map-btn" id="map-prev"${prev ? '' : ' disabled'}>‹ 이전<small>${prev ? esc(prev.e.title) : '처음이에요'}</small></button>
-          <button type="button" class="map-btn map-btn-now" id="map-here">지금 여기</button>
-          <button type="button" class="map-btn" id="map-next"${next ? '' : ' disabled'}>다음 ›<small>${next ? esc(next.e.title) : '마지막이에요'}</small></button>
-        </div>`;
+        <button type="button" class="map-arrow" id="map-next"${next ? '' : ' disabled'} aria-label="다음 발자국">›</button>`;
       document.getElementById('map-prev').onclick = () => go(mapSt.i - 1);
       document.getElementById('map-next').onclick = () => go(mapSt.i + 1);
-      document.getElementById('map-here').onclick = () => go(mapSt.i);
-      const fb = document.querySelector('.map-fixbox');
+      document.querySelectorAll('.map-dot').forEach(d => d.onclick = () => go(+d.dataset.k));
+      const fb = document.getElementById('map-fix');
+      fb.innerHTML = fixHtml(x);
       fb.querySelector('.map-fix') && (fb.querySelector('.map-fix').onclick = () => startPin(x));
       fb.querySelectorAll('.map-see').forEach(b => b.onclick = () => { const [a, c] = b.dataset.c.split(',').map(Number); m.flyTo([a, c], 16); L.marker([a, c], { icon: pinIcon }).addTo(layer).bindTooltip('팬이 고친 위치').openTooltip(); });
       fb.querySelectorAll('.map-ok').forEach(b => b.onclick = async () => {
@@ -1581,12 +1600,28 @@
       fb.querySelectorAll('.map-adm').forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = '확정하는 중…'; try { await sendEvMark(b.dataset.id, '숨김'); } catch (err) { b.disabled = false; b.textContent = '다시 눌러 주세요'; } });
     };
     const go = i => {
+      if (!document.getElementById('map')) { mapStop(); return; }
       if (i < 0 || i >= ml.on.length) return;
       mapSt.i = i;
       const x = ml.on[i];
       m.flyTo([x.l.lat, x.l.lng], x.l.exact ? 14 : 9, { duration: 1.1 });
       nav(); draw();
     };
+    document.getElementById('map-here').onclick = () => { mapStop(); go(mapSt.i); };
+    const all = () => m.fitBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, animate: false });
+    // 여행 시작: 첫 발자국부터 3.5초마다 다음으로 (지도·버튼을 만지면 멈춰요)
+    const intro = document.getElementById('map-intro');
+    if (intro) {
+      all();
+      document.getElementById('map-start').onclick = () => {
+        mapSt.intro = false; intro.remove(); document.querySelector('.map-stage').scrollIntoView({ block: 'center', behavior: 'smooth' }); go(0);
+        mapPlay = setInterval(() => { if (mapSt.i >= ml.on.length - 1) mapStop(); else go(mapSt.i + 1); }, 3500);
+      };
+      document.getElementById('map-skip').onclick = () => { mapSt.intro = false; intro.remove(); go(mapSt.i); };
+    }
+    m.on('dragstart', mapStop);
+    document.getElementById('map-nav').addEventListener('click', ev => { if (ev.isTrusted && ev.target.closest('.map-arrow, .map-dot')) mapStop(); }, true);
+    document.getElementById('map-all').onclick = () => { mapStop(); m.flyToBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, duration: 0.9 }); };
     // 위치 고치기: 지도를 누르면 핀이 꽂히고, 보내기를 누르면 제보로 가요
     const startPin = x => {
       const bar = document.getElementById('map-pinbar');
@@ -1602,13 +1637,38 @@
         const c = at.lat.toFixed(5) + ',' + at.lng.toFixed(5);
         await formPost(`종류: 장소좌표\n장소: ${x.l.place}\n좌표: ${c}\n일정: [ID ${x.e.id}] ${x.e.title}\n누가: ${myUid()}`).catch(() => {});
         end();
-        const fb = document.querySelector('.map-fixbox');
+        const fb = document.getElementById('map-fix');
         if (fb) fb.innerHTML = '<p class="src-note">보냈어요! 다른 두 분이 맞다고 하면 지도에 반영돼요. (5~10분쯤 뒤부터 보여요)</p>';
       };
     };
     nav(); draw();
-    const x0 = ml.on[mapSt.i];
-    m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? 13 : 9);
+    if (!intro) { const x0 = ml.on[mapSt.i]; m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? 13 : 9); }
+  }
+  function mapStop() { if (mapPlay) { clearInterval(mapPlay); mapPlay = null; } }
+  const ym = v => v ? `${v.slice(2, 4)}년 ${+v.slice(5, 7)}월` : '';
+  function mapPeriod(ml) {
+    const y = mapSt.from && mapSt.to && mapSt.from.slice(5) === '01' && mapSt.to.slice(5) === '12' && mapSt.from.slice(0, 4) === mapSt.to.slice(0, 4) ? mapSt.from.slice(0, 4) : '';
+    const custom = (mapSt.from || mapSt.to) && !y;
+    return `<div class="map-period">
+      <div class="chips map-years"><button type="button" class="chip${!mapSt.from && !mapSt.to ? ' on' : ''}" data-year="">전체</button>${ml.years.map(v => `<button type="button" class="chip${y === v ? ' on' : ''}" data-year="${v}">${v}</button>`).join('')}<button type="button" class="chip${custom ? ' on' : ''}" id="map-range-btn">📅 ${custom ? `${ym(mapSt.from) || '처음'}~${ym(mapSt.to) || '지금'}` : '기간'}</button></div>
+      <div class="map-range-in" id="map-range"${custom ? '' : ' hidden'}><input type="month" id="map-from" value="${esc(mapSt.from)}" aria-label="시작 달"><span>~</span><input type="month" id="map-to" value="${esc(mapSt.to)}" aria-label="끝 달"></div></div>`;
+  }
+  function mapIntro(ml) {
+    if (!ml.on.length) return '';
+    const a = ml.on[0].e.date, b = ml.on[ml.on.length - 1].e.date;
+    const md = d => `${d.slice(2, 4)}년 ${+d.slice(5, 7)}월`;
+    const span = a.slice(0, 7) === b.slice(0, 7) ? md(a) : `${md(a)}부터 ${md(b)}까지`;
+    const venues = new Set(ml.on.map(x => x.l.exact ? x.l.lat.toFixed(3) + x.l.lng.toFixed(3) : x.l.region)).size;
+    const regions = new Set(ml.on.map(x => x.l.region || regionNear(x.l))).size;
+    const who = mapSt.mode === 'w' ? '나의' : '포레스텔라의';
+    return `<div class="map-intro" id="map-intro">
+      <div class="map-intro-card">
+        <span class="map-intro-k">👣 숲별 발자국</span>
+        <p class="map-intro-t">${who} ${span}<br>여행을 시작해요</p>
+        <span class="map-intro-s">발자국 ${ml.on.length}개 · 장소 ${venues}곳 · ${regions}개 지역</span>
+        <button type="button" class="map-intro-go" id="map-start">▶ 여행 시작</button>
+        <button type="button" class="link-btn" id="map-skip">그냥 둘러볼게요</button>
+      </div></div>`;
   }
 
   // ---------- 숲별 카드 · 입덕일 D+ (이 폰에만 저장) ----------
@@ -4127,6 +4187,7 @@
     });
   }
   function renderBase(name) {
+    if (name !== 'map' && lmap) { mapStop(); try { lmap.stop(); lmap.off(); lmap.remove(); } catch (err) { /* 이미 없어요 */ } lmap = null; }
     if (name !== 'opinion') opNewIds = null;
     setTabs(name);
     view.innerHTML = ddayBadge(name) + routes[name]() + (/^(opinion|admin|add|card)$/.test(name) ? '' : opBtn());
