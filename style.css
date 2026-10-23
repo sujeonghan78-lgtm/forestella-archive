@@ -1260,3 +1260,18 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .cf-badge b { font-size: 11.5px; }
 .cf-badge small { font-size: 9.5px; line-height: 1.25; }
 .map-off-x{display:block;margin:8px auto 0}
+.home-edit-btn{display:block;margin:26px auto 0;font-size:13px}
+.home-edit{margin-top:24px;padding:14px;border-radius:20px;border:1px solid #DDE8E1;background:var(--card,#fff)}
+.he-row{display:flex;align-items:center;gap:10px;min-height:46px;border-bottom:1px solid #EEF3F0}
+.he-row.off .he-l{color:#9AA8A0}
+.he-l{flex:1;font-size:14px}
+.he-mv{width:34px;height:34px;border:0;border-radius:10px;background:#EEF6F1;color:#1F7A4C;font-size:12px;cursor:pointer}
+.he-mv:disabled{opacity:.35;cursor:default}
+.he-sw{position:relative;flex:none;width:42px;height:24px}
+.he-sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.he-sw span{position:absolute;inset:0;border-radius:12px;background:#D5DED9;transition:background .2s;pointer-events:none}
+.he-sw span::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.he-sw input:checked+span{background:#1F7A4C}
+.he-sw input:checked+span::after{transform:translateX(18px)}
+.he-done{display:block;margin:14px auto 0}
+.home-pins{margin-top:18px}

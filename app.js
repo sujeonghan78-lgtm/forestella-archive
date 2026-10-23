@@ -3069,7 +3069,9 @@
   const menuIcon = d => `<span class="mi-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg></span>`;
   // 자주 쓰는 메뉴: 더보기 메뉴에서 ☆ 고른 것을 맨 위에 아이콘 칸으로 (이 폰에 저장)
   const PIN_KEY = 'sb-pins', pinsGet = () => { const v = boxRead(PIN_KEY); return Array.isArray(v) ? v : []; };
-  let moreEdit = false;
+  let moreEdit = false, moreAll = [];
+  const pinTiles = got => `<div class="pin-grid">${got.map(x => `<a class="pin-t" href="${x.href}"${x.ext ? ' target="_blank" rel="noopener"' : ''}>${menuIcon(x.icon)}<span>${x.label}</span></a>`).join('')}</div>`;
+  const pinsGot = () => { if (!moreAll.length) moreView(); return pinsGet().map(h => moreAll.find(x => x.href === h)).filter(Boolean); };
   function moreView() {
     const pins = pinsGet(), all = [];
     const item = (href, icon, label, side, ext) => {
@@ -3096,12 +3098,13 @@
         ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
         ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기', '')}
         ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해', '')}`;
+    moreAll = all;
     const got = pins.map(h => all.find(x => x.href === h)).filter(Boolean);
     return `
       <h1 class="h1 page-title">더보기</h1>
       ${got.length ? `<section class="pin-box">
         <div class="pin-h"><b>자주 쓰는 메뉴</b><button type="button" class="link-btn" id="more-edit">${moreEdit ? '완료' : '편집'}</button></div>
-        <div class="pin-grid">${got.map(x => `<a class="pin-t" href="${x.href}"${x.ext ? ' target="_blank" rel="noopener"' : ''}>${menuIcon(x.icon)}<span>${x.label}</span></a>`).join('')}</div>
+        ${pinTiles(got)}
       </section>` : `<button type="button" class="pin-ask" id="more-edit">${moreEdit ? '✓ 다 골랐어요' : '☆ 자주 쓰는 메뉴 맨 위에 고정하기'}</button>`}
       ${moreEdit ? '<p class="src-note pin-tip">고정할 메뉴의 ☆를 눌러 주세요. 다시 누르면 풀려요.</p>' : ''}
       <nav aria-label="더보기 메뉴" class="${moreEdit ? 'more-edit' : ''}">
@@ -3323,6 +3326,53 @@
     if (b) b.onclick = async () => { installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; renderBase('install'); };
   }
 
+  // 홈 화면 편집: 칸 켜기·끄기, 순서 바꾸기 (이 폰에 저장). '자주 쓰는 메뉴'는 처음엔 꺼져 있어요
+  const HOME_KEY = 'sb-home';
+  const HOME_SECS = [
+    ['pins', '자주 쓰는 메뉴', () => { const g = pinsGot(); return `<section class="block pin-box home-pins"><div class="pin-h"><b>자주 쓰는 메뉴</b><a class="link-btn" href="#/more">${g.length ? '바꾸기' : '고르기'}</a></div>${g.length ? pinTiles(g) : '<p class="src-note">더보기에서 ☆를 눌러 메뉴를 골라 주세요.</p>'}</section>`; }, true],
+    ['random', '오늘의 랜덤 무대', () => homeRandom()],
+    ['members', '멤버별 활동', () => homeMembers()],
+    ['videos', '유튜브 새 영상', () => homeVideos()],
+    ['shortcuts', '음반 · 콘서트', () => homeShortcuts()],
+    ['programs', '프로그램별 모아보기', () => homePrograms()],
+    ['ago', '지난 오늘', () => homeAgo()],
+    ['month', '이달의 기록', () => homeMonth()],
+  ];
+  const HOME_HR = new Set(['videos', 'ago']);
+  let homeEdit = false;
+  function homeCfg() {
+    const v = boxRead(HOME_KEY) || {}, keys = HOME_SECS.map(x => x[0]);
+    const order = (Array.isArray(v.order) ? v.order.filter(k => keys.includes(k)) : []);
+    keys.forEach(k => { if (!order.includes(k)) order.push(k); });
+    const on = k => Array.isArray(v.on) && v.on.includes(k) ? true : Array.isArray(v.off) && v.off.includes(k) ? false : !HOME_SECS.find(x => x[0] === k)[3];
+    return { order, on, raw: v };
+  }
+  function homeBody() {
+    const c = homeCfg(), out = ['<hr class="divider">'];
+    c.order.filter(c.on).forEach((k, i) => {
+      const html = HOME_SECS.find(x => x[0] === k)[2]();
+      if (!html) return;
+      if (i && HOME_HR.has(k) && out[out.length - 1] !== '<hr class="divider">') out.push('<hr class="divider">');
+      out.push(html);
+    });
+    out.push(homeEdit ? `<section class="block home-edit">
+        <div class="block-head"><h2 class="h2">홈 화면 편집</h2><button type="button" class="link-btn" id="home-reset">처음대로</button></div>
+        <p class="src-note">보고 싶은 칸만 켜고 ▲▼로 순서를 바꿔요. 이 폰에만 저장돼요.</p>
+        ${c.order.map((k, i) => `<div class="he-row${c.on(k) ? '' : ' off'}"><label class="he-sw"><input type="checkbox" data-he="${k}"${c.on(k) ? ' checked' : ''}><span></span></label><span class="he-l">${HOME_SECS.find(x => x[0] === k)[1]}</span><button type="button" class="he-mv" data-up="${k}"${i ? '' : ' disabled'} aria-label="위로">▲</button><button type="button" class="he-mv" data-dn="${k}"${i < c.order.length - 1 ? '' : ' disabled'} aria-label="아래로">▼</button></div>`).join('')}
+        <button type="button" class="chip on he-done" id="home-edit">다 했어요</button>
+      </section>` : '<button type="button" class="link-btn home-edit-btn" id="home-edit">✎ 홈 화면 편집</button>');
+    return out.join('\n');
+  }
+  function bindHomeEdit() {
+    const save = f => { const c = homeCfg(), v = { order: c.order.slice(), on: (c.raw.on || []).slice(), off: (c.raw.off || []).slice() }; f(v); boxWrite(HOME_KEY, v); const y = scrollY; renderBase('home'); scrollTo(0, y); };
+    const eb = document.getElementById('home-edit');
+    if (eb) eb.onclick = () => { homeEdit = !homeEdit; const y = scrollY; renderBase('home'); if (homeEdit) document.querySelector('.home-edit').scrollIntoView({ block: 'start' }); else scrollTo(0, y); };
+    const rs = document.getElementById('home-reset');
+    if (rs) rs.onclick = () => { boxWrite(HOME_KEY, null); const y = scrollY; renderBase('home'); scrollTo(0, y); };
+    document.querySelectorAll('[data-he]').forEach(b => b.onchange = () => save(v => { const k = b.dataset.he; v.on = v.on.filter(x => x !== k); v.off = v.off.filter(x => x !== k); (b.checked ? v.on : v.off).push(k); }));
+    document.querySelectorAll('[data-up],[data-dn]').forEach(b => b.onclick = () => save(v => { const k = b.dataset.up || b.dataset.dn, i = v.order.indexOf(k), j = i + (b.dataset.up ? -1 : 1); [v.order[i], v.order[j]] = [v.order[j], v.order[i]]; }));
+  }
+
   const routes = {
     home: () => `
       ${header()}
@@ -3330,16 +3380,7 @@
       <div id="news-home"></div>
       ${homeAsk()}
       ${homeSearchBox()}
-      <hr class="divider">
-      ${homeRandom()}
-      ${homeMembers()}
-      <hr class="divider">
-      ${homeVideos()}
-      ${homeShortcuts()}
-      ${homePrograms()}
-      <hr class="divider">
-      ${homeAgo()}
-      ${homeMonth()}`,
+      ${homeBody()}`,
     search: searchView,
     program: programView,
     local: localView,
@@ -4959,7 +5000,7 @@
     setTabs(name);
     view.innerHTML = ddayBadge(name) + routes[name]() + (/^(opinion|admin|add|card)$/.test(name) ? '' : opBtn());
     fillSyncNote(name);
-    if (name === 'home') bindHome();
+    if (name === 'home') { bindHome(); bindHomeEdit(); }
     if (name === 'search') bindSearch();
     if (name === 'songs') bindSongs();
     if (name === 'releases') bindReleases();
