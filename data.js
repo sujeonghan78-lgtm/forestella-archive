@@ -72,7 +72,9 @@
     'the forest song': '숲의 노래', 'your song': '당신이 듣던', 'close your eyes': '눈을 감아도', 'the journey of love': '사랑의 여정',
     // 같은 곡 표기 차이 (2026-10-22 곡 목록 점검)
     'the phantom of the opera': 'phantom of the opera', 'bohemian rapsody': 'bohemian rhapsody', '그날들 (the days)': '그날들',
-    '전설속의 누군가처럼': '전설 속의 누군가처럼', 'hand clap': 'handclap', '딴따라블루스': '딴따라 블루스', '새야새야 파랑새야': '새야 새야 파랑새야', '좋은걸 어떡해': '좋은 걸 어떡해' };
+    '전설속의 누군가처럼': '전설 속의 누군가처럼', 'hand clap': 'handclap', '딴따라블루스': '딴따라 블루스', '새야새야 파랑새야': '새야 새야 파랑새야', '좋은걸 어떡해': '좋은 걸 어떡해',
+    // 사랑의 찬가 표기 합치기 (2026-10-24 팬 의견)
+    "사랑의 찬가(hymne à l'amour)": '사랑의 찬가', "사랑의 찬가 (hymne à l'amour)": '사랑의 찬가', "hymne à l'amour": '사랑의 찬가', "hymne a l'amour": '사랑의 찬가', "l'hymne à l'amour": '사랑의 찬가', "사랑의 찬가(hymne a l'amour)": '사랑의 찬가', "사랑의 찬가 (hymne a l'amour)": '사랑의 찬가' };
   // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
   const PROD_CH = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티/;
   const LINK_SKIP = new Set([
