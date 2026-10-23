@@ -1890,7 +1890,9 @@
   // 카드 그리기: 미리보기와 저장 이미지가 같은 그림이에요 (340 너비 기준, 3배로 그려요)
   function drawCard(cv) {
     const C = CARD_COLORS[card.color] || CARD_COLORS.forest, F = CARD_FONTS[card.font] || CARD_FONTS.myeong;
-    const W = 340, P = 22, IN = W - P * 2, S = 3, PH = 190;
+    const fr = CARD_FRAMES[card.frame] ? card.frame : 'round';
+    // 사진 칸: 폴라로이드는 거의 정사각형, 포토카드는 카드 전체가 사진이고 글은 아래 판 위에
+    const W = 340, P = 22, IN = W - P * 2, S = 3, PH = fr === 'polaroid' ? 300 : fr === 'photo' ? 300 : 190;
     const hasPhoto = !!(cardPhoto && cardImg && cardImg.complete && cardImg.naturalWidth);
     const ctx = cv.getContext('2d');
     const ops = [];
@@ -1914,7 +1916,7 @@
     const label = (t, x, y, align) => ops.push(() => { ctx.font = font(500, 9); ctx.fillStyle = C.mute; spaced(t, x, y, 1.4, align); });
     const hline = y => ops.push(() => { ctx.fillStyle = C.line; ctx.fillRect(P, y, IN, 1); });
     ctx.textBaseline = 'top';
-    let y = hasPhoto ? PH + 14 : P;
+    let y = hasPhoto ? PH + (fr === 'polaroid' ? 24 : fr === 'photo' ? 22 : 14) : P;
     ops.push(() => { ctx.font = font(500, 9.5); ctx.fillStyle = C.mute; spaced('FORESTELLA', P, y0, 2.2); spaced('SOOPBYEOL CARD', W - P, y0, 2.2, 'right'); });
     const y0 = y; y += 14 + 12;
     // 닉네임
@@ -2045,7 +2047,7 @@
       qLines = ctx.measureText(q).width <= IN ? [q] : wrap(q, IN, 2);
     }
     const qH = lineT ? qSize * 1.45 * qLines.length + qSize * 0.25 + 6 : 0;
-    const H = Math.ceil(Math.max(y + 14 + qH + 26, hasPhoto ? 690 : 520));
+    const H = Math.ceil(Math.max(y + 14 + qH + 26 + (hasPhoto && fr === 'photo' ? 8 : 0), hasPhoto ? (fr === 'round' || fr === 'ticket' ? 690 : 800) : 520));
     if (lineT) {
       const yQ = H - 26 - qH;
       ops.push(() => { ctx.font = font(F.w, qSize, F.f); ctx.fillStyle = C.ink; ctx.textAlign = 'center'; qLines.forEach((l, i) => ctx.fillText(i === qLines.length - 1 ? fit(l, IN) : l, W / 2, yQ + i * qSize * 1.45)); ctx.textAlign = 'left'; });
@@ -2053,7 +2055,6 @@
     ops.push(() => { ctx.font = font(400, 8.5); ctx.fillStyle = C.mute; ctx.fillText('숲별 기록장', P, H - 26); ctx.textAlign = 'right'; ctx.fillText('sujeonghan78-lgtm.github.io/forestella-archive', W - P, H - 26); ctx.textAlign = 'left'; });
 
     // 실제로 그리기: 틀 모양에 따라 바깥 크기가 달라요 (폴라로이드는 흰 테두리, 티켓은 아래 떼는 부분)
-    const fr = CARD_FRAMES[card.frame] ? card.frame : 'round';
     const OX = fr === 'polaroid' ? 14 : 0, OY = OX, STUB = fr === 'ticket' ? 58 : 0;
     const OW = W + OX * 2, OH = H + OY + STUB + (fr === 'polaroid' ? 62 : 0), BH = H + STUB;
     cv.width = OW * S; cv.height = OH * S;
@@ -2084,15 +2085,24 @@
     ctx.clip();
     if (C.bg.length > 1) { const g = ctx.createLinearGradient(0, 0, W * 0.35, BH); g.addColorStop(0, C.bg[0]); g.addColorStop(1, C.bg[1]); ctx.fillStyle = g; } else ctx.fillStyle = C.bg[0];
     ctx.fillRect(0, 0, W, BH);
+    const photoH = fr === 'photo' ? H : PH;
     if (hasPhoto) {
-      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, PH); ctx.clip();
-      const iw = cardImg.naturalWidth, ih = cardImg.naturalHeight, sc = Math.max(W / iw, PH / ih);
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, photoH); ctx.clip();
+      const iw = cardImg.naturalWidth, ih = cardImg.naturalHeight, sc = Math.max(W / iw, photoH / ih);
       const dw = iw * sc, dh = ih * sc;
-      ctx.drawImage(cardImg, -(dw - W) * (cardPhoto.x ?? .5), -(dh - PH) * (cardPhoto.y ?? .5), dw, dh);
+      ctx.drawImage(cardImg, -(dw - W) * (cardPhoto.x ?? .5), -(dh - photoH) * (cardPhoto.y ?? .5), dw, dh);
       ctx.restore();
+      // 폴라로이드: 사진 아래 흰 띠 / 포토카드: 글 뒤에 반투명 판
+      if (fr === 'polaroid') { ctx.fillStyle = '#FBFAF5'; ctx.fillRect(0, PH, W, 10); }
+      if (fr === 'photo') {
+        ctx.save(); ctx.globalAlpha = .9; ctx.fillStyle = C.bg[C.bg.length - 1];
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(12, PH, W - 24, H - PH - 12, 14) : ctx.rect(12, PH, W - 24, H - PH - 12); ctx.fill(); ctx.restore();
+      }
     }
+    if (!(hasPhoto && fr === 'polaroid')) {
     const tg = ctx.createLinearGradient(0, 0, W, 0); tg.addColorStop(0, '#C6EC6B'); tg.addColorStop(.5, '#62D3A1'); tg.addColorStop(1, '#72BCF3');
     ctx.fillStyle = tg; ctx.fillRect(0, 0, W, 4);
+    }
     ops.forEach(f => f());
     if (yCut) {
       ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
@@ -2149,7 +2159,7 @@
         ctx.strokeRect(-w / 2 - 9, -h / 2 - 9, w + 18, h + 18); ctx.restore();
       }
     });
-    return { PH: hasPhoto ? PH : 0, OX, OY, OW, OH };
+    return { PH: hasPhoto ? photoH : 0, OX, OY, OW, OH };
   }
 
   function cardView() {
