@@ -3919,6 +3919,47 @@
       })
       .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; });
   });
+  // ---------- 장소 고치기 ----------
+  // 장소가 비어 있으면 보낸 장소가 바로 들어가고(확인 n/2), 있던 장소를 바꾸는 건 다른 두 분이 맞다고 하면 바뀌어요
+  function plState(e) {
+    const was = e.placeWas != null ? okMini('장소 고침', e.placeWas ? `확인을 받아 장소를 고쳤어요. (원래 ${esc(e.placeWas)})` : '팬분이 알려 주시고 확인을 받은 장소예요.') : '';
+    return was + (e.placeProps || []).map(p => {
+      const mine = p.by === myUid(), done = slOked(`pl:${e.id}:${p.to}`);
+      const btn = !mine && !done ? `<button type="button" class="bpill pl-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>` : '';
+      const adm = isAdmin() ? `<button type="button" class="link-btn pl-adm" data-mid="${esc(p.id)}">바로 확정 (관리자)</button>` : '';
+      const msg = mine ? '내가 보낸 장소예요. 다른 두 분이 맞다고 하면 확정돼요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "이 장소가 맞으면 '맞아요'를 눌러 주세요.";
+      return `<div class="sl-state pl-state"><span class="src-badge">장소 확인 · ${p.n}/2</span><span class="sl-state-msg"><b class="dt-chg">📍 ${p.now ? esc(p.to) : `${esc(e.place)} → ${esc(p.to)}`}</b> ${msg}</span>${btn}${adm}</div>`;
+    }).join('');
+  }
+  const plForm = e => e.ytOnly ? '' : `<details class="fix-box"><summary>📍 ${e.place ? '장소가 달라요' : '장소 알려주기'}</summary><div class="op-form">
+      ${e.place ? `<label class="add-f"><span>지금 장소</span><input type="text" value="${esc(e.place)}" disabled></label>` : ''}
+      <label class="add-f"><span>${e.place ? '맞는 장소' : '장소'}</span><input type="text" class="pl-in" maxlength="80" placeholder="예: 올림픽공원 올림픽홀"></label>
+      <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}">보내기</button>
+      <p class="src-note pl-msg">${e.place ? '다른 두 분이 맞다고 하면 장소가 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'} 공연장 이름을 정확히 적어 주세요.</p></div></details>`;
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.pl-send, .pl-ok');
+    if (!b) return;
+    const e = data.events.find(x => x.id === b.dataset.id);
+    if (!e) return;
+    const send = b.classList.contains('pl-send'), box = b.closest('.op-form');
+    const to = (send ? box.querySelector('.pl-in').value : b.dataset.to).replace(/\s+/g, ' ').trim();
+    if (!to) { if (send) box.querySelector('.pl-msg').textContent = '장소 이름을 적어 주세요.'; return; }
+    if (send && to === e.place) { box.querySelector('.pl-msg').textContent = '지금 장소와 같아요.'; return; }
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: ${send ? '장소수정' : '장소확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${to}\n누가: ${myUid()}`)
+      .then(() => {
+        slOkAdd(`pl:${e.id}:${to}`);
+        if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.pl-msg').textContent = `보냈어요: 📍 ${to}. 5~10분쯤 뒤 일정에 떠요.`; }
+        else b.closest('.pl-state').outerHTML = plState({ ...e, placeWas: undefined, placeProps: (e.placeProps || []).filter(p => p.to === to) });
+      })
+      .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; });
+  });
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.pl-adm');
+    if (!b || !isAdmin()) return;
+    b.disabled = true; b.textContent = '확정하는 중…';
+    try { await sendEvMark(b.dataset.mid, '숨김'); b.textContent = '확정했어요 ✓'; } catch (err) { b.disabled = false; b.textContent = '다시 누르기'; }
+  });
   // 관리자 확정·거절: 사이트용 서명 + 시트용 확인을 같이 보내요
   const DT_MARK = 'sb-dt-mark';
   const dtMsg = m => new TextEncoder().encode(`dt:${m.id}:${m.state}:${m.n}:${m.to}`);
@@ -4891,6 +4932,7 @@
         <h1 class="d-title">${esc(e.title)}</h1>
         ${evState(e)}
         ${dtState(e)}
+        ${plState(e)}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
         <div class="box-row">${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
@@ -4903,6 +4945,7 @@
         ${findRow(findQuery(e.title))}
         ${castBlock(e)}
         ${dtForm(e)}
+        ${plForm(e)}
         ${fixBox(e)}
         ${hideBtn(e)}
         ${delBox(e)}

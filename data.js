@@ -160,7 +160,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '캐스팅' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
   }
 
   async function fetchText(url) {
@@ -386,6 +386,28 @@
           if (e.endDate) e.endDate = new Date(new Date(e.endDate).getTime() + (new Date(done) - new Date(cur))).toISOString().slice(0, 10);
           e.date = done; e.dateWas = cur;
         } else if (ps.length) e.dateProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n }));
+      });
+    }
+    // 장소 고치기(종류: 장소수정 일정/전/후 → '맞아요'는 종류: 장소확인): 장소가 비어 있던 일정은 바로 채우고 확인을 기다려요.
+    // 있던 장소를 바꾸는 건 올린 사람 말고 두 명이 맞다고 하거나 관리자가 확정(서명된 숨김 줄, 번호 'pl'+일정·장소)하면 바뀌어요
+    if (raw.reports) {
+      const px = {}, okMark = window.SB_EV_HIDE || new Set();
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if ((r.type !== '장소수정' && r.type !== '장소확인') || !r.by) return;
+        const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = line0(r, '후').slice(0, 80);
+        if (!id || !to) return;
+        const o = px[id] = px[id] || {}, p = o[to] = o[to] || { to, from: '', by: '', who: new Set(), at: 0 };
+        if (r.type === '장소수정' && !p.by) { p.by = r.by; p.from = line0(r, '전'); p.at = tsMs(r.time); } else p.who.add(r.by);
+      });
+      events.forEach(e => {
+        const ps = Object.values(px[e.id] || {}).filter(p => p.by && p.to !== e.place);
+        if (!ps.length) return;
+        ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); p.id = 'pl' + slVer([e.id, p.to]); p.done = p.who.size >= 2 || okMark.has(p.id); });
+        const done = ps.filter(p => p.done).sort((a, b) => b.at - a.at)[0];
+        if (done) { e.placeWas = e.place || ''; e.place = done.to; return; }
+        // 비어 있던 장소: 가장 먼저 온 걸 바로 채우고 확인을 기다려요
+        if (!e.place) { const f = ps.sort((a, b) => a.at - b.at)[0]; e.place = f.to; e.placeNew = f; }
+        e.placeProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id, now: p === e.placeNew }));
       });
     }
     // 관리자가 숨긴 일정: 사이트가 서명을 확인한 번호만 window.SB_EV_HIDE에 들어와요
