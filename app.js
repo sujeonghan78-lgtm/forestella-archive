@@ -1207,7 +1207,9 @@
     const ym = qs.get('ym') || '';
     const years = [];
     const lastYear = tlLastYear();
-    for (let y = FIRST_YEAR; y <= lastYear; y++) years.push(String(y));
+    // 일정이 있는 가장 이른 해부터 (데뷔 전 멤버 뮤지컬 등)
+    const firstYear = Math.min(FIRST_YEAR, ...data.events.map(e => +e.date.slice(0, 4)).filter(y => y > 2000));
+    for (let y = firstYear; y <= lastYear; y++) years.push(String(y));
     const has = new Set(data.events.map(e => e.date.slice(0, 4)));
     const year = qs.get('y') || (ym ? ym.slice(0, 4) : String(lastYear));
     const yearEvents = data.events.filter(e => e.date.startsWith(year) && memOk(m)(e));
