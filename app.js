@@ -1693,11 +1693,14 @@
       <a class="back" href="#/admin">‹ 관리자 기기</a>
       <h1 class="h1 page-title">장소 한꺼번에 찾기</h1>
       <p class="sub">지도에서 정확한 위치를 못 찾은 장소예요. 이 폰이 차례로 검색해서 후보를 보여줘요. 맞는 후보를 누르면 바로 확정돼요. 없으면 검색어를 고쳐서 다시 찾아 주세요.</p>
+      ${(() => { const ok = Object.entries(data.pins || {}).filter(([, v]) => v.ok); return ok.length ? `<p class="src-note">확정한 위치 ${ok.length}곳 <button type="button" class="chip" id="pf-copy" data-t="${esc(ok.map(([k, v]) => k + ' | ' + v.ok.lat + ',' + v.ok.lng).join('\n'))}">복사하기</button></p>` : ''; })()}
       <div id="pf-list"><p class="src-note">장소 목록을 불러오는 중…</p></div>`;
   }
   async function bindPlaceFind() {
     const box = document.getElementById('pf-list');
     if (!box) return;
+    const cp = document.getElementById('pf-copy');
+    if (cp) cp.onclick = () => { const t = cp.dataset.t, done = () => { cp.textContent = '복사했어요 ✓'; }; navigator.clipboard.writeText(t).then(done, () => { prompt('복사해 주세요', t); }); };
     if (!pfAll) pfAll = await fetch('data/places.json', { cache: 'no-cache' }).then(r => r.json()).catch(() => ({}));
     const pins = data.pins || {}, cnt = new Map();
     data.events.forEach(e => { const p = placeOf(e); if (p) cnt.set(p, (cnt.get(p) || 0) + 1); });
