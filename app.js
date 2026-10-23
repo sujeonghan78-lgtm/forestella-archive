@@ -1418,7 +1418,7 @@
       <section class="block box-stat">
         <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 시청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
-        ${went.length && isAdmin() ? '<a class="map-entry" href="#/map">👣 숲별 발자국 · 지도로 되돌아보기 <span>›</span></a>' : ''}
+        ${isAdmin() ? '<a class="map-entry" href="#/map">👣 숲별 발자국 · 지도로 되돌아보기 <span>›</span></a>' : ''}
       </section>` : ''}
       ${empty ? '' : `
       <form class="searchbox song-search box-search" role="search" onsubmit="return false">
@@ -2470,6 +2470,7 @@
         ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
         ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견', '남기기 · 모아보기')}
         ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (st => (st.liked.length + st.songs.length + st.went.length) ? `♥ ${st.liked.length + st.songs.length} · 🎫 ${st.went.length}` : '좋아요 · 직관')(boxStats()))}
+        ${isAdmin() ? item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국', '지도로 되돌아보기 · 관리자만 보여요') : ''}
         ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사', '축제 · 기획 공연 · 지역별')}
