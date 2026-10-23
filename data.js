@@ -325,6 +325,19 @@
         });
       });
     }
+    // 분류 정리: 비어 있거나 표기가 다른 분류를 맞춰서, 어느 화면에서도 빠지지 않게 해요
+    // (공연·행사 화면은 공연·뮤지컬·기타, 프로그램 화면은 TV·라디오를 봐요)
+    events.forEach(e => {
+      const c = String(e.category || '').trim(), t = e.title || '';
+      if (/^youtube$/i.test(c)) e.category = '유튜브';
+      else if (c === '기타' && /녹화|방청/.test(t)) e.category = 'TV';
+      else if (!c) e.category = /생일/.test(t) ? '생일'
+        : /라디오|FM|러브FM|파워FM|컬투|두시탈출/.test(t) ? '라디오'
+        : /녹화|방청|KBS|MBC|SBS|JTBC|tvN|MBN|TV조선|채널A|EBS|Mnet|ENA/i.test(t) ? 'TV'
+        : /유튜브|youtube|라이브|V LIVE|브이라이브|네이버\s*TV/i.test(t) ? '유튜브'
+        : /뮤지컬/.test(t) ? '뮤지컬'
+        : /콘서트|공연|페스티벌|축제|음악회|팬미팅|팬사인회|쇼케이스/.test(t) ? '공연' : '기타';
+    });
     // 날짜 고치기(종류: 날짜수정 전/후 → 다른 사람 '맞아요'는 종류: 날짜확인 후): 올린 사람 말고 두 명이 맞다고 하거나
     // (같은 날짜로 고치자고 한 사람도 셈) 관리자가 확정하면 날짜가 바뀌어요. 확정 전에는 원래 날짜 그대로 두고 상세에 같이 보여줘요
     if (raw.reports) {
