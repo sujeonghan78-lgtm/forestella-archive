@@ -279,6 +279,14 @@
         const mg = Object.entries((extra.eventMerge || {})[r.date] || {}).find(([w]) => t0.includes(sp0(w)));
         // 등록할 때 '이 일정에 붙이기'를 골랐으면(합치기: ID) 그 일정에, '새로 등록'을 골랐으면 이름이 비슷해도 새로 만들어요
         const pickTo = line0(r, '합치기'), fresh = line0(r, '새로') === '예';
+        // 뮤지컬 공연 기간 안의 하루를 따로 올린 거면(제목에 작품 이름이 있음) 새 일정 대신 그 뮤지컬의 캐스팅 회차로 붙여요
+        const run = !pickTo && !fresh && events.find(x => x.category === '뮤지컬' && x.endDate && x.date <= r.date && r.date <= x.endDate && (w => w.length >= 2 && t0.includes(w))(sp0(x.title.replace(/^.*?(뮤지컬|연극)\s*/, ''))));
+        if (run) {
+          const t = (line0(r, '시간').match(/^\d{1,2}:\d{2}/) || [''])[0].padStart(5, '0').replace(/^0{5}$/, '');
+          (run.fanCasts = run.fanCasts || []).push({ d: r.date, t, by: r.by, at: tsMs(r.time) });
+          fanLog.push({ k: 'cast', id: run.id, at: tsMs(r.time), by: r.by, to: r.date });
+          return;
+        }
         const same = (pickTo && events.find(x => x.id === pickTo)) || (mg && events.find(x => x.id === mg[1])) || (!fresh && events.find(x => x.date === r.date && (sp0(x.title) === t0 || (t0.length >= 4 && (sp0(x.title).includes(t0) || t0.includes(sp0(x.title)))))));
         if (!same) {
           const mem = String(line0(r, '누구')).split(/[,/·\s]+/).map(x => SHORT[x] || (MEMBERS.includes(x) ? x : '')).filter(Boolean);
@@ -404,6 +412,7 @@
       });
       // 보충 파일 casts {일정ID: [{d, t}]}: 따로 등록됐다 지운 공연 날짜 등을 회차로 넣어요
       Object.entries(extra.casts || {}).forEach(([id, list]) => { const e = byEv.get(id); if (e) list.forEach(c => { const cid = 'c' + slVer([e.id, c.d, c.t || '']); if (!gone.has(cid) && !(e.casts || []).some(x => x.id === cid)) (e.casts = e.casts || []).push({ d: c.d, t: c.t || '', id: cid, by: '' }); }); });
+      events.forEach(e => (e.fanCasts || []).forEach(c => { const cid = 'c' + slVer([e.id, c.d, c.t]); if (!gone.has(cid) && !(e.casts || []).some(x => x.id === cid)) (e.casts = e.casts || []).push({ ...c, id: cid }); }));
       events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));
     }
     // 숨기거나 지운 일정에 대한 제보는 빼고, 최근 것부터
