@@ -1452,8 +1452,9 @@
   // 따라걷기 속도 (이 폰에 기억). 제일 빠르면 거의 바로바로 넘어가요
   const MAP_SPEEDS = [['느리게', 5000], ['보통', 3000], ['빠르게', 1200], ['쉬시식', 350]];
   const MAP_SP = 'sb-map-sp', mapSp = () => { const v = boxRead(MAP_SP); return Number.isInteger(v) && v >= 0 && v < MAP_SPEEDS.length ? v : 1; };
+  const MAP_H = 'sb-map-h';
   const MAP_Z = 'sb-map-z', mapZ = () => { const z = boxRead(MAP_Z); return z >= 10 && z <= 17 ? z : 11; };
-  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', tour: false, play: false, mem: '', kind: '' }, lmap = null, mapPlay = null;
+  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', tour: false, play: false, mem: '', kind: '', uz: 0 }, lmap = null, mapPlay = null;
   function loadLeaflet() {
     if (window.L) return Promise.resolve(window.L);
     return leafletP = leafletP || new Promise((ok, no) => {
@@ -1524,10 +1525,11 @@
       ${ml.on.length ? `
       <div class="map-car" id="map-car"${mapSt.tour ? '' : ' hidden'}></div>
       <div class="map-stage${mapSt.tour ? '' : ' map-ov'}">
-        <div id="map"></div>
+        <div id="map"${(() => { const h = boxRead(mapSt.tour ? MAP_H : MAP_H + '-ov'); return h >= 160 && h <= 900 ? ` style="height:${h}px"` : ''; })()}></div>
         <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 따라걷기<small>가만히 두면 저절로 넘어가요</small></button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
-        <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
+        <div class="map-grip" id="map-grip" role="separator" aria-label="지도 높이 조절"><span></span></div>
       </div>
+      <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
       ${mapSt.tour ? `<div class="map-playbar"><button type="button" class="chip on" id="map-play">▶ 재생</button><span class="map-sp-l">속도</span>${MAP_SPEEDS.map(([l], k) => `<button type="button" class="chip${k === mapSp() ? ' on' : ''}" data-sp="${k}">${l}</button>`).join('')}</div>` : ''}
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
@@ -1535,7 +1537,7 @@
       ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개 (해외 · 장소 모름)</summary>${ml.off.map(x => `<a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>`).join('')}</details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
       : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
-    const reset = () => { mapSt.i = -1; mapSt.tour = false; mapStop(); bindMap(); };
+    const reset = () => { mapSt.i = -1; mapSt.tour = false; mapSt.uz = 0; mapStop(); bindMap(); };
     root.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mapSt.mode = b.dataset.mode; mapSt.from = mapSt.to = ''; reset(); });
     root.querySelectorAll('[data-mem]').forEach(b => b.onclick = () => { mapSt.mem = b.dataset.mem; reset(); });
     root.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { mapSt.kind = b.dataset.kind; reset(); });
@@ -1580,6 +1582,19 @@
       curMark = L.marker([cur.l.lat, cur.l.lng], { icon: L.divIcon({ className: '', html: '<span class="map-now"></span>', iconSize: null }), interactive: false, zIndexOffset: -100 }).addTo(m);
     };
     m.on('zoomend', draw);
+    // 지도 아래 손잡이를 끌어서 높이 바꾸기 (이 폰에 기억, 전체 지도·따라걷기 따로)
+    const grip = document.getElementById('map-grip'), mapEl = document.getElementById('map');
+    grip.onpointerdown = ev => {
+      ev.preventDefault(); grip.setPointerCapture(ev.pointerId);
+      const y0 = ev.clientY, h0 = mapEl.offsetHeight, max = Math.round(innerHeight * 0.85);
+      let raf = 0;
+      grip.onpointermove = e2 => { mapEl.style.height = Math.min(max, Math.max(160, h0 + e2.clientY - y0)) + 'px'; if (!raf) raf = requestAnimationFrame(() => { raf = 0; m.invalidateSize(); }); };
+      grip.onpointerup = grip.onpointercancel = () => { grip.onpointermove = grip.onpointerup = grip.onpointercancel = null; m.invalidateSize(); boxWrite(mapSt.tour ? MAP_H : MAP_H + '-ov', mapEl.offsetHeight); };
+    };
+    // 사용자가 직접(손가락·＋/－) 바꾼 배율은 다음 장소에서도 그대로 써요. 프로그램이 움직일 땐 auto
+    let auto = false;
+    const moveAuto = f => { auto = true; m.once('moveend', () => setTimeout(() => { auto = false; }, 50)); f(); };
+    m.on('zoomend', () => { if (!auto && mapSt.tour) mapSt.uz = m.getZoom(); });
     const showVenue = (items, name) => {
       const box = document.getElementById('map-venue');
       box.innerHTML = `<section class="map-venue"><div class="map-venue-h"><b>${esc(name || '장소')}</b><span>${items.length}번</span></div>${items.slice().reverse().map(x => `<button type="button" class="box-ev map-go" data-id="${esc(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></button>`).join('')}</section>`;
@@ -1650,15 +1665,15 @@
       mapSt.i = i;
       const x = ml.on[i];
       // 빠를수록 멀리서 봐요: 빠르게는 도시, 쉬시식은 한반도 반쯤
-      const ms = MAP_SPEEDS[mapSp()][1], far = mapPlay ? (ms < 1000 ? 7 : ms < 2000 ? 8.5 : 0) : 0, z = far || (x.l.exact ? mapZ() : 9);
+      const ms = MAP_SPEEDS[mapSp()][1], far = mapPlay ? (ms < 1000 ? 7 : ms < 2000 ? 8.5 : 0) : 0, z = mapSt.uz || far || (x.l.exact ? mapZ() : 9);
       // 아래 안내판에 안 가리게 살짝 위쪽에 오도록
-      const at = m.unproject(m.project([x.l.lat, x.l.lng], z).add([0, 45]), z);
-      if (mapPlay && ms < 1000) m.setView(at, z, { animate: true, pan: { duration: 0.3 } }); else m.flyTo(at, z, { duration: mapPlay && ms < 2000 ? 0.6 : 1.1 });
+      const at = m.unproject(m.project([x.l.lat, x.l.lng], z).add([0, 0]), z);
+      moveAuto(() => mapPlay && ms < 1000 ? m.setView(at, z, { animate: true, pan: { duration: 0.3 } }) : m.flyTo(at, z, { duration: mapPlay && ms < 2000 ? 0.6 : 1.1 }));
       nav(); draw();
     };
     if (mapSt.tour) document.getElementById('map-here').onclick = () => { mapStop(); go(mapSt.i); };
     // 확대 정도: ＋/－로 바꾸면 다음 장소로 갈 때도 그 배율로 가요 (이 폰에 기억)
-    const zoomBy = d => { mapStop(); const z = Math.min(17, Math.max(5, m.getZoom() + d)); m.setZoom(z); if (z >= 10) boxWrite(MAP_Z, z); };
+    const zoomBy = d => { const z = Math.min(17, Math.max(5, (mapSt.tour && mapSt.uz || m.getZoom()) + d)); if (mapSt.tour) mapSt.uz = z; m.setZoom(z); if (z >= 10) boxWrite(MAP_Z, z); };
     document.getElementById('map-zin').onclick = () => zoomBy(1);
     document.getElementById('map-zout').onclick = () => zoomBy(-1);
     const all = () => m.fitBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, animate: false });
@@ -1682,7 +1697,7 @@
     if (ov) ov.onclick = () => { mapSt.tour = false; mapStop(); document.getElementById('map-venue').innerHTML = ''; bindMap(); };
     m.on('dragstart', mapStop);
     document.getElementById('map-nav').addEventListener('click', ev => { if (ev.isTrusted && ev.target.closest('.map-arrow, .map-dot')) mapStop(); }, true);
-    if (mapSt.tour) document.getElementById('map-all').onclick = () => { mapStop(); m.flyToBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, duration: 0.9 }); };
+    if (mapSt.tour) document.getElementById('map-all').onclick = () => { mapStop(); moveAuto(() => m.flyToBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, duration: 0.9 })); };
     // 위치 고치기: 지도를 누르면 핀이 꽂히고, 보내기를 누르면 제보로 가요
     const startPin = x => {
       const bar = document.getElementById('map-pinbar');
@@ -1722,11 +1737,11 @@
       };
     };
     nav(); draw();
-    if (!mapSt.tour) { m.fitBounds(KOREA_B, { paddingTopLeft: [8, 50], paddingBottomRight: [8, 96], animate: false }); return; }
+    if (!mapSt.tour) { m.fitBounds(KOREA_B, { paddingTopLeft: [8, 50], paddingBottomRight: [8, 8], animate: false }); return; }
     if (mapSt.play) {
-      mapSt.play = false; all(); document.querySelector('.map-stage').scrollIntoView({ block: 'center', behavior: 'smooth' }); go(0);
+      mapSt.play = false; moveAuto(all); document.querySelector('.map-stage').scrollIntoView({ block: 'center', behavior: 'smooth' }); go(0);
       play();
-    } else { const x0 = ml.on[mapSt.i]; m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? mapZ() : 9); }
+    } else { const x0 = ml.on[mapSt.i]; moveAuto(() => m.setView([x0.l.lat, x0.l.lng], mapSt.uz || (x0.l.exact ? mapZ() : 9))); }
   }
   // ---------- 지도 장소 한꺼번에 찾기 (관리자): 이 폰 브라우저로 OpenStreetMap을 검색해서, 맞는 후보를 누르면 바로 확정해요 ----------
   let pfAll = null;
