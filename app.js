@@ -146,7 +146,9 @@
   let box = boxClean(boxRead(BOX_KEY));
   let boxUser = boxRead(BOX_USER);  // { name, pin, at }
   const boxApi = () => (window.CONFIG || {}).boxApi || '';
-  const boxHas = (k, id) => box[k].includes(id);
+  // 관리자가 중복이라 원본에 합친 일정은 원본에 누른 걸로 쳐요 (window.SB_EV_MERGE {중복ID: 원본ID})
+  const boxMg = () => window.SB_EV_MERGE || {};
+  const boxHas = (k, id) => box[k].includes(id) || box[k].some(x => boxMg()[x] === id);
   const BOX_LABEL = { e: ['♡ 좋아요', '♥ 좋아요'], s: ['♡', '♥'], w: ['🎫 직관했어요', '🎫 직관 ✓'], v: ['📺 시청했어요', '📺 시청 ✓'] };
   const boxBtn = (k, id, cls = 'act') => `<button type="button" class="${cls} box-btn" data-box="${k}" data-id="${esc(id)}" aria-pressed="${boxHas(k, id)}"${k === 's' ? ' aria-label="이 곡 좋아요"' : ''}>${BOX_LABEL[k][boxHas(k, id) ? 1 : 0]}</button>`;
   async function boxCall(action, extra = {}) {
@@ -164,7 +166,7 @@
   let boxDirty = false;
   function boxToggle(k, id) {
     boxDirty = true;
-    box[k] = boxHas(k, id) ? box[k].filter(x => x !== id) : [id, ...box[k]];
+    box[k] = boxHas(k, id) ? box[k].filter(x => x !== id && boxMg()[x] !== id) : [id, ...box[k]];
     box.t = Date.now();
     boxWrite(BOX_KEY, box);
     boxPush();
@@ -410,7 +412,7 @@
     if (isAdmin()) loadOpinions().then(() => {
       const box = document.getElementById('op-home'), n = opUnread().length;
       const d = delPending().length;
-      if (box && (n || d)) box.innerHTML = (n ? `<a class="op-home" href="#/opinion">💬 새 의견 <b>${n}</b>건 <span>바로가기 ›</span></a>` : '') + (d ? `<a class="op-home" href="#/admin">🗑 삭제 요청 <b>${d}</b>건 <span>바로가기 ›</span></a>` : '');
+      if (box && (n || d)) box.innerHTML = (n ? `<a class="op-home" href="#/opinion">💬 새 의견 <b>${n}</b>건 <span>바로가기 ›</span></a>` : '') + (d ? `<a class="op-home" href="#/admin">📮 삭제 요청 <b>${d}</b>건 <span>바로가기 ›</span></a>` : '');
     });
     const f = document.getElementById('home-search');
     if (f) f.onsubmit = ev => {
@@ -1212,7 +1214,8 @@
   // ---------- 보관함 화면 ----------
   // 보관함 숫자 (보관함 화면과 숲별 카드가 같이 써요)
   function boxStats() {
-    const evs = ids => ids.map(id => data.byId.get(id)).filter(Boolean);
+    // 숨긴 일정은 data.byId에 없어서 빠지고, 원본에 합친 중복은 원본 하나로 세요
+    const evs = ids => [...new Map(ids.map(id => data.byId.get(id) || data.byId.get(boxMg()[id])).filter(Boolean).map(e => [e.id, e])).values()];
     const wentAll = evs(box.w).sort((a, b) => b.date.localeCompare(a.date));
     const isBc = e => /TV|라디오/.test(e.category);
     const went = wentAll, seen = evs(box.v).sort((a, b) => b.date.localeCompare(a.date));  // 직관(방송 현장 포함) / 방송으로 시청
@@ -2027,7 +2030,7 @@
       <nav aria-label="더보기 메뉴">
         ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
         ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견', '남기기 · 모아보기')}
-        ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (box.e.length + box.s.length + box.w.length) ? `♥ ${box.e.length + box.s.length} · 🎫 ${box.w.length}` : '좋아요 · 직관')}
+        ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (st => (st.liked.length + st.songs.length + st.went.length) ? `♥ ${st.liked.length + st.songs.length} · 🎫 ${st.went.length}` : '좋아요 · 직관')(boxStats()))}
         ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사', '축제 · 기획 공연 · 지역별')}
@@ -2189,6 +2192,7 @@
       <section class="sec">
         <h2 class="h3">빠지거나 틀린 게 있다면</h2>
         <p>제보 폼으로 알려주세요. 제보는 "팬 제보 · 미확인" 표시와 함께 바로 보이고, 확인한 뒤 기록에 반영해요.</p>
+        ${HOW_TIP}
         <div class="two-btn">
           <a class="btn btn-link" href="${formUrl({ type: '새 기록' })}" target="_blank" rel="noopener">기록 제보하기</a>
           <a class="btn btn-link btn-line" href="${formUrl({ type: '틀린 정보' })}" target="_blank" rel="noopener">정정 요청</a>
@@ -2854,6 +2858,7 @@
         <textarea class="op-in" rows="4" maxlength="1000" placeholder="의견을 적어 주세요"></textarea>
         <button type="button" class="bpill add-send op-send" disabled>보내기</button>
         <p class="src-note op-msg">보낸 의견은 내 화면엔 바로 보이고, 다른 분들 화면엔 5~10분쯤 뒤에 보여요.</p>
+        ${HOW_TIP}
       </div>
       ${isAdmin() ? '<p class="src-note">관리자 기기예요. 의견마다 \'처리했어요\'를 누를 수 있어요.</p>' : ''}
       <div id="op-list">${opListHtml()}</div>`;
@@ -2995,9 +3000,9 @@
   const delActs = id => `<div class="op-foot"><button type="button" class="link-btn ev-hide del-ok" data-id="${esc(id)}">승인 (숨기기)</button><button type="button" class="link-btn del-no" data-id="${esc(id)}">거절</button></div>`;
   const delAdminBox = e => {
     const qs = delPending().filter(q => q.id === e.id);
-    return qs.length ? `<div class="del-box"><b>🗑 삭제 요청 ${qs.length}건</b>${qs.map(q => delReqHtml(q, false)).join('')}${delActs(e.id)}</div>` : '';
+    return qs.length ? `<div class="del-box"><b>삭제 요청 ${qs.length}건</b>${qs.map(q => delReqHtml(q, false)).join('')}${delActs(e.id)}</div>` : '';
   };
-  const delBox = e => isAdmin() || e.ytOnly ? '' : `<details class="fix-box"><summary>🗑 삭제 요청</summary><div class="op-form">
+  const delBox = e => isAdmin() || e.ytOnly ? '' : `<details class="fix-box del-quiet"><summary>이 일정 삭제 요청</summary><div class="op-form">
       <textarea class="op-in del-in" rows="3" maxlength="1000" placeholder="왜 지워야 하는지 적어 주세요. 예) 다른 일정과 중복이에요 / 없던 일정이에요"></textarea>
       <button type="button" class="bpill add-send del-send" data-id="${esc(e.id)}">요청 보내기</button>
       <p class="src-note del-msg">관리자가 확인하고 지워요.</p></div></details>`;
@@ -3066,10 +3071,12 @@
     };
   }
   // 일정 상세에서 바로 '틀린 곳 알려주기' (의견 · 정보 수정으로 들어가요)
+  // 날짜 변경·삭제는 일정 화면에서 바로 요청할 수 있다는 작은 안내 (의견·정보 수정·제보 쓰는 곳)
+  const HOW_TIP = '<p class="src-note how-tip">날짜가 틀렸거나 지워야 하는 일정이면, 그 일정 화면 아래 \'날짜가 달라요\' · \'이 일정 삭제 요청\'으로 보내 주세요. 더 빨리 반영돼요.</p>';
   const fixBox = e => `<details class="fix-box"><summary>✏️ 틀린 곳 알려주기</summary><div class="op-form">
       <textarea class="op-in fix-in" rows="3" maxlength="1000" placeholder="예) 날짜가 03.15예요 / 이 곡은 안 불렀어요"></textarea>
       <button type="button" class="bpill add-send fix-send" data-id="${esc(e.id)}">보내기</button>
-      <p class="src-note fix-msg">의견 탭에 '정보 수정'으로 올라가요. 반영까지 5~10분쯤 걸려요.</p></div></details>`;
+      <p class="src-note fix-msg">의견 탭에 '정보 수정'으로 올라가요. 반영까지 5~10분쯤 걸려요.</p><p class="src-note how-tip">날짜가 틀렸으면 위 \'날짜가 달라요\', 지워야 하면 맨 아래 \'이 일정 삭제 요청\'이 더 빨라요.</p></div></details>`;
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.fix-send');
     if (!b) return;
@@ -3652,9 +3659,9 @@
         </div>
         ${findRow(findQuery(e.title))}
         ${dtForm(e)}
-        ${delBox(e)}
         ${fixBox(e)}
         ${hideBtn(e)}
+        ${delBox(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
         ${(e.ytStage || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">방송 영상 <span class="song-count">${e.ytStage.length}</span>${help('방송사 공식 유튜브 영상 중 제목의 프로그램 이름과 방송 날짜로 이 일정에 붙인 거예요. 가끔 다른 회차일 수 있어요.')}</h2></div>${ytStrip(e.ytStage)}</section>` : ''}
         ${xBlock(e)}

@@ -1014,3 +1014,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .op-to{color:var(--muted);font-weight:400}
 .del-box{margin:12px 0;padding:10px 12px;border-radius:12px;background:var(--warn-bg,#FFF4E5);display:flex;flex-direction:column;gap:4px}
 .del-box .op-item{border-bottom:0;padding:4px 0}
+.del-quiet{margin-top:2px}
+.del-quiet>summary{font-size:12px;color:var(--muted);list-style:none}
+.del-quiet>summary::-webkit-details-marker{display:none}
+.del-quiet:not([open])>summary{text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line)}
