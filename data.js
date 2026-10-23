@@ -402,6 +402,8 @@
         (e.casts = e.casts || []).push({ d, t, id, by: r.by, at: tsMs(r.time) });
         fanLog.push({ k: 'cast', id: e.id, at: tsMs(r.time), by: r.by, to: d });
       });
+      // 보충 파일 casts {일정ID: [{d, t}]}: 따로 등록됐다 지운 공연 날짜 등을 회차로 넣어요
+      Object.entries(extra.casts || {}).forEach(([id, list]) => { const e = byEv.get(id); if (e) list.forEach(c => { const cid = 'c' + slVer([e.id, c.d, c.t || '']); if (!gone.has(cid) && !(e.casts || []).some(x => x.id === cid)) (e.casts = e.casts || []).push({ d: c.d, t: c.t || '', id: cid, by: '' }); }); });
       events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));
     }
     // 숨기거나 지운 일정에 대한 제보는 빼고, 최근 것부터
