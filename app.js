@@ -1518,11 +1518,19 @@
     }
     // 한마디 · 아래 줄은 맨 아래에 붙여요
     const lineT = card.line.trim();
-    const qH = lineT ? 15 * F.k * 1.7 + 6 : 0;
+    // 길면 글씨를 조금 줄이고, 그래도 넘치면 두 줄로 나눠요 (가사 한 줄 정도는 들어가게)
+    let qSize = 15 * F.k, qLines = [];
+    if (lineT) {
+      const q = '“' + lineT + '”';
+      for (; qSize > 12 * F.k; qSize -= 0.5) { ctx.font = font(F.w, qSize, F.f); if (ctx.measureText(q).width <= IN) break; }
+      ctx.font = font(F.w, qSize, F.f);
+      qLines = ctx.measureText(q).width <= IN ? [q] : wrap(q, IN, 2);
+    }
+    const qH = lineT ? qSize * 1.45 * qLines.length + qSize * 0.25 + 6 : 0;
     const H = Math.ceil(Math.max(y + 14 + qH + 26, hasPhoto ? 690 : 520));
     if (lineT) {
       const yQ = H - 26 - qH;
-      ops.push(() => { ctx.font = font(F.w, 15 * F.k, F.f); ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.fillText(fit('“' + lineT + '”', IN), W / 2, yQ); ctx.textAlign = 'left'; });
+      ops.push(() => { ctx.font = font(F.w, qSize, F.f); ctx.fillStyle = C.ink; ctx.textAlign = 'center'; qLines.forEach((l, i) => ctx.fillText(i === qLines.length - 1 ? fit(l, IN) : l, W / 2, yQ + i * qSize * 1.45)); ctx.textAlign = 'left'; });
     }
     ops.push(() => { ctx.font = font(400, 8.5); ctx.fillStyle = C.mute; ctx.fillText('숲별 기록장', P, H - 26); ctx.textAlign = 'right'; ctx.fillText('sujeonghan78-lgtm.github.io/forestella-archive', W - P, H - 26); ctx.textAlign = 'left'; });
 
@@ -1577,7 +1585,7 @@
         <div class="cf-g"><span class="cf-l">사진 <small>안 넣어도 돼요</small></span>
           <div class="cf-photo"><label class="chip cf-file">📷 ${cardPhoto ? '사진 바꾸기' : '폰에서 사진 고르기'}<input type="file" id="cf-photo" accept="image/*" hidden></label>${cardPhoto ? '<button type="button" class="link-btn" id="cf-photo-x">사진 빼기</button>' : ''}</div>
           <p class="src-note">직접 찍었거나 공유해도 되는 사진을 넣어 주세요. 사진은 이 폰에만 있어요.${cardPhoto ? ' 미리보기에서 사진을 끌어서 위치를 맞출 수 있어요.' : ''}</p></div>
-        <label><span class="cf-l">한마디 <small>안 써도 돼요</small></span><input id="cf-line" maxlength="24" value="${esc(card.line)}" placeholder="숲별이라 행복해" autocomplete="off"></label>
+        <label><span class="cf-l">한마디 <small>안 써도 돼요</small></span><input id="cf-line" maxlength="40" value="${esc(card.line)}" placeholder="숲별이라 행복해" autocomplete="off"></label>
         <div class="cf-g"><span class="cf-l">글씨체</span><div class="cf-fonts">${Object.entries(CARD_FONTS).map(([k, f]) => `<button type="button" class="cf-font${card.font === k ? ' on' : ''}" data-grp="font" data-v="${k}" aria-pressed="${card.font === k}" style="font-family:${esc(f.f)};font-weight:${f.w}${k === 'pen' ? ';font-size:21px' : ''}">${f.name} 숲별</button>`).join('')}</div></div>
         <div class="cf-g"><span class="cf-l">카드 색</span><div class="cf-colors">${Object.entries(CARD_COLORS).map(([k, c]) => `<button type="button" class="cf-color${card.color === k ? ' on' : ''}" data-grp="color" data-v="${k}" aria-pressed="${card.color === k}" style="background:${c.bg.length > 1 ? `linear-gradient(135deg,${c.bg.join(',')})` : c.bg[0]}"><span class="sr">${c.name}</span></button>`).join('')}</div></div>
         <div class="cf-g"><span class="cf-l">카드에 넣을 기록 <small>보관함에서 자동</small></span><div class="chips cf-chips">${CARD_STATS.map(([k, l]) => chip('stats', k, l, card.stats.includes(k))).join('')}</div></div>
