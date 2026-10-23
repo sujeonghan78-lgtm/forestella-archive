@@ -265,6 +265,7 @@
     // 가장 최근 판을 다른 두 사람이 '맞아요'(종류: 셋리확인, 같은 버전)로 누르면 확정이에요. 사람 구분은 브라우저마다 만든 임의 번호(누가:)로 해요
     // 팬 제보 현황 화면(#/fan)에 쓸 기록: 언제 · 무엇을 · 어느 일정에
     const fanLog = [];
+    const tourFan = new Map();
     if (raw.reports) {
       const rows = buildReports(toObjects(raw.reports), true);
       const idOf = r => (r.title.match(/\[ID ([\w-]+)\]/) || [])[1];
@@ -315,12 +316,19 @@
         const id = idOf(r);
         const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
         if (id && songs.length) {
-          if (!r.newEv) fanLog.push({ k: latest.has(id) ? 'slfix' : 'sl', id, at: tsMs(r.time), by: r.by, ver: slVer(songs), songs: songs.length });
+          if (!r.newEv && !id.startsWith('T-')) fanLog.push({ k: latest.has(id) ? 'slfix' : 'sl', id, at: tsMs(r.time), by: r.by, ver: slVer(songs), songs: songs.length });
           latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1, fromEv: !!r.newEv });
         }
       });
-      rows.filter(r => (r.type === '셋리확인' || r.type === '일정확인') && r.by).forEach(r => { const id = idOf(r); if (id) fanLog.push({ k: r.type === '셋리확인' ? 'slok' : 'evok', id, at: tsMs(r.time), by: r.by, ver: r.ver }); });
+      rows.filter(r => (r.type === '셋리확인' || r.type === '일정확인') && r.by).forEach(r => { const id = idOf(r); if (id && !id.startsWith('T-')) fanLog.push({ k: r.type === '셋리확인' ? 'slok' : 'evok', id, at: tsMs(r.time), by: r.by, ver: r.ver }); });
       latest.forEach((f, id) => {
+        // 콘서트 투어 셋리(일정: [ID T-투어id]): 투어를 읽은 뒤에 바꿔요
+        if (id.startsWith('T-')) {
+          const ver = slVer(f.songs);
+          const who = new Set(rows.filter(r => r.type === '셋리확인' && idOf(r) === id && r.ver === ver && r.by && r.by !== f.by).map(r => r.by));
+          tourFan.set(id.slice(2), { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits, src: id });
+          return;
+        }
         const e = events.find(x => x.id === id);
         if (!e || e.songSource === '참고') return;
         const ver = slVer(f.songs);
@@ -452,6 +460,21 @@
     let tours = [];
     try { tours = JSON.parse(raw.setlists || '{}').tours || []; } catch (err) { /* 없으면 넘어가요 */ }
     tours.forEach(t => { t.events = []; });
+    // 팬이 고친 투어 셋리: '#1부' 같은 줄은 구역, '곡 {메모}'는 곡 옆 작은 메모예요
+    tours.forEach(t => {
+      const f = tourFan.get(t.id);
+      if (!f) return;
+      let sec = '', last = '';
+      const list = [];
+      f.songs.forEach(x => {
+        if (x.startsWith('#')) { sec = x.slice(1).trim(); return; }
+        const m = x.match(/^(.*?)\s*\{([^}]*)\}\s*$/), name = slFix((m ? m[1] : x).trim()), memo = m ? m[2].trim() : '';
+        const head = sec && sec !== last ? sec : '';
+        if (sec) last = sec;
+        list.push({ t: name, note: [head, memo].filter(Boolean).join(' · '), ok: f.ok });
+      });
+      if (list.length) { t.songs = list; t.complete = true; t.fanSet = f; }
+    });
     events.forEach(e => {
       if (e.category !== '공연') return;
       const t = tours.find(x => x.dates.includes(e.date));

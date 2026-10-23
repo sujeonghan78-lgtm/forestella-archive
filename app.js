@@ -3038,10 +3038,11 @@
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.sl-ok');
     if (!b) return;
-    const e = data.events.find(x => x.id === b.dataset.id);
+    const tt = b.dataset.id.startsWith('T-') && data.tours.find(x => 'T-' + x.id === b.dataset.id);
+    const e = tt ? { id: b.dataset.id, date: '', title: tt.name, fanSet: tt.fanSet } : data.events.find(x => x.id === b.dataset.id);
     if (!e) return;
     const f = window.CONFIG.form;
-    const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리확인\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n버전: ${b.dataset.ver}\n누가: ${myUid()}` });
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리확인${e.date ? '\n날짜: ' + e.date : ''}\n일정: [ID ${e.id}] ${e.title}\n버전: ${b.dataset.ver}\n누가: ${myUid()}` });
     b.disabled = true; b.textContent = '보내는 중…';
     fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
       .then(() => {
@@ -3049,6 +3050,65 @@
         document.querySelectorAll(`.sl-ok[data-id="${CSS.escape(e.id)}"]`).forEach(x => { x.closest('.sl-state').outerHTML = slState(e); });
       })
       .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
+  });
+
+  // ---------- 투어 셋리 고치기 ----------
+  // 1부·2부·앵콜은 [1부]처럼 한 줄로, 곡 옆 메모는 괄호로 적어요. 보낼 땐 '#1부', '곡 {메모}'로 바꿔 보내요(일정: [ID T-투어id])
+  const TSL_SEC = /^\[?\s*(\d부|앵콜|앙코르|encore)\s*\]?$/i;
+  function tslText(t) {
+    let last = '';
+    return t.songs.map(x => {
+      const m = (x.note || '').match(/^(1부|2부|3부|4부|앵콜)(\s*·\s*)?/), sec = m ? m[1] : '', memo = (m ? x.note.slice(m[0].length) : x.note || '').trim();
+      const head = sec && sec !== last ? `[${sec}]\n` : '';
+      if (sec) last = sec;
+      return head + x.t + (memo ? ` (${memo})` : '');
+    }).join('\n');
+  }
+  function tslParse(text) {
+    return text.split(/\n+/).map(l => l.trim()).filter(Boolean).map(l => {
+      const h = l.match(TSL_SEC);
+      if (h) return { sec: /^\d/.test(h[1]) ? h[1] : '앵콜' };
+      l = l.replace(/^\d{1,2}\s*[.)\]:]\s*/, '').replace(/^[\s\-–—•·*]+/, '');
+      const m = l.match(/^(.*?)\s*[(（]([^)）]*)[)）]\s*$/), name = (m ? m[1] : l).trim(), memo = m ? m[2].trim() : '';
+      const hit = slMatch(name);
+      return name ? { name: hit || name, ok: !!hit, memo } : null;
+    }).filter(Boolean);
+  }
+  function tourSlForm(t) {
+    if (!(window.CONFIG.form || {}).fields) return '';
+    return `
+      <details class="sl-add">
+        <summary>✏️ 셋리 고치기</summary>
+        <div class="sl-box tsl-box" data-tour="${esc(t.id)}">
+          <textarea class="tsl-in" rows="12" placeholder="한 줄에 한 곡씩 적어 주세요.">${esc(tslText(t))}</textarea>
+          <ol class="sl-pre"></ol>
+          <p class="src-note sl-msg">[1부] [2부] [앵콜]처럼 한 줄로 나누고, 곡 옆 메모는 괄호로 적어 주세요. 예) 사랑의 찬가 (조민규 솔로)<br>보내면 '확인 필요'로 바뀌고, 다른 두 분이 맞다고 하면 확정돼요. 사이트에 반영되기까지 5~10분쯤 걸려요.</p>
+          <button type="button" class="bpill tsl-send" disabled>보내기</button>
+        </div>
+      </details>`;
+  }
+  document.addEventListener('toggle', ev => { const t = ev.target.matches && ev.target.matches('.sl-add') && ev.target.open && ev.target.querySelector('.tsl-in'); if (t) t.dispatchEvent(new Event('input', { bubbles: true })); }, true);
+  document.addEventListener('input', ev => {
+    if (!ev.target.matches('.tsl-in')) return;
+    const box = ev.target.closest('.sl-box'), list = tslParse(ev.target.value);
+    let n = 0;
+    box.querySelector('.sl-pre').innerHTML = list.map(x => x.sec ? `<li class="sl-sec">${esc(x.sec)}</li>` : `<li value="${++n}" class="${x.ok ? 'ok' : 'new'}">${x.ok ? '✓' : '?'} ${esc(x.name)}${x.memo ? ` <small>${esc(x.memo)}</small>` : ''}</li>`).join('');
+    box.querySelector('.tsl-send').disabled = !list.some(x => x.name);
+  });
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.tsl-send');
+    if (!b) return;
+    const box = b.closest('.sl-box'), t = data.tours.find(x => x.id === box.dataset.tour);
+    const list = tslParse(box.querySelector('.tsl-in').value);
+    if (!t || !list.some(x => x.name)) return;
+    const clean = x => x.replace(/\s+\/\s+/g, '/').replace(/[{}]/g, '');
+    const items = list.map(x => x.sec ? '#' + x.sec : clean(x.name) + (x.memo ? ` {${clean(x.memo)}}` : ''));
+    const f = window.CONFIG.form;
+    const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리스트\n일정: [ID T-${t.id}] ${t.name}\n곡: ${items.join(' / ')}\n누가: ${myUid()}` });
+    b.disabled = true; b.textContent = '보내는 중…';
+    fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
+      .then(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${list.filter(x => x.name).length}곡을 보냈어요. 고마워요! 5~10분쯤 뒤 새로 열면 바뀌어 있어요.`; })
+      .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; box.querySelector('.sl-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
   });
 
   // ---------- 일정 등록 ----------
@@ -4080,6 +4140,7 @@
         ${findRow('포레스텔라 ' + t.name.replace(/^[\d-]+\s*/, '') + ' 콘서트')}
       </section>
       <hr class="divider">
+      ${t.fanSet ? slState({ id: 'T-' + t.id, fanSet: t.fanSet }) : ''}
       <div class="view-row">${albumBtn()}</div>
       ${paneTabs([
         { label: '셋리스트', n: t.songs.length, html: tourSetlist(t) },
@@ -4090,7 +4151,8 @@
       <hr class="divider">
       <div class="tour-foot">
         ${t.caution ? `<p class="src-note">${esc(t.caution)}</p>` : ''}
-        <p class="src-note"><a href="${esc(t.source.url)}" target="_blank" rel="noopener nofollow">${esc(t.source.name)}</a> 기준이라 틀릴 수 있어요. <a href="${formUrl({ type: '틀린 정보', title: t.name + ' 셋리스트' })}" target="_blank" rel="noopener">틀린 곳 알려주기 ›</a></p>
+        ${t.fanSet ? '' : `<p class="src-note"><a href="${esc(t.source.url)}" target="_blank" rel="noopener nofollow">${esc(t.source.name)}</a> 기준이라 틀릴 수 있어요.</p>`}
+        ${tourSlForm(t)}
       </div>`;
   }
 
