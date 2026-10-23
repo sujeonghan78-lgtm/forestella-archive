@@ -1446,8 +1446,11 @@
   // ---------- 직관 지도: 내가 간 일정을 지도에 찍고, 날짜순으로 따라가며 되돌아봐요 ----------
   // 지도 프로그램(Leaflet)과 공연장 좌표(data/places.json)는 이 화면을 열 때만 불러와요
   const REGION_C = { '서울': [37.5665, 126.978], '경기·인천': [37.42, 126.95], '강원': [37.75, 128.3], '충청': [36.55, 127.2], '전라': [35.35, 127.0], '경상': [35.75, 128.75], '제주': [33.42, 126.55] };
+  // 한반도 전체로 볼 때 숫자 풍선 자리 (서로 안 겹치게 조금씩 옮긴 자리)
+  const REGION_V = { '서울': [37.9, 127.0], '경기·인천': [37.2, 126.55], '강원': [37.6, 128.8], '충청': [36.5, 127.1], '전라': [35.2, 126.95], '경상': [35.85, 128.85], '제주': [33.38, 126.55] };
+  const KOREA_B = [[33.1, 125.4], [38.6, 129.7]];
   const MAP_Z = 'sb-map-z', mapZ = () => { const z = boxRead(MAP_Z); return z >= 10 && z <= 17 ? z : 12; };
-  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', intro: true }, lmap = null, mapPlay = null;
+  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', tour: false, play: false }, lmap = null, mapPlay = null;
   function loadLeaflet() {
     if (window.L) return Promise.resolve(window.L);
     return leafletP = leafletP || new Promise((ok, no) => {
@@ -1508,12 +1511,11 @@
       <div class="chips map-modes"><button type="button" class="chip${mapSt.mode === 'w' ? ' on' : ''}" data-mode="w">👣 내 발자국 ${ml.mine}</button><button type="button" class="chip${mapSt.mode === 'all' ? ' on' : ''}" data-mode="all">포레스텔라 공연 전체</button></div>
       ${mapPeriod(ml)}
       ${ml.on.length ? `
-      <div class="map-car" id="map-car"></div>
-      <div class="map-stage">
+      <div class="map-car" id="map-car"${mapSt.tour ? '' : ' hidden'}></div>
+      <div class="map-stage${mapSt.tour ? '' : ' map-ov'}">
         <div id="map"></div>
-        <div class="map-tools"><button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button><button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button></div>
-        <div class="map-panel" id="map-nav"></div>
-        ${mapSt.intro ? mapIntro(ml) : ''}
+        <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 여행하기</button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
+        <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
       </div>
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
@@ -1521,14 +1523,14 @@
       ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개 (해외 · 장소 모름)</summary>${ml.off.map(x => `<a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>`).join('')}</details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
       : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
-    const reset = () => { mapSt.i = -1; mapSt.intro = true; mapStop(); bindMap(); };
+    const reset = () => { mapSt.i = -1; mapSt.tour = false; mapStop(); bindMap(); };
     root.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mapSt.mode = b.dataset.mode; mapSt.from = mapSt.to = ''; reset(); });
     root.querySelectorAll('[data-year]').forEach(b => b.onclick = () => { const y = b.dataset.year; mapSt.from = y ? y + '-01' : ''; mapSt.to = y ? y + '-12' : ''; reset(); });
     const pf = document.getElementById('map-from'), pt = document.getElementById('map-to'), rb = document.getElementById('map-range-btn');
     if (rb) rb.onclick = () => { const r = document.getElementById('map-range'); r.hidden = !r.hidden; };
     if (pf) pf.onchange = pt.onchange = () => { mapSt.from = pf.value; mapSt.to = pt.value; if (mapSt.from && mapSt.to && mapSt.from > mapSt.to) [mapSt.from, mapSt.to] = [mapSt.to, mapSt.from]; reset(); };
     if (!ml.on.length) return;
-    const m = lmap = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 5, maxZoom: 18 }).setView([36.3, 127.8], 7);
+    const m = lmap = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 5, maxZoom: 18, zoomSnap: 0.25 }).setView([36.3, 127.8], 7);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
     const layer = L.layerGroup().addTo(m);
     const pinIcon = L.divIcon({ className: '', html: '<span class="map-pin">📍</span>', iconSize: null });
@@ -1544,21 +1546,23 @@
       });
       // 다녀간 순서대로 잇는 길: 지나온 길은 진하게, 남은 길은 점선
       const pt = x => [x.l.lat, x.l.lng], cut = Math.max(0, mapSt.i);
-      if (ml.on.length > 1) {
+      if (mapSt.tour && ml.on.length > 1) {
         L.polyline(ml.on.slice(cut).map(pt), { color: '#2E8B57', weight: 2, opacity: .45, dashArray: '4 6', interactive: false }).addTo(layer);
         if (cut > 0) L.polyline(ml.on.slice(0, cut + 1).map(pt), { color: '#2E8B57', weight: 3, opacity: .8, interactive: false }).addTo(layer);
       }
       groups.forEach(g => {
         const reg = g.key.startsWith('r:'), name = g.key.slice(2), first = g.items[0].l;
-        const at = reg ? REGION_C[name] || [first.lat, first.lng] : [first.lat, first.lng];
-        const mk = L.marker(at, { icon: bubble(g.items.length, reg ? (z < 9 ? 'big' : 'fuzzy') : 'pin', reg ? (z < 9 ? name : name + ' 어딘가') : '') }).addTo(layer);
+        const at = reg ? (z < 9 ? REGION_V[name] : REGION_C[name]) || [first.lat, first.lng] : [first.lat, first.lng];
+        const mk = L.marker(at, { icon: bubble(g.items.length, reg ? (z < 9 ? (mapSt.tour ? 'big' : 'ov') : 'fuzzy') : 'pin', reg ? (z < 9 ? name : name + ' 어딘가') : '') }).addTo(layer);
         mk.on('click', () => {
+          if (reg && z < 9 && !mapSt.tour) { showVenue(g.items, name); document.getElementById('map-venue').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
           if (reg && z < 9) { m.flyTo(at, 10, { duration: 0.8 }); return; }
           showVenue(g.items, reg ? name + ' 어딘가 (정확한 장소 모름)' : first.place);
         });
       });
       const cur = ml.on[mapSt.i];
       if (curMark) curMark.remove();
+      if (!mapSt.tour) return;
       curMark = L.marker([cur.l.lat, cur.l.lng], { icon: L.divIcon({ className: '', html: '<span class="map-now"></span>', iconSize: null }), interactive: false, zIndexOffset: -100 }).addTo(m);
     };
     m.on('zoomend', draw);
@@ -1589,7 +1593,16 @@
       if (n <= 14) return `<div class="map-dots">${ml.on.map((x, k) => `<button type="button" class="map-dot${k === i ? ' on' : k < i ? ' past' : ''}" data-k="${k}" aria-label="${k + 1}번째"></button>`).join('')}</div>`;
       return `<div class="map-track"><span style="width:${Math.round((i + 1) / n * 100)}%"></span></div>`;
     };
+    // 전체 지도: 지역별 횟수 한눈에, 아래엔 요약만
+    const sum = () => {
+      const cnt = new Map();
+      ml.on.forEach(x => { const r = x.l.region || regionNear(x.l); cnt.set(r, (cnt.get(r) || 0) + 1); });
+      const top = [...cnt].sort((a, b) => b[1] - a[1])[0];
+      const venues = new Set(ml.on.map(x => x.l.exact ? x.l.lat.toFixed(3) + x.l.lng.toFixed(3) : x.l.region)).size;
+      document.getElementById('map-nav').innerHTML = `<div class="map-info"><span class="map-meta">${mapSt.mode === 'w' ? '👣 내 발자국' : '포레스텔라 공연'} ${ml.on.length}개 · 장소 ${venues}곳 · ${cnt.size}개 지역</span><span class="map-now-t">${top ? `제일 많이 간 곳은 ${esc(top[0])} ${top[1]}번` : ''}</span><span class="map-place">지역 숫자를 누르면 다녀간 일정이 보여요</span></div>`;
+    };
     const nav = () => {
+      if (!mapSt.tour) { sum(); return; }
       const x = ml.on[mapSt.i], prev = ml.on[mapSt.i - 1], next = ml.on[mapSt.i + 1];
       const carEl = document.getElementById('map-car');
       carEl.innerHTML = car(x.e); carEl.scrollLeft = 0;
@@ -1624,25 +1637,19 @@
       m.flyTo([x.l.lat, x.l.lng], x.l.exact ? mapZ() : 9, { duration: 1.1 });
       nav(); draw();
     };
-    document.getElementById('map-here').onclick = () => { mapStop(); go(mapSt.i); };
+    if (mapSt.tour) document.getElementById('map-here').onclick = () => { mapStop(); go(mapSt.i); };
     // 확대 정도: ＋/－로 바꾸면 다음 장소로 갈 때도 그 배율로 가요 (이 폰에 기억)
     const zoomBy = d => { mapStop(); const z = Math.min(17, Math.max(5, m.getZoom() + d)); m.setZoom(z); if (z >= 10) boxWrite(MAP_Z, z); };
     document.getElementById('map-zin').onclick = () => zoomBy(1);
     document.getElementById('map-zout').onclick = () => zoomBy(-1);
     const all = () => m.fitBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, animate: false });
-    // 여행 시작: 첫 발자국부터 3.5초마다 다음으로 (지도·버튼을 만지면 멈춰요)
-    const intro = document.getElementById('map-intro');
-    if (intro) {
-      all();
-      document.getElementById('map-start').onclick = () => {
-        mapSt.intro = false; intro.remove(); document.querySelector('.map-stage').scrollIntoView({ block: 'center', behavior: 'smooth' }); go(0);
-        mapPlay = setInterval(() => { if (mapSt.i >= ml.on.length - 1) mapStop(); else go(mapSt.i + 1); }, 3500);
-      };
-      document.getElementById('map-skip').onclick = () => { mapSt.intro = false; intro.remove(); go(mapSt.i); };
-    }
+    // 숲길 여행하기: 첫 발자국부터 3.5초마다 다음으로 (지도·버튼을 만지면 멈춰요)
+    const trip = document.getElementById('map-trip'), ov = document.getElementById('map-ov');
+    if (trip) trip.onclick = () => { mapSt.tour = true; mapSt.play = true; mapSt.i = 0; bindMap(); };
+    if (ov) ov.onclick = () => { mapSt.tour = false; mapStop(); document.getElementById('map-venue').innerHTML = ''; bindMap(); };
     m.on('dragstart', mapStop);
     document.getElementById('map-nav').addEventListener('click', ev => { if (ev.isTrusted && ev.target.closest('.map-arrow, .map-dot')) mapStop(); }, true);
-    document.getElementById('map-all').onclick = () => { mapStop(); m.flyToBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, duration: 0.9 }); };
+    if (mapSt.tour) document.getElementById('map-all').onclick = () => { mapStop(); m.flyToBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, duration: 0.9 }); };
     // 위치 고치기: 지도를 누르면 핀이 꽂히고, 보내기를 누르면 제보로 가요
     const startPin = x => {
       const bar = document.getElementById('map-pinbar');
@@ -1682,7 +1689,11 @@
       };
     };
     nav(); draw();
-    if (!intro) { const x0 = ml.on[mapSt.i]; m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? mapZ() : 9); }
+    if (!mapSt.tour) { m.fitBounds(KOREA_B, { paddingTopLeft: [8, 50], paddingBottomRight: [8, 96], animate: false }); return; }
+    if (mapSt.play) {
+      mapSt.play = false; all(); document.querySelector('.map-stage').scrollIntoView({ block: 'center', behavior: 'smooth' }); go(0);
+      mapPlay = setInterval(() => { if (mapSt.i >= ml.on.length - 1) mapStop(); else go(mapSt.i + 1); }, 3500);
+    } else { const x0 = ml.on[mapSt.i]; m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? mapZ() : 9); }
   }
   // ---------- 지도 장소 한꺼번에 찾기 (관리자): 이 폰 브라우저로 OpenStreetMap을 검색해서, 맞는 후보를 누르면 바로 확정해요 ----------
   let pfAll = null;
@@ -1746,23 +1757,6 @@
     return `<div class="map-period">
       <div class="chips map-years"><button type="button" class="chip${!mapSt.from && !mapSt.to ? ' on' : ''}" data-year="">전체</button>${ml.years.map(v => `<button type="button" class="chip${y === v ? ' on' : ''}" data-year="${v}">${v}</button>`).join('')}<button type="button" class="chip${custom ? ' on' : ''}" id="map-range-btn">📅 ${custom ? `${ym(mapSt.from) || '처음'}~${ym(mapSt.to) || '지금'}` : '기간'}</button></div>
       <div class="map-range-in" id="map-range"${custom ? '' : ' hidden'}><input type="month" id="map-from" value="${esc(mapSt.from)}" aria-label="시작 달"><span>~</span><input type="month" id="map-to" value="${esc(mapSt.to)}" aria-label="끝 달"></div></div>`;
-  }
-  function mapIntro(ml) {
-    if (!ml.on.length) return '';
-    const a = ml.on[0].e.date, b = ml.on[ml.on.length - 1].e.date;
-    const md = d => `${d.slice(2, 4)}년 ${+d.slice(5, 7)}월`;
-    const span = a.slice(0, 7) === b.slice(0, 7) ? md(a) : `${md(a)}부터 ${md(b)}까지`;
-    const venues = new Set(ml.on.map(x => x.l.exact ? x.l.lat.toFixed(3) + x.l.lng.toFixed(3) : x.l.region)).size;
-    const regions = new Set(ml.on.map(x => x.l.region || regionNear(x.l))).size;
-    const who = mapSt.mode === 'w' ? '나의' : '포레스텔라의';
-    return `<div class="map-intro" id="map-intro">
-      <div class="map-intro-card">
-        <span class="map-intro-k">👣 숲별 발자국</span>
-        <p class="map-intro-t">${who} ${span}<br>여행을 시작해요</p>
-        <span class="map-intro-s">발자국 ${ml.on.length}개 · 장소 ${venues}곳 · ${regions}개 지역</span>
-        <button type="button" class="map-intro-go" id="map-start">▶ 여행 시작</button>
-        <button type="button" class="link-btn" id="map-skip">그냥 둘러볼게요</button>
-      </div></div>`;
   }
 
   // ---------- 숲별 카드 · 입덕일 D+ (이 폰에만 저장) ----------
