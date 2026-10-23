@@ -1778,7 +1778,7 @@
     sumi: { bg: ['#26272B'], ink: '#EDEBE6', mute: 'rgba(237,235,230,.55)', line: 'rgba(237,235,230,.16)', acc: '#F0A85A', name: '먹' },
   };
   // 카드 틀 모양
-  const CARD_FRAMES = { round: '기본', polaroid: '폴라로이드', ticket: '티켓', photo: '포토카드' };
+  const CARD_FRAMES = { round: '기본', polaroid: '폴라로이드', ticket: '티켓', photo: '포토카드', receipt: '영수증', credit: '신용카드', playlist: '플레이리스트' };
   // 뱃지: 보관함 기록으로 받은 것만 골라 넣을 수 있어요 (최대 3개)
   const tourOfDate = d => (data.tours || []).find(t => (t.dates || []).includes(d));
   const CARD_BADGES = [
@@ -1874,7 +1874,7 @@
     if (!cardFontsP) cardFontsP = new Promise(res => {
       const l = document.createElement('link');
       l.rel = 'stylesheet';
-      l.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@700;800&family=Gowun+Dodum&family=Nanum+Pen+Script&display=swap';
+      l.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;700&family=Nanum+Myeongjo:wght@700;800&family=Gowun+Dodum&family=Nanum+Pen+Script&family=Nanum+Gothic+Coding:wght@400;700&display=swap';
       l.onload = l.onerror = res;
       document.head.appendChild(l);
       setTimeout(res, 4000);
@@ -1882,13 +1882,317 @@
     const F = CARD_FONTS[card.font] || CARD_FONTS.myeong;
     return cardFontsP.then(() => document.fonts ? Promise.all([
       document.fonts.load(`${F.big} 50px ${F.f}`, text), document.fonts.load(`${F.w} 25px ${F.f}`, text),
-      document.fonts.load(`400 12px ${CARD_SANS}`, text), document.fonts.load(`700 12px ${CARD_SANS}`, text),
+      document.fonts.load(`400 12px ${CARD_SANS}`, text), document.fonts.load(`700 12px ${CARD_SANS}`, text), document.fonts.load(`400 12px ${CARD_MONO}`, text), document.fonts.load(`700 12px ${CARD_MONO}`, text), document.fonts.load('400 18px "Nanum Pen Script"', text),
     ]).catch(() => {}) : null);
   }
 
   let cardImg = null, cardImgSrc = '';
   // 카드 그리기: 미리보기와 저장 이미지가 같은 그림이에요 (340 너비 기준, 3배로 그려요)
+  // 내 사진 스티커 (틀 위에 자유롭게)
+  function paintStickers(ctx) {
+    cardStk.forEach((k, i) => {
+      const im = cardStkImg.get(k.src);
+      if (!im || !im.complete || !im.naturalWidth) return;
+      const iw = im.naturalWidth, ih = im.naturalHeight;
+      const sq = k.shape !== 'rect', w = k.w, h = sq ? k.w : k.w * ih / iw;
+      ctx.save();
+      ctx.translate(k.x, k.y); ctx.rotate((k.r || 0) * Math.PI / 180);
+      const shape = (m) => {
+        ctx.beginPath();
+        if (k.shape === 'circle') ctx.arc(0, 0, w / 2 + m, 0, Math.PI * 2);
+        else if (k.shape === 'heart') { const a = w / 2 + m; ctx.moveTo(0, a * 0.95); ctx.bezierCurveTo(-a * 1.25, a * 0.1, -a * 0.75, -a * 1.05, 0, -a * 0.45); ctx.bezierCurveTo(a * 0.75, -a * 1.05, a * 1.25, a * 0.1, 0, a * 0.95); }
+        else ctx.roundRect ? ctx.roundRect(-w / 2 - m, -h / 2 - m, w + m * 2, h + m * 2, 8 + m) : ctx.rect(-w / 2 - m, -h / 2 - m, w + m * 2, h + m * 2);
+      };
+      ctx.shadowColor = 'rgba(0,0,0,.22)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+      shape(4); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+      ctx.shadowColor = 'transparent';
+      shape(0); ctx.clip();
+      const sc = sq ? Math.max(w / iw, w / ih) : w / iw;
+      ctx.drawImage(im, -iw * sc / 2, -ih * sc / 2, iw * sc, ih * sc);
+      ctx.restore();
+      if (i === cardSel && !cardExport) {
+        ctx.save(); ctx.translate(k.x, k.y); ctx.rotate((k.r || 0) * Math.PI / 180);
+        ctx.strokeStyle = '#2F7A5A'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+        ctx.strokeRect(-w / 2 - 9, -h / 2 - 9, w + 18, h + 18); ctx.restore();
+      }
+    });
+  }
+
+  // ---------- 사진 없는 테마: 영수증 · 신용카드 · 플레이리스트 ----------
+  const CARD_MONO = '"Nanum Gothic Coding", "IBM Plex Mono", monospace';
+  function cardBits() {
+    const { cells, lines } = cardNums();
+    const gens = CARD_GENS.filter(g => card.gen.includes(g));
+    const mems = CARD_MEMS.filter(m => card.mem.includes(m));
+    const bdg = cardBadges().filter(b => b.got && (card.badges || []).includes(b.k));
+    const best = card.best && data.byId.get(card.best);
+    return { cells, lines, gens, mems, bdg, best, favs: favList(card.fav), wishes: favList(card.wish), nick: card.nick.trim() || '숲별', dd: ddayText(), line: card.line.trim() };
+  }
+  const cardTools = ctx => {
+    const fit = (t, max) => { t = String(t); if (ctx.measureText(t).width <= max) return t; while (t && ctx.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; };
+    const wrap = (t, max, n) => {
+      const out = []; let cur = '';
+      for (const w of String(t).split(/(\s+)/)) { if (ctx.measureText(cur + w).width <= max || !cur.trim()) cur += w; else { out.push(cur.trim()); cur = w.trimStart(); } }
+      if (cur.trim()) out.push(cur.trim());
+      if (out.length > n) { out.length = n; out[n - 1] = fit(out[n - 1] + '…', max).replace(/……$/, '…'); }
+      return out.map(l => fit(l, max));
+    };
+    const spaced = (t, x, y, ls, align = 'left') => { let w = 0; for (const ch of t) w += ctx.measureText(ch).width + ls; w -= ls; let cx = align === 'right' ? x - w : align === 'center' ? x - w / 2 : x; for (const ch of t) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + ls; } };
+    return { fit, wrap, spaced };
+  };
+  const barcode = (ctx, x, y, w, h, seedText) => {
+    let seed = 7; for (const ch of seedText) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    for (let bx = x; bx < x + w;) { seed = (seed * 1103515245 + 12345) >>> 0; const bw = 1 + (seed >>> 16) % 3; ctx.fillRect(bx, y, Math.min(bw, x + w - bx), h); bx += bw + 1 + (seed >>> 20) % 3; }
+  };
+
+  // 영수증: 긴 감열지, 품목처럼 기록을 적고 합계가 D+
+  function drawReceipt(cv) {
+    const F = CARD_FONTS[card.font] || CARD_FONTS.myeong, C = CARD_COLORS[card.color] || CARD_COLORS.forest;
+    const B = cardBits(), W = 300, P = 20, IN = W - P * 2, S = 3, ZZ = 7;
+    const ctx = cv.getContext('2d'), T = cardTools(ctx), ops = [];
+    const mono = (w, px) => `${w} ${px}px ${CARD_MONO}`;
+    const INK = '#26282A', MUTE = '#7A7D80';
+    let y = ZZ + 22;
+    const row = (l, r, o = {}) => {
+      const yy = y, sz = o.sz || 12.5;
+      ctx.font = mono(o.b ? 700 : 400, sz);
+      const rw = Math.min(ctx.measureText(String(r)).width, IN * 0.68);
+      const lt = T.fit(l, IN - rw - 10);
+      const rt = T.fit(String(r), IN - ctx.measureText(lt).width - 10);
+      ops.push(() => { ctx.font = mono(o.b ? 700 : 400, sz); ctx.fillStyle = o.c || INK; ctx.fillText(lt, P, yy); ctx.textAlign = 'right'; ctx.fillText(rt, W - P, yy); ctx.textAlign = 'left'; });
+      y += sz + 8;
+    };
+    const center = (t, sz, w = 400, c = INK, fam) => { const yy = y; ops.push(() => { ctx.font = fam ? `${w} ${sz}px ${fam}` : mono(w, sz); ctx.fillStyle = c; ctx.textAlign = 'center'; ctx.fillText(T.fit(t, IN), W / 2, yy); ctx.textAlign = 'left'; }); y += sz + 7; };
+    const dash = () => { y += 3; const yy = y; ops.push(() => { ctx.font = mono(400, 12); ctx.fillStyle = MUTE; let t = ''; while (ctx.measureText(t + '-').width < IN) t += '-'; ctx.fillText(t, P, yy); }); y += 18; };
+    const block = (label, items) => {
+      if (!items.length) return;
+      ctx.font = mono(400, 12.5);
+      const lw = ctx.measureText(label + '  ').width;
+      items.forEach((it, i) => { const yy = y, lt = T.fit(it, IN - lw); ops.push(() => { ctx.font = mono(400, 12.5); ctx.fillStyle = MUTE; if (!i) ctx.fillText(label, P, yy); ctx.fillStyle = INK; ctx.fillText(lt, P + lw, yy); }); y += 20; });
+    };
+    center('✦ 숲별 기록장 ✦', 17, 700);
+    center('FORESTELLA · SOOPBYEOL RECEIPT', 9.5, 400, MUTE);
+    y += 4; dash();
+    const now = new Date(), t = todayParts();
+    row('일시', `${t.y}.${String(t.m).padStart(2, '0')}.${String(t.d).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+    row('손님', B.nick);
+    if (card.since) row('입덕', card.since.replace(/-/g, '.'));
+    if (B.gens.length) row('숲별 기수', B.gens.join('·'));
+    if (B.mems.length) row('최애', B.mems.join(' · '));
+    dash();
+    row('품목', '수량', { c: MUTE });
+    B.cells.forEach(([lb, v, u]) => row(lb, v + (u || '')));
+    B.lines.forEach(([lb, v]) => row(lb, v));
+    if (B.cells.length || B.lines.length) dash();
+    block('입덕곡', card.debut.trim() ? [card.debut.trim()] : []);
+    block('최애곡', B.favs.slice(0, 6));
+    block('소취곡', B.wishes.slice(0, 6));
+    if (B.best) block('최고의 날', [B.best.date.replace(/-/g, '.'), B.best.title]);
+    if (B.bdg.length) block('뱃지', B.bdg.map(b => b.ic + ' ' + b.name));
+    if (card.debut.trim() || B.favs.length || B.wishes.length || B.best || B.bdg.length) dash();
+    row('합계', B.dd || 'D+', { b: true, sz: 20 });
+    row('결제', '평생 할부 · 숲별카드', { c: MUTE, sz: 11 });
+    dash();
+    if (B.line) {
+      ctx.font = `${F.w} ${14 * F.k}px ${F.f}`;
+      T.wrap('“' + B.line + '”', IN, 2).forEach(l => center(l, 14 * F.k, F.w, INK, F.f));
+      y += 6;
+    }
+    const yBar = y; y += 44;
+    ops.push(() => { ctx.fillStyle = INK; barcode(ctx, P + 20, yBar, IN - 40, 34, B.nick + card.since); });
+    center(String(ddayOf(card.since) || 0).padStart(6, '0') + ' ' + (card.since || '').replace(/-/g, ''), 9.5, 400, MUTE);
+    center('감사합니다. 또 만나요 ♥', 11.5, 400, INK);
+    center('sujeonghan78-lgtm.github.io/forestella-archive', 8.5, 400, MUTE);
+    const H = Math.ceil(y + 14 + ZZ);
+    cv.width = W * S; cv.height = H * S; cv.dataset.h = H; cv.dataset.w = W;
+    ctx.setTransform(S, 0, 0, S, 0, 0); ctx.textBaseline = 'top';
+    // 위아래 톱니 모양 종이
+    ctx.save(); ctx.beginPath(); ctx.moveTo(0, ZZ);
+    for (let x = 0; x < W; x += ZZ * 2) { ctx.lineTo(x + ZZ, 0); ctx.lineTo(Math.min(W, x + ZZ * 2), ZZ); }
+    ctx.lineTo(W, H - ZZ);
+    for (let x = W; x > 0; x -= ZZ * 2) { ctx.lineTo(x - ZZ, H); ctx.lineTo(Math.max(0, x - ZZ * 2), H - ZZ); }
+    ctx.closePath(); ctx.clip();
+    ctx.fillStyle = '#FBFAF6'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = C.acc; ctx.globalAlpha = .9; ctx.fillRect(0, 0, W, ZZ + 3); ctx.globalAlpha = 1;
+    ops.forEach(f => f());
+    ctx.restore();
+    paintStickers(ctx);
+    return { PH: 0, OX: 0, OY: 0, OW: W, OH: H };
+  }
+
+  // 신용카드: 앞면(칩·카드 번호·이름) + 뒷면(서명란에 한마디, 기록)
+  function drawCredit(cv) {
+    const F = CARD_FONTS[card.font] || CARD_FONTS.myeong, C = CARD_COLORS[card.color] || CARD_COLORS.forest;
+    const B = cardBits(), CW = 340, CH = 214, M = 16, W = CW + M * 2, S = 3, R = 16;
+    const ctx = cv.getContext('2d'), T = cardTools(ctx);
+    const sans = (w, px) => `${w} ${px}px ${CARD_SANS}`, mono = (w, px) => `${w} ${px}px ${CARD_MONO}`;
+    // 뒷면 높이 미리 재기
+    const backRows = [['입덕곡', card.debut.trim()], ['최애곡', B.favs.join(' · ')], ['소취곡', B.wishes.join(' · ')]].filter(x => x[1]);
+    const BH = Math.max(CH, 120 + backRows.length * 30 + (B.cells.length ? 46 : 0) + (B.bdg.length ? 30 : 0) + 30);
+    const H = M + CH + 18 + BH + M;
+    cv.width = W * S; cv.height = H * S; cv.dataset.h = H; cv.dataset.w = W;
+    ctx.setTransform(S, 0, 0, S, 0, 0); ctx.textBaseline = 'top';
+    ctx.fillStyle = '#EEF1EE'; ctx.fillRect(0, 0, W, H);
+    const face = (x, y, h) => {
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.18)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, CW, h, R) : ctx.rect(x, y, CW, h);
+      if (C.bg.length > 1) { const g = ctx.createLinearGradient(x, y, x + CW, y + h); g.addColorStop(0, C.bg[0]); g.addColorStop(1, C.bg[1]); ctx.fillStyle = g; } else ctx.fillStyle = C.bg[0];
+      ctx.fill(); ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, CW, h, R) : ctx.rect(x, y, CW, h); ctx.clip();
+      // 은은한 홀로그램 빛 + 물결 선
+      const sh = ctx.createLinearGradient(x, y, x + CW, y + h); sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(.45, 'rgba(255,255,255,.16)'); sh.addColorStop(.55, 'rgba(198,236,107,.12)'); sh.addColorStop(1, 'rgba(114,188,243,0)');
+      ctx.fillStyle = sh; ctx.fillRect(x, y, CW, h);
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      for (let i = 0; i < 7; i++) { ctx.beginPath(); for (let k = 0; k <= CW; k += 6) { const yy = y + h * .55 + i * 9 + Math.sin(k / 38 + i * .7) * 12; k ? ctx.lineTo(x + k, yy) : ctx.moveTo(x + k, yy); } ctx.stroke(); }
+    };
+    // 앞면
+    const x0 = M, y0 = M;
+    face(x0, y0, CH);
+    ctx.fillStyle = C.ink; ctx.font = `${F.big} ${20 * F.k}px ${F.f}`; ctx.fillText('숲별', x0 + 20, y0 + 18);
+    ctx.font = sans(600, 8.5); ctx.fillStyle = C.mute; T.spaced('FORESTELLA', x0 + CW - 20, y0 + 22, 2, 'right');
+    ctx.font = sans(500, 7.5); T.spaced('SOOPBYEOL MEMBERSHIP', x0 + CW - 20, y0 + 34, 1.3, 'right');
+    // 칩 + 비접촉 표시
+    const cx = x0 + 22, cy = y0 + 64;
+    const cg = ctx.createLinearGradient(cx, cy, cx + 42, cy + 32); cg.addColorStop(0, '#F3DE9A'); cg.addColorStop(1, '#C9A44E');
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx, cy, 42, 32, 6) : ctx.rect(cx, cy, 42, 32); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,90,30,.55)'; ctx.lineWidth = .8;
+    [[cx + 14, cy, cx + 14, cy + 32], [cx + 28, cy, cx + 28, cy + 32], [cx, cy + 11, cx + 14, cy + 11], [cx + 28, cy + 11, cx + 42, cy + 11], [cx, cy + 21, cx + 14, cy + 21], [cx + 28, cy + 21, cx + 42, cy + 21]].forEach(([a, b2, c2, d]) => { ctx.beginPath(); ctx.moveTo(a, b2); ctx.lineTo(c2, d); ctx.stroke(); });
+    ctx.strokeStyle = C.mute; ctx.lineWidth = 1.6;
+    [6, 11, 16].forEach(r => { ctx.beginPath(); ctx.arc(cx + 56, cy + 16, r, -0.6, 0.6); ctx.stroke(); });
+    // 카드 번호: 입덕 연도 · 월일 · D+ · 직관 수
+    const sn = (card.since || '0000-00-00').split('-'), went = boxStats().went.length;
+    const num = [sn[0], sn[1] + sn[2], String(ddayOf(card.since) || 0).padStart(4, '0').slice(-4), String(went).padStart(4, '0').slice(-4)];
+    ctx.font = mono(700, 19); ctx.fillStyle = C.ink;
+    T.spaced(num.join('  '), x0 + 22, y0 + 112, 1.5);
+    ctx.font = sans(500, 7); ctx.fillStyle = C.mute;
+    T.spaced('MEMBER SINCE', x0 + 22, y0 + 146, 1); T.spaced('VALID THRU', x0 + 112, y0 + 146, 1);
+    ctx.font = mono(700, 12); ctx.fillStyle = C.ink;
+    ctx.fillText(card.since ? sn[1] + '/' + sn[0].slice(2) : '--/--', x0 + 22, y0 + 156); ctx.fillText('FOREVER', x0 + 112, y0 + 156);
+    ctx.font = `${F.w} ${17 * F.k}px ${F.f}`; ctx.fillStyle = C.ink;
+    ctx.fillText(T.fit(B.nick, CW - 130), x0 + 22, y0 + 180 - (F.k > 1 ? 3 : 0));
+    // 숲 · 별 두 동그라미 로고
+    const lx = x0 + CW - 62, ly = y0 + CH - 46;
+    ctx.globalAlpha = .92; ctx.fillStyle = '#62B98A'; ctx.beginPath(); ctx.arc(lx + 12, ly + 16, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#E8C77A'; ctx.globalAlpha = .85; ctx.beginPath(); ctx.arc(lx + 32, ly + 16, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    ctx.restore();
+    // 뒷면
+    const y1 = y0 + CH + 18;
+    face(x0, y1, BH);
+    ctx.fillStyle = '#1C1C1E'; ctx.fillRect(x0, y1 + 22, CW, 36);
+    // 서명란: 한마디
+    const sx = x0 + 18, sy = y1 + 72, sw = CW - 96;
+    ctx.fillStyle = '#FBFAF4'; ctx.fillRect(sx, sy, sw, 34);
+    ctx.strokeStyle = 'rgba(120,150,130,.25)'; ctx.lineWidth = 1;
+    for (let i = 4; i < 34; i += 6) { ctx.beginPath(); ctx.moveTo(sx, sy + i); ctx.lineTo(sx + sw, sy + i); ctx.stroke(); }
+    ctx.font = `400 ${18}px "Nanum Pen Script", cursive`; ctx.fillStyle = '#23355E';
+    ctx.fillText(T.fit(B.line || B.nick, sw - 14), sx + 8, sy + 8);
+    ctx.fillStyle = '#FBFAF4'; ctx.fillRect(sx + sw + 8, sy, 52, 34);
+    ctx.font = mono(700, 12); ctx.fillStyle = '#26282A'; ctx.fillText(String(went).padStart(3, '0'), sx + sw + 18, sy + 11);
+    ctx.font = sans(500, 6.5); ctx.fillStyle = C.mute; T.spaced('AUTHORIZED SIGNATURE · 한마디', sx, sy + 40, .8); T.spaced('직관', sx + sw + 8, sy + 40, .8);
+    let yy = sy + 58;
+    backRows.forEach(([lb, v]) => {
+      ctx.font = sans(500, 8); ctx.fillStyle = C.mute; T.spaced(lb, sx, yy, 1);
+      ctx.font = `${F.w} ${13 * F.k}px ${F.f}`; ctx.fillStyle = lb === '소취곡' ? C.acc : C.ink; ctx.fillText(T.fit(v, CW - 36), sx, yy + 11 - (F.k > 1 ? 2 : 0));
+      yy += 30;
+    });
+    if (B.cells.length) {
+      const cw = (CW - 36) / Math.min(4, B.cells.length);
+      B.cells.slice(0, 4).forEach(([lb, v, u], i) => {
+        const x = sx + i * cw;
+        ctx.font = sans(500, 8); ctx.fillStyle = C.mute; T.spaced(lb, x, yy + 4, 1);
+        ctx.font = sans(700, 15); ctx.fillStyle = C.ink; const vt = T.fit(String(v), cw - 18); ctx.fillText(vt, x, yy + 16);
+        if (u) { const vw = ctx.measureText(vt).width; ctx.font = sans(400, 9); ctx.fillText(u, x + vw + 1.5, yy + 22); }
+      });
+      yy += 46;
+    }
+    if (B.bdg.length) {
+      ctx.font = sans(600, 9.5); let bx = sx;
+      B.bdg.forEach(b => { const t = b.ic + ' ' + b.name, w = ctx.measureText(t).width + 14; ctx.strokeStyle = C.acc; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx + .5, yy + .5, w, 19, 10) : ctx.rect(bx, yy, w, 19); ctx.stroke(); ctx.fillStyle = C.ink; ctx.fillText(t, bx + 7, yy + 5); bx += w + 6; });
+      yy += 30;
+    }
+    ctx.font = sans(400, 7.5); ctx.fillStyle = C.mute;
+    ctx.fillText('이 카드는 숲별 기록장에서 만든 팬 카드예요. 돈은 안 나가요 ♥', sx, y1 + BH - 26);
+    ctx.textAlign = 'right'; ctx.fillText('sujeonghan78-lgtm.github.io/forestella-archive', x0 + CW - 18, y1 + BH - 14); ctx.textAlign = 'left';
+    ctx.restore();
+    paintStickers(ctx);
+    return { PH: 0, OX: 0, OY: 0, OW: W, OH: H };
+  }
+
+  // 플레이리스트: 음악 앱 재생 화면처럼 (앨범 자리엔 숲별 그림, 곡 목록은 최애곡·소취곡)
+  function drawPlaylist(cv) {
+    const F = CARD_FONTS[card.font] || CARD_FONTS.myeong, C = CARD_COLORS[card.color] || CARD_COLORS.forest;
+    const B = cardBits(), W = 320, P = 22, IN = W - P * 2, S = 3;
+    const ctx = cv.getContext('2d'), T = cardTools(ctx);
+    const sans = (w, px) => `${w} ${px}px ${CARD_SANS}`;
+    const tracks = [...(card.debut.trim() ? [[card.debut.trim(), '입덕곡']] : []), ...B.favs.map(f => [f, '최애곡']), ...B.wishes.map(f => [f, '소취곡'])].slice(0, 9);
+    const AH = IN, H = Math.ceil(24 + 30 + AH + 20 + 70 + 44 + 34 + tracks.length * 34 + (B.line ? 46 : 0) + 40);
+    cv.width = W * S; cv.height = H * S; cv.dataset.h = H; cv.dataset.w = W;
+    ctx.setTransform(S, 0, 0, S, 0, 0); ctx.textBaseline = 'top';
+    ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(0, 0, W, H, 22) : ctx.rect(0, 0, W, H); ctx.clip();
+    if (C.bg.length > 1) { const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, C.bg[0]); g.addColorStop(1, C.bg[1]); ctx.fillStyle = g; } else ctx.fillStyle = C.bg[0];
+    ctx.fillRect(0, 0, W, H);
+    let y = 24;
+    ctx.font = sans(600, 9); ctx.fillStyle = C.mute; T.spaced('PLAYING FROM 숲별 기록장', W / 2, y, 1.4, 'center');
+    y += 30;
+    // 앨범 자리: 사진이 있으면 사진, 없으면 숲과 별 그림
+    const hasPhoto = !!(cardPhoto && cardImg && cardImg.complete && cardImg.naturalWidth);
+    ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(P, y, IN, AH, 14) : ctx.rect(P, y, IN, AH); ctx.clip();
+    if (hasPhoto) {
+      const iw = cardImg.naturalWidth, ih = cardImg.naturalHeight, sc = Math.max(IN / iw, AH / ih);
+      ctx.drawImage(cardImg, P - (iw * sc - IN) * (cardPhoto.x ?? .5), y - (ih * sc - AH) * (cardPhoto.y ?? .5), iw * sc, ih * sc);
+    } else {
+      const g = ctx.createLinearGradient(0, y, 0, y + AH); g.addColorStop(0, '#22345A'); g.addColorStop(1, '#2F6B52'); ctx.fillStyle = g; ctx.fillRect(P, y, IN, AH);
+      let sd = 3; for (const ch of B.nick) sd = (sd * 31 + ch.charCodeAt(0)) >>> 0;
+      ctx.fillStyle = '#F4EFD0';
+      for (let i = 0; i < 40; i++) { sd = (sd * 1103515245 + 12345) >>> 0; const sx = P + (sd >>> 8) % IN, sy = y + (sd >>> 4) % Math.round(AH * .55); ctx.globalAlpha = .4 + (sd % 6) / 10; ctx.fillRect(sx, sy, 1.6, 1.6); }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#F3E7A0'; ctx.beginPath(); ctx.arc(P + IN * .74, y + AH * .26, 18, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#16301F';
+      for (let i = -1; i < 9; i++) { const bx = P + i * IN / 8, th = AH * (.32 + ((i * 37) % 5) / 20); ctx.beginPath(); ctx.moveTo(bx - 4, y + AH); ctx.lineTo(bx + IN / 16, y + AH - th); ctx.lineTo(bx + IN / 8 + 4, y + AH); ctx.fill(); }
+      ctx.font = `${F.big} ${30 * F.k}px ${F.f}`; ctx.fillStyle = '#F4EFE4'; ctx.textAlign = 'center'; ctx.fillText(B.dd || '숲별', P + IN / 2, y + AH * .4); ctx.textAlign = 'left';
+    }
+    ctx.restore();
+    y += AH + 20;
+    ctx.font = `${F.w} ${21 * F.k}px ${F.f}`; ctx.fillStyle = C.ink; ctx.fillText(T.fit(B.nick + '의 숲별 플레이리스트', IN - 24), P, y);
+    ctx.fillStyle = C.acc; ctx.font = sans(400, 18); ctx.textAlign = 'right'; ctx.fillText('♥', W - P, y + 2); ctx.textAlign = 'left';
+    y += 21 * F.k + 8;
+    ctx.font = sans(400, 11.5); ctx.fillStyle = C.mute;
+    ctx.fillText(T.fit([B.mems.length ? B.mems.join(' · ') : 'Forestella', card.since ? card.since.replace(/-/g, '.') + ' 입덕' : ''].filter(Boolean).join(' · '), IN), P, y);
+    y += 30;
+    // 재생 막대: 입덕일부터 오늘까지, 끝없이 이어지는 중
+    ctx.fillStyle = C.line; ctx.fillRect(P, y, IN, 3);
+    ctx.fillStyle = C.ink; ctx.fillRect(P, y, IN * .72, 3); ctx.beginPath(); ctx.arc(P + IN * .72, y + 1.5, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.font = sans(500, 9.5); ctx.fillStyle = C.mute; ctx.fillText(B.dd || 'D+0', P, y + 10); ctx.textAlign = 'right'; ctx.fillText('∞', W - P, y + 10); ctx.textAlign = 'left';
+    y += 30;
+    // 버튼 줄
+    const mid = W / 2;
+    ctx.fillStyle = C.ink;
+    ctx.beginPath(); ctx.arc(mid, y + 14, 20, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.bg[0]; ctx.fillRect(mid - 6, y + 6, 4, 16); ctx.fillRect(mid + 2, y + 6, 4, 16);
+    ctx.fillStyle = C.ink;
+    [[-1, mid - 62], [1, mid + 62]].forEach(([d, x]) => { ctx.beginPath(); ctx.moveTo(x - 8 * d, y + 6); ctx.lineTo(x + 4 * d, y + 14); ctx.lineTo(x - 8 * d, y + 22); ctx.fill(); ctx.fillRect(x + 4 * d - (d > 0 ? 0 : 2), y + 6, 2, 16); });
+    ctx.font = sans(400, 14); ctx.fillStyle = C.mute; ctx.fillText('⇄', P, y + 6); ctx.textAlign = 'right'; ctx.fillText('↻', W - P, y + 6); ctx.textAlign = 'left';
+    y += 50;
+    ctx.font = sans(700, 10); ctx.fillStyle = C.mute; T.spaced('NEXT UP', P, y, 1.5); y += 22;
+    tracks.forEach(([n, tag], i) => {
+      ctx.font = sans(500, 11); ctx.fillStyle = C.mute; ctx.fillText(String(i + 1).padStart(2, '0'), P, y + 3);
+      ctx.font = `${F.w} ${14 * F.k}px ${F.f}`; ctx.fillStyle = tag === '소취곡' ? C.acc : C.ink; ctx.fillText(T.fit(n, IN - 90), P + 26, y + 1 - (F.k > 1 ? 2 : 0));
+      ctx.font = sans(500, 9.5); ctx.fillStyle = C.mute; ctx.textAlign = 'right'; ctx.fillText(tag, W - P, y + 4); ctx.textAlign = 'left';
+      ctx.fillStyle = C.line; ctx.fillRect(P, y + 26, IN, 1);
+      y += 34;
+    });
+    if (B.line) { y += 10; ctx.font = `${F.w} ${14 * F.k}px ${F.f}`; ctx.fillStyle = C.ink; ctx.textAlign = 'center'; ctx.fillText(T.fit('“' + B.line + '”', IN), W / 2, y); ctx.textAlign = 'left'; y += 36; }
+    ctx.font = sans(400, 8); ctx.fillStyle = C.mute; ctx.fillText('숲별 기록장', P, H - 24); ctx.textAlign = 'right'; ctx.fillText('sujeonghan78-lgtm.github.io/forestella-archive', W - P, H - 24); ctx.textAlign = 'left';
+    ctx.restore();
+    paintStickers(ctx);
+    return { PH: 0, OX: 0, OY: 0, OW: W, OH: H };
+  }
+
   function drawCard(cv) {
+    if (card.frame === 'receipt') return drawReceipt(cv);
+    if (card.frame === 'credit') return drawCredit(cv);
+    if (card.frame === 'playlist') return drawPlaylist(cv);
     const C = CARD_COLORS[card.color] || CARD_COLORS.forest, F = CARD_FONTS[card.font] || CARD_FONTS.myeong;
     const fr = CARD_FRAMES[card.frame] ? card.frame : 'round';
     // 사진 칸: 폴라로이드는 거의 정사각형, 포토카드는 카드 전체가 사진이고 글은 아래 판 위에
@@ -2132,33 +2436,7 @@
       // 포토카드 위 고리 구멍
       ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(W / 2, 16, 5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
-    // 내 사진 스티커 (틀 위에 자유롭게)
-    cardStk.forEach((k, i) => {
-      const im = cardStkImg.get(k.src);
-      if (!im || !im.complete || !im.naturalWidth) return;
-      const iw = im.naturalWidth, ih = im.naturalHeight;
-      const sq = k.shape !== 'rect', w = k.w, h = sq ? k.w : k.w * ih / iw;
-      ctx.save();
-      ctx.translate(k.x, k.y); ctx.rotate((k.r || 0) * Math.PI / 180);
-      const shape = (m) => {
-        ctx.beginPath();
-        if (k.shape === 'circle') ctx.arc(0, 0, w / 2 + m, 0, Math.PI * 2);
-        else if (k.shape === 'heart') { const a = w / 2 + m; ctx.moveTo(0, a * 0.95); ctx.bezierCurveTo(-a * 1.25, a * 0.1, -a * 0.75, -a * 1.05, 0, -a * 0.45); ctx.bezierCurveTo(a * 0.75, -a * 1.05, a * 1.25, a * 0.1, 0, a * 0.95); }
-        else ctx.roundRect ? ctx.roundRect(-w / 2 - m, -h / 2 - m, w + m * 2, h + m * 2, 8 + m) : ctx.rect(-w / 2 - m, -h / 2 - m, w + m * 2, h + m * 2);
-      };
-      ctx.shadowColor = 'rgba(0,0,0,.22)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
-      shape(4); ctx.fillStyle = '#FFFFFF'; ctx.fill();
-      ctx.shadowColor = 'transparent';
-      shape(0); ctx.clip();
-      const sc = sq ? Math.max(w / iw, w / ih) : w / iw;
-      ctx.drawImage(im, -iw * sc / 2, -ih * sc / 2, iw * sc, ih * sc);
-      ctx.restore();
-      if (i === cardSel && !cardExport) {
-        ctx.save(); ctx.translate(k.x, k.y); ctx.rotate((k.r || 0) * Math.PI / 180);
-        ctx.strokeStyle = '#2F7A5A'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
-        ctx.strokeRect(-w / 2 - 9, -h / 2 - 9, w + 18, h + 18); ctx.restore();
-      }
-    });
+    paintStickers(ctx);
     return { PH: hasPhoto ? photoH : 0, OX, OY, OW, OH };
   }
 
@@ -2210,7 +2488,7 @@
     let geo = { PH: 0 }, tick = 0;
     const redraw = () => {
       const my = ++tick;
-      const text = [card.nick, card.debut, card.fav, card.wish, card.line, '소취곡 듣고 싶은 곡 ADMIT ONE ' + CARD_BADGES.map(b => b[2]).join(' '), ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 시청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
+      const text = [card.nick, card.debut, card.fav, card.wish, card.line, '소취곡 듣고 싶은 곡 ADMIT ONE 영수증 품목 수량 합계 결제 평생 할부 일시 손님 입덕 기수 최고의 날 감사합니다 또 만나요 뱃지 MEMBER SINCE VALID THRU FOREVER 숲별의 플레이리스트 NEXT UP PLAYING FROM 이 카드는 팬 카드예요 돈은 안 나가요 ' + CARD_BADGES.map(b => b[2]).join(' '), ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 시청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
       geo = drawCard(cv);
       cardFontsReady(text).then(() => { if (my === tick) geo = drawCard(cv); });
     };
