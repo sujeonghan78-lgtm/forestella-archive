@@ -393,7 +393,10 @@
     // 시트에 없는 관련 영상(보충 파일 videos): 같은 영상이 시트에 있으면 시트 우선
     const sheetVids = new Set(videos.map(v => v.videoId));
     buildVideos((extra.videos || []).filter(r => !sheetVids.has(r['영상ID']))).forEach(v => videos.push(v));
-    const reports = raw.reports ? buildReports(toObjects(raw.reports)) : [];
+    // 예전 제보 폼 제보: 번호('r'+…)를 붙여 관리자가 '반영했어요'로 숨길 수 있게 해요. extra.reportHide {date, has}는 저장소에서 직접 숨긴 것
+    const repHide = extra.reportHide || [];
+    const reports = (raw.reports ? buildReports(toObjects(raw.reports)) : []).map(r => ({ ...r, id: 'r' + slVer([r.time, r.raw || r.message]) }))
+      .filter(r => !repHide.some(h => r.date === h.date && (r.raw || r.message || '').includes(h.has)));
     const byId = new Map(events.map(e => [e.id, e]));
     events.forEach(e => { e.related = []; });
     // 콘서트 셋리스트 (나무위키·기사 기준) 붙이기

@@ -3130,6 +3130,13 @@
     const next = window.DATA.rebuild();
     if (next) { data = next; searchIndex = null; baseHash = null; render(); }
   }
+  // 반영한 팬 제보 숨기기(관리자): 일정 숨김과 같은 서명 줄로 보내요 (번호가 r로 시작해서 시트 일정 탭은 안 건드려요)
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.rep-done');
+    if (!b || !isAdmin()) return;
+    b.disabled = true; b.textContent = '숨기는 중…';
+    try { await sendEvMark(b.dataset.id, '숨김'); const box = b.closest('.report'); if (box) box.remove(); } catch (err) { b.disabled = false; b.textContent = '다시 눌러 주세요'; }
+  });
   async function sendEvMark(id, state, to = '') {
     const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
     const m = { id, state, n: String(Date.now()), ...(to ? { to } : {}) };
@@ -3692,7 +3699,8 @@
 
   function reportsFor(e) {
     const t = norm(e.title);
-    return data.reports.filter(r => r.date === e.date && (!r.title || t.includes(norm(r.title)) || norm(r.title).includes(t)));
+    const done = window.SB_EV_HIDE || new Set();
+    return data.reports.filter(r => !done.has(r.id) && r.date === e.date && (!r.title || t.includes(norm(r.title)) || norm(r.title).includes(t)));
   }
 
   // ---------- 공식 유튜브 (data/yt_videos.json) ----------
@@ -3816,6 +3824,7 @@
             <span>${esc([r.type, r.song].filter(Boolean).join(' · '))}</span>
             ${r.message ? `<span class="report-msg">${esc(r.message)}</span>` : ''}
             ${/^https?:\/\//.test(r.link) ? `<a href="${esc(r.link)}" target="_blank" rel="noopener nofollow">근거 링크 ›</a>` : ''}
+            ${isAdmin() ? `<button type="button" class="link-btn rep-done" data-id="${esc(r.id)}">반영했어요 · 숨기기 (관리자)</button>` : ''}
           </div>`).join('')}
       </section>` : '';
 
