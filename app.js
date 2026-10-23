@@ -1441,6 +1441,7 @@
   // ---------- 직관 지도: 내가 간 일정을 지도에 찍고, 날짜순으로 따라가며 되돌아봐요 ----------
   // 지도 프로그램(Leaflet)과 공연장 좌표(data/places.json)는 이 화면을 열 때만 불러와요
   const REGION_C = { '서울': [37.5665, 126.978], '경기·인천': [37.42, 126.95], '강원': [37.75, 128.3], '충청': [36.55, 127.2], '전라': [35.35, 127.0], '경상': [35.75, 128.75], '제주': [33.42, 126.55] };
+  const MAP_Z = 'sb-map-z', mapZ = () => { const z = boxRead(MAP_Z); return z >= 10 && z <= 17 ? z : 12; };
   let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', intro: true }, lmap = null, mapPlay = null;
   function loadLeaflet() {
     if (window.L) return Promise.resolve(window.L);
@@ -1505,11 +1506,11 @@
       <div class="map-car" id="map-car"></div>
       <div class="map-stage">
         <div id="map"></div>
-        <div class="map-tools"><button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button></div>
-        <div class="map-pinbar" id="map-pinbar" hidden></div>
+        <div class="map-tools"><button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button><button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button></div>
         <div class="map-panel" id="map-nav"></div>
         ${mapSt.intro ? mapIntro(ml) : ''}
       </div>
+      <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
       ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개 (해외 · 장소 모름)</summary>${ml.off.map(x => `<a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>`).join('')}</details>` : ''}
@@ -1536,6 +1537,12 @@
         const g = groups.get(key) || groups.set(key, { key, items: [] }).get(key);
         g.items.push(x);
       });
+      // 다녀간 순서대로 잇는 길: 지나온 길은 진하게, 남은 길은 점선
+      const pt = x => [x.l.lat, x.l.lng], cut = Math.max(0, mapSt.i);
+      if (ml.on.length > 1) {
+        L.polyline(ml.on.slice(cut).map(pt), { color: '#2E8B57', weight: 2, opacity: .45, dashArray: '4 6', interactive: false }).addTo(layer);
+        if (cut > 0) L.polyline(ml.on.slice(0, cut + 1).map(pt), { color: '#2E8B57', weight: 3, opacity: .8, interactive: false }).addTo(layer);
+      }
       groups.forEach(g => {
         const reg = g.key.startsWith('r:'), name = g.key.slice(2), first = g.items[0].l;
         const at = reg ? REGION_C[name] || [first.lat, first.lng] : [first.lat, first.lng];
@@ -1609,10 +1616,14 @@
       if (i < 0 || i >= ml.on.length) return;
       mapSt.i = i;
       const x = ml.on[i];
-      m.flyTo([x.l.lat, x.l.lng], x.l.exact ? 14 : 9, { duration: 1.1 });
+      m.flyTo([x.l.lat, x.l.lng], x.l.exact ? mapZ() : 9, { duration: 1.1 });
       nav(); draw();
     };
     document.getElementById('map-here').onclick = () => { mapStop(); go(mapSt.i); };
+    // 확대 정도: ＋/－로 바꾸면 다음 장소로 갈 때도 그 배율로 가요 (이 폰에 기억)
+    const zoomBy = d => { mapStop(); const z = Math.min(17, Math.max(5, m.getZoom() + d)); m.setZoom(z); if (z >= 10) boxWrite(MAP_Z, z); };
+    document.getElementById('map-zin').onclick = () => zoomBy(1);
+    document.getElementById('map-zout').onclick = () => zoomBy(-1);
     const all = () => m.fitBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, animate: false });
     // 여행 시작: 첫 발자국부터 3.5초마다 다음으로 (지도·버튼을 만지면 멈춰요)
     const intro = document.getElementById('map-intro');
@@ -1632,10 +1643,29 @@
       const bar = document.getElementById('map-pinbar');
       let mk = null, at = null;
       bar.hidden = false;
-      bar.innerHTML = `<span><b>${esc(x.l.place)}</b> 위치를 지도에서 눌러 주세요</span><button type="button" class="chip on" id="pin-send" disabled>이 위치로 보내기</button><button type="button" class="link-btn" id="pin-no">취소</button>`;
-      document.getElementById('map').scrollIntoView({ block: 'center', behavior: 'smooth' });
-      const onClick = ev => { at = ev.latlng; if (mk) mk.setLatLng(at); else mk = L.marker(at, { icon: pinIcon }).addTo(m); document.getElementById('pin-send').disabled = false; };
+      bar.innerHTML = `<span><b>${esc(x.l.place)}</b> 위치를 찾아 주세요</span>
+        <form class="pin-find" id="pin-find"><input type="search" id="pin-q" value="${esc(x.l.place)}" placeholder="장소 이름이나 주소" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
+        <div class="pin-res" id="pin-res"></div>
+        <span class="src-note">찾은 곳을 고르거나 지도를 직접 눌러 핀을 찍어 주세요. 다시 누르면 핀이 옮겨져요.</span>
+        <button type="button" class="chip on" id="pin-send" disabled>이 위치로 보내기</button><button type="button" class="link-btn" id="pin-no">취소</button>`;
+      bar.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const put = ll => { at = ll; if (mk) mk.setLatLng(at); else mk = L.marker(at, { icon: pinIcon }).addTo(m); document.getElementById('pin-send').disabled = false; };
+      const onClick = ev => put(ev.latlng);
       m.on('click', onClick);
+      // 장소 이름·주소로 찾기 (OpenStreetMap 검색). '37.51, 127.12'처럼 좌표를 붙여 넣어도 돼요
+      document.getElementById('pin-find').onsubmit = async ev => {
+        ev.preventDefault();
+        const q = document.getElementById('pin-q').value.trim(), res = document.getElementById('pin-res');
+        if (!q) return;
+        const c = q.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{2,3}\.\d+)/);
+        if (c) { put(L.latLng(+c[1], +c[2])); m.flyTo([+c[1], +c[2]], 16); res.innerHTML = ''; return; }
+        res.innerHTML = '<span class="src-note">찾는 중…</span>';
+        try {
+          const r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 5, 'accept-language': 'ko' }))).json();
+          res.innerHTML = r.length ? r.map((h, i) => `<button type="button" class="pin-hit" data-i="${i}"><b>${esc(h.name || h.display_name.split(',')[0])}</b><small>${esc(h.display_name.split(',').slice(1, 4).join(','))}</small></button>`).join('') : '<span class="src-note">못 찾았어요. 건물 이름이나 도로명 주소로 다시 찾아 주세요.</span>';
+          res.querySelectorAll('.pin-hit').forEach(b => b.onclick = () => { const h = r[+b.dataset.i]; put(L.latLng(+h.lat, +h.lon)); m.flyTo([+h.lat, +h.lon], 16); res.querySelectorAll('.pin-hit').forEach(o => o.classList.toggle('on', o === b)); });
+        } catch (err) { res.innerHTML = '<span class="src-note">지금은 찾기가 안 돼요. 지도를 직접 눌러 주세요.</span>'; }
+      };
       const end = () => { m.off('click', onClick); if (mk) mk.remove(); bar.hidden = true; };
       document.getElementById('pin-no').onclick = end;
       document.getElementById('pin-send').onclick = async () => {
@@ -1647,7 +1677,7 @@
       };
     };
     nav(); draw();
-    if (!intro) { const x0 = ml.on[mapSt.i]; m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? 13 : 9); }
+    if (!intro) { const x0 = ml.on[mapSt.i]; m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? mapZ() : 9); }
   }
   function mapStop() { if (mapPlay) { clearInterval(mapPlay); mapPlay = null; } }
   const ym = v => v ? `${v.slice(2, 4)}년 ${+v.slice(5, 7)}월` : '';
@@ -4108,6 +4138,11 @@
         ${slState(e)}
         <div class="day-songs">${e.songs.map(n => songRow(n, e)).join('')}</div>
         ${e.fanSrc && !e.fanSet ? `<p class="src-note">${e.songSource !== '팬 기록' ? '일부 곡은 ' : ''}${e.fanSrc.note ? `${esc(e.fanSrc.note)} 때 ` : ''}인터넷에 올라온 정보를 모은 거라 실제와 다를 수 있어요.</p>` : SOURCE_NOTE[e.songSource] ? `<p class="src-note">${esc(SOURCE_NOTE[e.songSource])}</p>` : ''}`;
+    } else if (e.setlist && e.setlist.songs.length) {
+      // 이날 곡이 따로 없으면 투어 셋리스트를 보여줘요 (공연마다 조금 다를 수 있어요)
+      songs = `
+        <p class="src-note">이 투어 셋리스트예요. 공연마다 조금 다를 수 있어요. <a href="#/tour/${encodeURIComponent(e.setlist.id)}">투어 보기 ›</a></p>
+        <div class="day-songs">${e.setlist.songs.map(x => songRow(x.t, e)).join('')}</div>`;
     } else {
       songs = `<p class="src-note">아직 확인된 곡이 없어요.</p>`;
     }

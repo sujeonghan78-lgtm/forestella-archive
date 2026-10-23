@@ -1074,7 +1074,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 #map .leaflet-tile-pane{filter:saturate(.4) brightness(1.05) contrast(.92)}
 .map-tools{position:absolute;top:10px;right:10px;z-index:500;display:flex;flex-direction:column;gap:6px}
 .map-tool{width:36px;height:36px;border:0;border-radius:12px;background:rgba(255,255,255,.92);box-shadow:0 1px 6px rgba(0,0,0,.15);font-size:17px;color:#1F5E3E;cursor:pointer}
-.map-pinbar{position:absolute;left:10px;right:56px;top:10px;z-index:600;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.96);box-shadow:0 2px 10px rgba(0,0,0,.15);font-size:13px}
+.map-pinbar{margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:12px;border-radius:16px;background:var(--card,#fff);border:1px solid #DDE8E1;font-size:13px}
 .map-pinbar[hidden]{display:none}
 .map-panel{position:absolute;left:10px;right:10px;bottom:10px;z-index:500;display:flex;align-items:center;gap:6px;padding:10px 8px;border-radius:18px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 4px 18px rgba(0,0,0,.12)}
 .map-info{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
@@ -1133,3 +1133,14 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .ok-mini summary::-webkit-details-marker { display: none; }
 .ok-mini[open] { display: block; }
 .ok-mini span { display: block; margin-top: 4px; color: var(--ink-2); }
+/* 지도 위치 찾기 */
+.pin-find{display:flex;gap:6px;flex-basis:100%}
+.pin-find input{flex:1;min-width:0;padding:8px 10px;border:1px solid #CFE0D6;border-radius:10px;font:inherit;background:#fff;color:#16241C}
+.pin-res{flex-basis:100%;max-height:140px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.pin-res:empty{display:none}
+.pin-hit{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:6px 10px;border:1px solid #DDE8E1;border-radius:10px;background:#fff;color:#16241C;font:inherit}
+.pin-hit small{color:#5E6E64;font-size:11px}
+.pin-hit.on{border-color:#2E8B57;background:#EEF7F1}
+.map-pinbar .src-note{flex-basis:100%;margin:0}
+.pin-find{min-width:0;width:100%}
+.pin-find .chip{flex:none;margin:0}
