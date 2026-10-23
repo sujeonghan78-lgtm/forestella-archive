@@ -6,17 +6,18 @@ jobs:
   p:
     runs-on: ubuntu-latest
     steps:
-      - run: |
+      - shell: bash
+        run: |
+          set +e
           UA='Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36'
-          q=$(python3 -c "import urllib.parse;print(urllib.parse.quote('킨텍스 제2전시장'))")
-          r=$(curl -s -m 20 -A "$UA" -H 'Referer: https://map.naver.com/' "https://map.naver.com/p/api/search/allSearch?query=$q&type=all&searchCoord=127.0;37.5" | head -c 600 | tr '\n' ' ')
-          echo "::notice title=allSearch::${r:0:500}"
-          id=$(echo "$r" | grep -o '"id":"[0-9]*"' | head -1 | grep -o '[0-9]*')
+          q=$(python3 -c "import urllib.parse;print(urllib.parse.quote('킨텍스'))")
+          r=$(curl -s -m 20 -A "$UA" "https://m.map.naver.com/search2/searchMore.naver?query=$q&sm=clk&style=v5&page=1&displayCount=3&type=SITE_1" | tr '\n' ' ')
+          echo "::notice title=searchMore::${r:0:400}"
+          r2=$(curl -s -m 20 -A "$UA" "https://pcmap.place.naver.com/place/list?query=$q" | grep -o '"id":"[0-9]\{5,\}"[^}]\{0,300\}' | head -2 | tr '\n' ' ')
+          echo "::notice title=pcmaplist::${r2:0:500}"
+          id=$(echo "$r $r2" | grep -o '"id":"[0-9]\{5,\}"' | head -1 | grep -o '[0-9]*')
           echo "::notice title=id::$id"
-          [ -z "$id" ] && id=13491817
-          h=$(curl -s -m 20 -A "$UA" "https://m.place.naver.com/place/$id/home" | grep -o '"x":"[0-9.]*","y":"[0-9.]*"\|"latitude":[0-9.]*\|"longitude":[0-9.]*\|og:title" content="[^"]*' | head -4 | tr '\n' ' ')
+          h=$(curl -s -m 20 -A "$UA" "https://m.place.naver.com/place/$id/home" | grep -o '"x":"[0-9.]*","y":"[0-9.]*"\|og:title" content="[^"]*' | head -3 | tr '\n' ' ')
           echo "::notice title=mplace::$h"
-          s=$(curl -s -m 20 -o /dev/null -w '%{http_code} %{redirect_url}' -A "$UA" "https://naver.me/")
+          s=$(curl -s -m 20 -o /dev/null -w '%{http_code} %{redirect_url}' -A "$UA" "https://naver.me/xH8VxrNG")
           echo "::notice title=naverme::$s"
-          s2=$(curl -s -m 20 -o /dev/null -w '%{http_code} %{redirect_url}' -A "$UA" "https://map.naver.com/p/entry/place/$id")
-          echo "::notice title=entry::$s2"
