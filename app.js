@@ -10,6 +10,7 @@
       <header class="brand">
         <span class="brand-name">숲별 기록장</span>
         <span class="brand-sub">포레스텔라 비공식 팬 아카이브</span>
+        <button type="button" class="lang-btn lang-keep" onclick="SB_LANG.open()" aria-label="Language">🌐 ${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</button>
       </header>`;
   }
 
@@ -409,6 +410,7 @@
 
   // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
   const NEWS = [
+    { d: '2026-10-23', t: '영어·일본어로도 볼 수 있어요 🌐', s: '홈 위 🌐 버튼이나 더보기의 언어에서 바꿀 수 있어요. 메뉴와 버튼이 바뀌고, 일정 이름까지 보려면 \'전체 번역\'을 눌러 주세요.', a: '#/more' },
     { d: '2026-10-23', t: '두훈 님 뮤지컬 일정이 들어왔어요', s: '공연 기간으로 들어가 있고, 출연한 회차는 팬분들이 직접 올려 주실 수 있어요. 내가 본 회차를 누르면 보관함 직관에 들어가요.', a: '#/e/20222' },
     { d: '2026-10-23', t: '팬 제보 현황을 한눈에 볼 수 있어요', s: '팬분들이 올린 일정 · 셋리 · 날짜 고치기가 몇 개인지, 확인이 필요한 게 뭔지 모아 봐요.', a: '#/fan' },
     { d: '2026-10-23', t: '의견에 사진을 붙일 수 있어요', s: '의견 남기기 · 틀린 곳 알려주기에서 "📷 사진 붙이기"로 캡처를 같이 보내 주세요. 사진은 관리자만 보고 30일 뒤 지워져요.', a: '#/opinion' },
@@ -2548,6 +2550,7 @@
         <span>일정은 공식 팬카페 캘린더(2021년 7월 이전은 나무위키·방송 영상), 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
       </a>
       <nav aria-label="더보기 메뉴">
+        <button type="button" class="lang-row lang-keep" onclick="SB_LANG.open()">🌐 언어 · Language · 言語 <b>${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</b></button>
         ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : '새로 생긴 기능')(newsUnread().length))}
         ${item('#/fan', '<path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/>', '팬 제보 현황', (n => n ? `확인 필요 ${n}` : '일정 · 셋리 · 날짜')((data.fan || []).filter(l => /^(ev|sl|slfix|dt)$/.test(l.k) && data.byId.get(l.id) && fanState(l, data.byId.get(l.id))[0] === 'wait').map(l => l.id + l.k + (l.to || '')).filter((x, i, a) => a.indexOf(x) === i).length))}
         ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
