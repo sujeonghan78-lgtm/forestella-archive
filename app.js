@@ -409,6 +409,8 @@
 
   // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
   const NEWS = [
+    { d: '2026-10-23', t: '숲별 카드가 더 예뻐졌어요 🎫', s: '티켓 · 영수증 · 플레이리스트 모양, 내 사진 스티커, 소취곡, 보관함 기록으로 받는 뱃지, 새 카드 색을 넣었어요.', a: '#/card' },
+    { d: '2026-10-23', t: '콘서트 셋리를 직접 고칠 수 있어요', s: '콘서트 화면 아래 \'셋리 고치기\'로 1부·2부·앵콜까지 고쳐 보내 주세요. 다른 두 분이 맞다고 하면 확정돼요.', a: '#/concerts' },
     { d: '2026-10-23', t: '영어·일본어로도 볼 수 있어요 🌐', s: '홈 위 🌐 버튼이나 더보기의 언어에서 바꿀 수 있어요. 메뉴와 버튼이 바뀌고, 일정 이름까지 보려면 \'전체 번역\'을 눌러 주세요.', a: '#/more' },
     { d: '2026-10-23', t: '두훈 님 뮤지컬 일정이 들어왔어요', s: '공연 기간으로 들어가 있고, 출연한 회차는 팬분들이 직접 올려 주실 수 있어요. 내가 본 회차를 누르면 보관함 직관에 들어가요.', a: '#/e/20222' },
     { d: '2026-10-23', t: '팬 제보 현황을 한눈에 볼 수 있어요', s: '팬분들이 올린 일정 · 셋리 · 날짜 고치기가 몇 개인지, 확인이 필요한 게 뭔지 모아 봐요.', a: '#/fan' },
@@ -1778,7 +1780,7 @@
     sumi: { bg: ['#26272B'], ink: '#EDEBE6', mute: 'rgba(237,235,230,.55)', line: 'rgba(237,235,230,.16)', acc: '#F0A85A', name: '먹' },
   };
   // 카드 틀 모양
-  const CARD_FRAMES = { round: '기본', polaroid: '폴라로이드', ticket: '티켓', photo: '포토카드', receipt: '영수증', credit: '신용카드', playlist: '플레이리스트' };
+  const CARD_FRAMES = { round: '기본', ticket: '티켓', receipt: '영수증', playlist: '플레이리스트' };
   // 뱃지: 보관함 기록으로 받은 것만 골라 넣을 수 있어요 (최대 3개)
   const tourOfDate = d => (data.tours || []).find(t => (t.dates || []).includes(d));
   const CARD_BADGES = [
@@ -2020,105 +2022,6 @@
     return { PH: 0, OX: 0, OY: 0, OW: W, OH: H };
   }
 
-  // 신용카드: 앞면(칩·카드 번호·이름) + 뒷면(서명란에 한마디, 기록)
-  function drawCredit(cv) {
-    const F = CARD_FONTS[card.font] || CARD_FONTS.myeong, C = CARD_COLORS[card.color] || CARD_COLORS.forest;
-    const B = cardBits(), CW = 340, CH = 214, M = 16, W = CW + M * 2, S = 3, R = 16;
-    const ctx = cv.getContext('2d'), T = cardTools(ctx);
-    const sans = (w, px) => `${w} ${px}px ${CARD_SANS}`, mono = (w, px) => `${w} ${px}px ${CARD_MONO}`;
-    // 뒷면 높이 미리 재기
-    const backRows = [['입덕곡', card.debut.trim()], ['최애곡', B.favs.join(' · ')], ['소취곡', B.wishes.join(' · ')]].filter(x => x[1]);
-    const BH = Math.max(CH, 120 + backRows.length * 30 + (B.cells.length ? 46 : 0) + (B.bdg.length ? 30 : 0) + 30);
-    const H = M + CH + 18 + BH + M;
-    cv.width = W * S; cv.height = H * S; cv.dataset.h = H; cv.dataset.w = W;
-    ctx.setTransform(S, 0, 0, S, 0, 0); ctx.textBaseline = 'top';
-    ctx.fillStyle = '#EEF1EE'; ctx.fillRect(0, 0, W, H);
-    const face = (x, y, h) => {
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.18)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;
-      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, CW, h, R) : ctx.rect(x, y, CW, h);
-      if (C.bg.length > 1) { const g = ctx.createLinearGradient(x, y, x + CW, y + h); g.addColorStop(0, C.bg[0]); g.addColorStop(1, C.bg[1]); ctx.fillStyle = g; } else ctx.fillStyle = C.bg[0];
-      ctx.fill(); ctx.restore();
-      ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, CW, h, R) : ctx.rect(x, y, CW, h); ctx.clip();
-      // 은은한 홀로그램 빛 + 물결 선
-      const sh = ctx.createLinearGradient(x, y, x + CW, y + h); sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(.45, 'rgba(255,255,255,.16)'); sh.addColorStop(.55, 'rgba(198,236,107,.12)'); sh.addColorStop(1, 'rgba(114,188,243,0)');
-      ctx.fillStyle = sh; ctx.fillRect(x, y, CW, h);
-      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
-      for (let i = 0; i < 7; i++) { ctx.beginPath(); for (let k = 0; k <= CW; k += 6) { const yy = y + h * .55 + i * 9 + Math.sin(k / 38 + i * .7) * 12; k ? ctx.lineTo(x + k, yy) : ctx.moveTo(x + k, yy); } ctx.stroke(); }
-    };
-    // 앞면
-    const x0 = M, y0 = M;
-    face(x0, y0, CH);
-    ctx.fillStyle = C.ink; ctx.font = `${F.big} ${20 * F.k}px ${F.f}`; ctx.fillText('숲별', x0 + 20, y0 + 18);
-    ctx.font = sans(600, 8.5); ctx.fillStyle = C.mute; T.spaced('FORESTELLA', x0 + CW - 20, y0 + 22, 2, 'right');
-    ctx.font = sans(500, 7.5); T.spaced('SOOPBYEOL MEMBERSHIP', x0 + CW - 20, y0 + 34, 1.3, 'right');
-    // 칩 + 비접촉 표시
-    const cx = x0 + 22, cy = y0 + 64;
-    const cg = ctx.createLinearGradient(cx, cy, cx + 42, cy + 32); cg.addColorStop(0, '#F3DE9A'); cg.addColorStop(1, '#C9A44E');
-    ctx.fillStyle = cg; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx, cy, 42, 32, 6) : ctx.rect(cx, cy, 42, 32); ctx.fill();
-    ctx.strokeStyle = 'rgba(120,90,30,.55)'; ctx.lineWidth = .8;
-    [[cx + 14, cy, cx + 14, cy + 32], [cx + 28, cy, cx + 28, cy + 32], [cx, cy + 11, cx + 14, cy + 11], [cx + 28, cy + 11, cx + 42, cy + 11], [cx, cy + 21, cx + 14, cy + 21], [cx + 28, cy + 21, cx + 42, cy + 21]].forEach(([a, b2, c2, d]) => { ctx.beginPath(); ctx.moveTo(a, b2); ctx.lineTo(c2, d); ctx.stroke(); });
-    ctx.strokeStyle = C.mute; ctx.lineWidth = 1.6;
-    [6, 11, 16].forEach(r => { ctx.beginPath(); ctx.arc(cx + 56, cy + 16, r, -0.6, 0.6); ctx.stroke(); });
-    // 카드 번호: 입덕 연도 · 월일 · D+ · 직관 수
-    const sn = (card.since || '0000-00-00').split('-'), went = boxStats().went.length;
-    const num = [sn[0], sn[1] + sn[2], String(ddayOf(card.since) || 0).padStart(4, '0').slice(-4), String(went).padStart(4, '0').slice(-4)];
-    ctx.font = mono(700, 19); ctx.fillStyle = C.ink;
-    T.spaced(num.join('  '), x0 + 22, y0 + 112, 1.5);
-    ctx.font = sans(500, 7); ctx.fillStyle = C.mute;
-    T.spaced('MEMBER SINCE', x0 + 22, y0 + 146, 1); T.spaced('VALID THRU', x0 + 112, y0 + 146, 1);
-    ctx.font = mono(700, 12); ctx.fillStyle = C.ink;
-    ctx.fillText(card.since ? sn[1] + '/' + sn[0].slice(2) : '--/--', x0 + 22, y0 + 156); ctx.fillText('FOREVER', x0 + 112, y0 + 156);
-    ctx.font = `${F.w} ${17 * F.k}px ${F.f}`; ctx.fillStyle = C.ink;
-    ctx.fillText(T.fit(B.nick, CW - 130), x0 + 22, y0 + 180 - (F.k > 1 ? 3 : 0));
-    // 숲 · 별 두 동그라미 로고
-    const lx = x0 + CW - 62, ly = y0 + CH - 46;
-    ctx.globalAlpha = .92; ctx.fillStyle = '#62B98A'; ctx.beginPath(); ctx.arc(lx + 12, ly + 16, 15, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#E8C77A'; ctx.globalAlpha = .85; ctx.beginPath(); ctx.arc(lx + 32, ly + 16, 15, 0, Math.PI * 2); ctx.fill();
-    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-    ctx.restore();
-    // 뒷면
-    const y1 = y0 + CH + 18;
-    face(x0, y1, BH);
-    ctx.fillStyle = '#1C1C1E'; ctx.fillRect(x0, y1 + 22, CW, 36);
-    // 서명란: 한마디
-    const sx = x0 + 18, sy = y1 + 72, sw = CW - 96;
-    ctx.fillStyle = '#FBFAF4'; ctx.fillRect(sx, sy, sw, 34);
-    ctx.strokeStyle = 'rgba(120,150,130,.25)'; ctx.lineWidth = 1;
-    for (let i = 4; i < 34; i += 6) { ctx.beginPath(); ctx.moveTo(sx, sy + i); ctx.lineTo(sx + sw, sy + i); ctx.stroke(); }
-    ctx.font = `400 ${18}px "Nanum Pen Script", cursive`; ctx.fillStyle = '#23355E';
-    ctx.fillText(T.fit(B.line || B.nick, sw - 14), sx + 8, sy + 8);
-    ctx.fillStyle = '#FBFAF4'; ctx.fillRect(sx + sw + 8, sy, 52, 34);
-    ctx.font = mono(700, 12); ctx.fillStyle = '#26282A'; ctx.fillText(String(went).padStart(3, '0'), sx + sw + 18, sy + 11);
-    ctx.font = sans(500, 6.5); ctx.fillStyle = C.mute; T.spaced('AUTHORIZED SIGNATURE · 한마디', sx, sy + 40, .8); T.spaced('직관', sx + sw + 8, sy + 40, .8);
-    let yy = sy + 58;
-    backRows.forEach(([lb, v]) => {
-      ctx.font = sans(500, 8); ctx.fillStyle = C.mute; T.spaced(lb, sx, yy, 1);
-      ctx.font = `${F.w} ${13 * F.k}px ${F.f}`; ctx.fillStyle = lb === '소취곡' ? C.acc : C.ink; ctx.fillText(T.fit(v, CW - 36), sx, yy + 11 - (F.k > 1 ? 2 : 0));
-      yy += 30;
-    });
-    if (B.cells.length) {
-      const cw = (CW - 36) / Math.min(4, B.cells.length);
-      B.cells.slice(0, 4).forEach(([lb, v, u], i) => {
-        const x = sx + i * cw;
-        ctx.font = sans(500, 8); ctx.fillStyle = C.mute; T.spaced(lb, x, yy + 4, 1);
-        ctx.font = sans(700, 15); ctx.fillStyle = C.ink; const vt = T.fit(String(v), cw - 18); ctx.fillText(vt, x, yy + 16);
-        if (u) { const vw = ctx.measureText(vt).width; ctx.font = sans(400, 9); ctx.fillText(u, x + vw + 1.5, yy + 22); }
-      });
-      yy += 46;
-    }
-    if (B.bdg.length) {
-      ctx.font = sans(600, 9.5); let bx = sx;
-      B.bdg.forEach(b => { const t = b.ic + ' ' + b.name, w = ctx.measureText(t).width + 14; ctx.strokeStyle = C.acc; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx + .5, yy + .5, w, 19, 10) : ctx.rect(bx, yy, w, 19); ctx.stroke(); ctx.fillStyle = C.ink; ctx.fillText(t, bx + 7, yy + 5); bx += w + 6; });
-      yy += 30;
-    }
-    ctx.font = sans(400, 7.5); ctx.fillStyle = C.mute;
-    ctx.fillText('이 카드는 숲별 기록장에서 만든 팬 카드예요. 돈은 안 나가요 ♥', sx, y1 + BH - 26);
-    ctx.textAlign = 'right'; ctx.fillText('sujeonghan78-lgtm.github.io/forestella-archive', x0 + CW - 18, y1 + BH - 14); ctx.textAlign = 'left';
-    ctx.restore();
-    paintStickers(ctx);
-    return { PH: 0, OX: 0, OY: 0, OW: W, OH: H };
-  }
-
   // 플레이리스트: 음악 앱 재생 화면처럼 (앨범 자리엔 숲별 그림, 곡 목록은 최애곡·소취곡)
   function drawPlaylist(cv) {
     const F = CARD_FONTS[card.font] || CARD_FONTS.myeong, C = CARD_COLORS[card.color] || CARD_COLORS.forest;
@@ -2191,12 +2094,10 @@
 
   function drawCard(cv) {
     if (card.frame === 'receipt') return drawReceipt(cv);
-    if (card.frame === 'credit') return drawCredit(cv);
     if (card.frame === 'playlist') return drawPlaylist(cv);
     const C = CARD_COLORS[card.color] || CARD_COLORS.forest, F = CARD_FONTS[card.font] || CARD_FONTS.myeong;
     const fr = CARD_FRAMES[card.frame] ? card.frame : 'round';
-    // 사진 칸: 폴라로이드는 거의 정사각형, 포토카드는 카드 전체가 사진이고 글은 아래 판 위에
-    const W = 340, P = 22, IN = W - P * 2, S = 3, PH = fr === 'polaroid' ? 300 : fr === 'photo' ? 300 : 190;
+    const W = 340, P = 22, IN = W - P * 2, S = 3, PH = 190;
     const hasPhoto = !!(cardPhoto && cardImg && cardImg.complete && cardImg.naturalWidth);
     const ctx = cv.getContext('2d');
     const ops = [];
@@ -2220,7 +2121,7 @@
     const label = (t, x, y, align) => ops.push(() => { ctx.font = font(500, 9); ctx.fillStyle = C.mute; spaced(t, x, y, 1.4, align); });
     const hline = y => ops.push(() => { ctx.fillStyle = C.line; ctx.fillRect(P, y, IN, 1); });
     ctx.textBaseline = 'top';
-    let y = hasPhoto ? PH + (fr === 'polaroid' ? 24 : fr === 'photo' ? 22 : 14) : P;
+    let y = hasPhoto ? PH + 14 : P;
     ops.push(() => { ctx.font = font(500, 9.5); ctx.fillStyle = C.mute; spaced('FORESTELLA', P, y0, 2.2); spaced('SOOPBYEOL CARD', W - P, y0, 2.2, 'right'); });
     const y0 = y; y += 14 + 12;
     // 닉네임
@@ -2351,7 +2252,7 @@
       qLines = ctx.measureText(q).width <= IN ? [q] : wrap(q, IN, 2);
     }
     const qH = lineT ? qSize * 1.45 * qLines.length + qSize * 0.25 + 6 : 0;
-    const H = Math.ceil(Math.max(y + 14 + qH + 26 + (hasPhoto && fr === 'photo' ? 8 : 0), hasPhoto ? (fr === 'round' || fr === 'ticket' ? 690 : 800) : 520));
+    const H = Math.ceil(Math.max(y + 14 + qH + 26, hasPhoto ? 690 : 520));
     if (lineT) {
       const yQ = H - 26 - qH;
       ops.push(() => { ctx.font = font(F.w, qSize, F.f); ctx.fillStyle = C.ink; ctx.textAlign = 'center'; qLines.forEach((l, i) => ctx.fillText(i === qLines.length - 1 ? fit(l, IN) : l, W / 2, yQ + i * qSize * 1.45)); ctx.textAlign = 'left'; });
@@ -2359,23 +2260,16 @@
     ops.push(() => { ctx.font = font(400, 8.5); ctx.fillStyle = C.mute; ctx.fillText('숲별 기록장', P, H - 26); ctx.textAlign = 'right'; ctx.fillText('sujeonghan78-lgtm.github.io/forestella-archive', W - P, H - 26); ctx.textAlign = 'left'; });
 
     // 실제로 그리기: 틀 모양에 따라 바깥 크기가 달라요 (폴라로이드는 흰 테두리, 티켓은 아래 떼는 부분)
-    const OX = fr === 'polaroid' ? 14 : 0, OY = OX, STUB = fr === 'ticket' ? 58 : 0;
-    const OW = W + OX * 2, OH = H + OY + STUB + (fr === 'polaroid' ? 62 : 0), BH = H + STUB;
+    const OX = 0, OY = 0, STUB = fr === 'ticket' ? 58 : 0;
+    const OW = W, OH = H + STUB, BH = H + STUB;
     cv.width = OW * S; cv.height = OH * S;
     cv.dataset.h = OH; cv.dataset.w = OW;
     ctx.setTransform(S, 0, 0, S, 0, 0);
     ctx.textBaseline = 'top';
-    if (fr === 'polaroid') {
-      ctx.fillStyle = '#FBFAF5'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(0, 0, OW, OH, 6) : ctx.rect(0, 0, OW, OH); ctx.fill();
-      ctx.font = font(F.w, 19 * F.k, F.f); ctx.fillStyle = '#3B3A36'; ctx.textAlign = 'center';
-      ctx.fillText(fit([card.nick.trim() || '숲별', ddayText()].filter(Boolean).join(' · '), OW - 40), OW / 2, OY + H + 22);
-      ctx.textAlign = 'left';
-    }
     ctx.save();
     ctx.translate(OX, OY);
     ctx.beginPath();
-    if (fr === 'polaroid') ctx.rect(0, 0, W, H);
-    else if (fr === 'ticket') {
+    if (fr === 'ticket') {
       // 네 귀퉁이를 안으로 둥글게 파고, 떼는 줄 양옆에 반원 홈
       const r = 14, n = 10;
       ctx.moveTo(r, 0); ctx.lineTo(W - r, 0); ctx.arc(W, 0, r, Math.PI, Math.PI / 2, true);
@@ -2389,33 +2283,23 @@
     ctx.clip();
     if (C.bg.length > 1) { const g = ctx.createLinearGradient(0, 0, W * 0.35, BH); g.addColorStop(0, C.bg[0]); g.addColorStop(1, C.bg[1]); ctx.fillStyle = g; } else ctx.fillStyle = C.bg[0];
     ctx.fillRect(0, 0, W, BH);
-    const photoH = fr === 'photo' ? H : PH;
+    const photoH = PH;
     if (hasPhoto) {
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, photoH); ctx.clip();
       const iw = cardImg.naturalWidth, ih = cardImg.naturalHeight, sc = Math.max(W / iw, photoH / ih);
       const dw = iw * sc, dh = ih * sc;
       ctx.drawImage(cardImg, -(dw - W) * (cardPhoto.x ?? .5), -(dh - photoH) * (cardPhoto.y ?? .5), dw, dh);
       ctx.restore();
-      // 폴라로이드: 사진 아래 흰 띠 / 포토카드: 글 뒤에 반투명 판
-      if (fr === 'polaroid') { ctx.fillStyle = '#FBFAF5'; ctx.fillRect(0, PH, W, 10); }
-      if (fr === 'photo') {
-        ctx.save(); ctx.globalAlpha = .9; ctx.fillStyle = C.bg[C.bg.length - 1];
-        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(12, PH, W - 24, H - PH - 12, 14) : ctx.rect(12, PH, W - 24, H - PH - 12); ctx.fill(); ctx.restore();
-      }
     }
-    if (!(hasPhoto && fr === 'polaroid')) {
     const tg = ctx.createLinearGradient(0, 0, W, 0); tg.addColorStop(0, '#C6EC6B'); tg.addColorStop(.5, '#62D3A1'); tg.addColorStop(1, '#72BCF3');
     ctx.fillStyle = tg; ctx.fillRect(0, 0, W, 4);
-    }
     ops.forEach(f => f());
     if (yCut) {
       ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
       ctx.beginPath(); ctx.moveTo(10, yCut); ctx.lineTo(W - 10, yCut); ctx.stroke(); ctx.setLineDash([]);
-      if (fr !== 'polaroid') {
-        ctx.globalCompositeOperation = 'destination-out';
-        [0, W].forEach(x => { ctx.beginPath(); ctx.arc(x, yCut, 8, 0, Math.PI * 2); ctx.fill(); });
-        ctx.globalCompositeOperation = 'source-over';
-      }
+      ctx.globalCompositeOperation = 'destination-out';
+      [0, W].forEach(x => { ctx.beginPath(); ctx.arc(x, yCut, 8, 0, Math.PI * 2); ctx.fill(); });
+      ctx.globalCompositeOperation = 'source-over';
     }
     if (fr === 'ticket') {
       // 떼는 부분: 점선 + ADMIT ONE + 바코드
@@ -2427,15 +2311,7 @@
       ctx.fillStyle = C.ink;
       for (let bx = W - P - 96; bx < W - P;) { seed = (seed * 1103515245 + 12345) >>> 0; const w = 1 + (seed >>> 16) % 3; ctx.fillRect(bx, H + 15, w, 28); bx += w + 1 + (seed >>> 20) % 3; }
     }
-    if (fr === 'photo') {
-      ctx.strokeStyle = C.line; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(8, 8, W - 16, H - 16, 14) : ctx.rect(8, 8, W - 16, H - 16); ctx.stroke();
-    }
     ctx.restore();
-    if (fr === 'photo') {
-      // 포토카드 위 고리 구멍
-      ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(W / 2, 16, 5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    }
     paintStickers(ctx);
     return { PH: hasPhoto ? photoH : 0, OX, OY, OW, OH };
   }
@@ -2488,7 +2364,7 @@
     let geo = { PH: 0 }, tick = 0;
     const redraw = () => {
       const my = ++tick;
-      const text = [card.nick, card.debut, card.fav, card.wish, card.line, '소취곡 듣고 싶은 곡 ADMIT ONE 영수증 품목 수량 합계 결제 평생 할부 일시 손님 입덕 기수 최고의 날 감사합니다 또 만나요 뱃지 MEMBER SINCE VALID THRU FOREVER 숲별의 플레이리스트 NEXT UP PLAYING FROM 이 카드는 팬 카드예요 돈은 안 나가요 ' + CARD_BADGES.map(b => b[2]).join(' '), ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 시청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
+      const text = [card.nick, card.debut, card.fav, card.wish, card.line, '소취곡 듣고 싶은 곡 ADMIT ONE 영수증 품목 수량 합계 결제 평생 할부 일시 손님 입덕 기수 최고의 날 감사합니다 또 만나요 뱃지 숲별의 플레이리스트 NEXT UP PLAYING FROM ' + CARD_BADGES.map(b => b[2]).join(' '), ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 시청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
       geo = drawCard(cv);
       cardFontsReady(text).then(() => { if (my === tick) geo = drawCard(cv); });
     };
