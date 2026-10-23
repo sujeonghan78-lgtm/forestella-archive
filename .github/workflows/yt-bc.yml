@@ -6,6 +6,9 @@ on:
       full:
         description: '처음부터 전부 다시 찾기 (yes)'
         required: false
+      only:
+        description: '이 채널만 처음부터 찾기 (예: @artsnartists,@bluestagemusical)'
+        required: false
   schedule:
     - cron: '43 19 * * *'
 permissions:
@@ -19,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node tools/yt_bc.mjs ${{ inputs.full == 'yes' && '--full' || '' }} 2>err.txt || { echo "::error::$(grep -m3 -i 'error' err.txt | tr '\n' ' ' | cut -c1-400)"; exit 1; }
+      - run: node tools/yt_bc.mjs ${{ inputs.full == 'yes' && '--full' || '' }} ${{ inputs.only && format('--only={0}', inputs.only) || '' }} 2>err.txt || { echo "::error::$(grep -m3 -i 'error' err.txt | tr '\n' ' ' | cut -c1-400)"; exit 1; }
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       - run: |

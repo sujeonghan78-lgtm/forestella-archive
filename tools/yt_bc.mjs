@@ -17,16 +17,21 @@ const CHANNELS = [
   ['@kbsculturedocumentary2173', 'KBS대전'], ['@MBCkpop', 'MBCkpop'], ['@MBCentertainment', 'MBC 예능'], ['@sbskpop', 'SBS KPOP'],
   ['@jtbcentertainment', 'JTBC'], ['@jtbcvoyage', 'JTBC Voyage'], ['@jtbcmusic', 'JTBC Music'], ['@mbn_entertainment', 'MBN'],
   ['@playmnet', 'Mnet TV'], ['@mnet', 'Mnet K-POP'], ['@dingomusic', '딩고 뮤직'], ['@universalmusicclassics', '유니버설뮤직 클래식'],
+  // 뮤지컬 제작사·소속사·공연 주관사 (2026-10-23 추가): 조회수가 적어도 받아요 (세 번째 칸 = 최소 조회수)
+  ['@artsnartists', '아트앤아티스트', 0], ['@bluestagemusical', '블루스테이지', 0], ['@beatinteractive', '비트인터렉티브', 0], ['@springent', '스프링이엔티', 0],
 ];
 const NAME = /포레스텔라|forestella|배두훈|강형호|고우림/i;  // 조민규는 다른 사람과 이름이 같아서 혼자로는 안 받아요
 const MIN_VIEWS = 10000;
 const old = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : { channels: [], videos: [] };
-const full = process.argv.includes('--full') || !old.videos.length;
+// --only=@a,@b : 그 채널만 처음부터 전부 찾아요 (새로 넣은 채널용)
+const only = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7).split(',').filter(Boolean);
+const full = process.argv.includes('--full') || !old.videos.length || only.length > 0;
 const since = new Date(Date.now() - 7 * 864e5).toISOString();
+const minOf = Object.fromEntries(CHANNELS.map(c => [c[1], c[2] ?? MIN_VIEWS]));
 const chOf = {}, found = [], missing = [];
 let stopped = '';
 try {
-  for (const [handle, name] of CHANNELS) {
+  for (const [handle, name] of CHANNELS.filter(c => !only.length || only.includes(c[0]))) {
     const ch = (await api('channels', { part: 'id', forHandle: handle })).items?.[0];
     if (!ch) { missing.push(handle); continue; }
     found.push({ id: ch.id, handle, name });
@@ -53,7 +58,7 @@ for (let i = 0; i < ids.length && !stopped; i += 50) {
   const d = await api('videos', { part: 'snippet,contentDetails,statistics', id: ids.slice(i, i + 50).join(',') });
   for (const v of d.items) {
     const views = Number(v.statistics.viewCount || 0), t = v.snippet.title;
-    if (!NAME.test(t) || views < MIN_VIEWS) continue;
+    if (!NAME.test(t) || views < minOf[chOf[v.id]]) continue;
     const up = kst(v.snippet.publishedAt), air = aired(t, up);
     add.push({ id: v.id, date: air || up, ...(air && air !== up && { up }), title: t, sec: sec(v.contentDetails.duration), views, bc: chOf[v.id] });
   }
