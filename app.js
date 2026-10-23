@@ -1514,6 +1514,7 @@
     return `
       <a class="back" href="#/box">‹ 보관함</a>
       <h1 class="h1 page-title">숲별 발자국${help('🎫 직관했어요를 누른 일정이 지도에 떠요. 정확한 공연장을 모르는 곳은 큰 지역으로 묶어 보여요. 위치가 틀리면 📍 위치 고치기로 알려 주세요. 다른 두 분이 맞다고 하면 바뀌어요.')}</h1>
+      ${driveBox()}
       <div id="map-root"><p class="empty">지도를 불러오는 중…</p></div>`;
   }
   let mapGen = 0;
@@ -3379,9 +3380,81 @@
     document.querySelectorAll('[data-up],[data-dn]').forEach(b => b.onclick = () => save(v => { const k = b.dataset.up || b.dataset.dn, i = v.order.indexOf(k), j = i + (b.dataset.up ? -1 : 1); [v.order[i], v.order[j]] = [v.order[j], v.order[i]]; }));
   }
 
+  // ---------- 공연장 위치 모으기 (기간 한정 안내) ----------
+  // config.placeDrive가 켜져 있을 때만 홈·숲별 발자국 맨 위에 떠요. 보낸 건 의견(분류 '지도 링크', 기본 비밀글)으로 들어가요
+  const DRIVE_X = 'sb-drive-x';
+  const driveOn = () => !!(window.CONFIG.placeDrive && (window.CONFIG.form || {}).fields);
+  function driveBox() {
+    if (!driveOn()) return '';
+    if (boxRead(DRIVE_X)) return `<button type="button" class="drive-mini" data-drive="open">📍 공연장 위치 모으는 중 · 링크 보내기 ›</button>`;
+    return `<section class="drive">
+      <button type="button" class="drive-x" data-drive="x" aria-label="접기">✕</button>
+      <b class="drive-t">📍 공연장 위치를 모으고 있어요</b>
+      <p class="drive-s">숲별 발자국 지도에 공연장을 정확히 찍으려고 해요. <b>네이버 지도 저장 리스트 링크</b>나 <b>장소 링크</b>를 보내 주세요. 장소 링크면 어떤 공연인지(날짜·공연명)도 같이 적어 주세요.</p>
+      <p class="drive-n">보낸 링크는 비밀글로 관리자만 봐요. 장소 등록이 얼추 끝날 때까지 모으고, 다 모이면 이 안내는 사라져요.</p>
+      <div class="drive-btns"><button type="button" class="bpill" data-drive="form">여기서 바로 보내기</button><a class="chip" href="#/opinion?w=map">의견 쓰는 곳으로 ›</a></div>
+      <div class="drive-body" hidden>
+        <details class="drive-how"><summary>링크는 어떻게 복사해요?</summary><p>· 저장 리스트: 네이버 지도 앱 → 저장 → 리스트 고르기 → 공유 → 링크 복사 (리스트를 공개로 해 주세요)<br>· 장소 하나: 장소 화면 → 공유 → 링크 복사<br>· 저장할 때 메모에 공연 날짜나 이름을 적어 두면 더 정확하게 넣을 수 있어요.</p></details>
+        <textarea class="op-in drive-link" rows="3" placeholder="네이버 지도 링크를 붙여 주세요 (여러 개도 돼요)"></textarea>
+        <input type="text" class="drive-ev" maxlength="120" placeholder="어떤 공연인지 (예: 2024.07.06 레거시 서울)">
+        <button type="button" class="link-btn drive-miss">아직 위치가 없는 공연 보기 ▾</button>
+        <div class="drive-list" hidden></div>
+        <input type="text" class="drive-name" maxlength="20" placeholder="닉네임 (선택)">
+        <label class="op-secret"><input type="checkbox" class="drive-sec" checked> 🔒 비밀글 <small>관리자만 볼 수 있어요</small></label>
+        <button type="button" class="bpill add-send drive-send" disabled>보내기</button>
+        <p class="src-note drive-msg"></p>
+      </div></section>`;
+  }
+  const DRIVE_LINK = /https?:\/\/(?:naver\.me\/[\w-]+|(?:m\.)?map\.naver\.com\/[^\s"'<>]+|(?:m|pcmap)\.place\.naver\.com\/[^\s"'<>]+|pages\.map\.naver\.com\/[^\s"'<>]+)/g;
+  document.addEventListener('click', async ev => {
+    const d = ev.target.closest('[data-drive], .drive-miss, .drive-send, .drive-pick');
+    if (!d) return;
+    const box = d.closest('.drive');
+    if (d.dataset.drive === 'x' || d.dataset.drive === 'open') { boxWrite(DRIVE_X, d.dataset.drive === 'x' ? 1 : null); d.closest('.drive, .drive-mini').outerHTML = driveBox(); if (d.dataset.drive === 'open') { const nb = document.querySelector('.drive .drive-body'); if (nb) nb.hidden = false; } return; }
+    if (d.dataset.drive === 'form') { const b = box.querySelector('.drive-body'); b.hidden = !b.hidden; if (!b.hidden) box.querySelector('.drive-link').focus(); return; }
+    if (d.classList.contains('drive-pick')) { const i = box.querySelector('.drive-ev'); i.value = d.dataset.v; i.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+    if (d.classList.contains('drive-miss')) {
+      const l = box.querySelector('.drive-list');
+      if (!l.hidden) { l.hidden = true; d.textContent = '아직 위치가 없는 공연 보기 ▾'; return; }
+      l.hidden = false; l.innerHTML = '<p class="src-note">불러오는 중…</p>';
+      const found = await loadPlaces().catch(() => ({}));
+      const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+      // 지난 국내 공연만 (해외·앞으로 할 공연은 빼요)
+      const miss = data.events.filter(e => isLocalEvent(e) && e.date <= today && regionOf(e) !== '해외' && !locOf(e, found).exact).slice().reverse();
+      d.textContent = `아직 위치가 없는 공연 ${miss.length}개 ▴`;
+      l.innerHTML = miss.length ? `<p class="src-note">누르면 '어떤 공연인지' 칸에 들어가요.</p>` + miss.map(e => `<button type="button" class="drive-pick" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`).join('') : '<p class="src-note">모든 공연에 위치가 있어요! 🎉</p>';
+      return;
+    }
+    if (d.classList.contains('drive-send')) {
+      const links = (box.querySelector('.drive-link').value.match(DRIVE_LINK) || []), evText = box.querySelector('.drive-ev').value.trim(), name = box.querySelector('.drive-name').value.trim(), sec = box.querySelector('.drive-sec').checked;
+      if (!links.length) return;
+      const text = links.join('\n') + (evText ? `\n공연: ${evText}` : ''), f = window.CONFIG.form, by = myUid();
+      d.disabled = true; d.textContent = '보내는 중…';
+      try {
+        let sent = text, myKey = null;
+        if (sec) { myKey = await mySecKey(); sent = await opSeal(text, [myKey]); }
+        await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: 지도 링크\n이름: ${name}\n누가: ${by}${myKey ? `\n열쇠: ${myKey.x}.${myKey.y}` : ''}\n내용: ${sent}` }) });
+        if (sec) { const m = secMine(); m[sent] = text; try { localStorage.setItem(OP_SEC, JSON.stringify(m)); } catch (err) { /* 괜찮아요 */ } }
+        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, ...(sec ? { sec: true, plain: text } : {}), name, cat: '지도 링크', by, at: Date.now() });
+        try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
+        box.querySelector('.drive-link').value = ''; box.querySelector('.drive-ev').value = '';
+        d.textContent = '보냈어요 ✓'; setTimeout(() => { d.textContent = '보내기'; }, 2500);
+        box.querySelector('.drive-msg').textContent = `고마워요! 링크 ${links.length}개를 보냈어요. 더 있으면 이어서 보내 주세요.`;
+      } catch (err) { d.disabled = false; d.textContent = '다시 보내기'; box.querySelector('.drive-msg').textContent = '보내지 못했어요. 잠시 뒤 다시 눌러 주세요.'; }
+    }
+  });
+  document.addEventListener('input', ev => {
+    const t = ev.target.closest && ev.target.closest('.drive-link');
+    if (!t) return;
+    const box = t.closest('.drive'), n = (t.value.match(DRIVE_LINK) || []).length;
+    box.querySelector('.drive-send').disabled = !n;
+    box.querySelector('.drive-msg').textContent = n ? `네이버 지도 링크 ${n}개를 찾았어요.` : t.value.trim() ? '네이버 지도 링크가 아니에요. 공유 → 링크 복사로 받은 주소를 붙여 주세요.' : '';
+  });
+
   const routes = {
     home: () => `
       ${header()}
+      ${driveBox()}
       <div id="op-home"></div>
       <div id="news-home"></div>
       ${homeAsk()}
@@ -4256,16 +4329,16 @@
       <h1 class="h1 page-title">의견</h1>
       <p class="sub">사이트에 바라는 점, 틀린 곳, 고마운 말 무엇이든 남겨 주세요. 남긴 의견은 이 화면에 모두에게 보여요.</p>
       <div class="op-form">
-        <div class="chips a-mem op-cats">${OP_CATS.map(x => `<button type="button" class="chip${x === '자유·응원' ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
+        <div class="chips a-mem op-cats">${OP_CATS.map(x => `<button type="button" class="chip${x === (opQs().get('w') === 'map' ? '지도 링크' : '자유·응원') ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
         <input type="text" class="op-name" maxlength="20" placeholder="닉네임 (선택)">
-        <textarea class="op-in" rows="4" maxlength="1000" placeholder="의견을 적어 주세요"></textarea>
+        <textarea class="op-in" rows="${opQs().get('w') === 'map' ? 5 : 4}" maxlength="1000" placeholder="${opQs().get('w') === 'map' ? esc(OP_MAP_EX) : '의견을 적어 주세요'}"></textarea>
         ${photoPick()}
-        ${adminKeys().length ? '<label class="op-secret"><input type="checkbox" class="op-sec-in"> 🔒 비밀글 <small>관리자만 볼 수 있어요</small></label>' : ''}
+        ${adminKeys().length ? `<label class="op-secret"><input type="checkbox" class="op-sec-in"${opQs().get('w') === 'map' ? ' checked' : ''}> 🔒 비밀글 <small>관리자만 볼 수 있어요</small></label>` : ''}
         <button type="button" class="bpill add-send op-send" disabled>보내기</button>
         <p class="src-note op-msg">보낸 의견은 내 화면엔 바로 보이고, 다른 분들 화면엔 5~10분쯤 뒤에 보여요.</p>
         ${HOW_TIP}
       </div>
-      ${isAdmin() ? '<p class="src-note">관리자 기기예요. 의견마다 \'처리했어요\'를 누를 수 있어요.</p>' : ''}
+      ${isAdmin() ? '<p class="src-note">관리자 기기예요. 의견마다 \'처리했어요\'를 누를 수 있어요.</p><button type="button" class="chip op-maplinks">🗺 처리 전 지도 링크 모아 복사</button>' : ''}
       <div id="op-list">${opListHtml()}</div>`;
   }
   function bindOpinion() {
@@ -4306,6 +4379,15 @@
     view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (!x) return; view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); t.placeholder = /정보 수정|오류 신고/.test(x.dataset.c) ? OP_FIX_EX : x.dataset.c === '지도 링크' ? OP_MAP_EX : '의견을 적어 주세요'; t.rows = /정보 수정|오류 신고|지도 링크/.test(x.dataset.c) ? 5 : 4;
       // 지도 링크는 개인 장소가 섞일 수 있어서 비밀글로 먼저 체크해 둬요 (끌 수 있어요)
       const sc = view.querySelector('.op-sec-in'); if (sc) sc.checked = x.dataset.c === '지도 링크'; });
+    // 관리자: 처리 전 '지도 링크' 의견(비밀글은 푼 글)을 한 번에 복사 → Claude에게 붙여 주면 한꺼번에 넣어요
+    const ml = view.querySelector('.op-maplinks');
+    if (ml) ml.onclick = async () => {
+      await loadOpinions();
+      const all = opData.ops.filter(o => !opDone.has(o.id) && !opGone().has(o.id));
+      const roots = all.filter(o => !o.parent && o.cat === '지도 링크'), txt = roots.map(o => [`[${o.time}] ${o.name || '익명'} (${o.id})`, o.sec ? o.plain || '(못 푼 비밀글)' : o.text, ...all.filter(k => k.parent === o.id).map(k => '  ↳ ' + (k.sec ? k.plain || '(비밀 답글)' : k.text))].join('\n')).join('\n\n');
+      if (!txt) { ml.textContent = '처리 전 지도 링크가 없어요'; return; }
+      try { await navigator.clipboard.writeText(txt); ml.textContent = `${roots.length}건 복사했어요 ✓`; } catch (err) { ml.insertAdjacentHTML('afterend', `<textarea class="op-in" rows="6" readonly>${esc(txt)}</textarea>`); ml.textContent = '아래 글을 길게 눌러 복사해 주세요'; }
+    };
     // view는 화면이 바뀌어도 그대로라서 한 번만 붙여요 (두 번 붙으면 두 번 보내져요)
     if (bindOpinion.bound) return;
     bindOpinion.bound = true;
