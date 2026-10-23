@@ -2809,15 +2809,17 @@
     opDone.forEach((m, id) => gone.delete(id));
     return gone;
   }
-  function opItem(o, me, admin, isNew, kids) {
-    const done = opDone.has(o.id), mine = o.by && o.by === me;
+  // 답글에도 또 답글을 달 수 있어요. 들여쓰기는 몇 단계까지만 하고, 누구에게 단 답글인지 '↳ 이름'으로 보여줘요
+  function opItem(o, me, admin, isNew, kidsMap, toName) {
+    const done = opDone.has(o.id), mine = o.by && o.by === me, kids = (kidsMap && kidsMap.get(o.id)) || [];
+    const count = (function n(id) { return ((kidsMap && kidsMap.get(id)) || []).reduce((a, k) => a + 1 + n(k.id), 0); })(o.id);
     return `<div class="op-item${done ? ' done' : ''}${o.parent ? ' op-reply' : ''}">
-          <div class="op-head"><span class="op-who">${isNew ? '<span class="op-new">N</span> ' : ''}${o.parent ? '' : `<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> `}${esc(o.name || '익명')}${mine ? (o.parent ? ' · 내 답글' : ' · 내 의견') : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
+          <div class="op-head"><span class="op-who">${isNew ? '<span class="op-new">N</span> ' : ''}${o.parent ? '' : `<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> `}${toName ? `<span class="op-to">↳ ${esc(toName)}</span> ` : ''}${esc(o.name || '익명')}${mine ? (o.parent ? ' · 내 답글' : ' · 내 의견') : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
           ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
           <p class="op-text">${esc(o.text)}</p>
-          <div class="op-foot">${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.parent && !o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${kids && kids.length ? ' ' + kids.length : ''}</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
-          ${o.parent ? '' : `${(kids || []).map(k => opItem(k, me, admin, opNewIds && opNewIds.has(k.id))).join('')}
-          <div class="op-form op-re-box" data-id="${esc(o.id)}" hidden><textarea class="op-in op-re-in" rows="2" maxlength="1000" placeholder="답글을 적어 주세요"></textarea><button type="button" class="bpill add-send op-re-send" data-id="${esc(o.id)}">답글 달기</button></div>`}
+          <div class="op-foot">${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
+          ${o.local ? '' : `<div class="op-form op-re-box" data-id="${esc(o.id)}" hidden><textarea class="op-in op-re-in" rows="2" maxlength="1000" placeholder="${o.parent ? `${esc(o.name || '익명')}님에게 답글` : '답글을 적어 주세요'}"></textarea><button type="button" class="bpill add-send op-re-send" data-id="${esc(o.id)}">답글 달기</button></div>`}
+          ${kids.map(k => opItem(k, me, admin, opNewIds && opNewIds.has(k.id), kidsMap, o.parent ? (o.name || '익명') : '')).join('')}
         </div>`;
   }
   function opListHtml() {
@@ -2838,7 +2840,7 @@
       <div class="chips tl-cats">${chip('', `전체 ${list.length}`)}${chip('todo', `처리 전 ${list.filter(o => !opDone.has(o.id)).length}`)}${chip('done', `처리됨 ${list.filter(o => opDone.has(o.id)).length}`)}</div>
       <div class="chips tl-cats">${cchip('', '모든 분류')}${OP_CATS.map(x => cchip(x, x)).join('')}</div>
       ${shown.length ? shown.map((o, i) => `${!o.local && opNewIds && !opNewIds.has(o.id) && shown.slice(0, i).some(x => opNewIds.has(x.id)) && !shown.slice(0, i).some(x => !x.local && !opNewIds.has(x.id)) ? '<div class="op-read">여기까지 새 의견이에요 · 아래는 읽은 의견</div>' : ''}
-        ${opItem(o, me, admin, opNewIds && opNewIds.has(o.id), kids.get(o.id))}`).join('') : '<p class="empty">아직 의견이 없어요.</p>'}`;
+        ${opItem(o, me, admin, opNewIds && opNewIds.has(o.id), kids)}`).join('') : '<p class="empty">아직 의견이 없어요.</p>'}`;
   }
   function opinionView() {
     return `
