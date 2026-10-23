@@ -4363,15 +4363,16 @@
       <p class="sub">사이트에 바라는 점, 틀린 곳, 고마운 말 무엇이든 남겨 주세요. 남긴 의견은 이 화면에 모두에게 보여요.</p>
       <div class="op-form">
         <div class="chips a-mem op-cats">${OP_CATS.map(x => `<button type="button" class="chip${x === (opQs().get('w') === 'map' ? '지도 링크' : '자유·응원') ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
-        <input type="text" class="op-name" maxlength="20" placeholder="닉네임 (선택)">
-        <textarea class="op-in" rows="${opQs().get('w') === 'map' ? 5 : 4}" maxlength="1000" placeholder="${opQs().get('w') === 'map' ? esc(OP_MAP_EX) : '의견을 적어 주세요'}"></textarea>
         <div class="map-add"${opQs().get('w') === 'map' ? '' : ' hidden'}>
-          <b class="map-add-t">한 줄씩 추가하기</b>
-          <input type="url" class="ma-link" inputmode="url" placeholder="네이버 지도 링크" autocomplete="off">
-          <input type="search" class="drive-ev ma-ev" maxlength="120" placeholder="어떤 일정인지 검색 (선택 · 메모 줄에 들어가요)" autocomplete="off">
+          <p class="map-add-t">네이버 지도 링크를 하나씩 목록에 담아서 한 번에 보내요.</p>
+          <label class="ma-f"><span>① 링크</span><input type="url" class="ma-link" inputmode="url" placeholder="네이버 지도 링크 붙여넣기" autocomplete="off"></label>
+          <label class="ma-f"><span>② 일정 <small>선택</small></span><input type="search" class="drive-ev ma-ev" maxlength="120" placeholder="어떤 일정인지 검색 (예: 레거시 서울)" autocomplete="off"></label>
           <div class="drive-list drive-hits" hidden></div>
-          <button type="button" class="chip ma-add" disabled>＋ 위에 추가</button>
+          <button type="button" class="bpill ma-add" disabled>＋ 목록에 담기</button>
+          <div class="ma-list"></div>
         </div>
+        <input type="text" class="op-name" maxlength="20" placeholder="닉네임 (선택)">
+        <textarea class="op-in" rows="${opQs().get('w') === 'map' ? 2 : 4}" maxlength="1000" placeholder="${opQs().get('w') === 'map' ? '더 하고 싶은 말 (선택)' : '의견을 적어 주세요'}"></textarea>
         ${photoPick()}
         ${adminKeys().length ? `<label class="op-secret"><input type="checkbox" class="op-sec-in"${opQs().get('w') === 'map' ? ' checked' : ''}> 🔒 비밀글 <small>관리자만 볼 수 있어요</small></label>` : ''}
         <button type="button" class="bpill add-send op-send" disabled>보내기</button>
@@ -4390,10 +4391,17 @@
     });
     const t = view.querySelector('.op-in'), b = view.querySelector('.op-send');
     try { t.value = sessionStorage.getItem('sb-op-draft') || ''; } catch (err) { /* 괜찮아요 */ }
-    b.disabled = !t.value.trim();
-    t.addEventListener('input', () => { b.disabled = !t.value.trim(); try { sessionStorage.setItem('sb-op-draft', t.value); } catch (err) { /* 괜찮아요 */ } });
+    // 지도 링크: 담은 목록(링크 + 일정 메모)을 글 앞에 붙여 보내요
+    let maItems = [];
+    const curCat = () => (view.querySelector('.op-cats .on') || {}).dataset.c || '자유·응원';
+    const mapMode = () => curCat() === '지도 링크';
+    const canSend = () => { b.disabled = !(t.value.trim() || (mapMode() && maItems.length)); };
+    canSend();
+    t.addEventListener('input', () => { canSend(); try { sessionStorage.setItem('sb-op-draft', t.value); } catch (err) { /* 괜찮아요 */ } });
     b.onclick = async () => {
-      const text = t.value.trim(), name = view.querySelector('.op-name').value.trim(), cat = (view.querySelector('.op-cats .on') || {}).dataset.c || '자유·응원';
+      const name = view.querySelector('.op-name').value.trim(), cat = curCat(), useMa = mapMode() && maItems.length;
+      const text = [useMa ? maItems.map(i => i.link + (i.memo ? '\n' + i.memo : '')).join('\n\n') : '', t.value.trim()].filter(Boolean).join('\n\n');
+      t.dataset.evs = useMa ? [...new Set(maItems.map(i => i.id).filter(Boolean))].join(',') : '';
       if (!text) return;
       const f = window.CONFIG.form, by = myUid();
       b.disabled = true; b.textContent = '보내는 중…';
@@ -4411,17 +4419,22 @@
         // 시트에 들어간 시각을 몰라서, 시트에서 돌아오면 같은 글인지 글 내용으로 맞춰 봐요
         const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, ...(secOn ? { sec: true, plain: text } : {}), name, cat, by, photo, evs: cat === '지도 링크' && t.dataset.evs ? t.dataset.evs.split(',') : [], at: Date.now() }); t.dataset.evs = ''; driveN = null;
         try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); sessionStorage.removeItem('sb-op-draft'); } catch (err) { /* 괜찮아요 */ }
-        t.value = ''; b.textContent = '보냈어요 ✓'; setTimeout(() => { b.textContent = '보내기'; }, 2500);
+        t.value = ''; if (useMa) { maItems = []; maDraw(); } b.textContent = '보냈어요 ✓'; setTimeout(() => { b.textContent = mapMode() ? '목록 보내기' : '보내기'; }, 2500);
         view.querySelector('.op-msg').textContent = '고마워요! 다른 분들 화면엔 5~10분쯤 뒤에 보여요.';
         fill();
       }).catch(() => { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
     };
-    view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (!x) return; view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); t.placeholder = /정보 수정|오류 신고/.test(x.dataset.c) ? OP_FIX_EX : x.dataset.c === '지도 링크' ? OP_MAP_EX : '의견을 적어 주세요'; t.rows = /정보 수정|오류 신고|지도 링크/.test(x.dataset.c) ? 5 : 4;
+    view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (!x) return; view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); t.placeholder = /정보 수정|오류 신고/.test(x.dataset.c) ? OP_FIX_EX : x.dataset.c === '지도 링크' ? '더 하고 싶은 말 (선택)' : '의견을 적어 주세요'; t.rows = /정보 수정|오류 신고/.test(x.dataset.c) ? 5 : x.dataset.c === '지도 링크' ? 2 : 4; b.textContent = x.dataset.c === '지도 링크' ? '목록 보내기' : '보내기'; canSend();
       // 지도 링크는 개인 장소가 섞일 수 있어서 비밀글로 먼저 체크해 둬요 (끌 수 있어요)
       const sc = view.querySelector('.op-sec-in'); if (sc) sc.checked = x.dataset.c === '지도 링크';
       const ma = view.querySelector('.map-add'); if (ma) ma.hidden = x.dataset.c !== '지도 링크'; });
-    // 지도 링크: 링크 한 줄 + 메모(일정) 한 줄씩 의견 칸에 쌓아요
+    // 지도 링크 목록에 담기: 링크(필수) + 일정(선택). 담은 건 카드로 보이고 ✕로 뺄 수 있어요
     const ma = view.querySelector('.map-add');
+    function maDraw() {
+      if (!ma) return;
+      ma.querySelector('.ma-list').innerHTML = maItems.length ? `<b class="ma-cnt">보낼 목록 ${maItems.length}개</b>` + maItems.map((i, n) => `<div class="ma-item"><span>📍 ${esc(i.link.replace(/^https?:\/\//, ''))}<small>${i.memo ? esc(i.memo) : '일정 메모 없음'}</small></span><button type="button" class="ma-x" data-n="${n}" aria-label="빼기">✕</button></div>`).join('') : '';
+      canSend();
+    }
     if (ma) {
       const li = ma.querySelector('.ma-link'), ei = ma.querySelector('.ma-ev'), ab = ma.querySelector('.ma-add');
       const ok = () => { ab.disabled = !DRIVE_LINK.test(li.value); DRIVE_LINK.lastIndex = 0; };
@@ -4429,12 +4442,11 @@
       ab.onclick = () => {
         const link = (li.value.match(DRIVE_LINK) || [])[0];
         if (!link) return;
-        const pair = link + (ei.value.trim() ? '\n' + ei.value.trim() : '');
-        t.value = (t.value.trim() ? t.value.trim() + '\n\n' : '') + pair;
-        if (ei.dataset.id) t.dataset.evs = [...new Set((t.dataset.evs || '').split(',').filter(Boolean).concat(ei.dataset.id))].join(',');
-        t.dispatchEvent(new Event('input', { bubbles: true }));
-        li.value = ''; ei.value = ''; ma.querySelector('.drive-hits').hidden = true; ok(); li.focus();
+        maItems.push({ link, memo: ei.value.trim(), id: ei.dataset.id || '' });
+        li.value = ''; ei.value = ''; ei.dataset.id = ''; ma.querySelector('.drive-hits').hidden = true; ok(); maDraw(); li.focus();
       };
+      ma.querySelector('.ma-list').addEventListener('click', ev => { const x = ev.target.closest('.ma-x'); if (!x) return; maItems.splice(+x.dataset.n, 1); maDraw(); });
+      if (mapMode()) b.textContent = '목록 보내기';
     }
     // 관리자: 처리 전 '지도 링크' 의견(비밀글은 푼 글)을 한 번에 복사 → Claude에게 붙여 주면 한꺼번에 넣어요
     const ml = view.querySelector('.op-maplinks');
