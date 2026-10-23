@@ -275,7 +275,9 @@
         const t0 = sp0(r.title);
         // extra.eventMerge {날짜: {낱말: 일정ID}}: 이름이 많이 달라도 같은 일정이면 여기로 붙여요
         const mg = Object.entries((extra.eventMerge || {})[r.date] || {}).find(([w]) => t0.includes(sp0(w)));
-        const same = (mg && events.find(x => x.id === mg[1])) || events.find(x => x.date === r.date && (sp0(x.title) === t0 || (t0.length >= 4 && (sp0(x.title).includes(t0) || t0.includes(sp0(x.title))))));
+        // 등록할 때 '이 일정에 붙이기'를 골랐으면(합치기: ID) 그 일정에, '새로 등록'을 골랐으면 이름이 비슷해도 새로 만들어요
+        const pickTo = line0(r, '합치기'), fresh = line0(r, '새로') === '예';
+        const same = (pickTo && events.find(x => x.id === pickTo)) || (mg && events.find(x => x.id === mg[1])) || (!fresh && events.find(x => x.date === r.date && (sp0(x.title) === t0 || (t0.length >= 4 && (sp0(x.title).includes(t0) || t0.includes(sp0(x.title)))))));
         if (!same) {
           const mem = String(line0(r, '누구')).split(/[,/·\s]+/).map(x => SHORT[x] || (MEMBERS.includes(x) ? x : '')).filter(Boolean);
           const solo = mem.length && mem.length < 4 ? `[${mem.map(m => m.slice(1)).join('/')}] ` : '';
@@ -324,9 +326,18 @@
       });
     }
     // 관리자가 숨긴 일정: 사이트가 서명을 확인한 번호만 window.SB_EV_HIDE에 들어와요
-    const evHide = window.SB_EV_HIDE || new Set(), hidden = [];
+    // 관리자가 '원본에 합치기'를 한 일정은 장소·시간·영상·셋리를 원본의 빈 칸에 옮기고 숨겨요
+    const evHide = window.SB_EV_HIDE || new Set(), evTo = window.SB_EV_MERGE || {}, hidden = [];
+    events.filter(e => evHide.has(e.id) && evTo[e.id]).forEach(e => {
+      const t = events.find(x => x.id === evTo[e.id]);
+      if (!t) return;
+      if (!t.place && e.place) t.place = e.place;
+      if (!t.start && e.start) t.start = e.start;
+      if (!t.videoId && e.videoId) t.videoId = e.videoId;
+      if (!t.songs.length && e.songs.length) Object.assign(t, { songs: e.songs.slice(), songKeys: e.songKeys.slice(), songSource: e.songSource, fanSet: e.fanSet, fanSrc: e.fanSrc });
+    });
     for (let i = events.length - 1; i >= 0; i--) if (evHide.has(events[i].id)) hidden.push(events.splice(i, 1)[0]);
-    const evMarks = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '일정숨김').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명') })).filter(m => m.id && m.sig) : [];
+    const evMarks = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '일정숨김').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명'), ...(line0(r, '원본') ? { to: line0(r, '원본') } : {}) })).filter(m => m.id && m.sig) : [];
     events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     const videos = buildVideos(toObjects(raw.videos));
     // 시트에 없는 관련 영상(보충 파일 videos): 같은 영상이 시트에 있으면 시트 우선

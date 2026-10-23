@@ -2551,11 +2551,24 @@
     const mem = [...c.querySelectorAll('.a-mem .chip.on')].map(b => b.dataset.m).filter(m => m !== '포레스텔라');
     return { date: c.querySelector('.a-date').value, time: c.querySelector('.a-time').value, mem, cat: c.querySelector('.a-cat').value,
       title: c.querySelector('.a-title').value.trim(), place: c.querySelector('.a-place').value.trim(), link: c.querySelector('.a-link').value.trim(),
-      songs: [...new Set(slParse(c.querySelector('.a-songs').value).map(n => slMatch(n) || n))] };
+      songs: [...new Set(slParse(c.querySelector('.a-songs').value).map(n => slMatch(n) || n))], merge: c.dataset.merge || '', pick: c.dataset.pick || '' };
   };
+  // 같은 날(앞뒤 하루) 이미 있는 일정을 보여주고, 같은 일정이면 거기에 붙일지 새로 등록할지 고르게 해요
+  const addNear = date => data.events.filter(e => !e.ytOnly && Math.abs(new Date(e.date) - new Date(date)) <= 864e5).slice(0, 8);
   function addCheck(c) {
-    const v = addRead(c), same = v.date && v.title && addSame(v.date, v.title);
-    c.querySelector('.a-dup').innerHTML = same ? `이미 있는 일정 같아요: <a href="#/e/${encodeURIComponent(same.id)}">${esc(same.title)}</a>${v.songs.length ? ' · 적은 셋리는 이 일정에 붙어요.' : ''}` : '';
+    const v = addRead(c), box = c.querySelector('.a-dup');
+    const near = v.date ? addNear(v.date) : [];
+    if (!near.length) { box.innerHTML = ''; box.dataset.h = ''; delete c.dataset.merge; delete c.dataset.pick; c.classList.remove('merging'); return; }
+    if (c.dataset.merge && !near.some(e => e.id === c.dataset.merge)) delete c.dataset.merge;
+    const m = c.dataset.merge || '', pick = c.dataset.pick || '';
+    const md = d => d.slice(5).replace('-', '.');
+    const html = `<b>이날 이미 있는 일정이에요.</b> 등록하려는 게 이 중에 있나요?
+      <span class="a-near">${near.map(e => `<button type="button" class="a-pick${m === e.id ? ' on' : ''}" data-id="${esc(e.id)}"><span>${md(e.date)}</span>${esc(e.title)}</button>`).join('')}</span>
+      <span class="a-choose"><button type="button" class="chip a-mode${pick === 'merge' ? ' on' : ''}" data-mode="merge"${m ? '' : ' disabled'}>이 일정에 붙이기</button><button type="button" class="chip a-mode${pick === 'new' ? ' on' : ''}" data-mode="new">다른 일정이라 새로 등록</button></span>
+      ${pick === 'merge' && m ? '<span class="a-note">새로 만들지 않고, 적은 장소·시간·영상·셋리만 이 일정에 붙여요. 원래 있던 칸은 안 바뀌어요.</span>' : pick === 'new' ? '<span class="a-note">새 일정으로 등록해요.</span>' : '<span class="a-note">같은 일정이면 위에서 고르고 \'이 일정에 붙이기\'를, 아니면 \'새로 등록\'을 눌러 주세요.</span>'}`;
+    // 같은 내용이면 다시 그리지 않아요 (칸에서 나갈 때 다시 그리면 버튼 누른 게 씹혀요)
+    if (box.dataset.h !== html) { box.innerHTML = html; box.dataset.h = html; }
+    c.classList.toggle('merging', pick === 'merge' && !!m);
   }
   // 엑셀 도구는 필요할 때만 불러와요
   let xlsxP = null;
@@ -2570,6 +2583,14 @@
         const box = chip.parentNode, all = chip.dataset.m === '포레스텔라';
         if (all) box.querySelectorAll('.chip').forEach(b => b.classList.toggle('on', b === chip));
         else { chip.classList.toggle('on'); const any = box.querySelector('.chip.on:not([data-m="포레스텔라"])'); box.querySelector('[data-m="포레스텔라"]').classList.toggle('on', !any); }
+      }
+      const pk = ev.target.closest('.a-pick'), md = ev.target.closest('.a-mode');
+      if (pk || md) {
+        const c = ev.target.closest('.add-card');
+        if (pk) { c.dataset.merge = c.dataset.merge === pk.dataset.id ? '' : pk.dataset.id; if (c.dataset.merge) c.dataset.pick = 'merge'; else if (c.dataset.pick === 'merge') delete c.dataset.pick; }
+        if (md) c.dataset.pick = md.dataset.mode;
+        addCheck(c);
+        return;
       }
       const del = ev.target.closest('.a-del');
       if (del) { del.closest('.add-card').remove(); if (!list.children.length) list.insertAdjacentHTML('beforeend', addCard({}, root.matches && root.matches('.add-quick'))); }
@@ -2618,14 +2639,18 @@
       const b = $('.add-send'), msg = $('.add-msg');
       const cards = [...list.querySelectorAll('.add-card')];
       const items = cards.map(addRead);
-      const bad = items.findIndex(v => !v.date || !v.title);
+      const merging = v => v.pick === 'merge' && v.merge;
+      const bad = items.findIndex(v => !v.date || (!v.title && !merging(v)));
       if (bad >= 0) { msg.textContent = `${bad + 1}번째 칸에 날짜와 일정 이름을 적어 주세요.`; cards[bad].scrollIntoView({ block: 'center' }); return; }
+      const undecided = items.findIndex(v => v.date && addNear(v.date).length && !v.pick);
+      if (undecided >= 0) { msg.textContent = `${undecided + 1}번째 칸: 이날 이미 있는 일정에 붙일지, 새로 등록할지 골라 주세요.`; cards[undecided].scrollIntoView({ block: 'center' }); return; }
       const f = window.CONFIG.form;
       b.disabled = true;
       let sent = 0;
       for (const v of items) {
         b.textContent = `보내는 중… ${sent + 1}/${items.length}`;
-        const body = new URLSearchParams({ [f.fields.content]: [`종류: 새일정`, `날짜: ${v.date}`, `시간: ${v.time}`, `누구: ${v.mem.length ? v.mem.join(', ') : '포레스텔라'}`, `분류: ${v.cat}`, `일정: ${v.title}`, `장소: ${v.place}`, `링크: ${v.link}`, `곡: ${v.songs.join(' / ')}`, `누가: ${myUid()}`].join('\n') });
+        const to = merging(v) && data.events.find(e => e.id === v.merge);
+        const body = new URLSearchParams({ [f.fields.content]: [`종류: 새일정`, `날짜: ${to ? to.date : v.date}`, `시간: ${v.time}`, `누구: ${v.mem.length ? v.mem.join(', ') : '포레스텔라'}`, `분류: ${v.cat}`, `일정: ${to ? to.title : v.title}`, `장소: ${v.place}`, `링크: ${v.link}`, `곡: ${v.songs.join(' / ')}`, ...(to ? [`합치기: ${to.id}`] : v.pick === 'new' ? ['새로: 예'] : []), `누가: ${myUid()}`].join('\n') });
         try { await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }); sent++; } catch (err) { break; }
       }
       if (sent === items.length) {
@@ -2851,46 +2876,55 @@
   // 관리자 기기에서 '숨기기'를 누르면 폼으로 '종류: 일정숨김' 줄을 보내요.
   // 서명(사이트용)이 맞으면 모두에게 숨기고, 확인(시트용)이 맞으면 시트 Apps Script가 일정 탭 공개여부를 '숨김'으로 바꿔요
   const EV_HIDE = 'sb-ev-hide', EV_MARK = 'sb-ev-mark';
-  const evMsg = m => new TextEncoder().encode(`ev:${m.id}:${m.state}:${m.n}`);
+  const evMsg = m => new TextEncoder().encode(`ev:${m.id}:${m.state}:${m.n}${m.to ? ':' + m.to : ''}`);
   const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
   async function sheetKey() { const k = adminJwk(); return k && k.d ? hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('sb-sheet:' + k.d))) : ''; }
   async function sheetCheck(m) {
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(await sheetKey()), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    return hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${m.id}:${m.state}:${m.n}`)));
+    return hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${m.id}:${m.state}:${m.n}${m.to ? ':' + m.to : ''}`)));
   }
   const evMarkLocal = () => { try { return JSON.parse(localStorage.getItem(EV_MARK) || '[]'); } catch (err) { return []; } };
-  try { window.SB_EV_HIDE = new Set(JSON.parse(localStorage.getItem(EV_HIDE) || '[]')); } catch (err) { window.SB_EV_HIDE = new Set(); }
+  try { window.SB_EV_HIDE = new Set(JSON.parse(localStorage.getItem(EV_HIDE) || '[]')); window.SB_EV_MERGE = JSON.parse(localStorage.getItem(EV_HIDE + '-to') || '{}'); } catch (err) { window.SB_EV_HIDE = new Set(); window.SB_EV_MERGE = {}; }
   async function syncHides() {
     if (!data || !data.evMarks) return;
     const local = evMarkLocal().filter(m => !data.evMarks.some(x => x.id === m.id && x.n === m.n) && Date.now() - Number(m.n) < 864e5);
     try { localStorage.setItem(EV_MARK, JSON.stringify(local)); } catch (err) { /* 괜찮아요 */ }
-    const set = new Set((await verifyMarks(data.evMarks.concat(local), evMsg, '숨김')).keys());
-    const old = window.SB_EV_HIDE;
-    if (set.size === old.size && [...set].every(x => old.has(x))) return;
-    window.SB_EV_HIDE = set;
-    try { localStorage.setItem(EV_HIDE, JSON.stringify([...set])); } catch (err) { /* 괜찮아요 */ }
+    const ok = await verifyMarks(data.evMarks.concat(local), evMsg, '숨김');
+    const set = new Set(ok.keys()), merge = {};
+    ok.forEach((m, id) => { if (m.to) merge[id] = m.to; });
+    const old = window.SB_EV_HIDE, oldM = JSON.stringify(window.SB_EV_MERGE || {});
+    if (set.size === old.size && [...set].every(x => old.has(x)) && oldM === JSON.stringify(merge)) return;
+    window.SB_EV_HIDE = set; window.SB_EV_MERGE = merge;
+    try { localStorage.setItem(EV_HIDE, JSON.stringify([...set])); localStorage.setItem(EV_HIDE + '-to', JSON.stringify(merge)); } catch (err) { /* 괜찮아요 */ }
     const next = window.DATA.rebuild();
     if (next) { data = next; searchIndex = null; baseHash = null; render(); }
   }
-  async function sendEvMark(id, state) {
+  async function sendEvMark(id, state, to = '') {
     const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
-    const m = { id, state, n: String(Date.now()) };
+    const m = { id, state, n: String(Date.now()), ...(to ? { to } : {}) };
     m.sig = b64u(await crypto.subtle.sign(SIGN, key, evMsg(m)));
     const check = await sheetCheck(m);
     const f = window.CONFIG.form;
-    await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: `종류: 일정숨김\n대상: ${id}\n상태: ${state}\n번호: ${m.n}\n서명: ${m.sig}\n확인: ${check}` }) });
+    await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: `종류: 일정숨김\n대상: ${id}\n상태: ${state}\n번호: ${m.n}${to ? `\n원본: ${to}` : ''}\n서명: ${m.sig}\n확인: ${check}` }) });
     try { localStorage.setItem(EV_MARK, JSON.stringify(evMarkLocal().concat(m).slice(-100))); } catch (err) { /* 괜찮아요 */ }
     await syncHides();
   }
-  const hideBtn = e => isAdmin() ? `<button type="button" class="link-btn ev-hide" data-id="${esc(e.id)}">🙈 이 일정 숨기기 (관리자)</button>` : '';
+  // 중복이면 원본 일정에 합치기: 이 일정의 장소·시간·영상·셋리를 원본의 빈 칸에 옮기고 이 일정은 숨겨요
+  const mergeBox = e => {
+    const near = data.events.filter(x => x !== e && !x.ytOnly && Math.abs(new Date(x.date) - new Date(e.date)) <= 3 * 864e5);
+    return near.length ? `<details class="fix-box"><summary>🔗 중복이면 원본에 합치기 (관리자)</summary><div class="op-form">
+      <p class="src-note">원본 일정을 고르면 이 일정의 장소·시간·영상·셋리가 원본의 빈 칸으로 옮겨지고, 이 일정은 숨겨져요.</p>
+      ${near.map(x => `<button type="button" class="link-btn ev-merge" data-id="${esc(e.id)}" data-to="${esc(x.id)}">${esc(x.date.slice(5).replace('-', '.'))} ${esc(x.title)} ← 여기로 합치기</button>`).join('')}</div></details>` : '';
+  };
+  const hideBtn = e => isAdmin() ? `${mergeBox(e)}<button type="button" class="link-btn ev-hide" data-id="${esc(e.id)}">🙈 이 일정 숨기기 (관리자)</button>` : '';
   document.addEventListener('click', async ev => {
-    const b = ev.target.closest('.ev-hide, .ev-unhide');
+    const b = ev.target.closest('.ev-hide, .ev-unhide, .ev-merge');
     if (!b || !isAdmin()) return;
-    const hide = b.classList.contains('ev-hide');
-    if (hide && !b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = '정말 숨길까요? 한 번 더 누르면 모두에게 안 보여요'; return; }
+    const hide = !b.classList.contains('ev-unhide');
+    if (hide && !b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = b.dataset.to ? '정말 합칠까요? 한 번 더 누르면 합쳐져요' : '정말 숨길까요? 한 번 더 누르면 모두에게 안 보여요'; return; }
     b.disabled = true; b.textContent = '보내는 중…';
     try {
-      await sendEvMark(b.dataset.id, hide ? '숨김' : '보이기');
+      await sendEvMark(b.dataset.id, hide ? '숨김' : '보이기', b.dataset.to || '');
       if (hide) { if (currentRoute() === 'e') history.back(); }
       else if (currentRoute() === 'admin') renderBase('admin');
     } catch (err) { b.disabled = false; b.textContent = '다시 누르기'; }
