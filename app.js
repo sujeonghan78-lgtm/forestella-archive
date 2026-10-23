@@ -409,6 +409,7 @@
 
   // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
   const NEWS = [
+    { d: '2026-10-23', t: '팬 제보 현황을 한눈에 볼 수 있어요', s: '팬분들이 올린 일정 · 셋리 · 날짜 고치기가 몇 개인지, 확인이 필요한 게 뭔지 모아 봐요.', a: '#/fan' },
     { d: '2026-10-23', t: '의견에 사진을 붙일 수 있어요', s: '의견 남기기 · 틀린 곳 알려주기에서 "📷 사진 붙이기"로 캡처를 같이 보내 주세요. 사진은 관리자만 보고 30일 뒤 지워져요.', a: '#/opinion' },
     { d: '2026-10-23', t: '숲별 카드 한마디가 40자까지 늘었어요', s: '길면 글씨가 조금 작아지고 두 줄로 나와요. 좋아하는 가사도 넣어 보세요.', a: '#/card' },
     { d: '2026-10-23', t: '일정 날짜가 틀렸으면 고칠 수 있어요', s: '일정 상세에서 "📅 날짜가 달라요"로 알려주시고, 다른 두 분이 "맞아요"를 누르면 바뀌어요.' },
@@ -447,6 +448,96 @@
         const body = `<span class="news-t">${unread.has(n) ? '<span class="news-new">NEW</span>' : ''}${esc(n.t)}</span>${n.s ? `<span class="news-s">${esc(n.s)}</span>` : ''}`;
         return day + (n.a ? `<a class="news-item" href="${n.a}">${body}<span class="news-go">›</span></a>` : `<div class="news-item">${body}</div>`);
       }).join('')}</div>`;
+  }
+
+  // ---------- 팬 제보 현황: 팬들이 올린 일정 · 셋리 · 날짜 고치기를 최근 순으로 ----------
+  const FAN_K = { ev: '새 일정', join: '정보 더함', sl: '셋리 올림', slfix: '셋리 고침', dt: '날짜 고치기', slok: '셋리 맞아요', evok: '일정 맞아요', dtok: '날짜 맞아요' };
+  function fanState(l, e) {
+    if (l.k === 'ev') return e.fanEvent && e.fanEvent.ok ? ['ok', '확정'] : ['wait', `확인 필요 ${(e.fanEvent || {}).n || 0}/2`];
+    if (l.k === 'sl' || l.k === 'slfix') {
+      const f = e.fanSet;
+      if (!f || f.ver !== l.ver) return ['old', '새 판으로 바뀜'];
+      return f.ok ? ['ok', '확정'] : ['wait', `확인 필요 ${f.n}/2`];
+    }
+    if (l.k === 'dt') {
+      if (e.dateWas && e.date === l.to) return ['ok', '확정'];
+      const p = (e.dateProps || []).find(x => x.to === l.to);
+      return p ? ['wait', `확인 필요 ${p.n}/2`] : ['old', '반영 안 됨'];
+    }
+    return ['', ''];
+  }
+  function fanAgo(t) {
+    const m = Math.round((Date.now() - t) / 6e4);
+    if (!t) return '';
+    if (m < 1) return '방금';
+    if (m < 60) return m + '분 전';
+    if (m < 1440) return Math.floor(m / 60) + '시간 전';
+    const d = new Date(t + 9 * 3600e3);
+    return `${d.getUTCMonth() + 1}.${d.getUTCDate()}`;
+  }
+  function fanView() {
+    const me = myUid(), log = data.fan || [];
+    const row = l => {
+      const e = data.byId.get(l.id);
+      if (!e) return '';
+      const [cls, st] = fanState(l, e);
+      const what = l.k === 'dt' ? `${md2(l.from || e.dateWas || e.date)} → ${md2(l.to)}` : l.k === 'dtok' ? `→ ${md2(l.to)}` : (l.k === 'sl' || l.k === 'slfix' || (l.k === 'join' && l.songs)) ? `${l.songs}곡` : '';
+      return `<a class="fan-item${/ok$/.test(l.k) ? ' fan-small' : ''}" href="#/e/${encodeURIComponent(l.id)}">
+        <span class="fan-top"><span class="fan-k fan-k-${l.k}">${FAN_K[l.k]}</span>${what ? `<span class="fan-what">${esc(what)}</span>` : ''}${st ? `<span class="fan-st fan-${cls}">${esc(st)}</span>` : ''}</span>
+        <span class="fan-title">${esc(e.title)}</span>
+        <span class="fan-sub">${esc(fmtDate(e.date))}${l.by && l.by === me ? ' · <b>내가 보냄</b>' : ''}<span class="fan-ago">${fanAgo(l.at)}</span></span></a>`;
+    };
+    // 확인 필요: 일정마다 아직 확정 안 된 최신 것만
+    const seen = new Set(), wait = log.filter(l => {
+      const e = data.byId.get(l.id);
+      if (!e || !/^(ev|sl|slfix|dt)$/.test(l.k) || fanState(l, e)[0] !== 'wait') return false;
+      const key = l.id + (l.k === 'dt' ? ':dt' + l.to : l.k === 'ev' ? ':ev' : ':sl');
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+    const list = l => { const c = l.map(row).filter(Boolean); return c.length ? moreList(c, 20).replace('stack x-list', 'stack fan-list') : '<p class="empty">아직 없어요.</p>'; };
+    // 대시보드 카드: 팬분들이 지금까지 몇 개 올렸는지 (확정 · 확인 필요)
+    const evs = data.events.filter(e => e.fanEvent);
+    const sls = data.events.filter(e => e.fanSet && e.fanSet.src === e.id);
+    const dts = new Map();
+    log.filter(l => l.k === 'dt').forEach(l => { const k = l.id + l.to; if (!dts.has(k)) dts.set(k, fanState(l, data.byId.get(l.id))[0]); });
+    const newSongs = [...data.songs.values()].filter(songPending);
+    const day = log.filter(l => Date.now() - l.at < 864e5).length;
+    // 바뀐 사항: 셋리를 고친 것, 확정돼서 날짜가 바뀐 것, 이미 있던 일정에 시간·장소·영상·셋리를 더한 것
+    const chg = log.filter(l => l.k === 'slfix' || l.k === 'join' || (l.k === 'dt' && fanState(l, data.byId.get(l.id))[0] === 'ok'));
+    const f = new URLSearchParams(location.hash.split('?')[1] || '').get('f') || '';
+    const card = (key, label, n, sub) => `<a class="fan-card${f === key ? ' on' : ''}" href="#/fan${f === key ? '' : '?f=' + key}"><span class="fan-card-l">${label}</span><b class="fan-card-n">${n}</b><span class="fan-card-s">${sub}</span></a>`;
+    const split = (ok, all) => `확정 ${ok} · 확인 필요 ${all - ok}`;
+    const cards = `<div class="fan-cards">
+      ${card('ev', '등록된 일정', evs.length, split(evs.filter(e => e.fanEvent.ok).length, evs.length))}
+      ${card('sl', '올라온 셋리', sls.length, split(sls.filter(e => e.fanSet.ok).length, sls.length))}
+      ${card('song', '새로 들어온 곡', newSongs.length, '셋리 확정 전')}
+      ${card('dt', '날짜 고치기', dts.size, split([...dts.values()].filter(x => x === 'ok').length, [...dts.values()].filter(x => x !== 'old').length))}
+      ${card('chg', '바뀐 사항', chg.length, `셋리 ${chg.filter(l => l.k === 'slfix').length} · 날짜 ${chg.filter(l => l.k === 'dt').length} · 더함 ${chg.filter(l => l.k === 'join').length}`)}
+      ${card('day', '최근 24시간', day, '제보 + 맞아요')}
+    </div>`;
+    const kinds = { ev: /^(ev|join|evok)$/, sl: /^(sl|slfix|slok)$/, dt: /^(dt|dtok)$/ };
+    let body;
+    if (f === 'song') body = newSongs.length ? `<div class="stack fan-list">${newSongs.map(so => `<a class="fan-item" href="#/song/${encodeURIComponent(so.key)}"><span class="fan-top"><span class="fan-k fan-k-sl">새 곡</span><span class="fan-st fan-wait">확인 필요</span></span><span class="fan-title">${esc(so.name)}</span><span class="fan-sub">${esc(so.events.map(e => e.title).slice(0, 2).join(' · '))}</span></a>`).join('')}</div>` : '<p class="empty">아직 없어요.</p>';
+    else if (f === 'chg') body = list(chg);
+    else if (f === 'day') body = list(log.filter(l => Date.now() - l.at < 864e5));
+    else if (kinds[f]) body = paneTabs([
+      { label: '확인 필요', n: wait.filter(l => kinds[f].test(l.k)).length, html: list(wait.filter(l => kinds[f].test(l.k))) },
+      { label: '전체 기록', n: 0, html: list(log.filter(l => kinds[f].test(l.k))) },
+    ]);
+    else body = paneTabs([
+      { label: '확인 필요', n: wait.length, html: list(wait) },
+      { label: '전체 기록', n: 0, html: list(log) },
+    ]);
+    return `
+      <div class="about-top">
+        <a class="back" href="#/more">‹ 더보기</a>
+        <h1 class="h1">팬 제보 현황</h1>
+        <p>팬분들이 올린 일정 · 셋리 · 날짜 고치기예요. 확인 필요는 다른 두 분이 '맞아요'를 누르면 확정돼요. 올리고 5~10분쯤 뒤에 보여요.</p>
+      </div>
+      ${cards}
+      ${f ? `<div class="fan-filter">${{ ev: '등록된 일정', sl: '올라온 셋리', song: '새로 들어온 곡', dt: '날짜 고치기', chg: '바뀐 사항', day: '최근 24시간' }[f] || ''}만 보는 중 <a href="#/fan">전체 보기</a></div>` : ''}
+      ${body}`;
   }
 
   function bindHome() {
@@ -2082,6 +2173,7 @@
       </a>
       <nav aria-label="더보기 메뉴">
         ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : '새로 생긴 기능')(newsUnread().length))}
+        ${item('#/fan', '<path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/>', '팬 제보 현황', (n => n ? `확인 필요 ${n}` : '일정 · 셋리 · 날짜')((data.fan || []).filter(l => /^(ev|sl|slfix|dt)$/.test(l.k) && data.byId.get(l.id) && fanState(l, data.byId.get(l.id))[0] === 'wait').map(l => l.id + l.k + (l.to || '')).filter((x, i, a) => a.indexOf(x) === i).length))}
         ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
         ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견', '남기기 · 모아보기')}
         ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (st => (st.liked.length + st.songs.length + st.went.length) ? `♥ ${st.liked.length + st.songs.length} · 🎫 ${st.went.length}` : '좋아요 · 직관')(boxStats()))}
@@ -2335,6 +2427,7 @@
     add: addView,
     opinion: opinionView,
     news: newsView,
+    fan: fanView,
     admin: adminView,
     xfeed: xfeedView,
     yt: ytView,
@@ -3812,7 +3905,7 @@
   }
 
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);

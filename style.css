@@ -1032,3 +1032,30 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .news-s{flex-basis:100%;order:3;font-size:13px;color:var(--muted);line-height:1.5}
 .news-go{color:var(--muted)}
 .news-new{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:6px;background:#1F7A4C;color:#fff;font-size:11px;font-weight:700;vertical-align:2px}
+.fan-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.fan-card{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);text-decoration:none}
+.fan-card.on{border-color:#1F7A4C;background:#EAF6EE}
+.fan-card:last-child:nth-child(odd){grid-column:1/-1}
+.fan-card-l{font-size:13px;color:var(--muted)}
+.fan-card-n{font-size:26px;font-weight:700;color:#1F7A4C;line-height:1.2}
+.fan-card-s{font-size:12px;color:var(--muted)}
+.fan-filter{display:flex;gap:8px;align-items:center;margin:-4px 0 10px;font-size:13px;color:var(--muted)}
+.fan-filter a{color:#1F7A4C}
+.fan-list{display:flex;flex-direction:column;gap:8px}
+.fan-item{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);text-decoration:none}
+.fan-small{padding:8px 14px;background:#FAFCFB}
+.fan-small .fan-title{font-size:13px;font-weight:500}
+.fan-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fan-k{padding:1px 8px;border-radius:8px;background:#EEF2F0;font-size:12px;font-weight:600;color:#3D5247}
+.fan-k-ev,.fan-k-join{background:#E6F0FB;color:#2C5A8A}
+.fan-k-sl,.fan-k-slfix{background:#F3ECFA;color:#6A3F8F}
+.fan-k-dt{background:#FFF1E0;color:#8A5A12}
+.fan-what{font-size:12px;color:var(--muted)}
+.fan-st{margin-left:auto;font-size:12px;font-weight:600}
+.fan-wait{color:#B5651D}
+.fan-ok{color:#1F7A4C}
+.fan-old{color:var(--muted);font-weight:400}
+.fan-title{font-size:15px;font-weight:600;line-height:1.4;min-width:0}
+.fan-sub{display:flex;gap:6px;font-size:12px;color:var(--muted)}
+.fan-sub b{color:#1F7A4C;font-weight:600}
+.fan-ago{margin-left:auto}

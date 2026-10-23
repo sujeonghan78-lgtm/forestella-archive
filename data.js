@@ -263,6 +263,8 @@
     });
     // 팬이 사이트에서 보낸 셋리(제보 폼 '종류: 셋리스트'): 보내면 바로 '확인 필요'로 붙고, 누구나 고쳐 다시 보낼 수 있어요.
     // 가장 최근 판을 다른 두 사람이 '맞아요'(종류: 셋리확인, 같은 버전)로 누르면 확정이에요. 사람 구분은 브라우저마다 만든 임의 번호(누가:)로 해요
+    // 팬 제보 현황 화면(#/fan)에 쓸 기록: 언제 · 무엇을 · 어느 일정에
+    const fanLog = [];
     if (raw.reports) {
       const rows = buildReports(toObjects(raw.reports), true);
       const idOf = r => (r.title.match(/\[ID ([\w-]+)\]/) || [])[1];
@@ -297,14 +299,19 @@
           if (!same.place && line0(r, '장소')) same.place = line0(r, '장소');
           if (!same.videoId && vid) same.videoId = vid;
         }
+        fanLog.push({ k: same ? 'join' : 'ev', id: same ? same.id : id, at: tsMs(r.time), by: r.by, title: r.title, songs: r.song ? r.song.split(/\s+\/\s+/).filter(Boolean).length : 0 });
         if (r.song) rows.push({ type: '셋리스트', title: `[ID ${same ? same.id : id}]`, song: r.song, by: r.by, newEv: true });
       });
       const latest = new Map();
       rows.filter(r => r.type === '셋리스트').forEach(r => {
         const id = idOf(r);
         const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
-        if (id && songs.length >= (r.newEv ? 1 : 3)) latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1 });
+        if (id && songs.length >= (r.newEv ? 1 : 3)) {
+          if (!r.newEv) fanLog.push({ k: latest.has(id) ? 'slfix' : 'sl', id, at: tsMs(r.time), by: r.by, ver: slVer(songs), songs: songs.length });
+          latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1 });
+        }
       });
+      rows.filter(r => (r.type === '셋리확인' || r.type === '일정확인') && r.by).forEach(r => { const id = idOf(r); if (id) fanLog.push({ k: r.type === '셋리확인' ? 'slok' : 'evok', id, at: tsMs(r.time), by: r.by, ver: r.ver }); });
       latest.forEach((f, id) => {
         const e = events.find(x => x.id === id);
         if (!e || e.songSource === '참고') return;
@@ -348,6 +355,7 @@
         if (!id || !isD(to)) return;
         const o = fx[id] = fx[id] || {}, p = o[to] = o[to] || { to, from: '', by: '', who: new Set() };
         if (r.type === '날짜수정' && !p.by) { p.by = r.by; p.from = normDate(line0(r, '전')); } else p.who.add(r.by);
+        fanLog.push({ k: r.type === '날짜수정' ? 'dt' : 'dtok', id, at: tsMs(r.time), by: r.by, to, from: r.type === '날짜수정' ? normDate(line0(r, '전')) : '' });
       });
       const adm = window.SB_DT_ADMIN || {};
       events.forEach(e => {
@@ -378,6 +386,9 @@
     const delReqs = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '삭제요청').map(r => ({ id: (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], title: r.title.replace(/^\[ID [^\]]+\]\s*/, ''), date: r.date, reason: ((r.raw || '').match(/^[ \t]*내용[ \t]*[:：][ \t]*([\s\S]*)$/m) || [])[1] || r.message, by: r.by, time: fixTs(r.time), at: tsMs(r.time) })).filter(q => q.id) : [];
     const evMarks = raw.reports ? buildReports(toObjects(raw.reports), true).filter(r => r.type === '일정숨김').map(r => ({ id: line0(r, '대상'), state: line0(r, '상태'), n: line0(r, '번호'), sig: line0(r, '서명'), ...(line0(r, '원본') ? { to: line0(r, '원본') } : {}) })).filter(m => m.id && m.sig) : [];
     events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    // 숨기거나 지운 일정에 대한 제보는 빼고, 최근 것부터
+    const evIds = new Set(events.map(e => e.id));
+    const fan = fanLog.filter(l => evIds.has(l.id)).sort((a, b) => b.at - a.at);
     const videos = buildVideos(toObjects(raw.videos));
     // 시트에 없는 관련 영상(보충 파일 videos): 같은 영상이 시트에 있으면 시트 우선
     const sheetVids = new Set(videos.map(v => v.videoId));
@@ -800,7 +811,7 @@
     songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
