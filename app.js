@@ -3419,12 +3419,12 @@
       boxWrite(DRIVE_X, op ? 1 : null); return;
     }
     if (d.dataset.drive === 'form') { const b = box.querySelector('.drive-body'); b.hidden = !b.hidden; if (!b.hidden) box.querySelector('.drive-link').focus(); return; }
-    if (d.classList.contains('drive-pick')) { const i = box.querySelector('.drive-ev'); i.value = d.dataset.v; box.querySelector('.drive-hits').hidden = true; i.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+    if (d.classList.contains('drive-pick')) { const i = box.querySelector('.drive-ev'); i.value = d.dataset.v; i.dataset.id = d.dataset.id; box.querySelector('.drive-hits').hidden = true; i.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
     if (d.classList.contains('drive-miss')) {
       const l = box.querySelector('.drive-list:not(.drive-hits)');
       if (!l.hidden) { l.hidden = true; d.textContent = '위치가 아직 없는 공연 보기 ▾'; return; }
       l.hidden = false; l.innerHTML = '<p class="src-note">불러오는 중…</p>';
-      const found = await loadPlaces().catch(() => ({}));
+      const [found] = await Promise.all([loadPlaces().catch(() => ({})), driveLoad().catch(() => {})]);
       const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
       // 지난 국내 공연만 (해외·앞으로 할 공연은 빼요)
       const miss = data.events.filter(e => isLocalEvent(e) && e.date <= today && regionOf(e) !== '해외' && !locOf(e, found).exact).slice().reverse();
@@ -3433,28 +3433,41 @@
       return;
     }
     if (d.classList.contains('drive-send')) {
-      const links = (box.querySelector('.drive-link').value.match(DRIVE_LINK) || []), evText = box.querySelector('.drive-ev').value.trim(), name = box.querySelector('.drive-name').value.trim(), sec = box.querySelector('.drive-sec').checked;
+      const links = (box.querySelector('.drive-link').value.match(DRIVE_LINK) || []), evText = box.querySelector('.drive-ev').value.trim(), evId = box.querySelector('.drive-ev').dataset.id || '', name = box.querySelector('.drive-name').value.trim(), sec = box.querySelector('.drive-sec').checked;
       if (!links.length) return;
       const text = links.join('\n') + (evText ? `\n공연: ${evText}` : ''), f = window.CONFIG.form, by = myUid();
       d.disabled = true; d.textContent = '보내는 중…';
       try {
         let sent = text, myKey = null;
         if (sec) { myKey = await mySecKey(); sent = await opSeal(text, [myKey]); }
-        await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: 지도 링크\n이름: ${name}\n누가: ${by}${myKey ? `\n열쇠: ${myKey.x}.${myKey.y}` : ''}\n내용: ${sent}` }) });
+        await fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: 지도 링크\n이름: ${name}\n누가: ${by}${myKey ? `\n열쇠: ${myKey.x}.${myKey.y}` : ''}${evId ? `\n대상일정: ${evId}` : ''}\n내용: ${sent}` }) });
         if (sec) { const m = secMine(); m[sent] = text; try { localStorage.setItem(OP_SEC, JSON.stringify(m)); } catch (err) { /* 괜찮아요 */ } }
-        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, ...(sec ? { sec: true, plain: text } : {}), name, cat: '지도 링크', by, at: Date.now() });
+        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, ...(sec ? { sec: true, plain: text } : {}), name, cat: '지도 링크', by, evs: evId ? [evId] : [], at: Date.now() });
         try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
-        box.querySelector('.drive-link').value = ''; box.querySelector('.drive-ev').value = '';
+        box.querySelector('.drive-link').value = ''; box.querySelector('.drive-ev').value = ''; box.querySelector('.drive-ev').dataset.id = '';
         d.textContent = '보냈어요 ✓'; setTimeout(() => { d.textContent = '보내기'; }, 2500);
-        box.querySelector('.drive-msg').textContent = `고마워요! 링크 ${links.length}개를 보냈어요. 더 있으면 이어서 보내 주세요.`;
+        driveN = null; box.querySelector('.drive-msg').textContent = `고마워요! 링크 ${links.length}개를 보냈어요. 더 있으면 이어서 보내 주세요.`;
       } catch (err) { d.disabled = false; d.textContent = '다시 보내기'; box.querySelector('.drive-msg').textContent = '보내지 못했어요. 잠시 뒤 다시 눌러 주세요.'; }
     }
   });
   // 일정 검색: 공연·행사·방송 다 찾아요 (초성 OK). 고르면 '날짜 일정명'이 들어가요
-  const drivePick = e => `<button type="button" class="drive-pick" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`;
+  // 이미 링크가 들어온 일정 (의견 '지도 링크'에 공개로 붙은 일정 번호 + 내가 방금 보낸 것)
+  function driveDone() {
+    const n = new Map(), add = id => n.set(id, (n.get(id) || 0) + 1);
+    const gone = opData ? opGone() : new Set();
+    ((opData && opData.ops) || []).filter(o => !gone.has(o.id)).forEach(o => (o.evs || []).forEach(add));
+    opMine().filter(o => !(opData && opData.ops.some(x => x.by === o.by && x.text === o.text))).forEach(o => (o.evs || []).forEach(add));
+    return n;
+  }
+  let driveN = null;
+  const drivePick = e => { const n = (driveN || new Map()).get(e.id); return `<button type="button" class="drive-pick${n ? ' sent' : ''}" data-id="${esc(e.id)}" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${n ? `<em class="drive-sent">✓ 이미 제출된 장소${n > 1 ? ` ${n}건` : ''}</em>` : ''}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`; };
+  // 검색·목록을 열 때 의견을 한 번 불러와서 '이미 제출됨'을 세요
+  const driveLoad = () => (opData ? Promise.resolve() : loadOpinions()).then(() => { driveN = driveDone(); });
   document.addEventListener('input', ev => {
     const t = ev.target.closest && ev.target.closest('.drive-ev');
     if (!t) return;
+    t.dataset.id = '';
+    if (!driveN) driveLoad().then(() => { if (t.value.trim().length >= 2) t.dispatchEvent(new Event('input', { bubbles: true })); });
     const h = t.closest('.drive, .map-add').querySelector('.drive-hits'), q = t.value.trim();
     if (q.length < 2) { h.hidden = true; return; }
     const ms = q.split(/\s+/).map(matcher).filter(Boolean), txt = e => `${e.date} ${e.date.replace(/-/g, '.')} ${e.title} ${e.place || ''}`;
@@ -4391,12 +4404,12 @@
       let sent = text;
       let myKey = null;
       if (secOn) { try { myKey = await mySecKey(); sent = await opSeal(text, [myKey]); } catch (err) { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '이 브라우저에선 비밀글을 만들 수 없어요. 비밀글을 끄고 보내 주세요.'; return; } }
-      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}${photo ? `\n사진: ${photo}` : ''}${myKey ? `\n열쇠: ${myKey.x}.${myKey.y}` : ''}\n내용: ${sent}` });
+      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}${photo ? `\n사진: ${photo}` : ''}${myKey ? `\n열쇠: ${myKey.x}.${myKey.y}` : ''}${cat === '지도 링크' && t.dataset.evs ? `\n대상일정: ${t.dataset.evs}` : ''}\n내용: ${sent}` });
       fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }).then(() => {
         // 비밀글 원문은 이 기기에만 둬요 (내 화면에선 계속 보여요)
         if (secOn) { const m = secMine(); m[sent] = text; const ks = Object.keys(m); ks.slice(0, -50).forEach(k => delete m[k]); try { localStorage.setItem(OP_SEC, JSON.stringify(m)); } catch (err) { /* 괜찮아요 */ } }
         // 시트에 들어간 시각을 몰라서, 시트에서 돌아오면 같은 글인지 글 내용으로 맞춰 봐요
-        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, ...(secOn ? { sec: true, plain: text } : {}), name, cat, by, photo, at: Date.now() });
+        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, ...(secOn ? { sec: true, plain: text } : {}), name, cat, by, photo, evs: cat === '지도 링크' && t.dataset.evs ? t.dataset.evs.split(',') : [], at: Date.now() }); t.dataset.evs = ''; driveN = null;
         try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); sessionStorage.removeItem('sb-op-draft'); } catch (err) { /* 괜찮아요 */ }
         t.value = ''; b.textContent = '보냈어요 ✓'; setTimeout(() => { b.textContent = '보내기'; }, 2500);
         view.querySelector('.op-msg').textContent = '고마워요! 다른 분들 화면엔 5~10분쯤 뒤에 보여요.';
@@ -4418,6 +4431,7 @@
         if (!link) return;
         const pair = link + (ei.value.trim() ? '\n' + ei.value.trim() : '');
         t.value = (t.value.trim() ? t.value.trim() + '\n\n' : '') + pair;
+        if (ei.dataset.id) t.dataset.evs = [...new Set((t.dataset.evs || '').split(',').filter(Boolean).concat(ei.dataset.id))].join(',');
         t.dispatchEvent(new Event('input', { bubbles: true }));
         li.value = ''; ei.value = ''; ma.querySelector('.drive-hits').hidden = true; ok(); li.focus();
       };
