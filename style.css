@@ -1018,3 +1018,5 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .del-quiet>summary{font-size:12px;color:var(--muted);list-style:none}
 .del-quiet>summary::-webkit-details-marker{display:none}
 .del-quiet:not([open])>summary{text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line)}
+.op-auto{display:inline-block;margin-top:4px;padding:1px 7px;border-radius:999px;font-size:11px;color:var(--muted);background:var(--soft);border:1px solid var(--line)}
+.op-text-auto{color:var(--ink-2)}

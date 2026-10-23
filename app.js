@@ -2800,7 +2800,8 @@
   const OP_CATS = ['정보 수정', '오류 신고', '기능 요청', '자유·응원'];
   // 무엇을 어떻게 고칠지 알 수 있게 쓰는 양식 (처음 쓰는 칸 예시 + 관리자가 답글로 되묻는 양식)
   const OP_FIX_EX = '어떻게 고치면 될지 적어 주세요.\n예) 날짜를 06.13에서 06.14로 바꿔 주세요\n예) 제목을 ○○에서 ○○로 바꿔 주세요\n예) ○○ 일정과 중복이라 지워 주세요';
-  const OP_ASK = '알려 주셔서 고마워요! 어떻게 고치면 될지 아래 중 맞는 걸로 답글 남겨 주세요.\n- 날짜를 ○○에서 ○○로 바꿔 주세요\n- 제목을 ○○에서 ○○로 바꿔 주세요\n- ○○ 일정과 중복이니 삭제해 주세요\n- 그 밖에: 무엇을 어떻게 바꾸면 되는지';
+  const OP_ASK_TAG = '(양식으로 답변)';
+  const OP_ASK = OP_ASK_TAG + '\n알려주셔서 감사합니다 ☺️ 어떻게 수정하면 될지 아래 양식에 맞춰 알려주세요\n- 날짜를 ○○에서 ○○로 바꿔 주세요\n- 제목을 ○○에서 ○○로 바꿔 주세요\n- ○○ 일정과 중복이니 삭제해 주세요\n- 그 밖에: 무엇을 어떻게 바꾸면 되는지';
   // 읽음 표시: 의견 탭을 열 때 본 의견 번호를 이 기기에 저장해요
   const OP_SEEN = 'sb-op-seen';
   const opSeen = () => { try { return new Set(JSON.parse(localStorage.getItem(OP_SEEN) || '[]')); } catch (err) { return new Set(); } };
@@ -2824,7 +2825,7 @@
     return `<div class="op-item${done ? ' done' : ''}${o.parent ? ' op-reply' : ''}">
           <div class="op-head"><span class="op-who">${isNew ? '<span class="op-new">N</span> ' : ''}${o.parent ? '' : `<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> `}${toName ? `<span class="op-to">↳ ${esc(toName)}</span> ` : ''}${esc(o.name || '익명')}${mine ? (o.parent ? ' · 내 답글' : ' · 내 의견') : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
           ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
-          <p class="op-text">${esc(o.text)}</p>
+          ${o.text.startsWith(OP_ASK_TAG) ? `<span class="op-auto">양식으로 답변</span><p class="op-text op-text-auto">${esc(o.text.slice(OP_ASK_TAG.length).replace(/^\s+/, ''))}</p>` : `<p class="op-text">${esc(o.text)}</p>`}
           <div class="op-foot">${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${admin && !o.parent && !o.local && !done ? `<button type="button" class="link-btn op-ask" data-id="${esc(o.id)}">양식으로 묻기</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
           ${o.local ? '' : `<div class="op-form op-re-box" data-id="${esc(o.id)}" hidden><textarea class="op-in op-re-in" rows="2" maxlength="1000" placeholder="${o.parent ? `${esc(o.name || '익명')}님에게 답글` : '답글을 적어 주세요'}"></textarea><button type="button" class="bpill add-send op-re-send" data-id="${esc(o.id)}">답글 달기</button></div>`}
           ${kids.map(k => opItem(k, me, admin, opNewIds && opNewIds.has(k.id), kidsMap, o.parent ? (o.name || '익명') : '')).join('')}
