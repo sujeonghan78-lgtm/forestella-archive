@@ -62,8 +62,9 @@
     return n.trim();
   }
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
-  const SL_FIX = { '월의 어느 멋진 날에': '10월의 어느 멋진 날에' };
-  const SONG_SAME = { "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려', '곤드레만드레': '곤드레 만드레', "dell'amore non si sa": "dell' amore non si sa",
+  // '월의 어느 멋진날에(무반주 한소절)'처럼 뒤가 달라도 앞 '10'만 되살려요
+  const slFix = x => x.replace(/^월의\s*어느\s*멋진/, '10월의 어느 멋진');
+  const SONG_SAME = { '10월의 어느 멋진날에': '10월의 어느 멋진 날에', "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려', '곤드레만드레': '곤드레 만드레', "dell'amore non si sa": "dell' amore non si sa",
     // 유튜브 뮤직 영어 제목 → 한국어 제목 (2026-10-18 유튜브 뮤직·음반 정보 수록곡 대조)
     'magic castle': '마법의 성', 'flower vase': '꽃병', nocturne: '야상곡', 'dear moon': '달하 노피곰 도다샤', 'and spring': '그리고 봄', changgwi: '창귀',
     'bird, bird, blue bird': '새야 새야 파랑새야', 'words from the wind': '바람이 건네준 말', together: '함께라는 이유', ties: '연', '연(緣)': '연',
@@ -309,7 +310,7 @@
         const who = new Set(rows.filter(r => r.type === '셋리확인' && idOf(r) === id && r.ver === ver && r.by && r.by !== f.by).map(r => r.by));
         // 원래 곡 목록이 있어도 최근 판으로 통째로 바꿔요 (틀린 곡을 고칠 수 있게). 원래 목록은 시트 제보 줄을 지우면 돌아와요
         // 예전 셋리 알려주기가 곡 앞 숫자를 번호로 알고 지웠던 것 되돌리기 (버전 번호는 원래 글자 그대로)
-        e.songs = f.songs.map(x => SL_FIX[x] || x); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))];
+        e.songs = f.songs.map(slFix); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))];
         e.songSource = '팬 기록';
         e.fanSrc = e.fanSrc || { note: '' };
         e.fanSet = { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits, src: e.id };
