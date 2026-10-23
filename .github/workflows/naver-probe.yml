@@ -6,21 +6,12 @@ jobs:
   p:
     runs-on: ubuntu-latest
     steps:
-      - shell: bash
-        run: |
-          set +e
-          UA='Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36'
-          S=49e7297a5df544bd9ce013d6e02af949
-          for u in "https://pages.map.naver.com/save-pages/api/maps-bookmark/v3/shares/$S/bookmarks?start=0&limit=5000&sort=lastUseTime" "https://pages.map.naver.com/save-pages/api/maps-bookmark/v3/shares/$S"; do
-            r=$(curl -s -m 20 -A "$UA" -H "Referer: https://pages.map.naver.com/save-pages/web/detail-list/$S" "$u" | tr '\n' ' ')
-            echo "::notice title=api::${#r} ${r:0:900}"
-          done
-          r=$(curl -s -m 20 -A "$UA" "https://pages.map.naver.com/save-pages/api/maps-bookmark/v3/shares/$S/bookmarks?start=0&limit=5000&sort=lastUseTime")
-          echo "$r" | python3 -c "
-          import json,sys
-          try:
-            d=json.load(sys.stdin); bs=d.get('bookmarkList') or d.get('bookmarks') or []
-            print('::notice title=count::',len(bs), list(d.keys()))
-            for b in bs[:8]: print('::notice title=b::', b.get('name'), b.get('px'), b.get('py'), b.get('address'), b.get('memo'))
-          except Exception as e: print('::notice title=err::',e)
-          "
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/naver_sync.mjs
+        env:
+          LINKS: "https://naver.me/xJcOEX69 https://map.naver.com/p/entry/place/11853778 https://m.place.naver.com/place/11853778/home"
+      - run: |
+          node -e "const j=require('./data/naver_links.json').links;for(const [u,o] of Object.entries(j)){console.log('::notice title='+o.t+'::'+u.slice(0,40)+' | '+(o.t==='folder'?o.name+' '+o.items.length+'곳 첫:'+o.items[0].name+' '+o.items[0].lat:o.t==='place'?o.name+' '+o.lat+','+o.lng+' '+o.addr:o.why))}"
