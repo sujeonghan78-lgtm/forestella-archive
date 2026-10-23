@@ -409,6 +409,7 @@
 
   // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
   const NEWS = [
+    { d: '2026-10-23', t: '숲별 발자국 지도가 열렸어요 👣', s: '보관함에서 🎫 직관했어요를 누른 공연이 한반도 지도에 지역별로 모여요. \'숲길 따라걷기\'를 누르면 처음 간 공연부터 차례로 따라가요. 멤버·종류·연도로 골라 볼 수 있어요.', a: '#/map' },
     { d: '2026-10-23', t: '숲별 카드가 더 예뻐졌어요 🎫', s: '티켓 · 영수증 · 플레이리스트 모양, 내 사진 스티커, 소취곡, 보관함 기록으로 받는 뱃지, 새 카드 색을 넣었어요.', a: '#/card' },
     { d: '2026-10-23', t: '콘서트 셋리를 직접 고칠 수 있어요', s: '콘서트 화면 아래 \'셋리 고치기\'로 1부·2부·앵콜까지 고쳐 보내 주세요. 다른 두 분이 맞다고 하면 확정돼요.', a: '#/concerts' },
     { d: '2026-10-23', t: '영어·일본어로도 볼 수 있어요 🌐', s: '홈 위 🌐 버튼이나 더보기의 언어에서 바꿀 수 있어요. 메뉴와 버튼이 바뀌고, 일정 이름까지 보려면 \'전체 번역\'을 눌러 주세요.', a: '#/more' },
@@ -1423,7 +1424,7 @@
       <section class="block box-stat">
         <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 시청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
-        ${isAdmin() ? '<a class="map-entry" href="#/map">👣 숲별 발자국 · 지도로 되돌아보기 <span>›</span></a>' : ''}
+        <a class="map-entry" href="#/map">👣 숲별 발자국 · 지도로 되돌아보기 <span>›</span></a>
       </section>` : ''}
       ${empty ? '' : `
       <form class="searchbox song-search box-search" role="search" onsubmit="return false">
@@ -1503,8 +1504,6 @@
     return `<div class="chips map-years">${MEM_CHIPS.slice(2).concat([MEM_CHIPS[1]]).map(([v, l]) => b('data-mem', v, l, v === mapSt.mem)).join('')}<span class="map-sep"></span>${MAP_KINDS.slice(1).map(([v, l]) => b('data-kind', v, l, v === mapSt.kind)).join('')}</div>`;
   }
   function mapView() {
-    // 아직 관리자 기기에서만 (시험 중)
-    if (!isAdmin()) return '<a class="back" href="#/box">‹ 보관함</a><p class="empty">준비 중인 화면이에요.</p>';
     return `
       <a class="back" href="#/box">‹ 보관함</a>
       <h1 class="h1 page-title">숲별 발자국${help('🎫 직관했어요를 누른 일정이 지도에 떠요. 정확한 공연장을 모르는 곳은 큰 지역으로 묶어 보여요. 위치가 틀리면 📍 위치 고치기로 알려 주세요. 다른 두 분이 맞다고 하면 바뀌어요.')}</h1>
@@ -3082,7 +3081,7 @@
         ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
         ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견', '남기기 · 모아보기')}
         ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (st => (st.liked.length + st.songs.length + st.went.length) ? `♥ ${st.liked.length + st.songs.length} · 🎫 ${st.went.length}` : '좋아요 · 직관')(boxStats()))}
-        ${isAdmin() ? item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국', '지도로 되돌아보기 · 관리자만 보여요') : ''}
+        ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국', '내가 간 공연을 지도로 되돌아보기')}
         ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사', '축제 · 기획 공연 · 지역별')}
@@ -4943,7 +4942,7 @@
     if (name === 'program') bindPrograms();
     if (name === 'box') bindBox();
     if (name === 'card') bindCard();
-    if (name === 'map' && isAdmin()) bindMap();
+    if (name === 'map') bindMap();
     if (name === 'placefind' && isAdmin()) bindPlaceFind();
     if (name === 'home') bindAsk();
     if (name === 'yt') bindYt();
