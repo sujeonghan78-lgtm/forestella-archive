@@ -308,7 +308,7 @@
         const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
         if (id && songs.length >= (r.newEv ? 1 : 3)) {
           if (!r.newEv) fanLog.push({ k: latest.has(id) ? 'slfix' : 'sl', id, at: tsMs(r.time), by: r.by, ver: slVer(songs), songs: songs.length });
-          latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1 });
+          latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1, fromEv: !!r.newEv });
         }
       });
       rows.filter(r => (r.type === '셋리확인' || r.type === '일정확인') && r.by).forEach(r => { const id = idOf(r); if (id) fanLog.push({ k: r.type === '셋리확인' ? 'slok' : 'evok', id, at: tsMs(r.time), by: r.by, ver: r.ver }); });
@@ -317,6 +317,8 @@
         if (!e || e.songSource === '참고') return;
         const ver = slVer(f.songs);
         const who = new Set(rows.filter(r => r.type === '셋리확인' && idOf(r) === id && r.ver === ver && r.by && r.by !== f.by).map(r => r.by));
+        // 새 일정과 같이 올라온 셋리는 그 일정을 '맞아요'한 사람도 같이 확인한 걸로 쳐요 (등록 화면에서 곡까지 같이 봤어요)
+        if (f.fromEv && e.fanEvent) rows.filter(r => r.type === '일정확인' && idOf(r) === id && r.by && r.by !== f.by).forEach(r => who.add(r.by));
         // 원래 곡 목록이 있어도 최근 판으로 통째로 바꿔요 (틀린 곡을 고칠 수 있게). 원래 목록은 시트 제보 줄을 지우면 돌아와요
         // 예전 셋리 알려주기가 곡 앞 숫자를 번호로 알고 지웠던 것 되돌리기 (버전 번호는 원래 글자 그대로)
         e.songs = f.songs.map(slFix); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))];
