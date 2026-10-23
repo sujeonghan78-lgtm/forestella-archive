@@ -1415,7 +1415,7 @@
       <section class="block box-stat">
         <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 시청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
-        ${went.length ? '<a class="map-entry" href="#/map">🗺 직관 지도로 되돌아보기 <span>›</span></a>' : ''}
+        ${went.length ? '<a class="map-entry" href="#/map">👣 숲별 발자국 · 지도로 되돌아보기 <span>›</span></a>' : ''}
       </section>` : ''}
       ${empty ? '' : `
       <form class="searchbox song-search box-search" role="search" onsubmit="return false">
@@ -1478,7 +1478,7 @@
   function mapView() {
     return `
       <a class="back" href="#/box">‹ 보관함</a>
-      <h1 class="h1 page-title">직관 지도${help('🎫 직관했어요를 누른 일정이 지도에 떠요. 정확한 공연장을 모르는 곳은 큰 지역으로 묶어 보여요. 위치가 틀리면 📍 위치 고치기로 알려 주세요. 다른 두 분이 맞다고 하면 바뀌어요.')}</h1>
+      <h1 class="h1 page-title">숲별 발자국${help('🎫 직관했어요를 누른 일정이 지도에 떠요. 정확한 공연장을 모르는 곳은 큰 지역으로 묶어 보여요. 위치가 틀리면 📍 위치 고치기로 알려 주세요. 다른 두 분이 맞다고 하면 바뀌어요.')}</h1>
       <div id="map-root"><p class="empty">지도를 불러오는 중…</p></div>`;
   }
   async function bindMap() {
