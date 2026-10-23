@@ -56,8 +56,19 @@ def queries(p):
     if short and short not in q and len(short) >= 3:
         q.append(short)
     words = base.split(' ')
-    if len(words) > 2:
-        q.append(' '.join(words[:2]))
+    # 뒤에서부터 낱말을 하나씩 떼 보기 ('올림픽공원 SK핸드볼경기장' → '올림픽공원'), 앞의 도시 이름 떼 보기
+    for n in range(len(words) - 1, 0, -1):
+        w = ' '.join(words[:n])
+        if len(w) >= 3 and w not in q:
+            q.append(w)
+    if len(words) > 1 and words[0] in CITIES:
+        w = ' '.join(words[1:])
+        if w not in q:
+            q.append(w)
+    # 붙여 쓴 이름 띄우기 ('잠실실내체육관' → '잠실 실내체육관')
+    sp = re.sub(r'(실내체육관|체육관|종합운동장|운동장|예술회관|문화회관|아트센터|아트홀|콘서트홀|극장)$', r' \1', base)
+    if sp != base and sp not in q:
+        q.append(sp)
     return q
 
 
@@ -75,10 +86,14 @@ def find(p):
             name = r.get('display_name', '')
             if city and city not in name:
                 continue
+            # 낱말이 하나도 안 겹치면(가게 이름이 같을 뿐인 경우) 빼요
+            core = re.sub(r'\s+', '', q)
+            if not any(w and w in name.replace(' ', '') for w in [core[:3], core[-3:]]):
+                continue
             # 행정구역(시·군)만 나온 건 공연장 좌표가 아니라 빼요
             if r.get('category') == 'boundary' or r.get('type') in ('administrative', 'city', 'town', 'county', 'province'):
                 continue
-            exact = q == p or q == queries(p)[1]
+            exact = q == p or q == queries(p)[1] or (len(q) >= 4 and q in p)
             return {'lat': round(float(r['lat']), 6), 'lng': round(float(r['lon']), 6), 'name': name.split(',')[0].strip(), 'addr': ', '.join(x.strip() for x in name.split(',')[1:4]), 'c': 'ok' if exact else 'maybe'}
     return None
 
@@ -89,11 +104,21 @@ def main():
     except Exception:
         known = {}
     ps = places()
-    todo = [p for p in sorted(ps, key=lambda x: -ps[x]) if p not in known.get('found', {}) and p not in known.get('miss', [])]
+    # 해외 공연은 지도에 안 찍어요(한국 안에서 같은 이름 가게가 나와요)
+    ABROAD = re.compile(r'뉴욕|두바이|시애틀|댈러스|로스앤젤레스|도쿄|오사카|애틀랜타|LA\b|Dallas|Atlanta|New York|Seattle|Dubai', re.I)
+    for k in [k for k in known.get('found', {}) if ABROAD.search(k)]:
+        del known['found'][k]
+    for k in ['대구 호텔 수성 컨벤션홀', '인천 송도 컨벤시아 4홀']:
+        known.get('found', {}).pop(k, None)
+    todo = [p for p in sorted(ps, key=lambda x: -ps[x]) if p not in known.get('found', {}) and not ABROAD.search(p)]
     print(f'장소 {len(ps)}개, 새로 찾을 것 {len(todo)}개')
-    found, miss = known.get('found', {}), set(known.get('miss', []))
+    found, miss = known.get('found', {}), set()
+    # 이미 찾은 이름이 들어 있으면 그 좌표를 같이 써요 ('올림픽공원 올림픽홀' ← '올림픽홀')
+    def alias(p):
+        hits = [k for k in found if len(k) >= 4 and k in p and found[k]['c'] == 'ok']
+        return dict(found[max(hits, key=len)], c='ok', via=max(hits, key=len)) if hits else None
     for i, p in enumerate(todo):
-        r = find(p)
+        r = alias(p) or find(p)
         if r:
             found[p] = r
         else:
