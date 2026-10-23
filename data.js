@@ -159,7 +159,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
   }
 
   async function fetchText(url) {
@@ -389,6 +389,26 @@
     // 숨기거나 지운 일정에 대한 제보는 빼고, 최근 것부터
     const evIds = new Set(events.map(e => e.id));
     const fan = fanLog.filter(l => evIds.has(l.id)).sort((a, b) => b.at - a.at);
+    // 지도 위치 고치기(종류: 장소좌표 장소/좌표 → '맞아요'는 종류: 좌표확인): 올린 사람 말고 두 명이 맞다고 하거나
+    // 관리자가 확정하면(서명된 숨김 줄, 번호 'g'+장소·좌표) 그 장소는 이 좌표로 찍어요. 확정된 것 중 가장 최근 것을 써요
+    const pins = {};
+    if (raw.reports) {
+      const okMark = window.SB_EV_HIDE || new Set();
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if ((r.type !== '장소좌표' && r.type !== '좌표확인') || !r.by) return;
+        const place = line0(r, '장소'), m = line0(r, '좌표').match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+        if (!place || !m) return;
+        const lat = +(+m[1]).toFixed(5), lng = +(+m[2]).toFixed(5), c = lat + ',' + lng;
+        const o = pins[place] = pins[place] || { cands: {} }, k = o.cands[c] = o.cands[c] || { lat, lng, c, by: '', who: new Set(), at: 0 };
+        if (r.type === '장소좌표' && !k.by) { k.by = r.by; k.at = tsMs(r.time); } else k.who.add(r.by);
+      });
+      Object.entries(pins).forEach(([place, o]) => {
+        const cs = Object.values(o.cands).filter(k => k.by);
+        cs.forEach(k => { k.who.delete(k.by); k.n = Math.min(k.who.size, 2); k.id = 'g' + slVer([place, k.c]); k.done = k.who.size >= 2 || okMark.has(k.id); });
+        const done = cs.filter(k => k.done).sort((a, b) => b.at - a.at)[0];
+        pins[place] = { ok: done ? { lat: done.lat, lng: done.lng } : null, pend: cs.filter(k => !k.done && (!done || k.at > done.at)).map(k => ({ lat: k.lat, lng: k.lng, c: k.c, by: k.by, n: k.n, id: k.id })) };
+      });
+    }
     const videos = buildVideos(toObjects(raw.videos));
     // 시트에 없는 관련 영상(보충 파일 videos): 같은 영상이 시트에 있으면 시트 우선
     const sheetVids = new Set(videos.map(v => v.videoId));
@@ -814,7 +834,7 @@
     songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

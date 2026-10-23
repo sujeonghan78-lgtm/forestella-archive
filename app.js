@@ -1415,6 +1415,7 @@
       <section class="block box-stat">
         <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 시청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
+        ${went.length ? '<a class="map-entry" href="#/map">🗺 직관 지도로 되돌아보기 <span>›</span></a>' : ''}
       </section>` : ''}
       ${empty ? '' : `
       <form class="searchbox song-search box-search" role="search" onsubmit="return false">
@@ -1434,6 +1435,182 @@
       </div>`}
       ${sync}`;
   }
+  // ---------- 직관 지도: 내가 간 일정을 지도에 찍고, 날짜순으로 따라가며 되돌아봐요 ----------
+  // 지도 프로그램(Leaflet)과 공연장 좌표(data/places.json)는 이 화면을 열 때만 불러와요
+  const REGION_C = { '서울': [37.5665, 126.978], '경기·인천': [37.42, 126.95], '강원': [37.75, 128.3], '충청': [36.55, 127.2], '전라': [35.35, 127.0], '경상': [35.75, 128.75], '제주': [33.42, 126.55] };
+  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null }, lmap = null;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    return leafletP = leafletP || new Promise((ok, no) => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = 'lib/leaflet/leaflet.css';
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = 'lib/leaflet/leaflet.js'; js.onload = () => ok(window.L); js.onerror = () => { leafletP = null; no(new Error('지도')); };
+      document.head.appendChild(js);
+    });
+  }
+  const loadPlaces = () => placesP = placesP || fetch('data/places.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => j.found || {});
+  // 일정 장소 이름: 장소 칸, 없으면 내용의 '장소:' 줄
+  const placeOf = e => (e.place || '').trim() || (((e.content || '').match(/장소\s*[:：]\s*(.+)/) || [])[1] || '').trim();
+  function locOf(e, found) {
+    const p = placeOf(e), pin = p && (data.pins || {})[p];
+    if (pin && pin.ok) return { ...pin.ok, exact: true, place: p };
+    if (p && found[p]) return { lat: found[p].lat, lng: found[p].lng, exact: true, place: p };
+    const r = regionOf(e);
+    if (r && REGION_C[r]) return { lat: REGION_C[r][0], lng: REGION_C[r][1], exact: false, place: p, region: r };
+    return { lat: null, lng: null, exact: false, place: p, region: r || '' };
+  }
+  // 정확한 좌표도 '큰 지역'에 묶어 멀리서 볼 때 숫자로 보여요 (지역을 모르면 가장 가까운 중심으로)
+  function regionNear(l) {
+    let best = '', d0 = 1e9;
+    Object.entries(REGION_C).forEach(([k, [a, b]]) => { const d = (a - l.lat) ** 2 + (b - l.lng) ** 2; if (d < d0) { d0 = d; best = k; } });
+    return best;
+  }
+  function mapList(found) {
+    const st = boxStats();
+    const mine = st.wentAll.slice().sort((a, b) => a.date.localeCompare(b.date));
+    if (!mapSt.mode) mapSt.mode = mine.length ? 'w' : 'all';
+    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !/^\[/.test(e.title)).sort((a, b) => a.date.localeCompare(b.date));
+    const items = list.map(e => ({ e, l: locOf(e, found) }));
+    return { all: items, on: items.filter(x => x.l.lat != null), off: items.filter(x => x.l.lat == null), mine: mine.length };
+  }
+  function mapView() {
+    return `
+      <a class="back" href="#/box">‹ 보관함</a>
+      <h1 class="h1 page-title">직관 지도${help('🎫 직관했어요를 누른 일정이 지도에 떠요. 정확한 공연장을 모르는 곳은 큰 지역으로 묶어 보여요. 위치가 틀리면 📍 위치 고치기로 알려 주세요. 다른 두 분이 맞다고 하면 바뀌어요.')}</h1>
+      <div id="map-root"><p class="empty">지도를 불러오는 중…</p></div>`;
+  }
+  async function bindMap() {
+    const root = document.getElementById('map-root');
+    let L, found;
+    try { [L, found] = await Promise.all([loadLeaflet(), loadPlaces()]); } catch (err) { if (root) root.innerHTML = '<p class="empty">지도를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</p>'; return; }
+    if (!root || !root.isConnected) return;
+    const ml = mapList(found);
+    if (mapSt.i < 0 || mapSt.i >= ml.on.length) mapSt.i = ml.on.length - 1;
+    root.innerHTML = `
+      <div class="chips map-modes"><button type="button" class="chip${mapSt.mode === 'w' ? ' on' : ''}" data-mode="w">🎫 내 직관 ${ml.mine}</button><button type="button" class="chip${mapSt.mode === 'all' ? ' on' : ''}" data-mode="all">포레스텔라 공연 전체</button></div>
+      ${ml.on.length ? `
+      <div class="map-car" id="map-car"></div>
+      <div class="map-box"><div id="map"></div><div class="map-pinbar" id="map-pinbar" hidden></div></div>
+      <div class="map-nav" id="map-nav"></div>
+      <div id="map-venue"></div>
+      ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개 (해외 · 장소 모름)</summary>${ml.off.map(x => `<a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>`).join('')}</details>` : ''}
+      <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
+      : `<p class="empty">${mapSt.mode === 'w' ? '아직 직관 기록이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 떠요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
+    root.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mapSt.mode = b.dataset.mode; mapSt.i = -1; mapSt.pin = null; bindMap(); });
+    if (!ml.on.length) return;
+    if (lmap) { try { lmap.remove(); } catch (err) { /* 이미 없어요 */ } }
+    const m = lmap = L.map('map', { zoomControl: true, attributionControl: false, minZoom: 5, maxZoom: 18 }).setView([36.3, 127.8], 7);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
+    const layer = L.layerGroup().addTo(m);
+    const pinIcon = L.divIcon({ className: '', html: '<span class="map-pin">📍</span>', iconSize: null });
+    let curMark = null;
+    const bubble = (n, cls, label) => L.divIcon({ className: '', html: `<span class="map-b ${cls}">${label ? `<small>${esc(label)}</small>` : ''}<b>${n}</b></span>`, iconSize: null });
+    const draw = () => {
+      layer.clearLayers();
+      const z = m.getZoom(), groups = new Map();
+      ml.on.forEach(x => {
+        const key = z < 9 ? 'r:' + (x.l.region || regionNear(x.l)) : x.l.exact ? 'p:' + x.l.lat.toFixed(4) + ',' + x.l.lng.toFixed(4) : 'r:' + x.l.region;
+        const g = groups.get(key) || groups.set(key, { key, items: [] }).get(key);
+        g.items.push(x);
+      });
+      groups.forEach(g => {
+        const reg = g.key.startsWith('r:'), name = g.key.slice(2), first = g.items[0].l;
+        const at = reg ? REGION_C[name] || [first.lat, first.lng] : [first.lat, first.lng];
+        const mk = L.marker(at, { icon: bubble(g.items.length, reg ? (z < 9 ? 'big' : 'fuzzy') : 'pin', reg ? (z < 9 ? name : name + ' 일대') : '') }).addTo(layer);
+        mk.on('click', () => {
+          if (reg && z < 9) { m.flyTo(at, 10, { duration: 0.8 }); return; }
+          showVenue(g.items, reg ? name + ' 일대 (정확한 장소 모름)' : first.place);
+        });
+      });
+      const cur = ml.on[mapSt.i];
+      if (curMark) curMark.remove();
+      curMark = L.circleMarker([cur.l.lat, cur.l.lng], { radius: 16, color: '#1F7A4C', weight: 3, fillOpacity: 0.12, className: 'map-now' }).addTo(m);
+    };
+    m.on('zoomend', draw);
+    const showVenue = (items, name) => {
+      const box = document.getElementById('map-venue');
+      box.innerHTML = `<section class="block map-venue"><div class="map-venue-h"><b>${esc(name || '장소')}</b><span>${items.length}번</span></div>${items.slice().reverse().map(x => `<button type="button" class="box-ev map-go" data-id="${esc(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></button>`).join('')}</section>`;
+      box.querySelectorAll('.map-go').forEach(b => b.onclick = () => { go(ml.on.findIndex(x => x.e.id === b.dataset.id)); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    };
+    const car = e => {
+      const it = [];
+      const pic = evPic([e]);
+      if (pic && !/ytimg/.test(pic)) it.push(`<a class="map-c" href="#/e/${encodeURIComponent(e.id)}"><img src="${esc(pic)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>포스터</span></a>`);
+      if (e.xPost && e.xPost.img) it.push(`<a class="map-c" href="${esc(e.xPost.url || '#/e/' + encodeURIComponent(e.id))}" target="_blank" rel="noopener"><img src="${esc(imgSize(e.xPost.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>공식 X</span></a>`);
+      const vids = [...new Map([e.videoId && { id: e.videoId, t: '영상' }, e.ytMain && { id: e.ytMain.id, t: '공식 영상' }, ...(e.ytStage || []).map(v => ({ id: v.id, t: '무대' })), ...(e.ytBehind || []).map(v => ({ id: v.id, t: '비하인드' })), ...e.related.map(v => ({ id: v.videoId, t: v.source || '영상' }))].filter(v => v && v.id).map(v => [v.id, v])).values()].slice(0, 8);
+      vids.forEach(v => it.push(`<a class="map-c" href="${ytWatch(v.id)}" target="_blank" rel="noopener"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.parentNode.remove()"><span>▶ ${esc(v.t)}</span></a>`));
+      const songs = e.songSource !== '참고' && e.songs.length ? e.songs : e.setlist ? e.setlist.songs.map(x => x.t) : [];
+      if (songs.length) it.push(`<a class="map-c map-c-sl" href="#/e/${encodeURIComponent(e.id)}"><b>셋리 ${songs.length}곡</b><small>${esc(songs.slice(0, 4).join(' · '))}${songs.length > 4 ? ' …' : ''}</small></a>`);
+      return it.length ? it.join('') : `<a class="map-c map-c-sl" href="#/e/${encodeURIComponent(e.id)}"><b>자세히 보기</b><small>아직 모인 자료가 없어요</small></a>`;
+    };
+    const pinBox = (x) => {
+      const p = x.l.place, pin = p && (data.pins || {})[p], me = myUid();
+      if (!p) return '';
+      const pend = ((pin && pin.pend) || []).map(k => `<div class="map-pend"><span>📍 팬이 고친 위치 · 확인 ${k.n}/2</span><button type="button" class="link-btn map-see" data-c="${k.c}">보기</button>${k.by !== me && !slOked('gp:' + p + ':' + k.c) ? `<button type="button" class="chip map-ok" data-c="${k.c}">맞아요</button>` : ''}${isAdmin() ? `<button type="button" class="link-btn map-adm" data-id="${k.id}">바로 확정 (관리자)</button>` : ''}</div>`).join('');
+      return `${pend}<button type="button" class="link-btn map-fix">📍 ${x.l.exact ? '위치가 달라요' : '정확한 위치 알려주기'}</button>`;
+    };
+    const nav = () => {
+      const x = ml.on[mapSt.i], prev = ml.on[mapSt.i - 1], next = ml.on[mapSt.i + 1];
+      document.getElementById('map-car').innerHTML = car(x.e);
+      document.getElementById('map-car').scrollLeft = 0;
+      document.getElementById('map-nav').innerHTML = `
+        <div class="map-now-card">
+          <span class="map-step">${mapSt.i + 1} / ${ml.on.length}</span>
+          <a href="#/e/${encodeURIComponent(x.e.id)}" class="map-now-t">${esc(x.e.title)}</a>
+          <span class="map-now-s">${fmtDate(x.e.date)}${x.l.place ? ' · ' + esc(x.l.place) : ''}${x.l.exact ? '' : ` <em>(${esc(x.l.region)} 어딘가)</em>`}</span>
+          <div class="map-fixbox">${pinBox(x)}</div>
+        </div>
+        <div class="map-btns">
+          <button type="button" class="map-btn" id="map-prev"${prev ? '' : ' disabled'}>‹ 이전<small>${prev ? esc(prev.e.title) : '처음이에요'}</small></button>
+          <button type="button" class="map-btn map-btn-now" id="map-here">지금 여기</button>
+          <button type="button" class="map-btn" id="map-next"${next ? '' : ' disabled'}>다음 ›<small>${next ? esc(next.e.title) : '마지막이에요'}</small></button>
+        </div>`;
+      document.getElementById('map-prev').onclick = () => go(mapSt.i - 1);
+      document.getElementById('map-next').onclick = () => go(mapSt.i + 1);
+      document.getElementById('map-here').onclick = () => go(mapSt.i);
+      const fb = document.querySelector('.map-fixbox');
+      fb.querySelector('.map-fix') && (fb.querySelector('.map-fix').onclick = () => startPin(x));
+      fb.querySelectorAll('.map-see').forEach(b => b.onclick = () => { const [a, c] = b.dataset.c.split(',').map(Number); m.flyTo([a, c], 16); L.marker([a, c], { icon: pinIcon }).addTo(layer).bindTooltip('팬이 고친 위치').openTooltip(); });
+      fb.querySelectorAll('.map-ok').forEach(b => b.onclick = async () => {
+        b.disabled = true;
+        await formPost(`종류: 좌표확인\n장소: ${x.l.place}\n좌표: ${b.dataset.c}\n일정: [ID ${x.e.id}] ${x.e.title}\n누가: ${myUid()}`).catch(() => {});
+        slOkAdd('gp:' + x.l.place + ':' + b.dataset.c); b.replaceWith(Object.assign(document.createElement('span'), { className: 'src-note', textContent: '고마워요! 5~10분쯤 뒤 반영돼요.' }));
+      });
+      fb.querySelectorAll('.map-adm').forEach(b => b.onclick = async () => { b.disabled = true; b.textContent = '확정하는 중…'; try { await sendEvMark(b.dataset.id, '숨김'); } catch (err) { b.disabled = false; b.textContent = '다시 눌러 주세요'; } });
+    };
+    const go = i => {
+      if (i < 0 || i >= ml.on.length) return;
+      mapSt.i = i;
+      const x = ml.on[i];
+      m.flyTo([x.l.lat, x.l.lng], x.l.exact ? 14 : 9, { duration: 1.1 });
+      nav(); draw();
+    };
+    // 위치 고치기: 지도를 누르면 핀이 꽂히고, 보내기를 누르면 제보로 가요
+    const startPin = x => {
+      const bar = document.getElementById('map-pinbar');
+      let mk = null, at = null;
+      bar.hidden = false;
+      bar.innerHTML = `<span><b>${esc(x.l.place)}</b> 위치를 지도에서 눌러 주세요</span><button type="button" class="chip on" id="pin-send" disabled>이 위치로 보내기</button><button type="button" class="link-btn" id="pin-no">취소</button>`;
+      document.getElementById('map').scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const onClick = ev => { at = ev.latlng; if (mk) mk.setLatLng(at); else mk = L.marker(at, { icon: pinIcon }).addTo(m); document.getElementById('pin-send').disabled = false; };
+      m.on('click', onClick);
+      const end = () => { m.off('click', onClick); if (mk) mk.remove(); bar.hidden = true; };
+      document.getElementById('pin-no').onclick = end;
+      document.getElementById('pin-send').onclick = async () => {
+        const c = at.lat.toFixed(5) + ',' + at.lng.toFixed(5);
+        await formPost(`종류: 장소좌표\n장소: ${x.l.place}\n좌표: ${c}\n일정: [ID ${x.e.id}] ${x.e.title}\n누가: ${myUid()}`).catch(() => {});
+        end();
+        const fb = document.querySelector('.map-fixbox');
+        if (fb) fb.innerHTML = '<p class="src-note">보냈어요! 다른 두 분이 맞다고 하면 지도에 반영돼요. (5~10분쯤 뒤부터 보여요)</p>';
+      };
+    };
+    nav(); draw();
+    const x0 = ml.on[mapSt.i];
+    m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? 13 : 9);
+  }
+
   // ---------- 숲별 카드 · 입덕일 D+ (이 폰에만 저장) ----------
   const CARD_KEY = 'sb-card', PHOTO_KEY = 'sb-card-photo';
   const CARD_MEMS = ['두훈', '형호', '민규', '우림'];
@@ -2428,6 +2605,7 @@
     opinion: opinionView,
     news: newsView,
     fan: fanView,
+    map: mapView,
     admin: adminView,
     xfeed: xfeedView,
     yt: ytView,
@@ -3914,7 +4092,7 @@
   }
 
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', map: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -3961,6 +4139,7 @@
     if (name === 'program') bindPrograms();
     if (name === 'box') bindBox();
     if (name === 'card') bindCard();
+    if (name === 'map') bindMap();
     if (name === 'home') bindAsk();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
