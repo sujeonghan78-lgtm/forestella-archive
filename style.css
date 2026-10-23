@@ -1336,3 +1336,4 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .ma-add { align-self: flex-start; }
 .drive-sent { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #E8F5E3; color: #2E7D4F; font-style: normal; font-size: 11px; font-weight: 700; }
 .drive-pick.sent { background: #FAFDF8; }
+.drive-has { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #EAF1FB; color: #2F5E9E; font-style: normal; font-size: 11px; font-weight: 700; }

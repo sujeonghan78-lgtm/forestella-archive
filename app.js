@@ -3459,10 +3459,10 @@
     opMine().filter(o => !(opData && opData.ops.some(x => x.by === o.by && x.text === o.text))).forEach(o => (o.evs || []).forEach(add));
     return n;
   }
-  let driveN = null;
-  const drivePick = e => { const n = (driveN || new Map()).get(e.id); return `<button type="button" class="drive-pick${n ? ' sent' : ''}" data-id="${esc(e.id)}" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${n ? `<em class="drive-sent">✓ 이미 제출된 장소${n > 1 ? ` ${n}건` : ''}</em>` : ''}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`; };
+  let driveN = null, driveF = null;
+  const drivePick = e => { const n = (driveN || new Map()).get(e.id); return `<button type="button" class="drive-pick${n ? ' sent' : ''}" data-id="${esc(e.id)}" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${driveF && locOf(e, driveF).exact ? '<em class="drive-has">📍 지도에 등록됨</em>' : ''}${n ? `<em class="drive-sent">✓ 이미 제출된 장소${n > 1 ? ` ${n}건` : ''}</em>` : ''}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`; };
   // 검색·목록을 열 때 의견을 한 번 불러와서 '이미 제출됨'을 세요
-  const driveLoad = () => (opData ? Promise.resolve() : loadOpinions()).then(() => { driveN = driveDone(); });
+  const driveLoad = () => Promise.all([opData ? null : loadOpinions(), loadPlaces().catch(() => ({}))]).then(([, f]) => { driveN = driveDone(); driveF = f; });
   document.addEventListener('input', ev => {
     const t = ev.target.closest && ev.target.closest('.drive-ev');
     if (!t) return;
