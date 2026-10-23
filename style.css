@@ -1179,3 +1179,14 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .cast-day .cast-btn { padding: 2px 7px; }
 .sl-pre .sl-sec { list-style: none; margin: 6px 0 2px -1.2em; font-size: 12px; font-weight: 700; color: var(--ink-2); }
 .sl-pre small { color: var(--ink-3, #8a968f); font-size: 11px; }
+.cf-colors { flex-wrap: wrap; }
+.cf-badges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.cf-badge { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px 7px; border: 1px solid var(--line, #DCE6DF); border-radius: 12px; background: var(--card, #fff); color: var(--ink); font: inherit; }
+.cf-badge span { font-size: 18px; line-height: 1.2; }
+.cf-badge b { font-size: 12px; }
+.cf-badge small { font-size: 10px; color: var(--ink-2); }
+.cf-badge.on { border-color: #2F7A5A; background: #EDF7EF; box-shadow: inset 0 0 0 1px #2F7A5A; }
+.cf-badge:disabled { opacity: .42; }
+.stk-tools { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: #F2F7F3; }
+.stk-tools label { display: grid; grid-template-columns: 4em 1fr; align-items: center; font-size: 12px; color: var(--ink-2); }
+.stk-tools .chips { flex-wrap: wrap; }

@@ -1373,7 +1373,7 @@
     went.forEach(e => { const r = regionOf(e); if (r !== '그 외') regions.set(r, (regions.get(r) || 0) + 1); });
     const topRegion = [...regions.entries()].sort((a, b) => b[1] - a[1])[0];
     const first = went[went.length - 1];
-    return { evs, wentAll, isBc, went, seen, liked, songs, heardList, topRegion, first };
+    return { evs, wentAll, isBc, went, seen, liked, songs, heardList, topRegion, first, regionN: regions.size };
   }
   function boxView() {
     const { wentAll, went, seen, liked, songs, heardList, topRegion, first } = boxStats();
@@ -1770,7 +1770,36 @@
     paper: { bg: ['#F4EFE4'], ink: '#22342B', mute: 'rgba(34,52,43,.55)', line: 'rgba(34,52,43,.15)', acc: '#2F7A5A', name: '종이' },
     dusk: { bg: ['#F3E2DA', '#E6DAE8'], ink: '#45303A', mute: 'rgba(69,48,58,.55)', line: 'rgba(69,48,58,.15)', acc: '#B0567A', name: '노을' },
     night: { bg: ['#141A2E'], ink: '#ECE8F7', mute: 'rgba(236,232,247,.55)', line: 'rgba(236,232,247,.16)', acc: '#E8C77A', name: '밤' },
+    sky: { bg: ['#DDEBF6'], ink: '#1F3346', mute: 'rgba(31,51,70,.55)', line: 'rgba(31,51,70,.15)', acc: '#3C7FB5', name: '하늘' },
+    mint: { bg: ['#E6F3DF', '#D3EEE7'], ink: '#21402F', mute: 'rgba(33,64,47,.55)', line: 'rgba(33,64,47,.15)', acc: '#3D9A6A', name: '연두' },
+    lilac: { bg: ['#ECE5F6'], ink: '#3A3050', mute: 'rgba(58,48,80,.55)', line: 'rgba(58,48,80,.15)', acc: '#7B62B8', name: '라벤더' },
+    blossom: { bg: ['#FCE7EC'], ink: '#4A2A35', mute: 'rgba(74,42,53,.55)', line: 'rgba(74,42,53,.15)', acc: '#D0587E', name: '벚꽃' },
+    aurora: { bg: ['#1B2B4A', '#3B2357'], ink: '#F1ECFA', mute: 'rgba(241,236,250,.58)', line: 'rgba(241,236,250,.17)', acc: '#9EE6C8', name: '오로라' },
+    sumi: { bg: ['#26272B'], ink: '#EDEBE6', mute: 'rgba(237,235,230,.55)', line: 'rgba(237,235,230,.16)', acc: '#F0A85A', name: '먹' },
   };
+  // 카드 틀 모양
+  const CARD_FRAMES = { round: '기본', polaroid: '폴라로이드', ticket: '티켓', photo: '포토카드' };
+  // 뱃지: 보관함 기록으로 받은 것만 골라 넣을 수 있어요 (최대 3개)
+  const tourOfDate = d => (data.tours || []).find(t => (t.dates || []).includes(d));
+  const CARD_BADGES = [
+    ['first', '🌱', '첫 발자국', '직관 1번', s => s.went.length >= 1],
+    ['walk', '🌿', '숲길 산책', '직관 5번', s => s.went.length >= 5],
+    ['keeper', '🌲', '숲지기', '직관 10번', s => s.went.length >= 10],
+    ['grand', '🏕️', '숲의 터줏대감', '직관 30번', s => s.went.length >= 30],
+    ['trip', '🧭', '숲 원정대', '3곳 넘는 지역에서 직관', s => s.regionN >= 3],
+    ['ncha', '🎟️', 'N차 숲별', '같은 투어 2번 넘게 직관', s => { const m = new Map(); s.went.forEach(e => { const t = tourOfDate(e.date); if (t) m.set(t.id, (m.get(t.id) || 0) + 1); }); const n = Math.max(0, ...m.values()); return n >= 2 && `${n}차 숲별`; }],
+    ['studio', '📺', '방청 요정', '방송 현장에서 1번', s => s.went.some(s.isBc)],
+    ['og', '🌰', '원조 숲별', '2018년까지 직관', s => s.went.some(e => e.date < '2019')],
+    ['ear', '🎧', '귀명창', '직관으로 들은 곡 50곡', s => s.heardList.length >= 50],
+    ['heart', '💚', '최애곡 부자', '♥ 곡 20곡', s => s.songs.length >= 20],
+    ['y1', '⭐', '1년차 숲별', '입덕 1년', () => ddayOf(card.since) > 365],
+    ['y3', '🌟', '3년차 숲별', '입덕 3년', () => ddayOf(card.since) > 365 * 3],
+    ['y5', '✨', '5년차 숲별', '입덕 5년', () => ddayOf(card.since) > 365 * 5],
+  ];
+  const cardBadges = (st = boxStats()) => CARD_BADGES.map(([k, ic, name, how, f]) => { const r = f(st); return { k, ic, name: typeof r === 'string' ? r : name, how, got: !!r }; });
+  const STK_KEY = 'sb-card-stk';
+  let cardStk = boxRead(STK_KEY) || [];  // [{ src, x, y, w, r, shape }] 카드 바깥 틀 기준 위치
+  let cardStkImg = new Map(), cardSel = -1, cardExport = false;
   // 글씨체: 이름·D+·곡 이름·한마디에 써요 (k: 손글씨는 글자가 작아 보여서 키워요)
   const CARD_FONTS = {
     myeong: { f: '"Nanum Myeongjo", serif', w: 700, big: 800, k: 1, name: '명조' },
@@ -1779,7 +1808,7 @@
     pen: { f: '"Nanum Pen Script", cursive', w: 400, big: 400, k: 1.3, name: '손글씨' },
   };
   const CARD_SANS = '"Pretendard Variable", Pretendard, system-ui, sans-serif';
-  const cardDefault = () => ({ nick: '', since: '', gen: [], debut: '', fav: '', mem: [], best: '', line: '', color: 'forest', font: 'myeong', stats: ['w', 'b', 'first', 'h', 'r'], hideAsk: false });
+  const cardDefault = () => ({ nick: '', since: '', gen: [], debut: '', fav: '', mem: [], best: '', line: '', color: 'forest', font: 'myeong', stats: ['w', 'b', 'first', 'h', 'r'], hideAsk: false, wish: '', frame: 'round', badges: [] });
   let card = Object.assign(cardDefault(), boxRead(CARD_KEY) || {});
   let cardPhoto = boxRead(PHOTO_KEY);  // { src, x, y }
   const cardSave = () => boxWrite(CARD_KEY, card);
@@ -1921,10 +1950,29 @@
       ops.push(() => { ctx.font = font(400, 12.5); ctx.fillStyle = C.acc; ctx.fillText('♥', P, yM); ctx.fillStyle = C.ink; ctx.fillText(mems.join(' · '), P + 16, yM); });
       y += 6 + 18;
     }
+    // 뱃지
+    const bdg = cardBadges().filter(b => b.got && (card.badges || []).includes(b.k));
+    if (bdg.length) {
+      y += 6;
+      ctx.font = font(600, 10.5);
+      let bx = P, by = y;
+      bdg.forEach(b => {
+        const t = b.ic + ' ' + b.name, w = ctx.measureText(t).width + 18;
+        if (bx > P && bx + w > P + IN) { bx = P; by += 26; }
+        const x0 = bx, y1 = by;
+        ops.push(() => {
+          ctx.strokeStyle = C.acc; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0 + .5, y1 + .5, w - 1, 21, 11) : ctx.rect(x0, y1, w, 21); ctx.stroke();
+          ctx.font = font(600, 10.5); ctx.fillStyle = C.ink; ctx.fillText(t, x0 + 9, y1 + 5);
+        });
+        bx += w + 6;
+      });
+      y = by + 21 + 4;
+    }
     // 입덕곡 · 최애곡 (최애곡은 ' · '로 여러 곡)
     const favs = favList(card.fav);
     const songsRow = [['입덕곡', card.debut.trim()], ['최애곡', favs.join(' · ')]].filter(x => x[1]);
-    if (songsRow.length) {
+    const wishes = favList(card.wish);
+    if (songsRow.length || wishes.length) {
       y += 10; hline(y); y += 11;
       const two = songsRow.length > 1 && favs.length < 2;
       const colW = (IN - 12) / 2;
@@ -1938,6 +1986,15 @@
         ls.forEach((l, j) => ops.push(() => { ctx.font = font(F.w, sz, F.f); ctx.fillStyle = C.ink; ctx.fillText(l, x, yS + 15 - (F.k > 1 ? 2 : 0) + j * sz * 1.25); }));
         if (!two || i === songsRow.length - 1) y += 15 + sz * 1.2 + (ls.length - 1) * sz * 1.25 + (two ? 0 : 6);
       });
+      // 소취곡: 듣고 싶은 곡
+      if (wishes.length) {
+        const yS = y, sz = (wishes.length > 5 ? 13.5 : 15) * F.k;
+        label('소취곡 · 듣고 싶은 곡', P, yS);
+        ctx.font = font(F.w, sz, F.f);
+        const ls = wrap(wishes.join(' · '), IN, wishes.length > 5 ? 3 : 2, /( · )/);
+        ls.forEach((l, j) => ops.push(() => { ctx.font = font(F.w, sz, F.f); ctx.fillStyle = C.acc; ctx.fillText(l, P, yS + 15 - (F.k > 1 ? 2 : 0) + j * sz * 1.25); }));
+        y += 15 + sz * 1.2 + (ls.length - 1) * sz * 1.25 + 6;
+      }
     }
     // 보관함 기록
     const { cells, lines } = cardNums();
@@ -1995,15 +2052,38 @@
     }
     ops.push(() => { ctx.font = font(400, 8.5); ctx.fillStyle = C.mute; ctx.fillText('숲별 기록장', P, H - 26); ctx.textAlign = 'right'; ctx.fillText('sujeonghan78-lgtm.github.io/forestella-archive', W - P, H - 26); ctx.textAlign = 'left'; });
 
-    // 실제로 그리기
-    cv.width = W * S; cv.height = H * S;
-    cv.dataset.h = H;
+    // 실제로 그리기: 틀 모양에 따라 바깥 크기가 달라요 (폴라로이드는 흰 테두리, 티켓은 아래 떼는 부분)
+    const fr = CARD_FRAMES[card.frame] ? card.frame : 'round';
+    const OX = fr === 'polaroid' ? 14 : 0, OY = OX, STUB = fr === 'ticket' ? 58 : 0;
+    const OW = W + OX * 2, OH = H + OY + STUB + (fr === 'polaroid' ? 62 : 0), BH = H + STUB;
+    cv.width = OW * S; cv.height = OH * S;
+    cv.dataset.h = OH; cv.dataset.w = OW;
     ctx.setTransform(S, 0, 0, S, 0, 0);
     ctx.textBaseline = 'top';
+    if (fr === 'polaroid') {
+      ctx.fillStyle = '#FBFAF5'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(0, 0, OW, OH, 6) : ctx.rect(0, 0, OW, OH); ctx.fill();
+      ctx.font = font(F.w, 19 * F.k, F.f); ctx.fillStyle = '#3B3A36'; ctx.textAlign = 'center';
+      ctx.fillText(fit([card.nick.trim() || '숲별', ddayText()].filter(Boolean).join(' · '), OW - 40), OW / 2, OY + H + 22);
+      ctx.textAlign = 'left';
+    }
     ctx.save();
-    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(0, 0, W, H, 20) : ctx.rect(0, 0, W, H); ctx.clip();
-    if (C.bg.length > 1) { const g = ctx.createLinearGradient(0, 0, W * 0.35, H); g.addColorStop(0, C.bg[0]); g.addColorStop(1, C.bg[1]); ctx.fillStyle = g; } else ctx.fillStyle = C.bg[0];
-    ctx.fillRect(0, 0, W, H);
+    ctx.translate(OX, OY);
+    ctx.beginPath();
+    if (fr === 'polaroid') ctx.rect(0, 0, W, H);
+    else if (fr === 'ticket') {
+      // 네 귀퉁이를 안으로 둥글게 파고, 떼는 줄 양옆에 반원 홈
+      const r = 14, n = 10;
+      ctx.moveTo(r, 0); ctx.lineTo(W - r, 0); ctx.arc(W, 0, r, Math.PI, Math.PI / 2, true);
+      ctx.lineTo(W, H - n); ctx.arc(W, H, n, -Math.PI / 2, Math.PI / 2, true);
+      ctx.lineTo(W, BH - r); ctx.arc(W, BH, r, -Math.PI / 2, Math.PI, true);
+      ctx.lineTo(r, BH); ctx.arc(0, BH, r, 0, -Math.PI / 2, true);
+      ctx.lineTo(0, H + n); ctx.arc(0, H, n, Math.PI / 2, -Math.PI / 2, true);
+      ctx.lineTo(0, r); ctx.arc(0, 0, r, Math.PI / 2, 0, true);
+      ctx.closePath();
+    } else ctx.roundRect ? ctx.roundRect(0, 0, W, H, 20) : ctx.rect(0, 0, W, H);
+    ctx.clip();
+    if (C.bg.length > 1) { const g = ctx.createLinearGradient(0, 0, W * 0.35, BH); g.addColorStop(0, C.bg[0]); g.addColorStop(1, C.bg[1]); ctx.fillStyle = g; } else ctx.fillStyle = C.bg[0];
+    ctx.fillRect(0, 0, W, BH);
     if (hasPhoto) {
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, PH); ctx.clip();
       const iw = cardImg.naturalWidth, ih = cardImg.naturalHeight, sc = Math.max(W / iw, PH / ih);
@@ -2017,12 +2097,59 @@
     if (yCut) {
       ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
       ctx.beginPath(); ctx.moveTo(10, yCut); ctx.lineTo(W - 10, yCut); ctx.stroke(); ctx.setLineDash([]);
-      ctx.globalCompositeOperation = 'destination-out';
-      [0, W].forEach(x => { ctx.beginPath(); ctx.arc(x, yCut, 8, 0, Math.PI * 2); ctx.fill(); });
-      ctx.globalCompositeOperation = 'source-over';
+      if (fr !== 'polaroid') {
+        ctx.globalCompositeOperation = 'destination-out';
+        [0, W].forEach(x => { ctx.beginPath(); ctx.arc(x, yCut, 8, 0, Math.PI * 2); ctx.fill(); });
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+    if (fr === 'ticket') {
+      // 떼는 부분: 점선 + ADMIT ONE + 바코드
+      ctx.strokeStyle = C.mute; ctx.lineWidth = 1.2; ctx.setLineDash([3, 4]);
+      ctx.beginPath(); ctx.moveTo(14, H); ctx.lineTo(W - 14, H); ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = font(700, 11); ctx.fillStyle = C.ink; spaced('ADMIT ONE', P, H + 17, 2.4);
+      ctx.font = font(500, 9); ctx.fillStyle = C.mute; spaced('SOOPBYEOL · ' + (ddayText() || 'FORESTELLA'), P, H + 34, 1.4);
+      let seed = 0; for (const ch of card.nick + card.since) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+      ctx.fillStyle = C.ink;
+      for (let bx = W - P - 96; bx < W - P;) { seed = (seed * 1103515245 + 12345) >>> 0; const w = 1 + (seed >>> 16) % 3; ctx.fillRect(bx, H + 15, w, 28); bx += w + 1 + (seed >>> 20) % 3; }
+    }
+    if (fr === 'photo') {
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(8, 8, W - 16, H - 16, 14) : ctx.rect(8, 8, W - 16, H - 16); ctx.stroke();
     }
     ctx.restore();
-    return { PH: hasPhoto ? PH : 0 };
+    if (fr === 'photo') {
+      // 포토카드 위 고리 구멍
+      ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(W / 2, 16, 5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+    // 내 사진 스티커 (틀 위에 자유롭게)
+    cardStk.forEach((k, i) => {
+      const im = cardStkImg.get(k.src);
+      if (!im || !im.complete || !im.naturalWidth) return;
+      const iw = im.naturalWidth, ih = im.naturalHeight;
+      const sq = k.shape !== 'rect', w = k.w, h = sq ? k.w : k.w * ih / iw;
+      ctx.save();
+      ctx.translate(k.x, k.y); ctx.rotate((k.r || 0) * Math.PI / 180);
+      const shape = (m) => {
+        ctx.beginPath();
+        if (k.shape === 'circle') ctx.arc(0, 0, w / 2 + m, 0, Math.PI * 2);
+        else if (k.shape === 'heart') { const a = w / 2 + m; ctx.moveTo(0, a * 0.95); ctx.bezierCurveTo(-a * 1.25, a * 0.1, -a * 0.75, -a * 1.05, 0, -a * 0.45); ctx.bezierCurveTo(a * 0.75, -a * 1.05, a * 1.25, a * 0.1, 0, a * 0.95); }
+        else ctx.roundRect ? ctx.roundRect(-w / 2 - m, -h / 2 - m, w + m * 2, h + m * 2, 8 + m) : ctx.rect(-w / 2 - m, -h / 2 - m, w + m * 2, h + m * 2);
+      };
+      ctx.shadowColor = 'rgba(0,0,0,.22)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+      shape(4); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+      ctx.shadowColor = 'transparent';
+      shape(0); ctx.clip();
+      const sc = sq ? Math.max(w / iw, w / ih) : w / iw;
+      ctx.drawImage(im, -iw * sc / 2, -ih * sc / 2, iw * sc, ih * sc);
+      ctx.restore();
+      if (i === cardSel && !cardExport) {
+        ctx.save(); ctx.translate(k.x, k.y); ctx.rotate((k.r || 0) * Math.PI / 180);
+        ctx.strokeStyle = '#2F7A5A'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+        ctx.strokeRect(-w / 2 - 9, -h / 2 - 9, w + 18, h + 18); ctx.restore();
+      }
+    });
+    return { PH: hasPhoto ? PH : 0, OX, OY, OW, OH };
   }
 
   function cardView() {
@@ -2040,19 +2167,29 @@
           <label><span class="cf-l">입덕곡</span><span class="cf-ac"><input id="cf-debut" maxlength="40" value="${esc(card.debut)}" placeholder="곡 이름·초성" autocomplete="off"><span class="cf-sug" hidden></span></span></label>
           <label><span class="cf-l">최애곡</span><span class="cf-ac"><input id="cf-fav" maxlength="300" value="${esc(card.fav)}" placeholder="여러 곡 골라도 돼요" autocomplete="off" data-multi="1"><span class="cf-sug" hidden></span></span></label>
         </div>
+        <label><span class="cf-l">소취곡 <small>공연에서 듣고 싶은 곡, 여러 곡 골라도 돼요</small></span><span class="cf-ac"><input id="cf-wish" maxlength="300" value="${esc(card.wish)}" placeholder="곡 이름·초성" autocomplete="off" data-multi="1"><span class="cf-sug" hidden></span></span></label>
         <div class="cf-g"><span class="cf-l">최애 <small>여러 명 골라도 돼요</small></span><div class="chips cf-chips">${CARD_MEMS.map(m => chip('mem', m, m, card.mem.includes(m))).join('')}</div></div>
         <label><span class="cf-l">제일 좋았던 일정 <small>직관·♥ 일정에서 골라요</small></span>
           <select id="cf-best"><option value="">${bestList.length ? '안 넣을래요' : '보관함에 직관·♥ 일정이 아직 없어요'}</option>${bestList.map(e => `<option value="${esc(e.id)}"${e.id === card.best ? ' selected' : ''}>${fmtDate(e.date, false)} ${esc(e.title)}</option>`).join('')}</select></label>
         <div class="cf-g"><span class="cf-l">사진 <small>안 넣어도 돼요</small></span>
           <div class="cf-photo"><label class="chip cf-file">📷 ${cardPhoto ? '사진 바꾸기' : '폰에서 사진 고르기'}<input type="file" id="cf-photo" accept="image/*" hidden></label>${cardPhoto ? '<button type="button" class="link-btn" id="cf-photo-x">사진 빼기</button>' : ''}</div>
           <p class="src-note">직접 찍었거나 공유해도 되는 사진을 넣어 주세요. 사진은 이 폰에만 있어요.${cardPhoto ? ' 미리보기에서 사진을 끌어서 위치를 맞출 수 있어요.' : ''}</p></div>
+        <div class="cf-g"><span class="cf-l">내 사진 스티커 <small>여러 장, 미리보기에서 끌어서 옮겨요</small></span>
+          <div class="cf-photo"><label class="chip cf-file">🖼 스티커 붙이기<input type="file" id="cf-stk" accept="image/*" multiple hidden></label>${cardStk.length ? `<span class="src-note">${cardStk.length}장 붙였어요</span>` : ''}</div></div>
+        <div class="cf-g"><span class="cf-l">뱃지 <small>보관함 기록으로 받은 뱃지, 3개까지</small></span><div class="cf-badges">${cardBadges(st).map(b => `<button type="button" class="cf-badge${(card.badges || []).includes(b.k) && b.got ? ' on' : ''}" data-grp="badges" data-v="${b.k}" aria-pressed="${(card.badges || []).includes(b.k) && b.got}"${b.got ? '' : ' disabled'}><span>${b.ic}</span><b>${esc(b.name)}</b><small>${esc(b.got ? '받았어요' : b.how)}</small></button>`).join('')}</div></div>
         <label><span class="cf-l">한마디 <small>안 써도 돼요</small></span><input id="cf-line" maxlength="40" value="${esc(card.line)}" placeholder="숲별이라 행복해" autocomplete="off"></label>
         <div class="cf-g"><span class="cf-l">글씨체</span><div class="cf-fonts">${Object.entries(CARD_FONTS).map(([k, f]) => `<button type="button" class="cf-font${card.font === k ? ' on' : ''}" data-grp="font" data-v="${k}" aria-pressed="${card.font === k}" style="font-family:${esc(f.f)};font-weight:${f.w}${k === 'pen' ? ';font-size:21px' : ''}">${f.name} 숲별</button>`).join('')}</div></div>
+        <div class="cf-g"><span class="cf-l">틀 모양</span><div class="chips cf-chips">${Object.entries(CARD_FRAMES).map(([k, n]) => chip('frame', k, n, (card.frame || 'round') === k)).join('')}</div></div>
         <div class="cf-g"><span class="cf-l">카드 색</span><div class="cf-colors">${Object.entries(CARD_COLORS).map(([k, c]) => `<button type="button" class="cf-color${card.color === k ? ' on' : ''}" data-grp="color" data-v="${k}" aria-pressed="${card.color === k}" style="background:${c.bg.length > 1 ? `linear-gradient(135deg,${c.bg.join(',')})` : c.bg[0]}"><span class="sr">${c.name}</span></button>`).join('')}</div></div>
         <div class="cf-g"><span class="cf-l">카드에 넣을 기록 <small>보관함에서 자동</small></span><div class="chips cf-chips">${CARD_STATS.map(([k, l]) => chip('stats', k, l, card.stats.includes(k))).join('')}</div></div>
       </form>
       <div class="cf-l cf-pv-l">미리보기</div>
-      <div class="cf-pv"><canvas id="card-cv"${cardPhoto ? ' class="has-photo"' : ''} aria-label="숲별 카드 미리보기"></canvas></div>
+      <div class="cf-pv"><canvas id="card-cv"${cardPhoto || cardStk.length ? ' class="has-photo"' : ''} aria-label="숲별 카드 미리보기"></canvas></div>
+      <div class="stk-tools" id="stk-tools" hidden>
+        <label><span>크기</span><input type="range" id="stk-w" min="40" max="300"></label>
+        <label><span>돌리기</span><input type="range" id="stk-r" min="-180" max="180"></label>
+        <div class="chips">${[['circle', '동그라미'], ['heart', '하트'], ['rect', '네모']].map(([k, n]) => `<button type="button" class="chip stk-shape" data-v="${k}">${n}</button>`).join('')}<button type="button" class="chip stk-del">스티커 빼기</button><button type="button" class="link-btn stk-done">다 했어요</button></div>
+      </div>
       <div class="cf-btns"><button type="button" class="btn" id="card-save">이미지로 저장</button><button type="button" class="btn ghost" id="card-x">X에 올리기</button></div>
       <p class="src-note cf-msg" id="card-msg">X에 올릴 땐 저장한 카드 이미지를 글에 붙여 주세요.</p>`;
   }
@@ -2063,13 +2200,13 @@
     let geo = { PH: 0 }, tick = 0;
     const redraw = () => {
       const my = ++tick;
-      const text = [card.nick, card.debut, card.fav, card.line, ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 시청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
+      const text = [card.nick, card.debut, card.fav, card.wish, card.line, '소취곡 듣고 싶은 곡 ADMIT ONE ' + CARD_BADGES.map(b => b[2]).join(' '), ddayText(), 'FORESTELLA SOOPBYEOL CARD DAYS WITH 숲별 입덕 공식 팬클럽 기수 직관 시청 들은 곡 많이 간 곳 첫 제일 좋았던 일정 기록장 번 무대 0123456789.·♥…“”', (data.byId.get(card.best) || {}).title || ''].join(' ');
       geo = drawCard(cv);
       cardFontsReady(text).then(() => { if (my === tick) geo = drawCard(cv); });
     };
     if (cardPhoto && cardImgSrc !== cardPhoto.src) { cardImg = new Image(); cardImg.onload = redraw; cardImg.src = cardImgSrc = cardPhoto.src; }
     const form = document.getElementById('card-form');
-    const txt = { 'cf-nick': 'nick', 'cf-debut': 'debut', 'cf-fav': 'fav', 'cf-line': 'line', 'cf-since': 'since', 'cf-best': 'best' };
+    const txt = { 'cf-nick': 'nick', 'cf-debut': 'debut', 'cf-fav': 'fav', 'cf-wish': 'wish', 'cf-line': 'line', 'cf-since': 'since', 'cf-best': 'best' };
     form.oninput = form.onchange = ev => {
       const k = txt[ev.target.id];
       if (!k) return;
@@ -2080,10 +2217,12 @@
       const b = ev.target.closest('[data-grp]');
       if (!b) return;
       const g = b.dataset.grp, v = b.dataset.v;
-      if (g === 'font' || g === 'color') {
+      if (g === 'badges' && !(card.badges || []).includes(v) && (card.badges || []).filter(k => cardBadges().some(b => b.k === k && b.got)).length >= 3) { toast('뱃지는 3개까지 넣을 수 있어요.'); return; }
+      if (g === 'font' || g === 'color' || g === 'frame') {
         card[g] = v;
         form.querySelectorAll(`[data-grp="${g}"]`).forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
       } else {
+        card[g] = card[g] || [];
         card[g] = card[g].includes(v) ? card[g].filter(x => x !== v) : [...card[g], v];
         b.classList.toggle('on'); b.setAttribute('aria-pressed', card[g].includes(v));
       }
@@ -2138,17 +2277,59 @@
     };
     const px = document.getElementById('cf-photo-x');
     if (px) px.onclick = () => { cardPhoto = null; cardImg = null; cardImgSrc = ''; boxWrite(PHOTO_KEY, null); renderBase('card'); };
-    // 미리보기에서 사진 끌어서 위치 맞추기
+    // 미리보기: 스티커는 눌러서 고르고 끌어 옮겨요(두 손가락이면 크기·돌리기), 위쪽 사진은 끌어서 위치 맞추기
     let drag = null;
+    const pts = new Map();
+    const tools = document.getElementById('stk-tools');
+    const toolSync = () => {
+      const k = cardStk[cardSel];
+      tools.hidden = !k;
+      if (!k) return;
+      document.getElementById('stk-w').value = k.w; document.getElementById('stk-r').value = k.r || 0;
+      tools.querySelectorAll('.stk-shape').forEach(b => b.classList.toggle('on', b.dataset.v === (k.shape || 'circle')));
+    };
+    const stkSave = () => boxWrite(STK_KEY, cardStk);
+    const toCard = ev => { const r = cv.getBoundingClientRect(), k = (geo.OW || 340) / r.width; return { x: (ev.clientX - r.left) * k, y: (ev.clientY - r.top) * k, k }; };
+    const hitStk = p => { for (let i = cardStk.length - 1; i >= 0; i--) { const k = cardStk[i]; if (Math.hypot(p.x - k.x, p.y - k.y) <= k.w * 0.62 + 6) return i; } return -1; };
     cv.onpointerdown = ev => {
-      if (!geo.PH || !cardImg) return;
-      const r = cv.getBoundingClientRect(), k = 340 / r.width;
-      if ((ev.clientY - r.top) * k > geo.PH) return;
-      drag = { x: ev.clientX, y: ev.clientY, px: cardPhoto.x ?? .5, py: cardPhoto.y ?? .5, k };
+      const p = toCard(ev);
+      pts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       cv.setPointerCapture(ev.pointerId);
+      if (pts.size === 2 && cardSel >= 0) {
+        const [a, b] = [...pts.values()], k = cardStk[cardSel];
+        drag = { pinch: true, d0: Math.hypot(a.x - b.x, a.y - b.y), a0: Math.atan2(b.y - a.y, b.x - a.x), w0: k.w, r0: k.r || 0 };
+        return;
+      }
+      const i = hitStk(p);
+      if (i >= 0) {
+        // 고른 스티커는 맨 위로
+        if (i !== cardStk.length - 1) cardStk.push(cardStk.splice(i, 1)[0]);
+        cardSel = cardStk.length - 1;
+        const k = cardStk[cardSel];
+        drag = { stk: true, x: p.x, y: p.y, sx: k.x, sy: k.y };
+        toolSync(); drawCard(cv);
+        return;
+      }
+      if (cardSel >= 0) { cardSel = -1; toolSync(); drawCard(cv); }
+      const py = p.y - (geo.OY || 0);
+      if (!geo.PH || !cardImg || py < 0 || py > geo.PH) return;
+      drag = { x: ev.clientX, y: ev.clientY, px: cardPhoto.x ?? .5, py: cardPhoto.y ?? .5, k: p.k };
     };
     cv.onpointermove = ev => {
+      if (pts.has(ev.pointerId)) pts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       if (!drag) return;
+      if (drag.pinch) {
+        if (pts.size < 2) return;
+        const [a, b] = [...pts.values()], k = cardStk[cardSel];
+        k.w = Math.min(300, Math.max(40, drag.w0 * Math.hypot(a.x - b.x, a.y - b.y) / drag.d0));
+        k.r = Math.round(drag.r0 + (Math.atan2(b.y - a.y, b.x - a.x) - drag.a0) * 180 / Math.PI);
+        toolSync(); drawCard(cv); return;
+      }
+      if (drag.stk) {
+        const p = toCard(ev), k = cardStk[cardSel];
+        k.x = Math.min(geo.OW, Math.max(0, drag.sx + p.x - drag.x)); k.y = Math.min(geo.OH, Math.max(0, drag.sy + p.y - drag.y));
+        drawCard(cv); return;
+      }
       const iw = cardImg.naturalWidth, ih = cardImg.naturalHeight, sc = Math.max(340 / iw, geo.PH / ih);
       const ox = iw * sc - 340, oy = ih * sc - geo.PH;
       const cl = v => Math.min(1, Math.max(0, v));
@@ -2156,10 +2337,47 @@
       cardPhoto.y = oy > 1 ? cl(drag.py - (ev.clientY - drag.y) * drag.k / oy) : .5;
       drawCard(cv);
     };
-    cv.onpointerup = cv.onpointercancel = () => { if (drag) { drag = null; boxWrite(PHOTO_KEY, cardPhoto); } };
+    cv.onpointerup = cv.onpointercancel = ev => {
+      pts.delete(ev.pointerId);
+      if (!drag) return;
+      if (drag.stk || drag.pinch) stkSave(); else boxWrite(PHOTO_KEY, cardPhoto);
+      drag = null;
+    };
+    document.getElementById('stk-w').oninput = ev => { const k = cardStk[cardSel]; if (k) { k.w = +ev.target.value; drawCard(cv); stkSave(); } };
+    document.getElementById('stk-r').oninput = ev => { const k = cardStk[cardSel]; if (k) { k.r = +ev.target.value; drawCard(cv); stkSave(); } };
+    tools.onclick = ev => {
+      const k = cardStk[cardSel];
+      if (!k) return;
+      const sh = ev.target.closest('.stk-shape');
+      if (sh) { k.shape = sh.dataset.v; stkSave(); toolSync(); drawCard(cv); }
+      if (ev.target.closest('.stk-del')) { cardStk.splice(cardSel, 1); cardSel = -1; stkSave(); renderBase('card'); }
+      if (ev.target.closest('.stk-done')) { cardSel = -1; toolSync(); drawCard(cv); }
+    };
+    // 스티커 사진: 긴 쪽 500px로 줄여서 이 폰에만 (최대 8장)
+    const loadStk = () => cardStk.forEach(k => { if (!cardStkImg.has(k.src)) { const im = new Image(); im.onload = () => drawCard(cv); im.src = k.src; cardStkImg.set(k.src, im); } });
+    loadStk();
+    document.getElementById('cf-stk').onchange = ev => {
+      const files = [...(ev.target.files || [])].slice(0, Math.max(0, 8 - cardStk.length));
+      if (!files.length) { toast('스티커는 8장까지 붙일 수 있어요.'); return; }
+      Promise.all(files.map(f => new Promise(res => {
+        const img = new Image(), url = URL.createObjectURL(f);
+        img.onload = () => {
+          const sc = Math.min(1, 500 / Math.max(img.naturalWidth, img.naturalHeight));
+          const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = () => res(null);
+        img.src = url;
+      }))).then(srcs => {
+        srcs.filter(Boolean).forEach((src, i) => cardStk.push({ src, x: (geo.OW || 340) / 2 + i * 24, y: 150 + i * 24, w: 110, r: [-8, 6, -3, 10][i % 4], shape: 'circle' }));
+        cardSel = cardStk.length - 1;
+        stkSave(); renderBase('card');
+      });
+    };
     // 저장: 공유 창이 되면 공유 창(사진 앱에 저장 가능), 아니면 내려받기
     const msg = document.getElementById('card-msg');
-    const blobOf = () => new Promise(res => cv.toBlob(res, 'image/png'));
+    const blobOf = () => { cardExport = true; drawCard(cv); return new Promise(res => cv.toBlob(b => { cardExport = false; drawCard(cv); res(b); }, 'image/png')); };
     const download = b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = '숲별카드.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); };
     document.getElementById('card-save').onclick = async () => {
       const b = await blobOf(); if (!b) return;
