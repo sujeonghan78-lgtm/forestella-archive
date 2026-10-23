@@ -4200,7 +4200,7 @@
           <div class="op-head"><span class="op-who">${isNew ? '<span class="op-new">N</span> ' : ''}${o.parent ? '' : `<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> `}${toName ? `<span class="op-to">↳ ${esc(toName)}</span> ` : ''}${esc(o.name || '익명')}${mine ? (o.parent ? ' · 내 답글' : ' · 내 의견') : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
           ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
           ${o.sec || o.text.startsWith(SEC) ? (o.plain ? `<span class="op-auto op-sec">🔒 비밀글</span><p class="op-text">${esc(o.plain)}</p>` : '<p class="op-text op-text-auto">🔒 비밀글이에요. 관리자만 볼 수 있어요.</p>') : o.text.startsWith(OP_ASK_TAG) ? `<span class="op-auto">양식으로 답변</span><p class="op-text op-text-auto">${esc(o.text.slice(OP_ASK_TAG.length).replace(/^\s+/, ''))}</p>` : `<p class="op-text">${esc(o.text)}</p>`}
-          <div class="op-foot">${photoLink(o)}${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${admin && !o.parent && !o.local && !done ? `<button type="button" class="link-btn op-ask" data-id="${esc(o.id)}">양식으로 묻기</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
+          <div class="op-foot">${photoLink(o)}${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${admin && !o.parent && !o.local && !done ? `<button type="button" class="link-btn op-ask" data-id="${esc(o.id)}">양식으로 묻기</button>` : ''}${mine && !o.local && !done && !o.parent && !o.sec && adminKeys().length ? `<button type="button" class="link-btn op-lock" data-id="${esc(o.id)}">🔒 비밀글로</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
           ${o.local ? '' : `<div class="op-form op-re-box" data-id="${esc(o.id)}" hidden><textarea class="op-in op-re-in" rows="2" maxlength="1000" placeholder="${o.parent ? `${esc(o.name || '익명')}님에게 답글` : '답글을 적어 주세요'}"></textarea><button type="button" class="bpill add-send op-re-send" data-id="${esc(o.id)}">답글 달기</button></div>`}
           ${kids.map(k => opItem(k, me, admin, opNewIds && opNewIds.has(k.id), kidsMap, o.parent ? (o.name || '익명') : '')).join('')}
         </div>`;
@@ -4210,8 +4210,11 @@
     // 내가 보낸 의견은 시트에 들어오기 전까지 '방금 보냄'으로 먼저 보여줘요 (같은 사람·같은 글이면 시트 것만)
     const me = myUid(), gone = opGone();
     const all = opMine().filter(o => !opData.ops.some(x => x.by === o.by && x.text === o.text)).reverse().map(o => ({ ...o, local: true })).concat(opData.ops.slice().reverse()).filter(o => !gone.has(o.id));
+    // 비밀글로 바꾼 의견(이어: 원래 번호)은 원래 글에 달린 답글을 그대로 데려와요 (같은 사람이 쓴 것만)
+    const byId = new Map(opData.ops.map(o => [o.id, o])), alias = {};
+    all.forEach(o => { const was = o.prev && byId.get(o.prev); if (was && was.by === o.by) alias[o.prev] = o.id; });
     const kids = new Map();
-    all.slice().reverse().forEach(o => { if (o.parent) kids.set(o.parent, (kids.get(o.parent) || []).concat(o)); });
+    all.slice().reverse().forEach(o => { const pa = alias[o.parent] || o.parent; if (pa) kids.set(pa, (kids.get(pa) || []).concat(o)); });
     const list = all.filter(o => !o.parent);
     const f = opFilter(), c = opQs().get('c') || '';
     const shown = list.filter(o => (!f || (f === 'done' ? opDone.has(o.id) : !opDone.has(o.id))) && (!c || (o.cat || '자유·응원') === c));
@@ -4298,6 +4301,24 @@
           try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
           fill();
         }).catch(() => { s.disabled = false; s.textContent = '다시 보내기'; });
+        return;
+      }
+      // 내가 쓴 공개 의견을 비밀글로: 잠근 글을 새로 보내고 원래 글은 지워요
+      const lk = ev.target.closest('.op-lock');
+      if (lk) {
+        const o = opData && opData.ops.find(x => x.id === lk.dataset.id);
+        if (!o) return;
+        if (!lk.classList.contains('sure')) { lk.classList.add('sure'); lk.textContent = '비밀글로 바꿀까요?'; return; }
+        lk.disabled = true; lk.textContent = '바꾸는 중…';
+        opSeal(o.text).then(sent => post(`종류: 의견\n분류: ${o.cat || '자유·응원'}\n이름: ${o.name || ''}\n누가: ${myUid()}${o.photo ? `\n사진: ${o.photo}` : ''}${o.ev ? `\n일정: ${o.ev}` : ''}\n이어: ${o.id}\n내용: ${sent}`).then(() => sent))
+          .then(sent => {
+            const m = secMine(); m[sent] = o.text; try { localStorage.setItem(OP_SEC, JSON.stringify(m)); } catch (err) { /* 괜찮아요 */ }
+            const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, sec: true, plain: o.text, prev: o.id, name: o.name, cat: o.cat, by: myUid(), photo: o.photo, at: Date.now() });
+            try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
+            return post(`종류: 의견삭제\n대상: ${o.id}\n누가: ${myUid()}`);
+          })
+          .then(() => { const del = opDelMine(); del.push(o.id); try { localStorage.setItem(OP_DEL, JSON.stringify(del.slice(-200))); } catch (err) { /* 괜찮아요 */ } fill(); })
+          .catch(() => { lk.disabled = false; lk.textContent = '다시 누르기'; });
         return;
       }
       const d = ev.target.closest('.op-del');
