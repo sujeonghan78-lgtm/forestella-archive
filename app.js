@@ -407,7 +407,50 @@
       </form>`;
   }
 
+  // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
+  const NEWS = [
+    { d: '2026-10-23', t: '숲별 카드 한마디가 40자까지 늘었어요', s: '길면 글씨가 조금 작아지고 두 줄로 나와요. 좋아하는 가사도 넣어 보세요.', a: '#/card' },
+    { d: '2026-10-23', t: '일정 날짜가 틀렸으면 고칠 수 있어요', s: '일정 상세에서 "📅 날짜가 달라요"로 알려주시고, 다른 두 분이 "맞아요"를 누르면 바뀌어요.' },
+    { d: '2026-10-23', t: '의견 답글에 또 답글을 달 수 있어요', a: '#/opinion' },
+    { d: '2026-10-23', t: '같은 일정을 또 등록하려고 하면 알려드려요', s: '앞뒤 하루에 비슷한 일정이 있으면 "이 일정에 붙이기"를 고를 수 있어요.', a: '#/add' },
+    { d: '2026-10-22', t: '의견 남기기가 생겼어요', s: '정보 수정 · 오류 신고 · 기능 요청 · 응원 무엇이든 모든 화면 아래 💬 버튼으로 남겨 주세요.', a: '#/opinion' },
+    { d: '2026-10-22', t: '빠진 일정을 직접 등록할 수 있어요', s: '연표의 "＋ 일정 등록"이나 더보기 → 일정 등록에서 올리면, 다른 두 분이 확인하면 확정돼요.', a: '#/add' },
+    { d: '2026-10-22', t: '셋리스트를 알려주고 고칠 수 있어요', s: '일정 상세에서 셋리를 올리면 바로 붙고, 두 분이 "맞아요"를 누르면 확정돼요.' },
+    { d: '2026-10-22', t: '숲별 카드를 만들 수 있어요', s: '입덕일 · 직관 · 최애곡을 카드로 그려서 저장해요.', a: '#/card' },
+    { d: '2026-10-22', t: '콘서트 화면에 멤버 단독 공연이 생겼어요', a: '#/concerts' },
+    { d: '2026-10-21', t: '보관함이 생겼어요', s: '일정 ♥ · 직관 · 방청 · 곡 ♥ · 들은 곡을 모아 봐요.', a: '#/box' },
+    { d: '2026-10-21', t: '공연·행사를 지역별로 볼 수 있어요', a: '#/local' },
+  ];
+  const NEWS_SEEN = 'sb-news-seen';
+  function newsSeen() {
+    try { return localStorage.getItem(NEWS_SEEN); } catch (err) { return null; }
+  }
+  // 처음 온 분은 최근 3일 소식만 새 소식으로 세요
+  function newsUnread() {
+    const seen = newsSeen() || new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
+    return NEWS.filter(n => n.d > seen);
+  }
+  function newsView() {
+    const unread = new Set(newsUnread());
+    try { if (NEWS.length) localStorage.setItem(NEWS_SEEN, NEWS[0].d); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
+    let last = '';
+    return `
+      <div class="about-top">
+        <a class="back" href="#/more">‹ 더보기</a>
+        <h1 class="h1">새 소식</h1>
+        <p>숲별 기록장에 새로 생긴 기능이에요.</p>
+      </div>
+      <div class="news-list">${NEWS.map(n => {
+        const day = n.d !== last ? `<div class="news-day">${n.d.slice(0, 4)}.${n.d.slice(5, 7)}.${n.d.slice(8)}</div>` : '';
+        last = n.d;
+        const body = `<span class="news-t">${unread.has(n) ? '<span class="news-new">NEW</span>' : ''}${esc(n.t)}</span>${n.s ? `<span class="news-s">${esc(n.s)}</span>` : ''}`;
+        return day + (n.a ? `<a class="news-item" href="${n.a}">${body}<span class="news-go">›</span></a>` : `<div class="news-item">${body}</div>`);
+      }).join('')}</div>`;
+  }
+
   function bindHome() {
+    const nn = newsUnread().length, nb = document.getElementById('news-home');
+    if (nb && nn) nb.innerHTML = `<a class="op-home news-home" href="#/news">🆕 새 소식 <b>${nn}</b>건 <span>보러가기 ›</span></a>`;
     // 관리자 기기에서만: 아직 안 읽은 의견 수
     if (isAdmin()) loadOpinions().then(() => {
       const box = document.getElementById('op-home'), n = opUnread().length;
@@ -2037,6 +2080,7 @@
         <span>일정은 공식 팬카페 캘린더(2021년 7월 이전은 나무위키·방송 영상), 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
       </a>
       <nav aria-label="더보기 메뉴">
+        ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : '새로 생긴 기능')(newsUnread().length))}
         ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
         ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견', '남기기 · 모아보기')}
         ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (st => (st.liked.length + st.songs.length + st.went.length) ? `♥ ${st.liked.length + st.songs.length} · 🎫 ${st.went.length}` : '좋아요 · 직관')(boxStats()))}
@@ -2260,6 +2304,7 @@
     home: () => `
       ${header()}
       <div id="op-home"></div>
+      <div id="news-home"></div>
       ${homeAsk()}
       ${homeSearchBox()}
       <hr class="divider">
@@ -2288,6 +2333,7 @@
     tour: tourView,
     add: addView,
     opinion: opinionView,
+    news: newsView,
     admin: adminView,
     xfeed: xfeedView,
     yt: ytView,
@@ -3765,7 +3811,7 @@
   }
 
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);

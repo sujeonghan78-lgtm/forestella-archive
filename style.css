@@ -1022,3 +1022,13 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .op-text-auto{color:var(--ink-2)}
 .op-photo{display:inline-flex;align-self:flex-start;cursor:pointer;font-size:13px;color:var(--muted);padding:6px 10px;border:1px dashed var(--line);border-radius:999px}
 .op-photo-has{font-size:12px;color:var(--muted)}
+.news-home{background:#EAF6EE;color:#24513A}
+.news-home b{color:#1F7A4C}
+.news-cnt{color:#1F7A4C;font-size:12px}
+.news-list{display:flex;flex-direction:column;gap:8px;padding-bottom:24px}
+.news-day{margin:12px 0 0;font-size:13px;font-weight:600;color:var(--muted)}
+.news-item{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);text-decoration:none}
+.news-t{flex:1;min-width:0;font-size:15px;font-weight:600;line-height:1.4}
+.news-s{flex-basis:100%;order:3;font-size:13px;color:var(--muted);line-height:1.5}
+.news-go{color:var(--muted)}
+.news-new{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:6px;background:#1F7A4C;color:#fff;font-size:11px;font-weight:700;vertical-align:2px}
