@@ -3394,11 +3394,12 @@
       <p class="drive-s">숲별 발자국 지도에 공연장을 정확히 찍으려고 해요. <b>네이버 지도 저장 리스트 링크</b>나 <b>장소 링크</b>를 보내 주세요. 장소 링크면 어떤 공연인지(날짜·공연명)도 같이 적어 주세요.</p>
       <p class="drive-s">공연장 말고도 <b>일정과 관련된 곳이면 다 괜찮아요</b> (행사장, 방송 녹화장, 팬사인회 장소 등). 지도에 이미 찍혀 있는 곳도 실제와 다를 수 있어서 다 모아서 확인할게요.</p>
       <p class="drive-n">보낸 링크는 비밀글로 관리자만 봐요. 장소 등록이 얼추 끝날 때까지 모으고, 다 모이면 이 안내는 사라져요.</p>
-      <div class="drive-btns"><button type="button" class="bpill" data-drive="form">여기서 바로 보내기</button><a class="chip" href="#/opinion?w=map">의견 쓰는 곳으로 ›</a></div>
+      <div class="drive-btns"><button type="button" class="bpill" data-drive="form">여기서 장소 하나 간단하게 보내기</button><a class="chip" href="#/opinion?w=map">의견 쓰는 곳으로 ›</a></div>
       <div class="drive-body" hidden>
         <details class="drive-how"><summary>링크는 어떻게 복사해요?</summary><p>· 저장 리스트: 네이버 지도 앱 → 저장 → 리스트 고르기 → 공유 → 링크 복사 (리스트를 공개로 해 주세요)<br>· 장소 하나: 장소 화면 → 공유 → 링크 복사<br>· 저장할 때 메모에 공연 날짜나 이름을 적어 두면 더 정확하게 넣을 수 있어요.</p></details>
         <textarea class="op-in drive-link" rows="3" placeholder="네이버 지도 링크를 붙여 주세요 (여러 개도 돼요)"></textarea>
-        <input type="text" class="drive-ev" maxlength="120" placeholder="어떤 공연·일정인지 (예: 2024.07.06 레거시 서울)">
+        <input type="search" class="drive-ev" maxlength="120" placeholder="어떤 공연·일정인지 검색 (예: 레거시 서울, 2024.07)" autocomplete="off">
+        <div class="drive-list drive-hits" hidden></div>
         <button type="button" class="link-btn drive-miss">위치가 아직 없는 공연 보기 ▾</button>
         <div class="drive-list" hidden></div>
         <input type="text" class="drive-name" maxlength="20" placeholder="닉네임 (선택)">
@@ -3418,9 +3419,9 @@
       boxWrite(DRIVE_X, op ? 1 : null); return;
     }
     if (d.dataset.drive === 'form') { const b = box.querySelector('.drive-body'); b.hidden = !b.hidden; if (!b.hidden) box.querySelector('.drive-link').focus(); return; }
-    if (d.classList.contains('drive-pick')) { const i = box.querySelector('.drive-ev'); i.value = d.dataset.v; i.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+    if (d.classList.contains('drive-pick')) { const i = box.querySelector('.drive-ev'); i.value = d.dataset.v; box.querySelector('.drive-hits').hidden = true; i.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
     if (d.classList.contains('drive-miss')) {
-      const l = box.querySelector('.drive-list');
+      const l = box.querySelector('.drive-list:not(.drive-hits)');
       if (!l.hidden) { l.hidden = true; d.textContent = '위치가 아직 없는 공연 보기 ▾'; return; }
       l.hidden = false; l.innerHTML = '<p class="src-note">불러오는 중…</p>';
       const found = await loadPlaces().catch(() => ({}));
@@ -3428,7 +3429,7 @@
       // 지난 국내 공연만 (해외·앞으로 할 공연은 빼요)
       const miss = data.events.filter(e => isLocalEvent(e) && e.date <= today && regionOf(e) !== '해외' && !locOf(e, found).exact).slice().reverse();
       d.textContent = `위치가 아직 없는 공연 ${miss.length}개 ▴`;
-      l.innerHTML = miss.length ? `<p class="src-note">특히 이 공연들이 궁금해요! 누르면 '어떤 공연·일정인지' 칸에 들어가요.</p>` + miss.map(e => `<button type="button" class="drive-pick" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`).join('') : '<p class="src-note">모든 공연에 위치가 있어요! 🎉</p>';
+      l.innerHTML = miss.length ? `<p class="src-note">특히 이 공연들이 궁금해요! 누르면 '어떤 공연·일정인지' 칸에 들어가요.</p>` + miss.map(drivePick).join('') : '<p class="src-note">모든 공연에 위치가 있어요! 🎉</p>';
       return;
     }
     if (d.classList.contains('drive-send')) {
@@ -3448,6 +3449,19 @@
         box.querySelector('.drive-msg').textContent = `고마워요! 링크 ${links.length}개를 보냈어요. 더 있으면 이어서 보내 주세요.`;
       } catch (err) { d.disabled = false; d.textContent = '다시 보내기'; box.querySelector('.drive-msg').textContent = '보내지 못했어요. 잠시 뒤 다시 눌러 주세요.'; }
     }
+  });
+  // 일정 검색: 공연·행사·방송 다 찾아요 (초성 OK). 고르면 '날짜 일정명'이 들어가요
+  const drivePick = e => `<button type="button" class="drive-pick" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`;
+  document.addEventListener('input', ev => {
+    const t = ev.target.closest && ev.target.closest('.drive-ev');
+    if (!t) return;
+    const h = t.closest('.drive').querySelector('.drive-hits'), q = t.value.trim();
+    if (q.length < 2) { h.hidden = true; return; }
+    const ms = q.split(/\s+/).map(matcher).filter(Boolean), txt = e => `${e.date} ${e.date.replace(/-/g, '.')} ${e.title} ${e.place || ''}`;
+    // 띄어 쓴 낱말은 모두 들어 있어야 해요 (예: 레거시 서울)
+    const hits = data.events.filter(e => !e.ytOnly && ms.every(m => m(txt(e)))).slice().reverse();
+    h.hidden = false;
+    h.innerHTML = hits.length ? hits.slice(0, 30).map(drivePick).join('') + (hits.length > 30 ? `<p class="src-note">${hits.length}개 중 30개만 보여요. 더 자세히 적어 주세요.</p>` : '') : '<p class="src-note">못 찾았어요. 찾는 일정이 없으면 그대로 적어서 보내 주세요.</p>';
   });
   document.addEventListener('input', ev => {
     const t = ev.target.closest && ev.target.closest('.drive-link');
