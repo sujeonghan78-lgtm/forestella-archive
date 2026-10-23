@@ -1038,11 +1038,11 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .fan-card:last-child:nth-child(odd){grid-column:1/-1}
 .fan-card-l{font-size:13px;color:var(--muted)}
 .fan-card-n{font-size:26px;font-weight:700;color:#1F7A4C;line-height:1.2}
-.fan-card-s{font-size:12px;color:var(--muted)}
+.fan-card-s{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fan-filter{display:flex;gap:8px;align-items:center;margin:-4px 0 10px;font-size:13px;color:var(--muted)}
 .fan-filter a{color:#1F7A4C}
 .fan-list{display:flex;flex-direction:column;gap:8px}
-.fan-item{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);text-decoration:none}
+.fan-item{display:flex;flex-direction:column;gap:4px;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);text-decoration:none}
 .fan-small{padding:8px 14px;background:#FAFCFB}
 .fan-small .fan-title{font-size:13px;font-weight:500}
 .fan-top{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -1055,7 +1055,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .fan-wait{color:#B5651D}
 .fan-ok{color:#1F7A4C}
 .fan-old{color:var(--muted);font-weight:400}
-.fan-title{font-size:15px;font-weight:600;line-height:1.4;min-width:0}
+.fan-title{font-size:15px;font-weight:600;line-height:1.4;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fan-sub{display:flex;gap:6px;font-size:12px;color:var(--muted)}
 .fan-sub b{color:#1F7A4C;font-weight:600}
 .fan-ago{margin-left:auto}

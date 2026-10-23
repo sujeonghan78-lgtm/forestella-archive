@@ -513,7 +513,7 @@
       ${card('sl', '올라온 셋리', sls.length, split(sls.filter(e => e.fanSet.ok).length, sls.length))}
       ${card('song', '새로 들어온 곡', newSongs.length, '셋리 확정 전')}
       ${card('dt', '날짜 고치기', dts.size, split([...dts.values()].filter(x => x === 'ok').length, [...dts.values()].filter(x => x !== 'old').length))}
-      ${card('chg', '바뀐 사항', chg.length, `셋리 ${chg.filter(l => l.k === 'slfix').length} · 날짜 ${chg.filter(l => l.k === 'dt').length} · 더함 ${chg.filter(l => l.k === 'join').length}`)}
+      ${card('chg', '바뀐 사항', chg.length, [['셋리', 'slfix'], ['날짜', 'dt'], ['정보 더함', 'join']].map(([w, k]) => [w, chg.filter(l => l.k === k).length]).filter(x => x[1]).map(x => x.join(' ')).join(' · ') || '아직 없어요')}
       ${card('day', '최근 24시간', day, '제보 + 맞아요')}
     </div>`;
     const kinds = { ev: /^(ev|join|evok)$/, sl: /^(sl|slfix|slok)$/, dt: /^(dt|dtok)$/ };
@@ -533,7 +533,7 @@
       <div class="about-top">
         <a class="back" href="#/more">‹ 더보기</a>
         <h1 class="h1">팬 제보 현황</h1>
-        <p>팬분들이 올린 일정 · 셋리 · 날짜 고치기예요. 확인 필요는 다른 두 분이 '맞아요'를 누르면 확정돼요. 올리고 5~10분쯤 뒤에 보여요.</p>
+        <p>팬분들이 올린 일정 · 셋리 · 날짜예요. 다른 두 분이 '맞아요'를 누르면 확정돼요.</p>
       </div>
       ${cards}
       ${f ? `<div class="fan-filter">${{ ev: '등록된 일정', sl: '올라온 셋리', song: '새로 들어온 곡', dt: '날짜 고치기', chg: '바뀐 사항', day: '최근 24시간' }[f] || ''}만 보는 중 <a href="#/fan">전체 보기</a></div>` : ''}
