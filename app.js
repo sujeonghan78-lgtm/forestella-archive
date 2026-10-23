@@ -1566,11 +1566,14 @@
       if (mapSt.tour && ml.on.length > 1) {
         L.polyline(ml.on.slice(cut).map(pt), { color: '#2E8B57', weight: 2, opacity: .45, dashArray: '4 6', interactive: false }).addTo(layer);
         if (cut > 0) L.polyline(ml.on.slice(0, cut + 1).map(pt), { color: '#2E8B57', weight: 3, opacity: .8, interactive: false }).addTo(layer);
+        // 지금 걷고 있는 구간 (바로 전 → 지금)
+        if (cut > 0) L.polyline([pt(ml.on[cut - 1]), pt(ml.on[cut])], { color: '#F07B2A', weight: 5, opacity: .95, interactive: false }).addTo(layer);
       }
       groups.forEach(g => {
         const reg = g.key.startsWith('r:'), name = g.key.slice(2), first = g.items[0].l;
         const at = reg ? (z < 9 ? REGION_V[name] : REGION_C[name]) || [first.lat, first.lng] : [first.lat, first.lng];
-        const mk = L.marker(at, { icon: bubble(g.items.length, reg ? (z < 9 ? (mapSt.tour ? 'big' : 'ov') : 'fuzzy') : 'pin', reg ? (z < 9 ? name : name + ' 어딘가') : '') }).addTo(layer);
+        const now = mapSt.tour && g.items.includes(ml.on[mapSt.i]);
+        const mk = L.marker(at, { zIndexOffset: now ? 1000 : 0, icon: bubble(g.items.length, (now ? 'now ' : '') + (reg ? (z < 9 ? (mapSt.tour ? 'big' : 'ov') : 'fuzzy') : 'pin'), reg ? (z < 9 ? name : name + ' 어딘가') : '') }).addTo(layer);
         mk.on('click', () => {
           if (reg && z < 9 && !mapSt.tour) { showVenue(g.items, name); document.getElementById('map-venue').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
           if (reg && z < 9) { m.flyTo(at, 10, { duration: 0.8 }); return; }

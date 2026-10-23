@@ -1112,7 +1112,9 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-b.ov b{min-width:26px;height:26px;border:0;box-shadow:none;font-size:14px}
 .map-b.ov small{margin:0 0 0 5px;font-size:12px;text-shadow:none}
 .map-b.fuzzy b{background:rgba(31,122,76,.6);border-style:dashed}
-.map-now{display:block;width:56px;height:56px;transform:translate(-50%,-50%);border-radius:50%;background:rgba(31,122,76,.18);animation:mapPulse 1.8s ease-out infinite;pointer-events:none}
+.map-b.now b{background:#F07B2A;border-color:#fff;box-shadow:0 0 0 3px rgba(240,123,42,.35),0 2px 8px rgba(0,0,0,.25)}
+.map-b.now small{color:#B5520F}
+.map-now{display:block;width:56px;height:56px;transform:translate(-50%,-50%);border-radius:50%;background:rgba(240,123,42,.3);animation:mapPulse 1.8s ease-out infinite;pointer-events:none}
 @keyframes mapPulse{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-50%) scale(1.4);opacity:0}}
 @media (prefers-reduced-motion:reduce){.map-now{animation:none}}
 .map-pin{display:inline-block;transform:translate(-50%,-100%);font-size:28px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
