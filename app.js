@@ -409,6 +409,9 @@
 
   // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
   const NEWS = [
+    { d: '2026-10-24', t: '의견을 비밀글로 남길 수 있어요 🔒', s: '의견 보낼 때 \'🔒 비밀글\'을 체크하면 관리자만 읽을 수 있어요. 비밀글에 달린 답글도 잠겨요. 이미 쓴 내 의견도 \'🔒 비밀글로\'를 눌러 바꿀 수 있어요.', a: '#/opinion' },
+    { d: '2026-10-24', t: '네이버 지도 링크로 장소를 알려 주세요 🗺', s: '일정 상세의 \'📍 장소 알려주기\'에 네이버 지도 앱에서 공유한 링크를 붙여도 돼요. 15~30분쯤 뒤 장소와 지도 위치가 들어가요.', a: '#/timeline' },
+    { d: '2026-10-24', t: '공식 유튜브 필터가 새로워졌어요 ▶', s: '채널·종류·연도·멤버 버튼을 눌러 여러 개를 한 번에 고르고, 연도는 기간으로도 골라요. 고른 필터는 다음에 와도 그대로예요.', a: '#/yt' },
     { d: '2026-10-23', t: '홈 화면을 내 마음대로 바꿀 수 있어요 ✎', s: '홈 맨 아래 \'✎ 홈 화면 편집\'에서 보고 싶은 칸만 켜고 순서를 바꿀 수 있어요. 더보기에서 고른 자주 쓰는 메뉴도 홈에 올릴 수 있어요.', a: '#/' },
     { d: '2026-10-23', t: '일정 장소를 알려 줄 수 있어요 📍', s: '일정 상세의 \'📍 장소 알려주기\'에서 공연장을 검색해 골라 주세요. 숲별 발자국 지도에도 그 자리로 찍혀요.', a: '#/timeline' },
     { d: '2026-10-23', t: '자주 쓰는 메뉴를 고정할 수 있어요 ⭐', s: '더보기 맨 위 \'☆ 자주 쓰는 메뉴 맨 위에 고정하기\'를 누르고 메뉴의 ☆를 눌러 보세요. 고른 메뉴가 맨 위에 아이콘으로 모여요.', a: '#/more' },
@@ -4117,9 +4120,19 @@
   const SEC = 'SEC1:', OP_SEC = 'sb-op-sec', ECDH = { name: 'ECDH', namedCurve: 'P-256' };
   const secMine = () => { try { return JSON.parse(localStorage.getItem(OP_SEC) || '{}'); } catch (err) { return {}; } };
   const aesOf = bits => crypto.subtle.importKey('raw', bits, 'AES-GCM', false, ['encrypt', 'decrypt']);
-  async function opSeal(text) {
+  // 이 기기의 비밀글 열쇠: 내 비밀글에 달린 답글을 나도 읽을 수 있게 글에 공개 열쇠(열쇠: x.y)를 같이 적어 둬요
+  async function mySecKey() {
+    let k = boxRead('sb-sec-key');
+    if (!k || !k.d) {
+      const kp = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']), j = await crypto.subtle.exportKey('jwk', kp.privateKey);
+      k = { d: j.d, x: j.x, y: j.y }; boxWrite('sb-sec-key', k);
+    }
+    return k;
+  }
+  async function opSeal(text, extra = []) {
     const eph = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']), ej = await crypto.subtle.exportKey('jwk', eph.publicKey);
-    const parts = await Promise.all(adminKeys().map(async c => {
+    const to = adminKeys().concat(extra.filter(c => c && c.x && c.y && !adminKeys().some(a => a.x === c.x)));
+    const parts = await Promise.all(to.map(async c => {
       const pub = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: c.x, y: c.y, ext: true }, ECDH, false, []);
       const key = await aesOf(await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, eph.privateKey, 256));
       const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -4128,17 +4141,28 @@
     return `${SEC}${ej.x}.${ej.y}:${parts.join(',')}`;
   }
   async function opOpen(s) {
-    const k = adminJwk();
-    if (!k || !k.d || !s.startsWith(SEC)) return null;
+    if (!s.startsWith(SEC)) return null;
+    const mine = [isAdmin() && adminJwk(), boxRead('sb-sec-key')].filter(k => k && k.d);
     const [ep, cts] = s.slice(SEC.length).split(':'), [x, y] = (ep || '').split('.');
-    const priv = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', d: k.d, x: k.x, y: k.y, ext: true }, ECDH, false, ['deriveBits']);
     const pub = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x, y, ext: true }, ECDH, false, []);
-    const key = await aesOf(await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, priv, 256));
-    for (const c of (cts || '').split(',')) {
-      const [iv, ct] = c.split('.');
-      try { return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64u(iv) }, key, unb64u(ct))); } catch (err) { /* 다른 관리자 몫 */ }
+    for (const k of mine) {
+      const priv = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', d: k.d, x: k.x, y: k.y, ext: true }, ECDH, false, ['deriveBits']);
+      const key = await aesOf(await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, priv, 256));
+      for (const c of (cts || '').split(',')) {
+        const [iv, ct] = c.split('.');
+        try { return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64u(iv) }, key, unb64u(ct))); } catch (err) { /* 다른 사람 몫 */ }
+      }
     }
     return null;
+  }
+  const keyOf = s => { const [x, y] = (s || '').split('.'); return x && y ? { x, y } : null; };
+  // 답글이 달린 맨 위 의견 (비밀글로 바꾼 글은 새 글로)
+  function opRoot(id) {
+    const ops = (opData && opData.ops) || [], byId = new Map(ops.map(o => [o.id, o]));
+    let o = byId.get(id);
+    for (let i = 0; o && o.parent && i < 20; i++) o = byId.get(o.parent);
+    if (o) { const nw = ops.find(x => x.prev === o.id && x.by === o.by); if (nw) o = nw; }
+    return o;
   }
   let opData = null, opDone = new Map(), opLoading = null;
   async function verifyMarks(marks, msg = opMsg, on = '처리') {
@@ -4163,15 +4187,16 @@
       try { localStorage.setItem(OP_MARK, JSON.stringify(local)); } catch (err) { /* 괜찮아요 */ }
       opDone = await verifyMarks(opData.marks.concat(local));
       // 비밀글: 내가 쓴 건 이 기기에 둔 원문으로, 관리자 기기는 열쇠로 풀어서 보여줘요
-      const mineSec = secMine(), admin = isAdmin();
+      const mineSec = secMine();
       for (const o of opData.ops) {
         if (!o.text.startsWith(SEC)) continue;
         o.sec = true;
-        o.plain = mineSec[o.text] || (admin ? await opOpen(o.text).catch(() => null) : null);
+        o.plain = mineSec[o.text] || await opOpen(o.text).catch(() => null);
       }
     }).catch(() => { opData = opData || { ops: [], marks: [] }; }).finally(() => { opLoading = null; });
   }
-  const OP_CATS = ['정보 수정', '오류 신고', '기능 요청', '자유·응원'];
+  const OP_CATS = ['정보 수정', '오류 신고', '지도 링크', '기능 요청', '자유·응원'];
+  const OP_MAP_EX = '네이버 지도에서 공유한 링크를 붙여 주세요. 저장 폴더 링크도 좋아요.\n장소마다 메모에 공연 날짜나 이름을 적어 두면 더 정확하게 넣을 수 있어요.';
   // 무엇을 어떻게 고칠지 알 수 있게 쓰는 양식 (처음 쓰는 칸 예시 + 관리자가 답글로 되묻는 양식)
   const OP_FIX_EX = '어떻게 고치면 될지 적어 주세요.\n예) 날짜를 06.13에서 06.14로 바꿔 주세요\n예) 제목을 ○○에서 ○○로 바꿔 주세요\n예) ○○ 일정과 중복이라 지워 주세요';
   const OP_ASK_TAG = '(양식으로 답변)';
@@ -4234,7 +4259,7 @@
       <h1 class="h1 page-title">의견</h1>
       <p class="sub">사이트에 바라는 점, 틀린 곳, 고마운 말 무엇이든 남겨 주세요. 남긴 의견은 이 화면에 모두에게 보여요.</p>
       <div class="op-form">
-        <div class="chips a-mem op-cats">${OP_CATS.map((x, i) => `<button type="button" class="chip${i === 3 ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
+        <div class="chips a-mem op-cats">${OP_CATS.map(x => `<button type="button" class="chip${x === '자유·응원' ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
         <input type="text" class="op-name" maxlength="20" placeholder="닉네임 (선택)">
         <textarea class="op-in" rows="4" maxlength="1000" placeholder="의견을 적어 주세요"></textarea>
         ${photoPick()}
@@ -4267,8 +4292,9 @@
       const pi = b.closest('.op-form').querySelector('.op-photo-in'); if (pi) { pi.value = ''; pi.dispatchEvent(new Event('change', { bubbles: true })); }
       const secOn = !!(view.querySelector('.op-sec-in') || {}).checked;
       let sent = text;
-      if (secOn) { try { sent = await opSeal(text); } catch (err) { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '이 브라우저에선 비밀글을 만들 수 없어요. 비밀글을 끄고 보내 주세요.'; return; } }
-      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}${photo ? `\n사진: ${photo}` : ''}\n내용: ${sent}` });
+      let myKey = null;
+      if (secOn) { try { myKey = await mySecKey(); sent = await opSeal(text, [myKey]); } catch (err) { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '이 브라우저에선 비밀글을 만들 수 없어요. 비밀글을 끄고 보내 주세요.'; return; } }
+      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}${photo ? `\n사진: ${photo}` : ''}${myKey ? `\n열쇠: ${myKey.x}.${myKey.y}` : ''}\n내용: ${sent}` });
       fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }).then(() => {
         // 비밀글 원문은 이 기기에만 둬요 (내 화면에선 계속 보여요)
         if (secOn) { const m = secMine(); m[sent] = text; const ks = Object.keys(m); ks.slice(0, -50).forEach(k => delete m[k]); try { localStorage.setItem(OP_SEC, JSON.stringify(m)); } catch (err) { /* 괜찮아요 */ } }
@@ -4280,7 +4306,9 @@
         fill();
       }).catch(() => { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
     };
-    view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (!x) return; view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); t.placeholder = /정보 수정|오류 신고/.test(x.dataset.c) ? OP_FIX_EX : '의견을 적어 주세요'; t.rows = /정보 수정|오류 신고/.test(x.dataset.c) ? 5 : 4; });
+    view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (!x) return; view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); t.placeholder = /정보 수정|오류 신고/.test(x.dataset.c) ? OP_FIX_EX : x.dataset.c === '지도 링크' ? OP_MAP_EX : '의견을 적어 주세요'; t.rows = /정보 수정|오류 신고|지도 링크/.test(x.dataset.c) ? 5 : 4;
+      // 지도 링크는 개인 장소가 섞일 수 있어서 비밀글로 먼저 체크해 둬요 (끌 수 있어요)
+      const sc = view.querySelector('.op-sec-in'); if (sc) sc.checked = x.dataset.c === '지도 링크'; });
     // view는 화면이 바뀌어도 그대로라서 한 번만 붙여요 (두 번 붙으면 두 번 보내져요)
     if (bindOpinion.bound) return;
     bindOpinion.bound = true;
@@ -4296,8 +4324,11 @@
         const t = s.parentNode.querySelector('.op-re-in'), text = t.value.trim(), by = myUid(), name = view.querySelector('.op-name').value.trim();
         if (!text) return;
         s.disabled = true; s.textContent = '보내는 중…';
-        post(`종류: 의견\n답글: ${s.dataset.id}\n이름: ${name}\n누가: ${by}\n내용: ${text}`).then(() => {
-          const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name, by, parent: s.dataset.id, at: Date.now() });
+        // 비밀글에 다는 답글은 관리자·글쓴이·나만 읽게 잠가요
+        const root = opRoot(s.dataset.id), sec = !!(root && root.sec);
+        (sec ? mySecKey().then(k => opSeal(text, [keyOf(root.key), k])) : Promise.resolve(text)).then(sent => post(`종류: 의견\n답글: ${s.dataset.id}\n이름: ${name}\n누가: ${by}\n내용: ${sent}`).then(() => sent)).then(sent => {
+          if (sec) { const m = secMine(); m[sent] = text; try { localStorage.setItem(OP_SEC, JSON.stringify(m)); } catch (err) { /* 괜찮아요 */ } }
+          const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, ...(sec ? { sec: true, plain: text } : {}), name, by, parent: s.dataset.id, at: Date.now() });
           try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
           fill();
         }).catch(() => { s.disabled = false; s.textContent = '다시 보내기'; });
@@ -4310,7 +4341,7 @@
         if (!o) return;
         if (!lk.classList.contains('sure')) { lk.classList.add('sure'); lk.textContent = '비밀글로 바꿀까요?'; return; }
         lk.disabled = true; lk.textContent = '바꾸는 중…';
-        opSeal(o.text).then(sent => post(`종류: 의견\n분류: ${o.cat || '자유·응원'}\n이름: ${o.name || ''}\n누가: ${myUid()}${o.photo ? `\n사진: ${o.photo}` : ''}${o.ev ? `\n일정: ${o.ev}` : ''}\n이어: ${o.id}\n내용: ${sent}`).then(() => sent))
+        mySecKey().then(k => opSeal(o.text, [k]).then(sent => post(`종류: 의견\n분류: ${o.cat || '자유·응원'}\n이름: ${o.name || ''}\n누가: ${myUid()}${o.photo ? `\n사진: ${o.photo}` : ''}${o.ev ? `\n일정: ${o.ev}` : ''}\n이어: ${o.id}\n열쇠: ${k.x}.${k.y}\n내용: ${sent}`).then(() => sent)))
           .then(sent => {
             const m = secMine(); m[sent] = o.text; try { localStorage.setItem(OP_SEC, JSON.stringify(m)); } catch (err) { /* 괜찮아요 */ }
             const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, sec: true, plain: o.text, prev: o.id, name: o.name, cat: o.cat, by: myUid(), photo: o.photo, at: Date.now() });
