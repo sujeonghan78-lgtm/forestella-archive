@@ -1144,3 +1144,12 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-pinbar .src-note{flex-basis:100%;margin:0}
 .pin-find{min-width:0;width:100%}
 .pin-find .chip{flex:none;margin:0}
+/* 장소 한꺼번에 찾기 */
+.pf-item{display:flex;flex-direction:column;gap:8px;padding:12px;margin-bottom:10px;border:1px solid #DDE8E1;border-radius:16px;font-size:13px}
+.pf-h{display:flex;flex-direction:column;gap:2px}
+.pf-h span{color:var(--ink-2);font-size:12px}
+.pf-done{background:#EEF7E6;border-color:#C8E3B4}
+.pf-done .pin-find{display:none}
+.pin-hit:disabled{opacity:.6}
+.pin-hit.on:disabled{opacity:1}
+.pf-done .pin-res{display:none}

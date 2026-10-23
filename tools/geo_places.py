@@ -125,7 +125,7 @@ def main():
             miss.add(p)
         if i % 20 == 0:
             print(i, p, '→', r and r['name'])
-    json.dump({'note': 'tools/geo_places.py가 만든 공연장 좌표 (OpenStreetMap). miss는 못 찾아서 시·도로 묶는 장소', 'found': dict(sorted(found.items())), 'miss': sorted(miss)},
+    json.dump({'note': 'tools/geo_places.py가 만든 공연장 좌표 (OpenStreetMap). miss는 못 찾아서 시·도로 묶는 장소', 'found': dict(sorted(found.items())), 'miss': sorted(miss), 'hint': known.get('hint', {})},
               open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print(f'찾음 {len(found)} / 못 찾음 {len(miss)}')
     print(f'::notice::장소 {len(ps)}개 · 찾음 {len(found)} (확실 {sum(1 for v in found.values() if v["c"] == "ok")}) · 못 찾음 {len(miss)}')

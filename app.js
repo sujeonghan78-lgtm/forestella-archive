@@ -1679,6 +1679,57 @@
     nav(); draw();
     if (!intro) { const x0 = ml.on[mapSt.i]; m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? mapZ() : 9); }
   }
+  // ---------- 지도 장소 한꺼번에 찾기 (관리자): 이 폰 브라우저로 OpenStreetMap을 검색해서, 맞는 후보를 누르면 바로 확정해요 ----------
+  let pfAll = null;
+  const PF_DONE = 'sb-pf-done', pfDone = () => boxRead(PF_DONE) || {};
+  function placeFindView() {
+    if (!isAdmin()) return '<p class="sub">준비 중인 화면이에요.</p>';
+    return `
+      <a class="back" href="#/admin">‹ 관리자 기기</a>
+      <h1 class="h1 page-title">장소 한꺼번에 찾기</h1>
+      <p class="sub">지도에서 정확한 위치를 못 찾은 장소예요. 이 폰이 차례로 검색해서 후보를 보여줘요. 맞는 후보를 누르면 바로 확정돼요. 없으면 검색어를 고쳐서 다시 찾아 주세요.</p>
+      <div id="pf-list"><p class="src-note">장소 목록을 불러오는 중…</p></div>`;
+  }
+  async function bindPlaceFind() {
+    const box = document.getElementById('pf-list');
+    if (!box) return;
+    if (!pfAll) pfAll = await fetch('data/places.json', { cache: 'no-cache' }).then(r => r.json()).catch(() => ({}));
+    const pins = data.pins || {}, cnt = new Map();
+    data.events.forEach(e => { const p = placeOf(e); if (p) cnt.set(p, (cnt.get(p) || 0) + 1); });
+    const hint = pfAll.hint || {}, maybe = Object.entries(pfAll.found || {}).filter(([, v]) => v.c !== 'ok').map(([k]) => k);
+    const todo = [...(pfAll.miss || []).filter(p => hint[p]), ...maybe].filter(p => !(pins[p] && pins[p].ok) && cnt.get(p));
+    if (!todo.length) { box.innerHTML = '<p class="src-note">찾을 장소가 없어요. 다 찾았어요!</p>'; return; }
+    const done = pfDone();
+    box.innerHTML = todo.map((p, i) => `<section class="pf-item${done[p] ? ' pf-done' : ''}" data-i="${i}">
+        <div class="pf-h"><b>${esc(p)}</b><span>${done[p] ? `확정했어요 ✓ ${esc(done[p])} · 5~10분 뒤 지도에 반영돼요` : `일정 ${cnt.get(p)}개${maybe.includes(p) ? ' · 자동으로 찾았지만 확실치 않음' : ''}`}</span></div>
+        <form class="pin-find"><input type="search" value="${esc(hint[p] || p)}" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
+        <div class="pin-res"><span class="src-note">차례를 기다리는 중…</span></div></section>`).join('');
+    const items = [...box.querySelectorAll('.pf-item')];
+    const search = async el => {
+      const p = todo[+el.dataset.i], q = el.querySelector('input').value.trim(), res = el.querySelector('.pin-res');
+      res.innerHTML = '<span class="src-note">찾는 중…</span>';
+      let r = [];
+      try { r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 4, 'accept-language': 'ko' }))).json(); } catch (err) { res.innerHTML = '<span class="src-note">검색이 안 됐어요. 찾기를 다시 눌러 주세요.</span>'; return; }
+      res.innerHTML = r.length ? r.map((h, j) => `<button type="button" class="pin-hit" data-j="${j}"><b>${esc(h.name || h.display_name.split(',')[0])}</b><small>${esc(h.display_name.split(',').slice(1, 5).join(','))}</small></button>`).join('') + `<a class="link-btn" href="https://www.openstreetmap.org/search?query=${encodeURIComponent(q)}" target="_blank" rel="noopener">지도에서 보기</a>`
+        : '<span class="src-note">못 찾았어요. 건물 이름이나 도로명 주소로 고쳐서 다시 찾아 주세요.</span>';
+      res.querySelectorAll('.pin-hit').forEach(b => b.onclick = async () => {
+        const h = r[+b.dataset.j], c = (+h.lat).toFixed(5) + ',' + (+h.lon).toFixed(5);
+        res.querySelectorAll('.pin-hit').forEach(o => { o.disabled = true; });
+        b.classList.add('on');
+        try {
+          await formPost(`종류: 장소좌표\n장소: ${p}\n좌표: ${c}\n누가: ${myUid()}`);
+          boxWrite(PF_DONE, { ...pfDone(), [p]: h.name || c });
+          await sendEvMark('g' + window.DATA.slVer([p, c]), '숨김');
+          el.classList.add('pf-done');
+          el.querySelector('.pf-h span').textContent = `확정했어요 ✓ ${h.name || ''} · 5~10분 뒤 지도에 반영돼요`;
+          res.innerHTML = '';
+        } catch (err) { res.querySelectorAll('.pin-hit').forEach(o => { o.disabled = false; }); b.classList.remove('on'); res.insertAdjacentHTML('beforeend', '<span class="src-note">보내지 못했어요. 다시 눌러 주세요.</span>'); }
+      });
+    };
+    items.forEach(el => { el.querySelector('form').onsubmit = ev => { ev.preventDefault(); search(el); }; });
+    // OpenStreetMap 검색 규칙(1초에 한 번)에 맞춰 차례로 찾아요
+    for (const el of items) { if (!document.body.contains(el)) return; if (el.classList.contains('pf-done')) continue; await search(el); await new Promise(r => setTimeout(r, 1100)); }
+  }
   function mapStop() { if (mapPlay) { clearInterval(mapPlay); mapPlay = null; } }
   const ym = v => v ? `${v.slice(2, 4)}년 ${+v.slice(5, 7)}월` : '';
   function mapPeriod(ml) {
@@ -2753,6 +2804,7 @@
     news: newsView,
     fan: fanView,
     map: mapView,
+    placefind: placeFindView,
     admin: adminView,
     xfeed: xfeedView,
     yt: ytView,
@@ -3543,6 +3595,7 @@
       : isAdmin() ? `<p class="sub">이 기기는 관리자 기기예요. <a href="#/opinion">의견 탭</a>에서 처리 표시를, 일정 화면에서 숨기기를 할 수 있어요.</p>
         <h2 class="h3 list-title">삭제 요청</h2>
         ${(q => q.length ? [...new Set(q.map(x => x.id))].map(id => `<div class="del-box">${q.filter(x => x.id === id).map(x => delReqHtml(x, true)).join('')}${delActs(id)}</div>`).join('') : '<p class="src-note">새 삭제 요청이 없어요.</p>')(delPending())}
+        <a class="map-entry" href="#/placefind">📍 지도 장소 한꺼번에 찾기 <span>›</span></a>
         <h2 class="h3 list-title">숨긴 일정</h2>
         ${(data.hidden || []).length ? data.hidden.map(h => `<div class="op-item"><div class="op-head"><span class="op-who">${esc(h.date)} ${esc(h.title)}</span></div><div class="op-foot"><button type="button" class="link-btn ev-unhide" data-id="${esc(h.id)}">다시 보이기</button></div></div>`).join('') : '<p class="src-note">숨긴 일정이 없어요.</p>'}
         <h2 class="h3 list-title">시트 연결 번호</h2>
@@ -4249,7 +4302,7 @@
   }
 
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', map: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -4298,6 +4351,7 @@
     if (name === 'box') bindBox();
     if (name === 'card') bindCard();
     if (name === 'map' && isAdmin()) bindMap();
+    if (name === 'placefind' && isAdmin()) bindPlaceFind();
     if (name === 'home') bindAsk();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
