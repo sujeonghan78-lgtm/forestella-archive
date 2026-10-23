@@ -3065,16 +3065,17 @@
 
   // ---------- 더보기 ----------
   const menuIcon = d => `<span class="mi-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg></span>`;
+  // 자주 쓰는 메뉴: 더보기 메뉴에서 ☆ 고른 것을 맨 위에 아이콘 칸으로 (이 폰에 저장)
+  const PIN_KEY = 'sb-pins', pinsGet = () => { const v = boxRead(PIN_KEY); return Array.isArray(v) ? v : []; };
+  let moreEdit = false;
   function moreView() {
-    const item = (href, icon, label, side, ext) =>
-      `<a class="mi" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''}>${menuIcon(icon)}<span class="mi-l">${label}</span><span class="mi-side">${side ? side + ' ' : ''}›</span></a>`;
-    return `
-      <h1 class="h1 page-title">더보기</h1>
-      <a class="about-card" href="#/about">
-        <span class="block-head"><span class="about-title">기록은 이렇게 모았어요</span><span aria-hidden="true">›</span></span>
-        <span>일정은 공식 팬카페 캘린더(2021년 7월 이전은 나무위키·방송 영상), 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.</span>
-      </a>
-      <nav aria-label="더보기 메뉴">
+    const pins = pinsGet(), all = [];
+    const item = (href, icon, label, side, ext) => {
+      all.push({ href, icon, label, ext });
+      const on = pins.includes(href);
+      return `<a class="mi" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''} data-pin="${esc(href)}">${menuIcon(icon)}<span class="mi-l">${label}</span><span class="mi-side">${side ? side + ' ' : ''}›</span><span class="mi-pin${on ? ' on' : ''}" aria-label="${on ? '고정 풀기' : '위에 고정'}">${on ? '★' : '☆'}</span></a>`;
+    };
+    const menu = `
         <button type="button" class="lang-row lang-keep" onclick="SB_LANG.open()">🌐 언어 · Language · 言語 <b>${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</b></button>
         ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : '새로 생긴 기능')(newsUnread().length))}
         ${item('#/fan', '<path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/>', '팬 제보 현황', (n => n ? `확인 필요 ${n}` : '일정 · 셋리 · 날짜')((data.fan || []).filter(l => /^(ev|sl|slfix|dt)$/.test(l.k) && data.byId.get(l.id) && fanState(l, data.byId.get(l.id))[0] === 'wait').map(l => l.id + l.k + (l.to || '')).filter((x, i, a) => a.indexOf(x) === i).length))}
@@ -3092,12 +3093,34 @@
         ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
         ${item(formUrl({}), '<path d="M4 20h4L19 9l-4-4L4 16z"/>', '기록 제보 · 정정 요청', '구글 폼', true)}
         ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기', '')}
-        ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해', '')}
+        ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해', '')}`;
+    const got = pins.map(h => all.find(x => x.href === h)).filter(Boolean);
+    return `
+      <h1 class="h1 page-title">더보기</h1>
+      ${got.length ? `<section class="pin-box">
+        <div class="pin-h"><b>자주 쓰는 메뉴</b><button type="button" class="link-btn" id="more-edit">${moreEdit ? '완료' : '편집'}</button></div>
+        <div class="pin-grid">${got.map(x => `<a class="pin-t" href="${x.href}"${x.ext ? ' target="_blank" rel="noopener"' : ''}>${menuIcon(x.icon)}<span>${x.label}</span></a>`).join('')}</div>
+      </section>` : `<button type="button" class="pin-ask" id="more-edit">${moreEdit ? '✓ 다 골랐어요' : '☆ 자주 쓰는 메뉴 맨 위에 고정하기'}</button>`}
+      ${moreEdit ? '<p class="src-note pin-tip">고정할 메뉴의 ☆를 눌러 주세요. 다시 누르면 풀려요.</p>' : ''}
+      <nav aria-label="더보기 메뉴" class="${moreEdit ? 'more-edit' : ''}">
+        ${menu}
       </nav>
       <a class="check-link" href="#/check">자동 연결 점검 (관리용) ›</a>
       <a class="check-link" href="#/admin">관리자 기기 ›</a>`;
   }
 
+  function bindMore() {
+    const eb = document.getElementById('more-edit');
+    if (eb) eb.onclick = () => { moreEdit = !moreEdit; renderBase('more'); };
+    const nav = document.querySelector('nav.more-edit');
+    if (nav) nav.addEventListener('click', ev => {
+      const a = ev.target.closest('.mi'); if (!a) return;
+      ev.preventDefault();
+      const h = a.dataset.pin, p = pinsGet(), k = p.indexOf(h);
+      if (k >= 0) p.splice(k, 1); else p.push(h);
+      boxWrite(PIN_KEY, p); renderBase('more');
+    });
+  }
   // 앨범 보기: 목록을 사진만 바둑판으로 (사이트 전체, 기억해 둬요). 사진 목록이 없는 칸에선 버튼이 회색
   let albumOn = false;
   try { albumOn = localStorage.getItem('albumMode') === '1' || localStorage.getItem('memAlbum') === '1'; } catch (err) { /* 괜찮아요 */ }
@@ -4943,6 +4966,7 @@
     if (name === 'box') bindBox();
     if (name === 'card') bindCard();
     if (name === 'map') bindMap();
+    if (name === 'more') bindMore();
     if (name === 'placefind' && isAdmin()) bindPlaceFind();
     if (name === 'home') bindAsk();
     if (name === 'yt') bindYt();
