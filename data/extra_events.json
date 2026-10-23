@@ -960,7 +960,7 @@
    "시작": "",
    "종료": "",
    "분류": "공연",
-   "일정명": "[민규] 조민규 단독 콘서트 MONO",
+   "일정명": "[민규] 조민규 단독 콘서트 MONO DRAMA",
    "장소": "광운대학교 동해문화예술관",
    "내용": "",
    "비고": "",
@@ -977,7 +977,7 @@
    "시작": "",
    "종료": "",
    "분류": "공연",
-   "일정명": "[민규] 조민규 앙코르 콘서트 MONO",
+   "일정명": "[민규] 조민규 단독 콘서트 MONO DRAMA - 앙코르",
    "장소": "광운대학교 동해문화예술관",
    "내용": "",
    "비고": "",
@@ -4007,6 +4007,42 @@
   "10195": {
    "일정명": "KBS2 불후의 명곡 - 10주년 특집 10년을 노래하다 2부",
    "비고": "1부 06.05 · 2부 06.12 방송 (무대는 2부)"
+  },
+  "95855": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Seoul"
+  },
+  "95856": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Seoul"
+  },
+  "95857": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Busan"
+  },
+  "95858": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Busan"
+  },
+  "95859": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Goyang"
+  },
+  "95860": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Goyang"
+  },
+  "95861": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Jeonju"
+  },
+  "95862": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Jeonju"
+  },
+  "95865": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Suwon"
+  },
+  "95866": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Suwon"
+  },
+  "95863": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Daegu"
+  },
+  "95864": {
+   "일정명": "2022 포레스텔라 전국투어 콘서트 – The Beginning : World Tree in Daegu"
   }
  },
  "eventMerge": {
