@@ -2320,6 +2320,52 @@
     return { PH: hasPhoto ? photoH : 0, OX, OY, OW, OH };
   }
 
+  // 카드 슬롯: 지금 꾸민 카드(글·색·틀·사진·스티커)를 3칸까지 이 폰에 저장해요. 입덕일은 슬롯과 상관없이 하나예요
+  const SLOT_KEY = 'sb-card-slots';
+  const slotsRead = () => { const a = boxRead(SLOT_KEY); return Array.isArray(a) ? [0, 1, 2].map(i => a[i] || null) : [null, null, null]; };
+  let slotPick = -1;
+  function slotBar() {
+    const sl = slotsRead();
+    const lab = (x, i) => x ? `<b>슬롯 ${i + 1}</b><span>${esc(CARD_FRAMES[x.card.frame] || '기본')}</span><small>${esc(x.at)}</small>` : `<b>슬롯 ${i + 1}</b><span>비어 있음</span><small>&nbsp;</small>`;
+    const x = sl[slotPick];
+    const acts = slotPick < 0 ? '' : x
+      ? `<button type="button" class="chip on" data-slot-act="load">불러오기</button><button type="button" class="chip" data-slot-act="save">지금 카드로 바꾸기</button><button type="button" class="link-btn" data-slot-act="del">비우기</button>`
+      : `<button type="button" class="chip on" data-slot-act="save">지금 카드를 여기에 저장</button>`;
+    return `<div class="cf-slots" id="cf-slots">
+      <span class="cf-l">내 카드 슬롯 <small>꾸민 카드를 3개까지 저장해 두고 불러와요</small></span>
+      <div class="slot-row">${sl.map((x, i) => `<button type="button" class="slot${x ? ' full' : ''}${i === slotPick ? ' on' : ''}" data-slot="${i}" aria-pressed="${i === slotPick}">${lab(x, i)}</button>`).join('')}</div>
+      ${acts ? `<div class="slot-acts">${acts}</div>` : ''}
+    </div>`;
+  }
+  function bindSlots() {
+    const box = document.getElementById('cf-slots');
+    if (!box) return;
+    box.onclick = ev => {
+      const b = ev.target.closest('[data-slot]'), a = ev.target.closest('[data-slot-act]');
+      if (b) { slotPick = slotPick === +b.dataset.slot ? -1 : +b.dataset.slot; box.outerHTML = slotBar(); bindSlots(); return; }
+      if (!a || slotPick < 0) return;
+      const sl = slotsRead(), act = a.dataset.slotAct;
+      if (act === 'save') {
+        const t = todayParts(), now = new Date();
+        const { since, hideAsk, ...rest } = card;
+        sl[slotPick] = { card: rest, photo: cardPhoto || null, stk: cardStk, at: `${t.m}.${t.d} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` };
+        try { localStorage.setItem(SLOT_KEY, JSON.stringify(sl)); toast(`${slotPick + 1}번 슬롯에 저장했어요.`); }
+        catch (err) { toast('폰 저장 공간이 모자라요. 사진이나 스티커를 줄이거나 다른 슬롯을 비워 주세요.'); return; }
+      } else if (act === 'load' && sl[slotPick]) {
+        const x = sl[slotPick];
+        card = Object.assign(cardDefault(), x.card, { since: card.since, hideAsk: card.hideAsk });
+        cardPhoto = x.photo || null; cardStk = x.stk || [];
+        cardSave(); boxWrite(PHOTO_KEY, cardPhoto); boxWrite(STK_KEY, cardStk);
+        cardImg = null; cardImgSrc = ''; cardSel = -1;
+        toast(`${slotPick + 1}번 슬롯 카드를 불러왔어요.`);
+        renderBase('card'); return;
+      } else if (act === 'del') {
+        sl[slotPick] = null; boxWrite(SLOT_KEY, sl); toast(`${slotPick + 1}번 슬롯을 비웠어요.`);
+      }
+      box.outerHTML = slotBar(); bindSlots();
+    };
+  }
+
   function cardView() {
     const st = boxStats();
     const bestList = [...new Map([...st.liked, ...st.wentAll].map(e => [e.castKey || e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
@@ -2327,6 +2373,7 @@
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">숲별 카드${help('내 숲별 기록을 카드 한 장으로 만들어요. 넣은 내용과 사진은 이 폰에만 저장돼요.')}</h1>
+      ${slotBar()}
       <form class="card-form" id="card-form" onsubmit="return false">
         <label><span class="cf-l">닉네임</span><input id="cf-nick" maxlength="16" value="${esc(card.nick)}" placeholder="숲별홍길동" autocomplete="off"></label>
         <label><span class="cf-l">입덕 날짜</span><input type="date" id="cf-since" value="${esc(card.since)}" max="${todayIso()}" min="2017-01-01"></label>
@@ -2367,6 +2414,7 @@
   function bindCard() {
     const cv = document.getElementById('card-cv');
     if (!cv) return;
+    bindSlots();
     let geo = { PH: 0 }, tick = 0;
     const redraw = () => {
       const my = ++tick;
