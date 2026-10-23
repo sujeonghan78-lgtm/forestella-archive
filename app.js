@@ -3386,43 +3386,49 @@
   const driveOn = () => !!(window.CONFIG.placeDrive && (window.CONFIG.form || {}).fields);
   function driveBox() {
     if (!driveOn()) return '';
-    if (boxRead(DRIVE_X)) return `<button type="button" class="drive-mini" data-drive="open">📍 공연장 위치 모으는 중 · 링크 보내기 ›</button>`;
-    return `<section class="drive">
-      <button type="button" class="drive-x" data-drive="x" aria-label="접기">✕</button>
-      <b class="drive-t">📍 공연장 위치를 모으고 있어요</b>
+    // 기본은 한 줄로 접혀 있고, 펼친 상태는 이 폰에 기억해요 (안내 자체는 사이트에서 끌 때까지 그대로)
+    const open = !!boxRead(DRIVE_X);
+    return `<section class="drive${open ? ' open' : ''}">
+      <button type="button" class="drive-head" data-drive="toggle" aria-expanded="${open}"><b class="drive-t">📍 공연장 위치를 모아요</b><span class="drive-tog">${open ? '접기 ▴' : '펼치기 ▾'}</span></button>
+      <div class="drive-in"${open ? '' : ' hidden'}>
       <p class="drive-s">숲별 발자국 지도에 공연장을 정확히 찍으려고 해요. <b>네이버 지도 저장 리스트 링크</b>나 <b>장소 링크</b>를 보내 주세요. 장소 링크면 어떤 공연인지(날짜·공연명)도 같이 적어 주세요.</p>
+      <p class="drive-s">공연장 말고도 <b>일정과 관련된 곳이면 다 괜찮아요</b> (행사장, 방송 녹화장, 팬사인회 장소 등). 지도에 이미 찍혀 있는 곳도 실제와 다를 수 있어서 다 모아서 확인할게요.</p>
       <p class="drive-n">보낸 링크는 비밀글로 관리자만 봐요. 장소 등록이 얼추 끝날 때까지 모으고, 다 모이면 이 안내는 사라져요.</p>
       <div class="drive-btns"><button type="button" class="bpill" data-drive="form">여기서 바로 보내기</button><a class="chip" href="#/opinion?w=map">의견 쓰는 곳으로 ›</a></div>
       <div class="drive-body" hidden>
         <details class="drive-how"><summary>링크는 어떻게 복사해요?</summary><p>· 저장 리스트: 네이버 지도 앱 → 저장 → 리스트 고르기 → 공유 → 링크 복사 (리스트를 공개로 해 주세요)<br>· 장소 하나: 장소 화면 → 공유 → 링크 복사<br>· 저장할 때 메모에 공연 날짜나 이름을 적어 두면 더 정확하게 넣을 수 있어요.</p></details>
         <textarea class="op-in drive-link" rows="3" placeholder="네이버 지도 링크를 붙여 주세요 (여러 개도 돼요)"></textarea>
-        <input type="text" class="drive-ev" maxlength="120" placeholder="어떤 공연인지 (예: 2024.07.06 레거시 서울)">
-        <button type="button" class="link-btn drive-miss">아직 위치가 없는 공연 보기 ▾</button>
+        <input type="text" class="drive-ev" maxlength="120" placeholder="어떤 공연·일정인지 (예: 2024.07.06 레거시 서울)">
+        <button type="button" class="link-btn drive-miss">위치가 아직 없는 공연 보기 ▾</button>
         <div class="drive-list" hidden></div>
         <input type="text" class="drive-name" maxlength="20" placeholder="닉네임 (선택)">
         <label class="op-secret"><input type="checkbox" class="drive-sec" checked> 🔒 비밀글 <small>관리자만 볼 수 있어요</small></label>
         <button type="button" class="bpill add-send drive-send" disabled>보내기</button>
         <p class="src-note drive-msg"></p>
-      </div></section>`;
+      </div></div></section>`;
   }
   const DRIVE_LINK = /https?:\/\/(?:naver\.me\/[\w-]+|(?:m\.)?map\.naver\.com\/[^\s"'<>]+|(?:m|pcmap)\.place\.naver\.com\/[^\s"'<>]+|pages\.map\.naver\.com\/[^\s"'<>]+)/g;
   document.addEventListener('click', async ev => {
     const d = ev.target.closest('[data-drive], .drive-miss, .drive-send, .drive-pick');
     if (!d) return;
     const box = d.closest('.drive');
-    if (d.dataset.drive === 'x' || d.dataset.drive === 'open') { boxWrite(DRIVE_X, d.dataset.drive === 'x' ? 1 : null); d.closest('.drive, .drive-mini').outerHTML = driveBox(); if (d.dataset.drive === 'open') { const nb = document.querySelector('.drive .drive-body'); if (nb) nb.hidden = false; } return; }
+    if (d.dataset.drive === 'toggle') {
+      const inn = box.querySelector('.drive-in'), op = inn.hidden;
+      inn.hidden = !op; box.classList.toggle('open', op); d.setAttribute('aria-expanded', op); d.querySelector('.drive-tog').textContent = op ? '접기 ▴' : '펼치기 ▾';
+      boxWrite(DRIVE_X, op ? 1 : null); return;
+    }
     if (d.dataset.drive === 'form') { const b = box.querySelector('.drive-body'); b.hidden = !b.hidden; if (!b.hidden) box.querySelector('.drive-link').focus(); return; }
     if (d.classList.contains('drive-pick')) { const i = box.querySelector('.drive-ev'); i.value = d.dataset.v; i.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
     if (d.classList.contains('drive-miss')) {
       const l = box.querySelector('.drive-list');
-      if (!l.hidden) { l.hidden = true; d.textContent = '아직 위치가 없는 공연 보기 ▾'; return; }
+      if (!l.hidden) { l.hidden = true; d.textContent = '위치가 아직 없는 공연 보기 ▾'; return; }
       l.hidden = false; l.innerHTML = '<p class="src-note">불러오는 중…</p>';
       const found = await loadPlaces().catch(() => ({}));
       const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
       // 지난 국내 공연만 (해외·앞으로 할 공연은 빼요)
       const miss = data.events.filter(e => isLocalEvent(e) && e.date <= today && regionOf(e) !== '해외' && !locOf(e, found).exact).slice().reverse();
-      d.textContent = `아직 위치가 없는 공연 ${miss.length}개 ▴`;
-      l.innerHTML = miss.length ? `<p class="src-note">누르면 '어떤 공연인지' 칸에 들어가요.</p>` + miss.map(e => `<button type="button" class="drive-pick" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`).join('') : '<p class="src-note">모든 공연에 위치가 있어요! 🎉</p>';
+      d.textContent = `위치가 아직 없는 공연 ${miss.length}개 ▴`;
+      l.innerHTML = miss.length ? `<p class="src-note">특히 이 공연들이 궁금해요! 누르면 '어떤 공연·일정인지' 칸에 들어가요.</p>` + miss.map(e => `<button type="button" class="drive-pick" data-v="${esc(e.date.replace(/-/g, '.') + ' ' + e.title)}"><span>${esc(e.date.replace(/-/g, '.'))}</span>${esc(e.title)}${e.place ? `<small>${esc(e.place)}</small>` : ''}</button>`).join('') : '<p class="src-note">모든 공연에 위치가 있어요! 🎉</p>';
       return;
     }
     if (d.classList.contains('drive-send')) {
@@ -3448,7 +3454,7 @@
     if (!t) return;
     const box = t.closest('.drive'), n = (t.value.match(DRIVE_LINK) || []).length;
     box.querySelector('.drive-send').disabled = !n;
-    box.querySelector('.drive-msg').textContent = n ? `네이버 지도 링크 ${n}개를 찾았어요.` : t.value.trim() ? '네이버 지도 링크가 아니에요. 공유 → 링크 복사로 받은 주소를 붙여 주세요.' : '';
+    box.querySelector('.drive-msg').textContent = n ? `네이버 지도 링크 ${n}개가 들어 있어요. 보내기를 눌러 주세요.` : t.value.trim() ? '네이버 지도 링크가 아니에요. 공유 → 링크 복사로 받은 주소를 붙여 주세요.' : '';
   });
 
   const routes = {

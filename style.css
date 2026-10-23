@@ -1304,8 +1304,15 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .op-secret small { color: #8A9A90; }
 .op-secret input { width: 16px; height: 16px; accent-color: #4FA86A; }
 /* 공연장 위치 모으기 안내 */
-.drive { position: relative; margin: 6px 0 14px; padding: 14px 14px 12px; border-radius: 16px; background: linear-gradient(135deg, #F2FAE8, #E6F6F0); border: 1px solid #CDE8D4; display: flex; flex-direction: column; gap: 8px; }
-.drive-t { font-size: 15px; padding-right: 24px; }
+.drive { position: relative; margin: 6px 0 14px; padding: 10px 14px; border-radius: 16px; background: linear-gradient(135deg, #FFF4E6, #FFE9D6); border: 1px solid #F5C9A0; box-shadow: 0 2px 8px rgba(240,123,42,.10); display: flex; flex-direction: column; gap: 8px; }
+.drive-t { font-size: 14px; }
+.drive-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; border: 0; background: none; padding: 2px 0; font: inherit; color: inherit; text-align: left; }
+.drive-tog { flex: none; font-size: 12px; font-weight: 700; color: #C2571A; background: #fff; border-radius: 999px; padding: 3px 9px; border: 1px solid #F5C9A0; }
+.drive-t { color: #8A3D0E; }
+.drive-how summary { color: #A04A14 !important; }
+.drive-n { color: #8C6A55 !important; }
+.drive-in { display: flex; flex-direction: column; gap: 8px; }
+.drive-in[hidden] { display: none; }
 .drive-s { margin: 0; font-size: 13px; line-height: 1.55; }
 .drive-n { margin: 0; font-size: 12px; color: #6B7F73; line-height: 1.5; }
 .drive-x { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: 0; background: none; color: #6B7F73; font-size: 15px; }
