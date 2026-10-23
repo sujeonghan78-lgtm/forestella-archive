@@ -1205,3 +1205,15 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .slot.full { border-style: solid; color: var(--ink); }
 .slot.on { border-color: #2F7A5A; box-shadow: inset 0 0 0 1px #2F7A5A; }
 .slot-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cf-bd > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; list-style: none; cursor: pointer; }
+.cf-bd > summary::-webkit-details-marker { display: none; }
+.cf-bd > summary .cf-l { min-width: 0; }
+.cf-bd-t { flex: none; font-size: 12px; color: var(--accent, #2F7A5A); }
+.cf-bd-t::after { content: ' ▾'; }
+.cf-bd[open] .cf-bd-t { font-size: 0; }
+.cf-bd[open] .cf-bd-t::after { content: '접기 ▴'; font-size: 12px; }
+.cf-bd[open] > summary { margin-bottom: 8px; }
+.cf-badge { padding: 6px 4px 5px; border-radius: 10px; }
+.cf-badge span { font-size: 15px; }
+.cf-badge b { font-size: 11.5px; }
+.cf-badge small { font-size: 9.5px; line-height: 1.25; }
