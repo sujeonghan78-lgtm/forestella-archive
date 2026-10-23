@@ -2665,7 +2665,7 @@
       <div class="mem-body">
       ${paneTabs([
         { label: '활동 이력', n: carShow.length, html: careerHtml },
-        { label: '일정', n: evs.length, html: evs.length ? `${moreList(evs.map(resultCard), 10)}<a class="more mem-all" href="#/search?member=${q}">검색에서 걸러 보기 ›</a>` : '' },
+        { label: '일정', n: evs.length, html: evs.length ? `<div class="view-row">${albumBtn()}</div>${moreList(evs.map(resultCard), 10)}<a class="more mem-all" href="#/search?member=${q}">검색에서 걸러 보기 ›</a>` : '' },
         { label: '음반', n: als.length + carDisc.length, html: als.length + carDisc.length ? `<div class="stack x-list">${als.map(a => `
           <a class="x-card${a.img ? '' : ' no-img'}" href="${albHref(a)}">
             ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}
