@@ -2798,6 +2798,9 @@
     }).catch(() => { opData = opData || { ops: [], marks: [] }; }).finally(() => { opLoading = null; });
   }
   const OP_CATS = ['정보 수정', '오류 신고', '기능 요청', '자유·응원'];
+  // 무엇을 어떻게 고칠지 알 수 있게 쓰는 양식 (처음 쓰는 칸 예시 + 관리자가 답글로 되묻는 양식)
+  const OP_FIX_EX = '어떻게 고치면 될지 적어 주세요.\n예) 날짜를 06.13에서 06.14로 바꿔 주세요\n예) 제목을 ○○에서 ○○로 바꿔 주세요\n예) ○○ 일정과 중복이라 지워 주세요';
+  const OP_ASK = '알려 주셔서 고마워요! 어떻게 고치면 될지 아래 중 맞는 걸로 답글 남겨 주세요.\n- 날짜를 ○○에서 ○○로 바꿔 주세요\n- 제목을 ○○에서 ○○로 바꿔 주세요\n- ○○ 일정과 중복이니 삭제해 주세요\n- 그 밖에: 무엇을 어떻게 바꾸면 되는지';
   // 읽음 표시: 의견 탭을 열 때 본 의견 번호를 이 기기에 저장해요
   const OP_SEEN = 'sb-op-seen';
   const opSeen = () => { try { return new Set(JSON.parse(localStorage.getItem(OP_SEEN) || '[]')); } catch (err) { return new Set(); } };
@@ -2822,7 +2825,7 @@
           <div class="op-head"><span class="op-who">${isNew ? '<span class="op-new">N</span> ' : ''}${o.parent ? '' : `<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> `}${toName ? `<span class="op-to">↳ ${esc(toName)}</span> ` : ''}${esc(o.name || '익명')}${mine ? (o.parent ? ' · 내 답글' : ' · 내 의견') : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
           ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
           <p class="op-text">${esc(o.text)}</p>
-          <div class="op-foot">${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
+          <div class="op-foot">${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${admin && !o.parent && !o.local && !done ? `<button type="button" class="link-btn op-ask" data-id="${esc(o.id)}">양식으로 묻기</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
           ${o.local ? '' : `<div class="op-form op-re-box" data-id="${esc(o.id)}" hidden><textarea class="op-in op-re-in" rows="2" maxlength="1000" placeholder="${o.parent ? `${esc(o.name || '익명')}님에게 답글` : '답글을 적어 주세요'}"></textarea><button type="button" class="bpill add-send op-re-send" data-id="${esc(o.id)}">답글 달기</button></div>`}
           ${kids.map(k => opItem(k, me, admin, opNewIds && opNewIds.has(k.id), kidsMap, o.parent ? (o.name || '익명') : '')).join('')}
         </div>`;
@@ -2889,13 +2892,15 @@
         fill();
       }).catch(() => { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
     };
-    view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (x) view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); });
+    view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (!x) return; view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); t.placeholder = /정보 수정|오류 신고/.test(x.dataset.c) ? OP_FIX_EX : '의견을 적어 주세요'; t.rows = /정보 수정|오류 신고/.test(x.dataset.c) ? 5 : 4; });
     // view는 화면이 바뀌어도 그대로라서 한 번만 붙여요 (두 번 붙으면 두 번 보내져요)
     if (bindOpinion.bound) return;
     bindOpinion.bound = true;
     const post = text => { const f = window.CONFIG.form; return fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: text }) }); };
     view.addEventListener('click', ev => {
       if (currentRoute() !== 'opinion') return;
+      const q = ev.target.closest('.op-ask');
+      if (q) { const box = view.querySelector(`.op-re-box[data-id="${q.dataset.id}"]`); if (box) { box.hidden = false; const ta = box.querySelector('textarea'); if (!ta.value.trim()) ta.value = OP_ASK; ta.rows = 6; ta.focus(); } return; }
       const r = ev.target.closest('.op-re');
       if (r) { const box = view.querySelector(`.op-re-box[data-id="${r.dataset.id}"]`); if (box) { box.hidden = !box.hidden; if (!box.hidden) box.querySelector('textarea').focus(); } return; }
       const s = ev.target.closest('.op-re-send');
@@ -3074,7 +3079,7 @@
   // 날짜 변경·삭제는 일정 화면에서 바로 요청할 수 있다는 작은 안내 (의견·정보 수정·제보 쓰는 곳)
   const HOW_TIP = '<p class="src-note how-tip">날짜가 틀렸거나 지워야 하는 일정이면, 그 일정 화면 아래 \'날짜가 달라요\' · \'이 일정 삭제 요청\'으로 보내 주세요. 더 빨리 반영돼요.</p>';
   const fixBox = e => `<details class="fix-box"><summary>✏️ 틀린 곳 알려주기</summary><div class="op-form">
-      <textarea class="op-in fix-in" rows="3" maxlength="1000" placeholder="예) 날짜가 03.15예요 / 이 곡은 안 불렀어요"></textarea>
+      <textarea class="op-in fix-in" rows="4" maxlength="1000" placeholder="${esc(OP_FIX_EX)}"></textarea>
       <button type="button" class="bpill add-send fix-send" data-id="${esc(e.id)}">보내기</button>
       <p class="src-note fix-msg">의견 탭에 '정보 수정'으로 올라가요. 반영까지 5~10분쯤 걸려요.</p><p class="src-note how-tip">날짜가 틀렸으면 위 \'날짜가 달라요\', 지워야 하면 맨 아래 \'이 일정 삭제 요청\'이 더 빨라요.</p></div></details>`;
   document.addEventListener('click', ev => {
