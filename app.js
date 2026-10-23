@@ -4365,6 +4365,7 @@
         <div class="chips a-mem op-cats">${OP_CATS.map(x => `<button type="button" class="chip${x === (opQs().get('w') === 'map' ? '지도 링크' : '자유·응원') ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
         <div class="map-add"${opQs().get('w') === 'map' ? '' : ' hidden'}>
           <p class="map-add-t">네이버 지도 링크를 하나씩 목록에 담아서 한 번에 보내요.</p>
+          <p class="ma-hint">저장 리스트 링크는 일정을 고르지 않아도 돼요. 아래 칸에 메모만 적어 주세요.</p>
           <label class="ma-f"><span>① 링크</span><input type="url" class="ma-link" inputmode="url" placeholder="네이버 지도 링크 붙여넣기" autocomplete="off"></label>
           <label class="ma-f"><span>② 일정 <small>선택</small></span><input type="search" class="drive-ev ma-ev" maxlength="120" placeholder="어떤 일정인지 검색 (예: 레거시 서울)" autocomplete="off"></label>
           <div class="drive-list drive-hits" hidden></div>
