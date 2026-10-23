@@ -1452,7 +1452,7 @@
   // 따라걷기 속도 (이 폰에 기억). 제일 빠르면 거의 바로바로 넘어가요
   const MAP_SPEEDS = [['느리게', 5000], ['보통', 3000], ['빠르게', 1200], ['쉬시식', 350]];
   const MAP_SP = 'sb-map-sp', mapSp = () => { const v = boxRead(MAP_SP); return Number.isInteger(v) && v >= 0 && v < MAP_SPEEDS.length ? v : 1; };
-  const MAP_Z = 'sb-map-z', mapZ = () => { const z = boxRead(MAP_Z); return z >= 10 && z <= 17 ? z : 12; };
+  const MAP_Z = 'sb-map-z', mapZ = () => { const z = boxRead(MAP_Z); return z >= 10 && z <= 17 ? z : 11; };
   let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', tour: false, play: false, mem: '', kind: '' }, lmap = null, mapPlay = null;
   function loadLeaflet() {
     if (window.L) return Promise.resolve(window.L);
@@ -1587,8 +1587,9 @@
     };
     const car = e => {
       const it = [];
-      const pic = evPic([e]);
-      if (pic && !/ytimg/.test(pic)) it.push(`<a class="map-c" href="#/e/${encodeURIComponent(e.id)}"><img src="${esc(pic)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>포스터</span></a>`);
+      // 진짜 공연 포스터만 (영상 썸네일·X 사진은 아래에서 따로)
+      const pic = e.category === '공연' ? evPic([e]) : '';
+      if (pic && !/ytimg/.test(pic) && !(e.xPost && e.xPost.img && pic === imgSize(e.xPost.img, 'thumb'))) it.push(`<a class="map-c" href="#/e/${encodeURIComponent(e.id)}"><img src="${esc(pic)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>포스터</span></a>`);
       if (e.xPost && e.xPost.img) it.push(`<a class="map-c" href="${esc(e.xPost.url || '#/e/' + encodeURIComponent(e.id))}" target="_blank" rel="noopener"><img src="${esc(imgSize(e.xPost.img, 'small'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>공식 X</span></a>`);
       const vids = [...new Map([e.videoId && { id: e.videoId, t: '영상' }, e.ytMain && { id: e.ytMain.id, t: '공식 영상' }, ...(e.ytStage || []).map(v => ({ id: v.id, t: '무대' })), ...(e.ytBehind || []).map(v => ({ id: v.id, t: '비하인드' })), ...e.related.map(v => ({ id: v.videoId, t: v.source || '영상' }))].filter(v => v && v.id).map(v => [v.id, v])).values()].slice(0, 8);
       vids.forEach(v => it.push(`<a class="map-c" href="${ytWatch(v.id)}" target="_blank" rel="noopener"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.parentNode.remove()"><span>▶ ${esc(v.t)}</span></a>`));
@@ -1648,8 +1649,11 @@
       if (i < 0 || i >= ml.on.length) return;
       mapSt.i = i;
       const x = ml.on[i];
-      const ms = MAP_SPEEDS[mapSp()][1], z = x.l.exact ? mapZ() : 9;
-      if (mapPlay && ms < 1000) m.setView([x.l.lat, x.l.lng], z, { animate: false }); else m.flyTo([x.l.lat, x.l.lng], z, { duration: mapPlay && ms < 2000 ? 0.6 : 1.1 });
+      // 빠를수록 멀리서 봐요: 빠르게는 도시, 쉬시식은 한반도 반쯤
+      const ms = MAP_SPEEDS[mapSp()][1], far = mapPlay ? (ms < 1000 ? 7 : ms < 2000 ? 8.5 : 0) : 0, z = far || (x.l.exact ? mapZ() : 9);
+      // 아래 안내판에 안 가리게 살짝 위쪽에 오도록
+      const at = m.unproject(m.project([x.l.lat, x.l.lng], z).add([0, 45]), z);
+      if (mapPlay && ms < 1000) m.setView(at, z, { animate: true, pan: { duration: 0.3 } }); else m.flyTo(at, z, { duration: mapPlay && ms < 2000 ? 0.6 : 1.1 });
       nav(); draw();
     };
     if (mapSt.tour) document.getElementById('map-here').onclick = () => { mapStop(); go(mapSt.i); };
