@@ -74,6 +74,7 @@
     'the phantom of the opera': 'phantom of the opera', 'bohemian rapsody': 'bohemian rhapsody', '그날들 (the days)': '그날들',
     '전설속의 누군가처럼': '전설 속의 누군가처럼', 'hand clap': 'handclap', '딴따라블루스': '딴따라 블루스', '새야새야 파랑새야': '새야 새야 파랑새야', '좋은걸 어떡해': '좋은 걸 어떡해' };
   // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
+  const PROD_CH = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티/;
   const LINK_SKIP = new Set([
     'ZSleXc9DR_Q>ev:10166', 'r05dSSCyGjc>ev:120245', 'r05dSSCyGjc>ev:120246',
   ]);
@@ -662,7 +663,7 @@
       return [new RegExp(eng ? `(^|[^0-9a-z])${body}($|[^0-9a-z])` : `(?<![가-힣])${body}`, 'i'), so];
     }).filter(Boolean);
     official.forEach(v => {
-      v.kind = v.bc && /직캠|fancam|focus|페이스캠/i.test(v.title) ? '직캠' : /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|뮤직비디오/i.test(v.title) ? 'M/V' : /포레미파솔|behind|비하인드/i.test(v.title) ? '비하인드' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : v.bc && !/모음|몰아보기|compilation|레전드 무대|댓글/i.test(v.title) && / - |무대|stage/i.test(v.title) ? '무대' : '영상';
+      v.kind = v.bc && /직캠|fancam|focus|페이스캠/i.test(v.title) ? '직캠' : /shorts/i.test(v.title) || v.sec <= 60 ? '쇼츠' : /M\/V|\[MV\]|\bMV\b|뮤직비디오/.test(v.title) ? 'M/V' : /포레미파솔|behind|비하인드/i.test(v.title) ? '비하인드' : /live clip|라이브|live/i.test(v.title) ? '라이브' : /special clip|clip/i.test(v.title) ? '클립' : /lyric|리릭/i.test(v.title) ? '가사 영상' : /behind|비하인드|포레미파솔/i.test(v.title) ? '비하인드' : /teaser|hint|티저|logo/i.test(v.title) ? '티저' : /인터뷰|interview|티저|teaser|spot/i.test(v.title) ? '영상' : v.bc && !/모음|몰아보기|compilation|레전드 무대|댓글/i.test(v.title) && / - |무대|stage/i.test(v.title) ? '무대' : '영상';
       const seen = new Set();
       // 따옴표 안 이름 (In un'altra vita처럼 글자 사이 '는 건너뛰어요)
       [...[...v.title.matchAll(/[‘’'"“](.+?)[’'"”](?![0-9A-Za-z가-힣])/g)].map(m => m[0]), ...[...v.title.matchAll(/ - ([^(\[\]|]+?)\s*(?=\(|\[|\]|\||$)/g)].map(m => `'${m[1]}'`), ...[...v.title.matchAll(/^([^\-\[|]+?)\s+-\s+(?:포레스텔라|forestella)/gi)].map(m => `'${m[1]}'`)].forEach(q => {
@@ -721,6 +722,8 @@
           if (e.category === '공연' || LINK_SKIP.has(`${v.id}>ev:${e.id}`)) return;
           const gap = days(v.date, e.date);
           if (gap < -1 || gap > (behind ? 400 : 14)) return;
+          // 제작사·소속사 채널은 방송사가 아니라서 그날(하루 차이까지) 일정에만 붙여요
+          if (PROD_CH.test(v.bc) && Math.abs(gap) > 1) return;
           const sc = progWords(e.title).filter(w => fv.includes(w)).reduce((n, w) => n + w.length, 0);
           if (sc >= 2) cand.push({ sc, gap: Math.abs(gap) });
           if (sc >= 2 && (sc > score || (sc === score && Math.abs(gap) < bgap))) { best = e; score = sc; bgap = Math.abs(gap); }
