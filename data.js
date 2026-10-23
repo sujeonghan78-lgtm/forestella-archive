@@ -397,16 +397,20 @@
         const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = line0(r, '후').slice(0, 80);
         if (!id || !to) return;
         const o = px[id] = px[id] || {}, p = o[to] = o[to] || { to, from: '', by: '', who: new Set(), at: 0 };
-        if (r.type === '장소수정' && !p.by) { p.by = r.by; p.from = line0(r, '전'); p.at = tsMs(r.time); } else p.who.add(r.by);
+        if (r.type === '장소수정' && !p.by) {
+          p.by = r.by; p.from = line0(r, '전'); p.at = tsMs(r.time);
+          const m = line0(r, '좌표').match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+          if (m) p.loc = { lat: +m[1], lng: +m[2] };
+        } else p.who.add(r.by);
       });
       events.forEach(e => {
         const ps = Object.values(px[e.id] || {}).filter(p => p.by && p.to !== e.place);
         if (!ps.length) return;
         ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); p.id = 'pl' + slVer([e.id, p.to]); p.done = p.who.size >= 2 || okMark.has(p.id); });
         const done = ps.filter(p => p.done).sort((a, b) => b.at - a.at)[0];
-        if (done) { e.placeWas = e.place || ''; e.place = done.to; return; }
+        if (done) { e.placeWas = e.place || ''; e.place = done.to; if (done.loc) e.placeLoc = done.loc; return; }
         // 비어 있던 장소: 가장 먼저 온 걸 바로 채우고 확인을 기다려요
-        if (!e.place) { const f = ps.sort((a, b) => a.at - b.at)[0]; e.place = f.to; e.placeNew = f; }
+        if (!e.place) { const f = ps.sort((a, b) => a.at - b.at)[0]; e.place = f.to; e.placeNew = f; if (f.loc) e.placeLoc = f.loc; }
         e.placeProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id, now: p === e.placeNew }));
       });
     }

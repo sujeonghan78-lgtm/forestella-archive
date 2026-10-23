@@ -1472,6 +1472,7 @@
   // 일정 장소 이름: 장소 칸, 없으면 내용의 '장소:' 줄
   const placeOf = e => (e.place || '').trim() || (((e.content || '').match(/장소\s*[:：]\s*(.+)/) || [])[1] || '').trim();
   function locOf(e, found) {
+    if (e.placeLoc) return { ...e.placeLoc, exact: true, place: placeOf(e) };
     const p = placeOf(e), pin = p && (data.pins || {})[p];
     if (pin && pin.ok) return { ...pin.ok, exact: true, place: p };
     if (p && found[p]) return { lat: found[p].lat, lng: found[p].lng, exact: true, place: p };
@@ -3933,20 +3934,42 @@
   }
   const plForm = e => e.ytOnly ? '' : `<details class="fix-box"><summary>📍 ${e.place ? '장소가 달라요' : '장소 알려주기'}</summary><div class="op-form">
       ${e.place ? `<label class="add-f"><span>지금 장소</span><input type="text" value="${esc(e.place)}" disabled></label>` : ''}
-      <label class="add-f"><span>${e.place ? '맞는 장소' : '장소'}</span><input type="text" class="pl-in" maxlength="80" placeholder="예: 올림픽공원 올림픽홀"></label>
-      <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}">보내기</button>
-      <p class="src-note pl-msg">${e.place ? '다른 두 분이 맞다고 하면 장소가 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'} 공연장 이름을 정확히 적어 주세요.</p></div></details>`;
+      <form class="pin-find pl-find"><input type="search" class="pl-in" maxlength="80" placeholder="공연장 이름이나 주소로 찾기" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
+      <div class="pin-res pl-res"></div>
+      <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}" disabled>보내기</button>
+      <p class="src-note pl-msg">찾은 곳 중에 맞는 곳을 골라 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '다른 두 분이 맞다고 하면 장소가 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
+  // 장소 찾기: OpenStreetMap 검색 결과 중 하나를 고르면 이름·좌표를 같이 보내요
+  document.addEventListener('submit', async ev => {
+    const f = ev.target.closest('.pl-find');
+    if (!f) return;
+    ev.preventDefault();
+    const box = f.closest('.op-form'), q = f.querySelector('.pl-in').value.trim(), res = box.querySelector('.pl-res'), sb = box.querySelector('.pl-send');
+    if (!q) return;
+    sb.disabled = true; delete sb.dataset.to;
+    res.innerHTML = '<span class="src-note">찾는 중…</span>';
+    try {
+      const r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 10, 'accept-language': 'ko' }))).json();
+      res.innerHTML = r.length ? r.map((h, i) => `<button type="button" class="pin-hit" data-i="${i}"><b>${esc(h.name || h.display_name.split(',')[0])}</b><small>${esc(h.display_name.split(',').slice(1, 5).join(','))}</small></button>`).join('') : '<span class="src-note">못 찾았어요. 건물 이름이나 도로명 주소로 다시 찾아 주세요.</span>';
+      res.querySelectorAll('.pin-hit').forEach(b => b.onclick = () => {
+        const h = r[+b.dataset.i];
+        res.querySelectorAll('.pin-hit').forEach(o => o.classList.toggle('on', o === b));
+        sb.dataset.to = (h.name || h.display_name.split(',')[0]).trim().slice(0, 80);
+        sb.dataset.c = (+h.lat).toFixed(5) + ',' + (+h.lon).toFixed(5);
+        sb.disabled = false;
+      });
+    } catch (err) { res.innerHTML = '<span class="src-note">지금은 찾기가 안 돼요. 잠시 뒤 다시 찾아 주세요.</span>'; }
+  });
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.pl-send, .pl-ok');
     if (!b) return;
     const e = data.events.find(x => x.id === b.dataset.id);
     if (!e) return;
     const send = b.classList.contains('pl-send'), box = b.closest('.op-form');
-    const to = (send ? box.querySelector('.pl-in').value : b.dataset.to).replace(/\s+/g, ' ').trim();
-    if (!to) { if (send) box.querySelector('.pl-msg').textContent = '장소 이름을 적어 주세요.'; return; }
+    const to = (b.dataset.to || '').replace(/\s+/g, ' ').trim();
+    if (!to) { if (send) box.querySelector('.pl-msg').textContent = '찾은 곳 중에 하나를 골라 주세요.'; return; }
     if (send && to === e.place) { box.querySelector('.pl-msg').textContent = '지금 장소와 같아요.'; return; }
     b.disabled = true; b.textContent = '보내는 중…';
-    formPost(`종류: ${send ? '장소수정' : '장소확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${to}\n누가: ${myUid()}`)
+    formPost(`종류: ${send ? '장소수정' : '장소확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${to}${send && b.dataset.c ? `\n좌표: ${b.dataset.c}` : ''}\n누가: ${myUid()}`)
       .then(() => {
         slOkAdd(`pl:${e.id}:${to}`);
         if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.pl-msg').textContent = `보냈어요: 📍 ${to}. 5~10분쯤 뒤 일정에 떠요.`; }
