@@ -2679,21 +2679,22 @@
   const opMarkLocal = () => { try { return JSON.parse(localStorage.getItem(OP_MARK) || '[]'); } catch (err) { return []; } };
   const opMine = () => { try { return JSON.parse(localStorage.getItem(OP_MINE) || '[]'); } catch (err) { return []; } };
   const adminJwk = () => { try { return JSON.parse(localStorage.getItem(ADMIN_KEY) || 'null'); } catch (err) { return null; } };
-  const isAdmin = () => { const k = adminJwk(), c = window.CONFIG.adminKey; return !!(k && c && k.x === c.x && k.y === c.y); };
+  const adminKeys = () => window.CONFIG.adminKeys || (window.CONFIG.adminKey ? [window.CONFIG.adminKey] : []);
+  const isAdmin = () => { const k = adminJwk(); return !!(k && adminKeys().some(c => k.x === c.x && k.y === c.y)); };
   const ECDSA = { name: 'ECDSA', namedCurve: 'P-256' }, SIGN = { name: 'ECDSA', hash: 'SHA-256' };
   const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
   const opMsg = m => new TextEncoder().encode(`${m.id}:${m.state}:${m.n}`);
   let opData = null, opDone = new Map(), opLoading = null;
   async function verifyMarks(marks, msg = opMsg, on = '처리') {
-    const c = window.CONFIG.adminKey, done = new Map();
-    if (!c || !crypto.subtle) return done;
-    const key = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: c.x, y: c.y, ext: true }, ECDSA, false, ['verify']);
+    const done = new Map();
+    if (!adminKeys().length || !crypto.subtle) return done;
+    const keys = await Promise.all(adminKeys().map(c => crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: c.x, y: c.y, ext: true }, ECDSA, false, ['verify'])));
     // 같은 의견에 여러 번 눌렀으면 번호가 가장 큰(가장 최근) 것만 봐요
     const last = new Map();
     for (const m of marks) {
       let ok = false;
-      try { ok = await crypto.subtle.verify(SIGN, key, unb64u(m.sig), msg(m)); } catch (err) { ok = false; }
+      for (const key of keys) { if (ok) break; try { ok = await crypto.subtle.verify(SIGN, key, unb64u(m.sig), msg(m)); } catch (err) { ok = false; } }
       if (ok && (!last.has(m.id) || Number(m.n) > Number(last.get(m.id).n))) last.set(m.id, m);
     }
     last.forEach((m, id) => { if (m.state === on) done.set(id, m); });
@@ -2897,7 +2898,7 @@
 
   // 관리자 기기 정하기: 이 기기 안에서 열쇠를 만들고, 공개 열쇠만 보여줘요
   function adminView() {
-    const k = adminJwk(), c = window.CONFIG.adminKey;
+    const k = adminJwk(), c = adminKeys().length;
     const pub = k ? JSON.stringify({ x: k.x, y: k.y }) : '';
     return `
       <a class="back" href="#/more">‹ 더보기</a>
