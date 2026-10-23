@@ -1300,3 +1300,6 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .yf-range .bpill { height: 30px; font-size: 12.5px; padding: 0 12px; }
 .yf-range select { height: 30px; border-radius: 8px; border: 1px solid var(--line); padding: 0 6px; font: inherit; }
 .yf-ok { align-self: stretch; height: 42px; font-size: 15px; }
+.op-secret { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.op-secret small { color: #8A9A90; }
+.op-secret input { width: 16px; height: 16px; accent-color: #4FA86A; }

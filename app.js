@@ -4113,6 +4113,33 @@
   const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
   const opMsg = m => new TextEncoder().encode(`${m.id}:${m.state}:${m.n}`);
+  // 비밀글: 관리자 공개 열쇠로 잠가서 보내요 (시트엔 알아볼 수 없는 글자만 남고, 관리자 기기에서만 풀려요)
+  const SEC = 'SEC1:', OP_SEC = 'sb-op-sec', ECDH = { name: 'ECDH', namedCurve: 'P-256' };
+  const secMine = () => { try { return JSON.parse(localStorage.getItem(OP_SEC) || '{}'); } catch (err) { return {}; } };
+  const aesOf = bits => crypto.subtle.importKey('raw', bits, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  async function opSeal(text) {
+    const eph = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']), ej = await crypto.subtle.exportKey('jwk', eph.publicKey);
+    const parts = await Promise.all(adminKeys().map(async c => {
+      const pub = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: c.x, y: c.y, ext: true }, ECDH, false, []);
+      const key = await aesOf(await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, eph.privateKey, 256));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      return b64u(iv) + '.' + b64u(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text)));
+    }));
+    return `${SEC}${ej.x}.${ej.y}:${parts.join(',')}`;
+  }
+  async function opOpen(s) {
+    const k = adminJwk();
+    if (!k || !k.d || !s.startsWith(SEC)) return null;
+    const [ep, cts] = s.slice(SEC.length).split(':'), [x, y] = (ep || '').split('.');
+    const priv = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', d: k.d, x: k.x, y: k.y, ext: true }, ECDH, false, ['deriveBits']);
+    const pub = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x, y, ext: true }, ECDH, false, []);
+    const key = await aesOf(await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, priv, 256));
+    for (const c of (cts || '').split(',')) {
+      const [iv, ct] = c.split('.');
+      try { return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64u(iv) }, key, unb64u(ct))); } catch (err) { /* 다른 관리자 몫 */ }
+    }
+    return null;
+  }
   let opData = null, opDone = new Map(), opLoading = null;
   async function verifyMarks(marks, msg = opMsg, on = '처리') {
     const done = new Map();
@@ -4135,6 +4162,13 @@
       const local = opMarkLocal().filter(m => !opData.marks.some(x => x.id === m.id && x.n === m.n) && Date.now() - Number(m.n) < 864e5);
       try { localStorage.setItem(OP_MARK, JSON.stringify(local)); } catch (err) { /* 괜찮아요 */ }
       opDone = await verifyMarks(opData.marks.concat(local));
+      // 비밀글: 내가 쓴 건 이 기기에 둔 원문으로, 관리자 기기는 열쇠로 풀어서 보여줘요
+      const mineSec = secMine(), admin = isAdmin();
+      for (const o of opData.ops) {
+        if (!o.text.startsWith(SEC)) continue;
+        o.sec = true;
+        o.plain = mineSec[o.text] || (admin ? await opOpen(o.text).catch(() => null) : null);
+      }
     }).catch(() => { opData = opData || { ops: [], marks: [] }; }).finally(() => { opLoading = null; });
   }
   const OP_CATS = ['정보 수정', '오류 신고', '기능 요청', '자유·응원'];
@@ -4165,7 +4199,7 @@
     return `<div class="op-item${done ? ' done' : ''}${o.parent ? ' op-reply' : ''}">
           <div class="op-head"><span class="op-who">${isNew ? '<span class="op-new">N</span> ' : ''}${o.parent ? '' : `<span class="new-tag op-cat">${esc(o.cat || '자유·응원')}</span> `}${toName ? `<span class="op-to">↳ ${esc(toName)}</span> ` : ''}${esc(o.name || '익명')}${mine ? (o.parent ? ' · 내 답글' : ' · 내 의견') : ''}</span><span class="op-time">${esc(o.local ? '방금 보냄 · 반영 중' : String(o.time).replace(/:\d\d$/, ''))}</span></div>
           ${o.ev ? (id => `<a class="op-ev" href="#/e/${encodeURIComponent(id)}">📅 ${esc(o.ev.replace(/^\[ID [^\]]+\]\s*/, ''))}</a>`)((o.ev.match(/\[ID ([^\]]+)\]/) || [])[1] || '') : ''}
-          ${o.text.startsWith(OP_ASK_TAG) ? `<span class="op-auto">양식으로 답변</span><p class="op-text op-text-auto">${esc(o.text.slice(OP_ASK_TAG.length).replace(/^\s+/, ''))}</p>` : `<p class="op-text">${esc(o.text)}</p>`}
+          ${o.sec || o.text.startsWith(SEC) ? (o.plain ? `<span class="op-auto op-sec">🔒 비밀글</span><p class="op-text">${esc(o.plain)}</p>` : '<p class="op-text op-text-auto">🔒 비밀글이에요. 관리자만 볼 수 있어요.</p>') : o.text.startsWith(OP_ASK_TAG) ? `<span class="op-auto">양식으로 답변</span><p class="op-text op-text-auto">${esc(o.text.slice(OP_ASK_TAG.length).replace(/^\s+/, ''))}</p>` : `<p class="op-text">${esc(o.text)}</p>`}
           <div class="op-foot">${photoLink(o)}${o.parent ? '' : done ? '<span class="op-done">✓ 처리했어요</span>' : '<span class="op-todo">확인 중</span>'}${admin && !o.local && !o.parent ? `<button type="button" class="link-btn op-mark" data-id="${esc(o.id)}" data-state="${done ? '취소' : '처리'}">${done ? '처리 취소' : '처리했어요'}</button>` : ''}${!o.local ? `<button type="button" class="link-btn op-re" data-id="${esc(o.id)}">답글${!o.parent && count ? ' ' + count : ''}</button>` : ''}${admin && !o.parent && !o.local && !done ? `<button type="button" class="link-btn op-ask" data-id="${esc(o.id)}">양식으로 묻기</button>` : ''}${mine && !o.local && !done ? `<button type="button" class="link-btn op-del" data-id="${esc(o.id)}">삭제</button>` : ''}</div>
           ${o.local ? '' : `<div class="op-form op-re-box" data-id="${esc(o.id)}" hidden><textarea class="op-in op-re-in" rows="2" maxlength="1000" placeholder="${o.parent ? `${esc(o.name || '익명')}님에게 답글` : '답글을 적어 주세요'}"></textarea><button type="button" class="bpill add-send op-re-send" data-id="${esc(o.id)}">답글 달기</button></div>`}
           ${kids.map(k => opItem(k, me, admin, opNewIds && opNewIds.has(k.id), kidsMap, o.parent ? (o.name || '익명') : '')).join('')}
@@ -4201,6 +4235,7 @@
         <input type="text" class="op-name" maxlength="20" placeholder="닉네임 (선택)">
         <textarea class="op-in" rows="4" maxlength="1000" placeholder="의견을 적어 주세요"></textarea>
         ${photoPick()}
+        ${adminKeys().length ? '<label class="op-secret"><input type="checkbox" class="op-sec-in"> 🔒 비밀글 <small>관리자만 볼 수 있어요</small></label>' : ''}
         <button type="button" class="bpill add-send op-send" disabled>보내기</button>
         <p class="src-note op-msg">보낸 의견은 내 화면엔 바로 보이고, 다른 분들 화면엔 5~10분쯤 뒤에 보여요.</p>
         ${HOW_TIP}
@@ -4227,10 +4262,15 @@
       let photo = '';
       try { photo = await photoSend(b.closest('.op-form')); } catch (err) { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '사진을 올리지 못했어요. 사진을 빼거나 잠시 뒤 다시 보내 주세요.'; return; }
       const pi = b.closest('.op-form').querySelector('.op-photo-in'); if (pi) { pi.value = ''; pi.dispatchEvent(new Event('change', { bubbles: true })); }
-      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}${photo ? `\n사진: ${photo}` : ''}\n내용: ${text}` });
+      const secOn = !!(view.querySelector('.op-sec-in') || {}).checked;
+      let sent = text;
+      if (secOn) { try { sent = await opSeal(text); } catch (err) { b.disabled = false; b.textContent = '다시 보내기'; view.querySelector('.op-msg').textContent = '이 브라우저에선 비밀글을 만들 수 없어요. 비밀글을 끄고 보내 주세요.'; return; } }
+      const body = new URLSearchParams({ [f.fields.content]: `종류: 의견\n분류: ${cat}\n이름: ${name}\n누가: ${by}${photo ? `\n사진: ${photo}` : ''}\n내용: ${sent}` });
       fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body }).then(() => {
+        // 비밀글 원문은 이 기기에만 둬요 (내 화면에선 계속 보여요)
+        if (secOn) { const m = secMine(); m[sent] = text; const ks = Object.keys(m); ks.slice(0, -50).forEach(k => delete m[k]); try { localStorage.setItem(OP_SEC, JSON.stringify(m)); } catch (err) { /* 괜찮아요 */ } }
         // 시트에 들어간 시각을 몰라서, 시트에서 돌아오면 같은 글인지 글 내용으로 맞춰 봐요
-        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name, cat, by, photo, at: Date.now() });
+        const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text: sent, ...(secOn ? { sec: true, plain: text } : {}), name, cat, by, photo, at: Date.now() });
         try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); sessionStorage.removeItem('sb-op-draft'); } catch (err) { /* 괜찮아요 */ }
         t.value = ''; b.textContent = '보냈어요 ✓'; setTimeout(() => { b.textContent = '보내기'; }, 2500);
         view.querySelector('.op-msg').textContent = '고마워요! 다른 분들 화면엔 5~10분쯤 뒤에 보여요.';
