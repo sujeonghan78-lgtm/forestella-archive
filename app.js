@@ -9,8 +9,7 @@
     return `
       <header class="brand">
         <span class="brand-name">숲별 기록장</span>
-        <span class="brand-sub">포레스텔라 비공식 팬 아카이브</span>
-        <button type="button" class="lang-btn lang-keep" onclick="SB_LANG.open()" aria-label="Language">🌐 ${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</button>
+        <span class="brand-sub"><span>포레스텔라 비공식 팬 아카이브</span><button type="button" class="lang-btn lang-keep" onclick="SB_LANG.open()" aria-label="Language">🌐 ${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</button></span>
       </header>`;
   }
 

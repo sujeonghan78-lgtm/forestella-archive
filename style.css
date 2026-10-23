@@ -1155,7 +1155,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .pf-done .pin-res{display:none}
 /* 언어 */
 .brand { position: relative; }
-.lang-btn { position: absolute; right: 0; top: 2px; padding: 5px 10px; border: 1px solid var(--line, #DDE8E1); border-radius: 999px; background: var(--card, #fff); color: var(--ink-2); font: inherit; font-size: 12px; }
+.brand-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.lang-btn { padding: 2px 8px; border: 1px solid var(--line, #DDE8E1); border-radius: 999px; background: var(--card, #fff); color: var(--ink-2); font: inherit; font-size: 12px; }
 .lang-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; padding: 12px 14px; border: 1px solid var(--line, #DDE8E1); border-radius: 14px; background: var(--card, #fff); color: var(--ink); font: inherit; font-size: 14px; text-align: left; }
 .lang-row b { color: var(--accent, #1F7A54); font-weight: 600; }
 .lang-sheet { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.35); }
