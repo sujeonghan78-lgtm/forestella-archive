@@ -1531,7 +1531,7 @@
         <div class="map-grip" id="map-grip" role="separator" aria-label="지도 높이 조절"><span></span></div>
       </div>
       <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
-      ${mapSt.tour ? `<div class="map-playbar"><button type="button" class="chip on" id="map-play">▶ 재생</button><span class="map-sp-l">속도</span>${MAP_SPEEDS.map(([l], k) => `<button type="button" class="chip${k === mapSp() ? ' on' : ''}" data-sp="${k}">${l}</button>`).join('')}</div><p class="src-note map-dur" id="map-dur"></p>` : ''}
+      ${mapSt.tour ? `<div class="map-playbar"><button type="button" class="chip on" id="map-play">▶ 재생</button><span class="map-sp-l">속도</span>${MAP_SPEEDS.map(([l], k) => `<button type="button" class="chip${k === mapSp() ? ' on' : ''}" data-sp="${k}">${l}</button>`).join('')}</div>` : ''}
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
@@ -1642,11 +1642,10 @@
       const el = document.getElementById('map-dur'); if (!el) return;
       const ms = MAP_SPEEDS[mapSp()][1], t = s => s >= 60 ? `${Math.floor(s / 60)}분${s % 60 ? ` ${s % 60}초` : ''}` : `${s}초`;
       const all = Math.round(ml.on.length * ms / 1000), left = Math.round((ml.on.length - 1 - Math.max(0, mapSt.i)) * ms / 1000);
-      el.textContent = `${ml.on.length}곳 처음부터 끝까지 ${t(all)}${left > 0 && left < all ? ` · 남은 시간 ${t(left)}` : ''}`;
+      el.textContent = `전체 ${t(all)}${left > 0 && left < all ? ` · 남은 시간 ${t(left)}` : ''}`;
     };
     const nav = () => {
       if (!mapSt.tour) { sum(); return; }
-      dur();
       const x = ml.on[mapSt.i], prev = ml.on[mapSt.i - 1], next = ml.on[mapSt.i + 1];
       const carEl = document.getElementById('map-car');
       carEl.innerHTML = car(x.e); carEl.scrollLeft = 0;
@@ -1656,9 +1655,11 @@
           <span class="map-meta">${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}</span>
           <a href="#/e/${encodeURIComponent(x.e.id)}" class="map-now-t">${esc(x.e.title)}</a>
           <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}</span>
+          <span class="map-dur" id="map-dur"></span>
           ${dots()}
         </div>
         <button type="button" class="map-arrow" id="map-next"${next ? '' : ' disabled'} aria-label="다음 발자국">›</button>`;
+      dur();
       document.getElementById('map-prev').onclick = () => go(mapSt.i - 1);
       document.getElementById('map-next').onclick = () => go(mapSt.i + 1);
       document.querySelectorAll('.map-dot').forEach(d => d.onclick = () => go(+d.dataset.k));
