@@ -1123,10 +1123,18 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-intro-t{margin:0;font-size:19px;font-weight:700;line-height:1.45;color:var(--ink);text-wrap:balance}
 .map-intro-s{font-size:13px;color:var(--muted)}
 .map-intro-go{margin-top:6px;padding:12px 28px;border:0;border-radius:999px;background:#1F7A4C;color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
-/* 뮤지컬 캐스팅 회차 */
-.cast-list { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 8px 10px; }
-.cast-row { display: contents; }
-.cast-row .src-note, .cast-row .link-btn { flex-basis: 100%; margin: -2px 0 4px; }
+/* 뮤지컬 캐스팅 회차: 달마다 한 줄, 작은 칩 */
+.cast-months { display: flex; flex-direction: column; gap: 10px; margin-block: 8px 6px; }
+.cast-m { display: grid; grid-template-columns: 2.6em 1fr; gap: 6px; align-items: start; }
+.cast-mh { padding-top: 6px; font-size: 12px; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.cast-list { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.cast-row { position: relative; display: inline-flex; }
+.cast-btn { padding: 4px 8px; border: 1px solid #D5E5DB; border-radius: 999px; background: var(--card, #fff); color: var(--ink); font: inherit; font-size: 12px; letter-spacing: -.2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cast-btn[aria-pressed="true"] { border-color: #E39AB5; background: #FDEFF4; color: #B03A64; font-weight: 700; }
+.cast-row.wait .cast-btn { border-style: dashed; color: var(--ink-2); }
+.cast-del { display: none; position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: #9AA8A0; color: #fff; font-size: 12px; line-height: 18px; }
+.cast-editing .cast-del { display: block; }
+.cast-edit { margin: 0 0 8px; font-size: 12px; }
 /* 확정 배지: 작게, 누르면 설명 */
 .ok-mini { display: inline-block; margin: 0 6px 8px 0; font-size: 12px; vertical-align: top; }
 .ok-mini summary { list-style: none; cursor: pointer; display: inline-block; padding: 2px 9px; border-radius: 999px; color: #2F5B12; background: #D7EDC2; font-weight: 700; }
@@ -1166,3 +1174,6 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .lang-box p { margin: 6px 0 0; font-size: 12px; color: var(--ink-2); }
 .lang-full { padding: 10px 12px; border-radius: 12px; background: #EEF7F1; color: #1F5E3E; font-weight: 600; text-decoration: none; }
 .lang-x { padding: 10px; border: 0; background: transparent; color: var(--ink-2); font: inherit; }
+.cast-day { display: inline-flex; align-items: center; gap: 3px; padding: 2px 3px 2px 9px; border: 1px solid #E3ECE6; border-radius: 999px; background: #F6FAF7; }
+.cast-dl { font-size: 12px; color: var(--ink-2); margin-right: 2px; white-space: nowrap; }
+.cast-day .cast-btn { padding: 2px 7px; }

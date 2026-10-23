@@ -126,7 +126,7 @@
       ev.preventDefault();
       const { box: k, id } = bx.dataset;
       boxToggle(k, id);
-      document.querySelectorAll(`[data-box="${k}"]`).forEach(b => { if (b.dataset.id === id) { b.setAttribute('aria-pressed', String(boxHas(k, id))); b.textContent = b.dataset.label ? (boxHas(k, id) ? '✓ ' : (b.dataset.ic || '🎫') + ' ') + b.dataset.label : BOX_LABEL[k][boxHas(k, id) ? 1 : 0]; } });
+      document.querySelectorAll(`[data-box="${k}"]`).forEach(b => { if (b.dataset.id === id) { b.setAttribute('aria-pressed', String(boxHas(k, id))); b.textContent = b.dataset.label ? (boxHas(k, id) ? '✓ ' : (b.dataset.ic != null ? b.dataset.ic : '🎫 ')) + b.dataset.label : BOX_LABEL[k][boxHas(k, id) ? 1 : 0]; } });
       return;
     }
     const c = ev.target.closest('[data-copy]');
@@ -2192,11 +2192,16 @@
   function castBlock(e) {
     if (!isRun(e)) return '';
     const list = castList(e), went = list.filter(c => boxHas('w', castKey(e, c))).length;
-    const rows = list.map(c => { const k = castKey(e, c), on = boxHas('w', k), lab = `${md2(c.d)}(${wd(c.d)})${c.t ? ' ' + c.t : ''}`;
-      return `<div class="cast-row"><button type="button" class="bpill box-btn cast-btn" data-box="w" data-id="${esc(k)}" data-label="${esc(lab)}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${esc(lab)}</button>${c.wait ? '<span class="src-note">올리는 중 · 5~10분 뒤 모두에게 보여요</span>' : ''}${isAdmin() && c.id ? `<button type="button" class="link-btn cast-del" data-id="${esc(c.id)}">지우기 (관리자)</button>` : ''}</div>`; }).join('');
+    // 달마다 묶어서 작은 버튼으로 (관리자는 '회차 정리'를 눌렀을 때만 × 가 보여요)
+    const pill = (c, timeOnly) => { const k = castKey(e, c), on = boxHas('w', k), lab = timeOnly ? c.t || '시간 모름' : `${+c.d.slice(8)}(${wd(c.d)})${c.t ? ' ' + c.t : ''}`;
+      return `<span class="cast-row${c.wait ? ' wait' : ''}"><button type="button" class="box-btn cast-btn" data-box="w" data-ic="" data-id="${esc(k)}" data-label="${esc(lab)}" aria-pressed="${on}"${c.wait ? ' title="올리는 중 · 5~10분 뒤 모두에게 보여요"' : ''}>${on ? '✓ ' : ''}${esc(lab)}</button>${isAdmin() && c.id ? `<button type="button" class="cast-del" data-id="${esc(c.id)}" aria-label="이 회차 지우기">×</button>` : ''}</span>`; };
+    const months = [...new Set(list.map(c => c.d.slice(0, 7)))];
+    // 같은 날 낮공·밤공은 한 칸에: '16(토) 14:00 19:30'
+    const day = cs => cs.length === 1 ? pill(cs[0]) : `<span class="cast-day"><span class="cast-dl">${+cs[0].d.slice(8)}(${wd(cs[0].d)})</span>${cs.map(c => pill(c, true)).join('')}</span>`;
+    const rows = months.map(m => { const ds = [...new Set(list.filter(c => c.d.startsWith(m)).map(c => c.d))]; return `<div class="cast-m"><span class="cast-mh">${m.slice(2, 4)}.${m.slice(5)}</span><div class="cast-list">${ds.map(d => day(list.filter(c => c.d === d))).join('')}</div></div>`; }).join('');
     return `<hr class="divider"><section class="d-block cast">
       <div class="block-head"><h2 class="h3">캐스팅 회차 <span class="song-count">${list.length}</span>${help('공연 기간 중 출연한 날을 팬들이 올려 주신 거예요. 내가 본 회차를 누르면 보관함 직관에 들어가요.')}</h2></div>
-      ${list.length ? `<p class="sub">${went ? `🎫 ${went}회 봤어요 · ` : ''}본 회차를 눌러 주세요.</p><div class="cast-list">${rows}</div>` : '<p class="sub">아직 올라온 회차가 없어요. 아는 회차를 올려 주세요.</p>'}
+      ${list.length ? `<p class="sub">${went ? `🎫 ${went}회 봤어요 · ` : ''}본 회차를 눌러 주세요.${list.some(c => c.wait) ? ' 점선은 올리는 중인 회차예요.' : ''}</p><div class="cast-months">${rows}</div>${isAdmin() ? '<button type="button" class="link-btn cast-edit">회차 정리 (관리자)</button>' : ''}` : '<p class="sub">아직 올라온 회차가 없어요. 아는 회차를 올려 주세요.</p>'}
       <details class="fix-box"><summary>＋ 회차 올리기</summary><div class="op-form">
         <label class="add-f"><span>날짜</span><input type="date" class="cast-d" min="${esc(e.date)}" max="${esc(e.endDate)}" value="${esc(e.date)}"></label>
         <label class="add-f"><span>시간 (몰라도 돼요)</span><input type="time" class="cast-t"></label>
@@ -2221,11 +2226,17 @@
       })
       .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; });
   });
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.cast-edit');
+    if (!b) return;
+    const on = b.closest('.cast').classList.toggle('cast-editing');
+    b.textContent = on ? '정리 끝' : '회차 정리 (관리자)';
+  });
   document.addEventListener('click', async ev => {
     const b = ev.target.closest('.cast-del');
     if (!b || !isAdmin()) return;
-    b.disabled = true; b.textContent = '지우는 중…';
-    try { await sendEvMark(b.dataset.id, '숨김'); b.closest('.cast-row').remove(); } catch (err) { b.disabled = false; b.textContent = '다시 눌러 주세요'; }
+    b.disabled = true; b.textContent = '…';
+    try { await sendEvMark(b.dataset.id, '숨김'); b.closest('.cast-row').remove(); } catch (err) { b.disabled = false; b.textContent = '×'; }
   });
 
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
