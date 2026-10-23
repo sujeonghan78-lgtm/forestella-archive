@@ -1079,7 +1079,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-stage:not(.map-ov) #map{height:min(40vh,330px)}
 .map-trip small{display:block;font-size:10px;font-weight:500;opacity:.85}
 .map-trip:has(small){height:auto;padding:7px 14px;line-height:1.25;text-align:center}
-#map .leaflet-tile-pane{filter:saturate(.4) brightness(1.05) contrast(.92)}
+#map .leaflet-tile-pane{filter:grayscale(1) brightness(1.08) contrast(.88)}
 .map-tools{position:absolute;top:10px;right:10px;z-index:500;display:flex;flex-direction:column;gap:6px}
 .map-tool{width:36px;height:36px;border:0;border-radius:12px;background:rgba(255,255,255,.92);box-shadow:0 1px 6px rgba(0,0,0,.15);font-size:17px;color:#1F5E3E;cursor:pointer}
 .map-tools{align-items:flex-end}
