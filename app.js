@@ -1449,8 +1449,11 @@
   // 한반도 전체로 볼 때 숫자 풍선 자리 (서로 안 겹치게 조금씩 옮긴 자리)
   const REGION_V = { '서울': [37.9, 127.0], '경기·인천': [37.2, 126.55], '강원': [37.6, 128.8], '충청': [36.5, 127.1], '전라': [35.2, 126.95], '경상': [35.85, 128.85], '제주': [33.38, 126.55] };
   const KOREA_B = [[33.1, 125.4], [38.6, 129.7]];
+  // 따라걷기 속도 (이 폰에 기억). 제일 빠르면 거의 바로바로 넘어가요
+  const MAP_SPEEDS = [['느리게', 5000], ['보통', 3000], ['빠르게', 1200], ['쉬시식', 350]];
+  const MAP_SP = 'sb-map-sp', mapSp = () => { const v = boxRead(MAP_SP); return Number.isInteger(v) && v >= 0 && v < MAP_SPEEDS.length ? v : 1; };
   const MAP_Z = 'sb-map-z', mapZ = () => { const z = boxRead(MAP_Z); return z >= 10 && z <= 17 ? z : 12; };
-  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', tour: false, play: false }, lmap = null, mapPlay = null;
+  let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', tour: false, play: false, mem: '', kind: '' }, lmap = null, mapPlay = null;
   function loadLeaflet() {
     if (window.L) return Promise.resolve(window.L);
     return leafletP = leafletP || new Promise((ok, no) => {
@@ -1486,9 +1489,17 @@
     const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !/^\[/.test(e.title)).sort((a, b) => a.date.localeCompare(b.date));
     const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort();
     // 기간 고르기: from/to는 'YYYY-MM'
-    const inRange = e => (!mapSt.from || e.date.slice(0, 7) >= mapSt.from) && (!mapSt.to || e.date.slice(0, 7) <= mapSt.to);
+    const inRange = e => memOk(mapSt.mem)(e) && (!mapSt.kind || mapKind(e) === mapSt.kind) && (!mapSt.from || e.date.slice(0, 7) >= mapSt.from) && (!mapSt.to || e.date.slice(0, 7) <= mapSt.to);
     const items = list.filter(inRange).map(e => ({ e, l: locOf(e, found) }));
     return { all: items, on: items.filter(x => x.l.lat != null), off: items.filter(x => x.l.lat == null), mine: mine.length, years, first: list[0], last: list[list.length - 1] };
+  }
+  // 종류: 콘서트·팬미팅 / 뮤지컬 / 그 밖의 행사
+  const MAP_KINDS = [['', '모든 종류'], ['c', '콘서트·팬미팅'], ['ev', '행사·축제'], ['mu', '뮤지컬']];
+  const mapKind = e => e.category === '뮤지컬' ? 'mu' : /콘서트|concert|투어|tour|팬미팅|팬콘|단독 공연|리사이틀/i.test(e.title) && !/게스트|축하/.test(e.title) ? 'c' : 'ev';
+  // 멤버·종류: 한 줄에 모아 두고, 다시 누르면 꺼져요
+  function mapFilters() {
+    const b = (attr, v, l, on) => `<button type="button" class="chip${on ? ' on' : ''}" ${attr}="${on ? '' : v}">${l}</button>`;
+    return `<div class="chips map-years">${MEM_CHIPS.slice(2).concat([MEM_CHIPS[1]]).map(([v, l]) => b('data-mem', v, l, v === mapSt.mem)).join('')}<span class="map-sep"></span>${MAP_KINDS.slice(1).map(([v, l]) => b('data-kind', v, l, v === mapSt.kind)).join('')}</div>`;
   }
   function mapView() {
     // 아직 관리자 기기에서만 (시험 중)
@@ -1514,9 +1525,10 @@
       <div class="map-car" id="map-car"${mapSt.tour ? '' : ' hidden'}></div>
       <div class="map-stage${mapSt.tour ? '' : ' map-ov'}">
         <div id="map"></div>
-        <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 여행하기</button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
+        <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 따라걷기<small>가만히 두면 저절로 넘어가요</small></button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
         <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
       </div>
+      ${mapSt.tour ? `<div class="map-playbar"><button type="button" class="chip on" id="map-play">▶ 재생</button><span class="map-sp-l">속도</span>${MAP_SPEEDS.map(([l], k) => `<button type="button" class="chip${k === mapSp() ? ' on' : ''}" data-sp="${k}">${l}</button>`).join('')}</div>` : ''}
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
@@ -1525,6 +1537,8 @@
       : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
     const reset = () => { mapSt.i = -1; mapSt.tour = false; mapStop(); bindMap(); };
     root.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mapSt.mode = b.dataset.mode; mapSt.from = mapSt.to = ''; reset(); });
+    root.querySelectorAll('[data-mem]').forEach(b => b.onclick = () => { mapSt.mem = b.dataset.mem; reset(); });
+    root.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { mapSt.kind = b.dataset.kind; reset(); });
     root.querySelectorAll('[data-year]').forEach(b => b.onclick = () => { const y = b.dataset.year; mapSt.from = y ? y + '-01' : ''; mapSt.to = y ? y + '-12' : ''; reset(); });
     const pf = document.getElementById('map-from'), pt = document.getElementById('map-to'), rb = document.getElementById('map-range-btn');
     if (rb) rb.onclick = () => { const r = document.getElementById('map-range'); r.hidden = !r.hidden; };
@@ -1579,7 +1593,7 @@
       const vids = [...new Map([e.videoId && { id: e.videoId, t: '영상' }, e.ytMain && { id: e.ytMain.id, t: '공식 영상' }, ...(e.ytStage || []).map(v => ({ id: v.id, t: '무대' })), ...(e.ytBehind || []).map(v => ({ id: v.id, t: '비하인드' })), ...e.related.map(v => ({ id: v.videoId, t: v.source || '영상' }))].filter(v => v && v.id).map(v => [v.id, v])).values()].slice(0, 8);
       vids.forEach(v => it.push(`<a class="map-c" href="${ytWatch(v.id)}" target="_blank" rel="noopener"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.parentNode.remove()"><span>▶ ${esc(v.t)}</span></a>`));
       const songs = e.songSource !== '참고' && e.songs.length ? e.songs : e.setlist ? e.setlist.songs.map(x => x.t) : [];
-      if (songs.length) it.push(`<a class="map-c map-c-sl" href="#/e/${encodeURIComponent(e.id)}"><b>셋리 ${songs.length}곡</b><small>${esc(songs.slice(0, 3).join(' · '))}${songs.length > 3 ? ' …' : ''}</small></a>`);
+      if (songs.length) it.push(`<a class="map-c map-c-sl" href="#/e/${encodeURIComponent(e.id)}"><b>♪ 셋리스트 ${songs.length}곡</b><ol>${songs.slice(0, 3).map(t => `<li>${esc(t)}</li>`).join('')}</ol>${songs.length > 3 ? `<small>외 ${songs.length - 3}곡 더 보기 ›</small>` : ''}</a>`);
       return it.length ? it.join('') : `<a class="map-c map-c-sl" href="#/e/${encodeURIComponent(e.id)}"><b>자세히 보기</b><small>아직 모인 자료가 없어요</small></a>`;
     };
     const fixHtml = x => {
@@ -1634,7 +1648,8 @@
       if (i < 0 || i >= ml.on.length) return;
       mapSt.i = i;
       const x = ml.on[i];
-      m.flyTo([x.l.lat, x.l.lng], x.l.exact ? mapZ() : 9, { duration: 1.1 });
+      const ms = MAP_SPEEDS[mapSp()][1], z = x.l.exact ? mapZ() : 9;
+      if (mapPlay && ms < 1000) m.setView([x.l.lat, x.l.lng], z, { animate: false }); else m.flyTo([x.l.lat, x.l.lng], z, { duration: mapPlay && ms < 2000 ? 0.6 : 1.1 });
       nav(); draw();
     };
     if (mapSt.tour) document.getElementById('map-here').onclick = () => { mapStop(); go(mapSt.i); };
@@ -1643,7 +1658,21 @@
     document.getElementById('map-zin').onclick = () => zoomBy(1);
     document.getElementById('map-zout').onclick = () => zoomBy(-1);
     const all = () => m.fitBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, animate: false });
-    // 숲길 여행하기: 첫 발자국부터 3.5초마다 다음으로 (지도·버튼을 만지면 멈춰요)
+    const play = () => {
+      mapStop();
+      if (mapSt.i >= ml.on.length - 1) mapSt.i = -1;
+      mapPlay = setInterval(() => { if (mapSt.i >= ml.on.length - 1) mapStop(); else go(mapSt.i + 1); }, MAP_SPEEDS[mapSp()][1]);
+      mapPlayBtn();
+      if (mapSt.i < 0) go(0);
+    };
+    const pb = document.getElementById('map-play');
+    if (pb) pb.onclick = () => { if (mapPlay) mapStop(); else play(); };
+    root.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
+      boxWrite(MAP_SP, +b.dataset.sp);
+      root.querySelectorAll('[data-sp]').forEach(o => o.classList.toggle('on', o === b));
+      if (mapPlay) play();
+    });
+    // 숲길 따라걷기: 첫 발자국부터 3.5초마다 다음으로 (지도·버튼을 만지면 멈춰요)
     const trip = document.getElementById('map-trip'), ov = document.getElementById('map-ov');
     if (trip) trip.onclick = () => { mapSt.tour = true; mapSt.play = true; mapSt.i = 0; bindMap(); };
     if (ov) ov.onclick = () => { mapSt.tour = false; mapStop(); document.getElementById('map-venue').innerHTML = ''; bindMap(); };
@@ -1692,7 +1721,7 @@
     if (!mapSt.tour) { m.fitBounds(KOREA_B, { paddingTopLeft: [8, 50], paddingBottomRight: [8, 96], animate: false }); return; }
     if (mapSt.play) {
       mapSt.play = false; all(); document.querySelector('.map-stage').scrollIntoView({ block: 'center', behavior: 'smooth' }); go(0);
-      mapPlay = setInterval(() => { if (mapSt.i >= ml.on.length - 1) mapStop(); else go(mapSt.i + 1); }, 3500);
+      play();
     } else { const x0 = ml.on[mapSt.i]; m.setView([x0.l.lat, x0.l.lng], x0.l.exact ? mapZ() : 9); }
   }
   // ---------- 지도 장소 한꺼번에 찾기 (관리자): 이 폰 브라우저로 OpenStreetMap을 검색해서, 맞는 후보를 누르면 바로 확정해요 ----------
@@ -1749,12 +1778,14 @@
     // OpenStreetMap 검색 규칙(1초에 한 번)에 맞춰 차례로 찾아요
     for (const el of items) { if (!document.body.contains(el)) return; if (el.classList.contains('pf-done')) continue; await search(el); await new Promise(r => setTimeout(r, 1100)); }
   }
-  function mapStop() { if (mapPlay) { clearInterval(mapPlay); mapPlay = null; } }
+  function mapStop() { if (mapPlay) { clearInterval(mapPlay); mapPlay = null; } mapPlayBtn(); }
+  function mapPlayBtn() { const b = document.getElementById('map-play'); if (b) b.textContent = mapPlay ? '⏸ 멈춤' : '▶ 재생'; }
   const ym = v => v ? `${v.slice(2, 4)}년 ${+v.slice(5, 7)}월` : '';
   function mapPeriod(ml) {
     const y = mapSt.from && mapSt.to && mapSt.from.slice(5) === '01' && mapSt.to.slice(5) === '12' && mapSt.from.slice(0, 4) === mapSt.to.slice(0, 4) ? mapSt.from.slice(0, 4) : '';
     const custom = (mapSt.from || mapSt.to) && !y;
     return `<div class="map-period">
+      ${mapFilters()}
       <div class="chips map-years"><button type="button" class="chip${!mapSt.from && !mapSt.to ? ' on' : ''}" data-year="">전체</button>${ml.years.map(v => `<button type="button" class="chip${y === v ? ' on' : ''}" data-year="${v}">${v}</button>`).join('')}<button type="button" class="chip${custom ? ' on' : ''}" id="map-range-btn">📅 ${custom ? `${ym(mapSt.from) || '처음'}~${ym(mapSt.to) || '지금'}` : '기간'}</button></div>
       <div class="map-range-in" id="map-range"${custom ? '' : ' hidden'}><input type="month" id="map-from" value="${esc(mapSt.from)}" aria-label="시작 달"><span>~</span><input type="month" id="map-to" value="${esc(mapSt.to)}" aria-label="끝 달"></div></div>`;
   }
