@@ -4006,8 +4006,9 @@
       ${e.place ? `<label class="add-f"><span>지금 장소</span><input type="text" value="${esc(e.place)}" disabled></label>` : ''}
       <form class="pin-find pl-find"><input type="search" class="pl-in" maxlength="80" placeholder="공연장 이름이나 주소로 찾기" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
       <div class="pin-res pl-res"></div>
+      <label class="add-f pl-nv"><span>또는 네이버 지도 링크</span><input type="url" class="pl-link" inputmode="url" placeholder="네이버 지도 앱 → 장소 → 공유 → 링크 복사" autocomplete="off"></label>
       <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}" disabled>보내기</button>
-      <p class="src-note pl-msg">찾은 곳 중에 맞는 곳을 골라 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '다른 두 분이 맞다고 하면 장소가 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
+      <p class="src-note pl-msg">찾은 곳 중에 맞는 곳을 고르거나, 네이버 지도에서 그 장소를 공유한 링크를 붙여 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '다른 두 분이 맞다고 하면 장소가 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
   // 장소 찾기: OpenStreetMap 검색 결과 중 하나를 고르면 이름·좌표를 같이 보내요
   document.addEventListener('submit', async ev => {
     const f = ev.target.closest('.pl-find');
@@ -4029,20 +4030,39 @@
       });
     } catch (err) { res.innerHTML = '<span class="src-note">지금은 찾기가 안 돼요. 잠시 뒤 다시 찾아 주세요.</span>'; }
   });
+  // 네이버 지도 링크: 붙여넣은 글에서 주소만 꺼내요 ('[네이버지도] 장소명 https://naver.me/…' 모양도 OK)
+  const NV_LINK = /https?:\/\/(?:naver\.me\/[\w-]+|(?:m\.)?map\.naver\.com\/[^\s"'<>]+|(?:m|pcmap)\.place\.naver\.com\/[^\s"'<>]+)/;
+  document.addEventListener('input', ev => {
+    const t = ev.target.closest && ev.target.closest('.pl-link');
+    if (!t) return;
+    const box = t.closest('.op-form'), sb = box.querySelector('.pl-send'), m = t.value.match(NV_LINK);
+    box.querySelectorAll('.pin-hit.on').forEach(o => o.classList.remove('on'));
+    delete sb.dataset.to; delete sb.dataset.c;
+    if (m) sb.dataset.link = m[0]; else delete sb.dataset.link;
+    sb.disabled = !m;
+    box.querySelector('.pl-msg').textContent = m ? '네이버 지도 링크예요. 보내면 15~30분쯤 뒤 장소와 지도 위치가 들어가요.' : t.value.trim() ? '네이버 지도 링크가 아니에요. 장소 화면의 공유 → 링크 복사로 받은 주소를 붙여 주세요.' : '';
+  });
+  document.addEventListener('click', ev => {
+    const h = ev.target.closest('.pl-res .pin-hit');
+    if (!h) return;
+    const box = h.closest('.op-form'), l = box.querySelector('.pl-link');
+    if (l) l.value = '';
+    delete box.querySelector('.pl-send').dataset.link;
+  }, true);
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.pl-send, .pl-ok');
     if (!b) return;
     const e = data.events.find(x => x.id === b.dataset.id);
     if (!e) return;
     const send = b.classList.contains('pl-send'), box = b.closest('.op-form');
-    const to = (b.dataset.to || '').replace(/\s+/g, ' ').trim();
-    if (!to) { if (send) box.querySelector('.pl-msg').textContent = '찾은 곳 중에 하나를 골라 주세요.'; return; }
-    if (send && to === e.place) { box.querySelector('.pl-msg').textContent = '지금 장소와 같아요.'; return; }
+    const to = (b.dataset.to || '').replace(/\s+/g, ' ').trim(), link = send ? b.dataset.link || '' : '';
+    if (!to && !link) { if (send) box.querySelector('.pl-msg').textContent = '찾은 곳 중에 하나를 고르거나 네이버 지도 링크를 붙여 주세요.'; return; }
+    if (send && to && to === e.place) { box.querySelector('.pl-msg').textContent = '지금 장소와 같아요.'; return; }
     b.disabled = true; b.textContent = '보내는 중…';
-    formPost(`종류: ${send ? '장소수정' : '장소확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${to}${send && b.dataset.c ? `\n좌표: ${b.dataset.c}` : ''}\n누가: ${myUid()}`)
+    formPost(`종류: ${send ? '장소수정' : '장소확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${to}${send && b.dataset.c ? `\n좌표: ${b.dataset.c}` : ''}${link ? `\n링크: ${link}` : ''}\n누가: ${myUid()}`)
       .then(() => {
-        slOkAdd(`pl:${e.id}:${to}`);
-        if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.pl-msg').textContent = `보냈어요: 📍 ${to}. 5~10분쯤 뒤 일정에 떠요.`; }
+        if (to) slOkAdd(`pl:${e.id}:${to}`);
+        if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.pl-msg').textContent = link ? '보냈어요! 15~30분쯤 뒤 장소와 지도 위치가 들어가요.' : `보냈어요: 📍 ${to}. 5~10분쯤 뒤 일정에 떠요.`; }
         else b.closest('.pl-state').outerHTML = plState({ ...e, placeWas: undefined, placeProps: (e.placeProps || []).filter(p => p.to === to) });
       })
       .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; });

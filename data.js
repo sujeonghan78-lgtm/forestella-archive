@@ -172,7 +172,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -191,8 +191,9 @@
       fetchText('data/x_extra.json').catch(() => ''),
       fetchText('data/extra_events.json').catch(() => ''),
       fetchText('data/member_career.json').catch(() => ''),
+      fetchText('data/naver_links.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -392,15 +393,21 @@
     // 있던 장소를 바꾸는 건 올린 사람 말고 두 명이 맞다고 하거나 관리자가 확정(서명된 숨김 줄, 번호 'pl'+일정·장소)하면 바뀌어요
     if (raw.reports) {
       const px = {}, okMark = window.SB_EV_HIDE || new Set();
+      // 네이버 지도 링크로 보낸 장소는 깃허브가 찾아 둔 이름·좌표(data/naver_links.json)로 채워요. 아직 못 찾았으면 기다려요
+      let nv = {};
+      try { nv = JSON.parse(raw.naver || '{}').links || {}; } catch (err) { /* 없어도 괜찮아요 */ }
       buildReports(toObjects(raw.reports), true).forEach(r => {
         if ((r.type !== '장소수정' && r.type !== '장소확인') || !r.by) return;
-        const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = line0(r, '후').slice(0, 80);
+        const link = r.type === '장소수정' ? line0(r, '링크') : '', nl = link && nv[link];
+        if (link && (!nl || nl.t !== 'place')) return;
+        const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = (line0(r, '후') || (nl ? nl.name : '')).slice(0, 80);
         if (!id || !to) return;
         const o = px[id] = px[id] || {}, p = o[to] = o[to] || { to, from: '', by: '', who: new Set(), at: 0 };
         if (r.type === '장소수정' && !p.by) {
           p.by = r.by; p.from = line0(r, '전'); p.at = tsMs(r.time);
           const m = line0(r, '좌표').match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
           if (m) p.loc = { lat: +m[1], lng: +m[2] };
+          if (nl) p.loc = { lat: nl.lat, lng: nl.lng };
         } else p.who.add(r.by);
       });
       events.forEach(e => {

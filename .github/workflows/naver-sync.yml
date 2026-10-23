@@ -1,0 +1,33 @@
+# 네이버 지도 링크 → 좌표: 15분마다 제보 탭의 네이버 지도 링크를 열어 data/naver_links.json에 넣어요
+name: naver-sync
+on:
+  schedule:
+    - cron: '3,18,33,48 * * * *'
+  workflow_dispatch:
+    inputs:
+      links:
+        description: '같이 열 네이버 지도 링크 (여러 개 가능)'
+        required: false
+permissions:
+  contents: write
+concurrency: naver-sync
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/naver_sync.mjs
+        env:
+          LINKS: ${{ github.event.inputs.links }}
+      - run: |
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/naver_links.json
+          git diff --cached --quiet && exit 0
+          git commit -m "네이버 지도 링크 좌표 찾기"
+          git pull --rebase -q origin main
+          git push
