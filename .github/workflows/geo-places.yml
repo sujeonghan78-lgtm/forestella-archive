@@ -1,0 +1,25 @@
+# 공연장 좌표 찾기 (OpenStreetMap). 손으로 돌리거나, geo 가지에 올리면 돌아요.
+name: geo-places
+on:
+  workflow_dispatch:
+  push:
+    branches: [geo]
+    paths: [tools/geo_places.py, .github/workflows/geo-places.yml]
+permissions:
+  contents: write
+concurrency: geo-places
+jobs:
+  geo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/geo_places.py
+      - run: |
+          git diff --quiet -- data/places.json 2>/dev/null && git ls-files --error-unmatch data/places.json >/dev/null 2>&1 && exit 0
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/places.json
+          git commit -m "공연장 좌표 자동 반영"
+          git pull --rebase -q origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
