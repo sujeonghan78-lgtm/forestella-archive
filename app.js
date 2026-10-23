@@ -1627,8 +1627,9 @@
     const dots = () => {
       const n = ml.on.length, i = mapSt.i;
       if (n <= 14) return `<div class="map-dots">${ml.on.map((x, k) => `<button type="button" class="map-dot${k === i ? ' on' : k < i ? ' past' : ''}" data-k="${k}" aria-label="${k + 1}번째"></button>`).join('')}</div>`;
-      return `<div class="map-track"><span style="width:${Math.round((i + 1) / n * 100)}%"></span></div>`;
+      return `<input type="range" class="map-seek" id="map-seek" min="0" max="${n - 1}" value="${Math.max(0, i)}" aria-label="발자국 고르기" style="--p:${Math.round(Math.max(0, i) / (n - 1) * 100)}%">`;
     };
+    let seeking = false;
     // 전체 지도: 지역별 횟수 한눈에, 아래엔 요약만
     const sum = () => {
       const cnt = new Map();
@@ -1646,7 +1647,16 @@
     };
     const nav = () => {
       if (!mapSt.tour) { sum(); return; }
-      const x = ml.on[mapSt.i], prev = ml.on[mapSt.i - 1], next = ml.on[mapSt.i + 1];
+      const x = ml.on[mapSt.i], navEl = document.getElementById('map-nav');
+      // 진행 줄을 끄는 중엔 글자만 바꿔요 (줄을 다시 그리면 손가락이 놓쳐요)
+      if (seeking && navEl.querySelector('.map-seek')) {
+        navEl.querySelector('.map-meta').textContent = `${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}`;
+        navEl.querySelector('.map-now-t').textContent = x.e.title;
+        navEl.querySelector('.map-place').textContent = x.l.place || (x.l.region ? x.l.region + ' 어딘가' : '');
+        navEl.querySelector('.map-seek').style.setProperty('--p', Math.round(mapSt.i / (ml.on.length - 1) * 100) + '%');
+        dur(); return;
+      }
+      const prev = ml.on[mapSt.i - 1], next = ml.on[mapSt.i + 1];
       const carEl = document.getElementById('map-car');
       carEl.innerHTML = car(x.e); carEl.scrollLeft = 0;
       document.getElementById('map-nav').innerHTML = `
@@ -1660,6 +1670,11 @@
         </div>
         <button type="button" class="map-arrow" id="map-next"${next ? '' : ' disabled'} aria-label="다음 발자국">›</button>`;
       dur();
+      const sk = document.getElementById('map-seek');
+      if (sk) {
+        sk.oninput = () => { mapStop(); seeking = true; go(+sk.value); };
+        sk.onchange = () => { seeking = false; nav(); };
+      }
       document.getElementById('map-prev').onclick = () => go(mapSt.i - 1);
       document.getElementById('map-next').onclick = () => go(mapSt.i + 1);
       document.querySelectorAll('.map-dot').forEach(d => d.onclick = () => go(+d.dataset.k));
@@ -1683,7 +1698,7 @@
       const ms = MAP_SPEEDS[mapSp()][1], far = mapPlay ? (ms < 1000 ? 7 : ms < 2000 ? 8.5 : 0) : 0, z = mapSt.uz || far || (x.l.exact ? mapZ() : 9);
       // 아래 안내판에 안 가리게 살짝 위쪽에 오도록
       const at = m.unproject(m.project([x.l.lat, x.l.lng], z).add([0, 0]), z);
-      moveAuto(() => mapPlay && ms < 1000 ? m.setView(at, z, { animate: true, pan: { duration: 0.3 } }) : m.flyTo(at, z, { duration: mapPlay && ms < 2000 ? 0.6 : 1.1 }));
+      moveAuto(() => seeking ? m.setView(at, z, { animate: false }) : mapPlay && ms < 1000 ? m.setView(at, z, { animate: true, pan: { duration: 0.3 } }) : m.flyTo(at, z, { duration: mapPlay && ms < 2000 ? 0.6 : 1.1 }));
       nav(); draw();
     };
     if (mapSt.tour) document.getElementById('map-here').onclick = () => { mapStop(); go(mapSt.i); };
