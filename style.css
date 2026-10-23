@@ -1330,3 +1330,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .drive-pick small { display: block; color: #8A9A90; font-size: 11.5px; }
 .drive-mini { display: block; width: 100%; margin: 6px 0 12px; padding: 9px 12px; border-radius: 12px; border: 1px dashed #A9D3B4; background: #F5FBF0; font: inherit; font-size: 13px; color: #2B5C3A; text-align: left; }
 .drive-hits { max-height: 240px; }
+.map-add { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; background: #FFF6EC; border: 1px solid #F5C9A0; }
+.map-add[hidden] { display: none; }
+.map-add-t { font-size: 13px; color: #8A3D0E; }
+.ma-add { align-self: flex-start; }

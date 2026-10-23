@@ -3412,7 +3412,7 @@
   document.addEventListener('click', async ev => {
     const d = ev.target.closest('[data-drive], .drive-miss, .drive-send, .drive-pick');
     if (!d) return;
-    const box = d.closest('.drive');
+    const box = d.closest('.drive, .map-add');
     if (d.dataset.drive === 'toggle') {
       const inn = box.querySelector('.drive-in'), op = inn.hidden;
       inn.hidden = !op; box.classList.toggle('open', op); d.setAttribute('aria-expanded', op); d.querySelector('.drive-tog').textContent = op ? '접기 ▴' : '펼치기 ▾';
@@ -3455,7 +3455,7 @@
   document.addEventListener('input', ev => {
     const t = ev.target.closest && ev.target.closest('.drive-ev');
     if (!t) return;
-    const h = t.closest('.drive').querySelector('.drive-hits'), q = t.value.trim();
+    const h = t.closest('.drive, .map-add').querySelector('.drive-hits'), q = t.value.trim();
     if (q.length < 2) { h.hidden = true; return; }
     const ms = q.split(/\s+/).map(matcher).filter(Boolean), txt = e => `${e.date} ${e.date.replace(/-/g, '.')} ${e.title} ${e.place || ''}`;
     // 띄어 쓴 낱말은 모두 들어 있어야 해요 (예: 레거시 서울)
@@ -4352,6 +4352,13 @@
         <div class="chips a-mem op-cats">${OP_CATS.map(x => `<button type="button" class="chip${x === (opQs().get('w') === 'map' ? '지도 링크' : '자유·응원') ? ' on' : ''}" data-c="${x}">${x}</button>`).join('')}</div>
         <input type="text" class="op-name" maxlength="20" placeholder="닉네임 (선택)">
         <textarea class="op-in" rows="${opQs().get('w') === 'map' ? 5 : 4}" maxlength="1000" placeholder="${opQs().get('w') === 'map' ? esc(OP_MAP_EX) : '의견을 적어 주세요'}"></textarea>
+        <div class="map-add"${opQs().get('w') === 'map' ? '' : ' hidden'}>
+          <b class="map-add-t">한 줄씩 추가하기</b>
+          <input type="url" class="ma-link" inputmode="url" placeholder="네이버 지도 링크" autocomplete="off">
+          <input type="search" class="drive-ev ma-ev" maxlength="120" placeholder="어떤 일정인지 검색 (선택 · 메모 줄에 들어가요)" autocomplete="off">
+          <div class="drive-list drive-hits" hidden></div>
+          <button type="button" class="chip ma-add" disabled>＋ 위에 추가</button>
+        </div>
         ${photoPick()}
         ${adminKeys().length ? `<label class="op-secret"><input type="checkbox" class="op-sec-in"${opQs().get('w') === 'map' ? ' checked' : ''}> 🔒 비밀글 <small>관리자만 볼 수 있어요</small></label>` : ''}
         <button type="button" class="bpill add-send op-send" disabled>보내기</button>
@@ -4398,7 +4405,23 @@
     };
     view.querySelector('.op-cats').addEventListener('click', ev => { const x = ev.target.closest('.chip'); if (!x) return; view.querySelectorAll('.op-cats .chip').forEach(y => y.classList.toggle('on', y === x)); t.placeholder = /정보 수정|오류 신고/.test(x.dataset.c) ? OP_FIX_EX : x.dataset.c === '지도 링크' ? OP_MAP_EX : '의견을 적어 주세요'; t.rows = /정보 수정|오류 신고|지도 링크/.test(x.dataset.c) ? 5 : 4;
       // 지도 링크는 개인 장소가 섞일 수 있어서 비밀글로 먼저 체크해 둬요 (끌 수 있어요)
-      const sc = view.querySelector('.op-sec-in'); if (sc) sc.checked = x.dataset.c === '지도 링크'; });
+      const sc = view.querySelector('.op-sec-in'); if (sc) sc.checked = x.dataset.c === '지도 링크';
+      const ma = view.querySelector('.map-add'); if (ma) ma.hidden = x.dataset.c !== '지도 링크'; });
+    // 지도 링크: 링크 한 줄 + 메모(일정) 한 줄씩 의견 칸에 쌓아요
+    const ma = view.querySelector('.map-add');
+    if (ma) {
+      const li = ma.querySelector('.ma-link'), ei = ma.querySelector('.ma-ev'), ab = ma.querySelector('.ma-add');
+      const ok = () => { ab.disabled = !DRIVE_LINK.test(li.value); DRIVE_LINK.lastIndex = 0; };
+      li.addEventListener('input', ok);
+      ab.onclick = () => {
+        const link = (li.value.match(DRIVE_LINK) || [])[0];
+        if (!link) return;
+        const pair = link + (ei.value.trim() ? '\n' + ei.value.trim() : '');
+        t.value = (t.value.trim() ? t.value.trim() + '\n\n' : '') + pair;
+        t.dispatchEvent(new Event('input', { bubbles: true }));
+        li.value = ''; ei.value = ''; ma.querySelector('.drive-hits').hidden = true; ok(); li.focus();
+      };
+    }
     // 관리자: 처리 전 '지도 링크' 의견(비밀글은 푼 글)을 한 번에 복사 → Claude에게 붙여 주면 한꺼번에 넣어요
     const ml = view.querySelector('.op-maplinks');
     if (ml) ml.onclick = async () => {
