@@ -2323,7 +2323,7 @@
   // 카드 슬롯: 지금 꾸민 카드(글·색·틀·사진·스티커)를 3칸까지 이 폰에 저장해요. 입덕일은 슬롯과 상관없이 하나예요
   const SLOT_KEY = 'sb-card-slots';
   const slotsRead = () => { const a = boxRead(SLOT_KEY); return Array.isArray(a) ? [0, 1, 2].map(i => a[i] || null) : [null, null, null]; };
-  let slotPick = -1;
+  let slotPick = -1, slotOpen = false;
   function slotBar() {
     const sl = slotsRead();
     const lab = (x, i) => x ? `<b>슬롯 ${i + 1}</b><span>${esc(CARD_FRAMES[x.card.frame] || '기본')}</span><small>${esc(x.at)}</small>` : `<b>슬롯 ${i + 1}</b><span>비어 있음</span><small>&nbsp;</small>`;
@@ -2331,16 +2331,18 @@
     const acts = slotPick < 0 ? '' : x
       ? `<button type="button" class="chip on" data-slot-act="load">불러오기</button><button type="button" class="chip" data-slot-act="save">지금 카드로 바꾸기</button><button type="button" class="link-btn" data-slot-act="del">비우기</button>`
       : `<button type="button" class="chip on" data-slot-act="save">지금 카드를 여기에 저장</button>`;
-    return `<div class="cf-slots" id="cf-slots">
-      <span class="cf-l">내 카드 슬롯 <small>꾸민 카드를 3개까지 저장해 두고 불러와요</small></span>
-      <div class="slot-row">${sl.map((x, i) => `<button type="button" class="slot${x ? ' full' : ''}${i === slotPick ? ' on' : ''}" data-slot="${i}" aria-pressed="${i === slotPick}">${lab(x, i)}</button>`).join('')}</div>
-      ${acts ? `<div class="slot-acts">${acts}</div>` : ''}
+    const n = sl.filter(Boolean).length;
+    return `<div class="cf-slots${slotOpen ? ' open' : ''}" id="cf-slots">
+      <div class="slot-top"><button type="button" class="chip slot-toggle" aria-expanded="${slotOpen}">💾 카드 슬롯 ${n}/3 ${slotOpen ? '▴' : '▾'}</button>${help('지금 숲별 카드를 저장해 둘 수 있어요. 3개까지 저장해 두고 언제든 불러와요.')}</div>
+      ${slotOpen ? `<div class="slot-row">${sl.map((x, i) => `<button type="button" class="slot${x ? ' full' : ''}${i === slotPick ? ' on' : ''}" data-slot="${i}" aria-pressed="${i === slotPick}">${lab(x, i)}</button>`).join('')}</div>
+      ${acts ? `<div class="slot-acts">${acts}</div>` : ''}` : ''}
     </div>`;
   }
   function bindSlots() {
     const box = document.getElementById('cf-slots');
     if (!box) return;
     box.onclick = ev => {
+      if (ev.target.closest('.slot-toggle')) { slotOpen = !slotOpen; slotPick = -1; box.outerHTML = slotBar(); bindSlots(); return; }
       const b = ev.target.closest('[data-slot]'), a = ev.target.closest('[data-slot-act]');
       if (b) { slotPick = slotPick === +b.dataset.slot ? -1 : +b.dataset.slot; box.outerHTML = slotBar(); bindSlots(); return; }
       if (!a || slotPick < 0) return;
