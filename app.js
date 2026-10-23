@@ -1535,7 +1535,7 @@
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
-      ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개 (해외 · 장소 모름)</summary>${ml.off.map(x => `<a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>`).join('')}</details>` : ''}
+      ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개 (해외 · 장소 모름)</summary>${ml.off.map(x => `<a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>`).join('')}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
       : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
     const reset = () => { mapSt.i = -1; mapSt.tour = false; mapSt.uz = 0; mapStop(); bindMap(); };
@@ -1603,7 +1603,8 @@
     m.on('zoomend', () => { if (!auto && mapSt.tour) mapSt.uz = m.getZoom(); });
     const showVenue = (items, name) => {
       const box = document.getElementById('map-venue');
-      box.innerHTML = `<section class="map-venue"><div class="map-venue-h"><b>${esc(name || '장소')}</b><span>${items.length}번</span></div>${items.slice().reverse().map(x => `<button type="button" class="box-ev map-go" data-id="${esc(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></button>`).join('')}</section>`;
+      box.innerHTML = `<section class="map-venue"><div class="map-venue-h"><b>${esc(name || '장소')}</b><span>${items.length}번 <button type="button" class="link-btn map-venue-x">접기 ✕</button></span></div>${items.slice().reverse().map(x => `<button type="button" class="box-ev map-go" data-id="${esc(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></button>`).join('')}</section>`;
+      box.querySelector('.map-venue-x').onclick = () => { box.innerHTML = ''; };
       box.querySelectorAll('.map-go').forEach(b => b.onclick = () => { go(ml.on.findIndex(x => x.e.id === b.dataset.id)); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     };
     const car = e => {
@@ -1752,7 +1753,7 @@
         if (c) { put(L.latLng(+c[1], +c[2])); m.flyTo([+c[1], +c[2]], 16); res.innerHTML = ''; return; }
         res.innerHTML = '<span class="src-note">찾는 중…</span>';
         try {
-          const r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 5, 'accept-language': 'ko' }))).json();
+          const r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 10, 'accept-language': 'ko' }))).json();
           res.innerHTML = r.length ? r.map((h, i) => `<button type="button" class="pin-hit" data-i="${i}"><b>${esc(h.name || h.display_name.split(',')[0])}</b><small>${esc(h.display_name.split(',').slice(1, 4).join(','))}</small></button>`).join('') : '<span class="src-note">못 찾았어요. 건물 이름이나 도로명 주소로 다시 찾아 주세요.</span>';
           res.querySelectorAll('.pin-hit').forEach(b => b.onclick = () => { const h = r[+b.dataset.i]; put(L.latLng(+h.lat, +h.lon)); m.flyTo([+h.lat, +h.lon], 16); res.querySelectorAll('.pin-hit').forEach(o => o.classList.toggle('on', o === b)); });
         } catch (err) { res.innerHTML = '<span class="src-note">지금은 찾기가 안 돼요. 지도를 직접 눌러 주세요.</span>'; }
@@ -1807,7 +1808,7 @@
       const p = todo[+el.dataset.i], q = el.querySelector('input').value.trim(), res = el.querySelector('.pin-res');
       res.innerHTML = '<span class="src-note">찾는 중…</span>';
       let r = [];
-      try { r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 4, 'accept-language': 'ko' }))).json(); } catch (err) { res.innerHTML = '<span class="src-note">검색이 안 됐어요. 찾기를 다시 눌러 주세요.</span>'; return; }
+      try { r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 8, 'accept-language': 'ko' }))).json(); } catch (err) { res.innerHTML = '<span class="src-note">검색이 안 됐어요. 찾기를 다시 눌러 주세요.</span>'; return; }
       res.innerHTML = r.length ? r.map((h, j) => `<button type="button" class="pin-hit" data-j="${j}"><b>${esc(h.name || h.display_name.split(',')[0])}</b><small>${esc(h.display_name.split(',').slice(1, 5).join(','))}</small></button>`).join('') + `<a class="link-btn" href="https://www.openstreetmap.org/search?query=${encodeURIComponent(q)}" target="_blank" rel="noopener">지도에서 보기</a>`
         : '<span class="src-note">못 찾았어요. 건물 이름이나 도로명 주소로 고쳐서 다시 찾아 주세요.</span>';
       res.querySelectorAll('.pin-hit').forEach(b => b.onclick = async () => {
