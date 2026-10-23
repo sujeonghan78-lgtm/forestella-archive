@@ -601,10 +601,14 @@
       if (!v.tour && (behind || stage)) {
         const yymmdd = (t.match(/\b(\d{2})(\d{2})(\d{2})\b/) || []);
         const vw = words(t);
+        // 제목 따옴표 속 곡('Abracadabra')이 있는데, 곡이 정해진 일정의 곡 목록에 없으면 그 일정엔 안 붙여요
+        const qs = (t.match(/['‘"“]([^'’"”]{2,40})['’"”]/) || [])[1];
+        const qk = qs && songKey(qs);
         let best = null, score = 0;
         const cands = [];
         evWords.forEach(({ e, w }) => {
           if (LINK_SKIP.has(`${v.id}>ev:${e.id}`)) return;
+          if (qk && e.songKeys.length && songs.has(qk) && !e.songKeys.includes(qk)) return;
           const gap = days(v.date, e.date);
           if (gap < 0 || gap > (behind ? 400 : 60)) return;
           let sc = vw.filter(x => w.has(x)).reduce((n, x) => n + x.length, 0);
