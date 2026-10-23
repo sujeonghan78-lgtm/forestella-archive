@@ -1523,14 +1523,15 @@
       <div class="chips map-modes"><button type="button" class="chip${mapSt.mode === 'w' ? ' on' : ''}" data-mode="w">👣 내 발자국 ${ml.mine}</button><button type="button" class="chip${mapSt.mode === 'all' ? ' on' : ''}" data-mode="all">포레스텔라 공연 전체</button></div>
       ${mapPeriod(ml)}
       ${ml.on.length ? `
-      <div class="map-car" id="map-car"${mapSt.tour ? '' : ' hidden'}></div>
+      ${mapSt.tour ? `<button type="button" class="link-btn map-car-t" id="map-car-t">${boxRead(MAP_H + '-car') ? '📷 사진 펼치기 ▾' : '📷 사진 접기 ▴'}</button>` : ''}
+      <div class="map-car" id="map-car"${mapSt.tour && !boxRead(MAP_H + '-car') ? '' : ' hidden'}></div>
       <div class="map-stage${mapSt.tour ? '' : ' map-ov'}">
         <div id="map"${(() => { const h = boxRead(mapSt.tour ? MAP_H : MAP_H + '-ov'); return h >= 160 && h <= 900 ? ` style="height:${h}px"` : ''; })()}></div>
         <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 따라걷기<small>가만히 두면 저절로 넘어가요</small></button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
         <div class="map-grip" id="map-grip" role="separator" aria-label="지도 높이 조절"><span></span></div>
       </div>
       <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
-      ${mapSt.tour ? `<div class="map-playbar"><button type="button" class="chip on" id="map-play">▶ 재생</button><span class="map-sp-l">속도</span>${MAP_SPEEDS.map(([l], k) => `<button type="button" class="chip${k === mapSp() ? ' on' : ''}" data-sp="${k}">${l}</button>`).join('')}</div>` : ''}
+      ${mapSt.tour ? `<div class="map-playbar"><button type="button" class="chip on" id="map-play">▶ 재생</button><span class="map-sp-l">속도</span>${MAP_SPEEDS.map(([l], k) => `<button type="button" class="chip${k === mapSp() ? ' on' : ''}" data-sp="${k}">${l}</button>`).join('')}</div><p class="src-note map-dur" id="map-dur"></p>` : ''}
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
@@ -1583,6 +1584,8 @@
     };
     m.on('zoomend', draw);
     // 지도 아래 손잡이를 끌어서 높이 바꾸기 (이 폰에 기억, 전체 지도·따라걷기 따로)
+    const ct = document.getElementById('map-car-t');
+    if (ct) ct.onclick = () => { const c = document.getElementById('map-car'), off = !c.hidden; c.hidden = off; boxWrite(MAP_H + '-car', off ? 1 : 0); ct.textContent = off ? '📷 사진 펼치기 ▾' : '📷 사진 접기 ▴'; };
     const grip = document.getElementById('map-grip'), mapEl = document.getElementById('map');
     grip.onpointerdown = ev => {
       ev.preventDefault(); grip.setPointerCapture(ev.pointerId);
@@ -1631,8 +1634,16 @@
       const venues = new Set(ml.on.map(x => x.l.exact ? x.l.lat.toFixed(3) + x.l.lng.toFixed(3) : x.l.region)).size;
       document.getElementById('map-nav').innerHTML = `<div class="map-info"><span class="map-meta">${mapSt.mode === 'w' ? '👣 내 발자국' : '포레스텔라 공연'} ${ml.on.length}개 · 장소 ${venues}곳 · ${cnt.size}개 지역</span><span class="map-now-t">${top ? `제일 많이 간 곳은 ${esc(top[0])} ${top[1]}번` : ''}</span><span class="map-place">지역 숫자를 누르면 다녀간 일정이 보여요</span></div>`;
     };
+    // 처음부터 끝까지 걸리는 시간 (지금 속도 기준)
+    const dur = () => {
+      const el = document.getElementById('map-dur'); if (!el) return;
+      const ms = MAP_SPEEDS[mapSp()][1], t = s => s >= 60 ? `${Math.floor(s / 60)}분${s % 60 ? ` ${s % 60}초` : ''}` : `${s}초`;
+      const all = Math.round(ml.on.length * ms / 1000), left = Math.round((ml.on.length - 1 - Math.max(0, mapSt.i)) * ms / 1000);
+      el.textContent = `${ml.on.length}곳 처음부터 끝까지 ${t(all)}${left > 0 && left < all ? ` · 남은 시간 ${t(left)}` : ''}`;
+    };
     const nav = () => {
       if (!mapSt.tour) { sum(); return; }
+      dur();
       const x = ml.on[mapSt.i], prev = ml.on[mapSt.i - 1], next = ml.on[mapSt.i + 1];
       const carEl = document.getElementById('map-car');
       carEl.innerHTML = car(x.e); carEl.scrollLeft = 0;
@@ -1689,6 +1700,7 @@
     root.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
       boxWrite(MAP_SP, +b.dataset.sp);
       root.querySelectorAll('[data-sp]').forEach(o => o.classList.toggle('on', o === b));
+      dur();
       if (mapPlay) play();
     });
     // 숲길 따라걷기: 첫 발자국부터 3.5초마다 다음으로 (지도·버튼을 만지면 멈춰요)

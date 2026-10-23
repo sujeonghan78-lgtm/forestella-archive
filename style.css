@@ -1133,6 +1133,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-playbar{display:flex;align-items:center;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}
 .map-playbar .chip{flex:none;height:30px;padding:0 10px;font-size:12px}
 .map-sp-l{flex:none;margin-left:2px;font-size:12px;color:var(--muted)}
+.map-dur{margin:6px 0 0}
+.map-car-t{display:block;margin:0 0 6px auto;font-size:12px}
 .map-range{font-size:13px;color:var(--muted)}
 .map-range summary{cursor:pointer}
 .map-range-in{display:flex;align-items:center;gap:8px}
