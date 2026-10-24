@@ -66,7 +66,7 @@
   },
   "https://naver.me/xzHJNk97": {
    "t": "fail",
-   "n": 1,
+   "n": 2,
    "why": "모르는 링크 https://m.map.naver.com/appLink.naver?app=Y&pinType=site&lng=126.76578&zo"
   },
   "https://naver.me/x52bLo5l": {
@@ -131,6 +131,15 @@
    "lat": 37.556978,
    "lng": 126.848036,
    "at": "2026-10-23"
+  },
+  "https://naver.me/GCJGuyTH": {
+   "t": "place",
+   "id": "11582966",
+   "name": "상암동MBC신사옥",
+   "addr": "서울 마포구 성암로 267",
+   "lat": 37.58105,
+   "lng": 126.890497,
+   "at": "2026-10-24"
   }
  }
 }
