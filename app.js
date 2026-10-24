@@ -2819,7 +2819,8 @@
 
   // 같은 공연이 이틀 이상이면 직관은 날짜마다 따로 눌러요
   const wentBtns = e => {
-    const near = data.events.filter(x => x.title === e.title && samePlace(x.place, e.place) && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
+    const tk = t => (t || '').replace(/[\s'"‘’“”<>《》「」()]/g, '').toLowerCase();
+    const near = data.events.filter(x => tk(x.title) === tk(e.title) && samePlace(x.place, e.place) && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
     // 방송은 현장에서 본 '직관'과 방송으로 본 '시청'을 따로 눌러요
     if (/TV|라디오/.test(e.category)) return boxBtn('w', e.id, 'bpill') + boxBtn('v', e.id, 'bpill');
     // 기간 공연(뮤지컬)은 아래 '캐스팅 회차'에서 본 회차를 골라요
