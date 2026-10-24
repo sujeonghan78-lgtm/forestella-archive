@@ -208,7 +208,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -568,12 +568,13 @@
       const lyr = new Map(), lyDel = new Set();
       buildReports(toObjects(raw.reports), true).forEach(r => {
         if (r.type === '가사삭제' && r.by) lyDel.add(line0(r, '번호') + '|' + r.by);
-        if (r.type !== '가사' || !r.by) return;
-        const key = line0(r, '곡키'), text = (r.message || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+        // 떼창 구간(종류: 떼창)도 같은 방식이에요 (번호 앞에 '떼창'이 붙어요)
+        if ((r.type !== '가사' && r.type !== '떼창') || !r.by) return;
+        const ch = r.type === '떼창', key = line0(r, '곡키'), text = (r.message || '').replace(/[ \t]+/g, ' ').trim().slice(0, ch ? 300 : 120);
         if (!key || !text) return;
-        const id = slVer([key, text.toLowerCase()]);
-        if (!lyr.has(id)) lyr.set(id, { id, key, text, by: new Map(), at: tsMs(r.time) });
-        lyr.get(id).by.set(r.by, slVer([r.by, key, text.toLowerCase()]));
+        const low = text.replace(/\s+/g, ' ').toLowerCase(), id = slVer(ch ? ['떼창', key, low] : [key, low]);
+        if (!lyr.has(id)) lyr.set(id, { id, key, text, kind: r.type, by: new Map(), at: tsMs(r.time) });
+        lyr.get(id).by.set(r.by, slVer(ch ? [r.by, '떼창', key, low] : [r.by, key, low]));
       });
       lyr.forEach(l => { l.by.forEach((mine, by) => { if (lyDel.has(mine + '|' + by)) l.by.delete(by); }); });
       // 곡 언어 고치기 (종류: 언어수정 곡키/언어/누가): 같은 언어를 3명(올린 사람+2명) 보내면 바뀌어요
@@ -589,7 +590,7 @@
       buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type === '하트' && r.by) { const at = tsMs(r.time); if (!hl.has(r.by) || hl.get(r.by).at <= at) hl.set(r.by, { at, s: line0(r, '하트곡'), e: line0(r, '하트일정') }); } });
       hl.forEach((h, by) => ['s', 'e'].forEach(k => new Set(h[k].split('|').filter(Boolean)).forEach(id => { heartsAll[k][id] = (heartsAll[k][id] || 0) + 1; })));
       heartsAll.mine = hl.has(window.SB_UID) ? { s: hl.get(window.SB_UID).s.split('|'), e: hl.get(window.SB_UID).e.split('|') } : null;
-      lyricsAll = [...lyr.values()].filter(l => l.by.size && !gone.has('ly' + l.id)).map(l => ({ id: l.id, key: l.key, text: l.text, n: l.by.size, who: [...l.by.keys()], at: l.at }));
+      lyricsAll = [...lyr.values()].filter(l => l.by.size && !gone.has('ly' + l.id)).map(l => ({ id: l.id, key: l.key, kind: l.kind, text: l.text, n: l.by.size, who: [...l.by.keys()], at: l.at }));
       // 날짜만 있는 회차는 같은 날 시간 있는 회차가 들어오면 빼요 (겹쳐 보이지 않게)
       events.forEach(e => { if (e.casts) e.casts = e.casts.filter(c => c.t || !e.casts.some(x => x !== c && x.d === c.d && x.t)); });
       events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));

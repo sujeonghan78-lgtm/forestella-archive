@@ -1427,3 +1427,5 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .lang-fix[open] { flex-basis: 100%; }
 .lang-fix .chips { margin-top: 6px; }
 .lg-new { margin: 8px 0; }
+.ch-t { font-size: 14px; line-height: 1.5; }
+.ch-tag { background: #FFF1DC; color: #A35A12; }

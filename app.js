@@ -964,7 +964,7 @@
   // 곡 아카이브 필터·정렬은 주소에 들어가요: #/songs?c=분류&m=멤버&y=연도&my=내 곡&s=정렬
   let songBack = '#/songs';
   const SONG_SORTS = [['name', '가나다순'], ['many', '많이 부른 순'], ['first', '처음 부른 순'], ['recent', '최근 부른 순'], ['heart', '하트 많은 순']];
-  const SONG_CATS = { video: '영상 있음', album: '음반 수록곡', concert: '콘서트에서 부른 곡', title: '타이틀곡' };
+  const SONG_CATS = { video: '영상 있음', album: '음반 수록곡', concert: '콘서트에서 부른 곡', title: '타이틀곡', chant: '📣 떼창 구간 있음', nochant: '떼창 구간 없음' };
   const SONG_MY = { heart: '♥ 하트', fav: '💚 최애곡', wish: '🙏 소취곡', debut: '🌱 입덕곡', heard: '🎫 직관에서 들은 곡' };
   // 마지막으로 부른 날: 확인된 무대·콘서트 셋리 중 가장 늦은 날 (오늘 뒤 날짜는 빼요)
   const songLast = so => {
@@ -1054,7 +1054,7 @@
   }
   let songHeard = null;
   function songPass(so, st) {
-    const cat = x => x === 'video' ? so.events.length || (so.official || []).length : x === 'album' ? so.albums.length : x === 'concert' ? so.tours.length : so.titleOf.length;
+    const cat = x => x === 'chant' ? chantOf(so).length : x === 'nochant' ? !chantOf(so).length : x === 'video' ? so.events.length || (so.official || []).length : x === 'album' ? so.albums.length : x === 'concert' ? so.tours.length : so.titleOf.length;
     const my = x => x === 'heart' ? boxHas('s', so.key) : x === 'heard' ? songHeard.has(so.key) : pickHas(x, so);
     return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.l.length || st.l.some(l => (so.langs || []).includes(l))) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
   }
@@ -1089,7 +1089,7 @@
         ${list.map(so => `<div class="song-row" data-n="${esc(norm(songText(so) + ' ' + (so.albums[0] ? so.albums[0].name : '')))}" data-c="${esc(chosung(songText(so)))}">
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
-            <span class="song-name"><span class="song-t">${esc(so.name)}${marks(so) ? ` <span class="song-marks">${marks(so)}</span>` : ''}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}</span><small>${songLine(so)}</small></span>
+            <span class="song-name"><span class="song-t">${esc(so.name)}${marks(so) ? ` <span class="song-marks">${marks(so)}</span>` : ''}${chantOf(so).length ? ' <span class="solo-tag ch-tag">📣 떼창</span>' : ''}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}</span><small>${songLine(so)}</small></span>
             ${side(so) ? `<span class="song-first">${side(so)}</span>` : ''}
           </a>
           <span class="song-acts"><button type="button" class="song-hb${boxHas('s', so.key) ? ' on' : ''}" data-key="${esc(so.key)}" aria-label="이 곡 하트" aria-pressed="${boxHas('s', so.key)}">${boxHas('s', so.key) ? '♥' : '♡'}${heartN('s', so.key) >= 3 ? `<small>${heartN('s', so.key)}</small>` : ''}</button><button type="button" class="song-more" data-key="${esc(so.key)}" aria-label="최애곡·소취곡·입덕곡 고르기">⋯</button></span>
@@ -1183,6 +1183,7 @@
         </div>` : ''}
         ${langBox(so)}
         ${songPickRow(so)}
+        ${chantBox(so)}
         ${lyricBox(so)}
         ${songMemos(so)}
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
@@ -1279,7 +1280,7 @@
   const lyClean = t => t.replace(/\s+/g, ' ').trim().slice(0, 120);
   function lyricBox(so) {
     const mine = lyMine()[so.key] || [], uid = myUid();
-    const shared = (data.lyrics || []).filter(l => l.key === so.key).sort((a, b) => b.n - a.n || b.at - a.at);
+    const shared = (data.lyrics || []).filter(l => l.key === so.key && l.kind !== '떼창').sort((a, b) => b.n - a.n || b.at - a.at);
     const sentLocal = boxRead('sb-ly-sent') || [];
     const row = l => {
       const me = l.who.includes(uid) || sentLocal.includes(l.id);
@@ -1293,7 +1294,15 @@
       <div class="op-form ly-form"><textarea class="op-in ly-in" rows="2" maxlength="120" placeholder="좋아하는 가사 한두 줄"></textarea>
       <label class="ly-sh"><input type="checkbox" class="ly-share"> 다른 팬과 공유하기</label>
       <button type="button" class="bpill add-send ly-save" data-key="${esc(so.key)}">저장</button>
-      <p class="src-note">저작권 때문에 한두 줄만 적어 주세요. 공유한 가사는 5~10분쯤 뒤 모두에게 보여요.</p></div></details>`;
+      <p class="src-note">저작권 때문에 한두 줄만 적어 주세요. 공유한 가사는 5~10분쯤 뒤 모두에게 보여요.</p></div>
+      ${lyricLinks(so)}</details>`;
+  }
+  // 가사 찾아보기 바로가기 (음원 사이트 검색 → 곡 화면의 가사)
+  function lyricLinks(so) {
+    const artist = (so.albums[0] && so.albums[0].member) || '포레스텔라', name = (so.match || so.name).replace(/\s*\([^)]*\)\s*$/, '');
+    const q = encodeURIComponent(artist + ' ' + name);
+    const sites = [['멜론', 'https://www.melon.com/search/lyric/index.htm?q=' + encodeURIComponent(name)], ['지니', 'https://www.genie.co.kr/search/searchLyrics?query=' + q], ['벅스', 'https://music.bugs.co.kr/search/lyrics?q=' + q], ['구글', 'https://www.google.com/search?q=' + q + encodeURIComponent(' 가사')]];
+    return `<p class="src-note">가사 찾아보기</p><div class="chips wrap">${sites.map(([n, u]) => `<a class="chip" href="${u}" target="_blank" rel="noopener">${n} ↗</a>`).join('')}</div>`;
   }
   const lyRedraw = so => { const d = document.querySelector('.ly-box'); if (d) { d.outerHTML = lyricBox(so); document.querySelector('.ly-box').open = true; } };
   const lySend = (so, t) => {
@@ -1327,6 +1336,50 @@
       toast(m.sh ? '지웠어요. 공유한 가사도 5~10분쯤 뒤 빠져요.' : '지웠어요.');
       lyRedraw(so);
     }
+  });
+  // 떼창 구간: 팬이 적어서 바로 모두와 공유해요 (종류: 떼창). 같은 글은 ♥로 모이고, 올린 사람은 지울 수 있어요
+  const CH_SENT = 'sb-ch-sent';
+  const chantOf = so => (data.lyrics || []).filter(l => l.key === so.key && l.kind === '떼창');
+  const chClean = t => t.replace(/\s+/g, ' ').trim().slice(0, 300);
+  function chantBox(so) {
+    const uid = myUid(), sent = boxRead(CH_SENT) || [];
+    const ids = new Set(sent.map(x => x.id)), list = chantOf(so).sort((a, b) => b.n - a.n || a.at - b.at);
+    // 방금 보낸 글은 반영 전에도 이 폰엔 보여요
+    sent.filter(x => x.key === so.key && !list.some(l => l.id === x.id) && !x.del).forEach(x => list.push({ id: x.id, text: x.t, n: 1, who: [uid], at: x.at, wait: true }));
+    const row = l => {
+      const me = l.who.includes(uid) || ids.has(l.id);
+      return `<div class="ly-line"><span class="ch-t">${esc(l.text)}${l.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill ch-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''} aria-label="나도 이렇게 불러요">♥ ${l.n + (ids.has(l.id) && !l.who.includes(uid) && !l.wait ? 1 : 0)}</button>${me ? `<button type="button" class="link-btn ch-del" data-key="${esc(so.key)}" data-t="${esc(l.text)}" aria-label="지우기">×</button>` : ''}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
+    };
+    return `<details class="song-memo ch-box"${list.length ? ' open' : ''}><summary>📣 떼창 구간${list.length ? ` ${list.length}` : ''}</summary>
+      ${list.map(row).join('')}
+      <div class="op-form ly-form"><textarea class="op-in ch-in" rows="2" maxlength="300" placeholder="예: 후렴 끝 '…' 부분 다 같이 / 2절 뒤 '오~' 따라 부르기"></textarea>
+      <button type="button" class="bpill add-send ch-send" data-key="${esc(so.key)}">공유하기</button>
+      <p class="src-note">콘서트에서 같이 부르는 곳을 적어 주세요. 같은 내용이면 ♥를 눌러 주세요. 가사는 짧게만 적어 주세요.</p></div></details>`;
+  }
+  const chRedraw = so => { const d = document.querySelector('.ch-box'); if (d) { d.outerHTML = chantBox(so); document.querySelector('.ch-box').open = true; } };
+  const chId = (key, t) => window.DATA.slVer(['떼창', key, t.replace(/\s+/g, ' ').toLowerCase()]);
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.ch-send, .ch-up, .ch-del');
+    if (!b) return;
+    const so = data.songs.get(b.dataset.key);
+    if (!so) return;
+    const by = myUid(), sent = boxRead(CH_SENT) || [];
+    if (b.matches('.ch-del')) {
+      const t = b.dataset.t;
+      formPost(`종류: 가사삭제\n번호: ${window.DATA.slVer([by, '떼창', so.key, t.replace(/\s+/g, ' ').toLowerCase()])}\n누가: ${by}`).catch(() => {});
+      boxWrite(CH_SENT, sent.map(x => x.id === chId(so.key, t) ? { ...x, del: true } : x));
+      toast('지웠어요. 5~10분쯤 뒤 모두에게서 빠져요.');
+      const row = b.closest('.ly-line'); if (row) row.remove();
+      return;
+    }
+    const t = b.matches('.ch-up') ? b.dataset.t : chClean(b.closest('.ly-form').querySelector('.ch-in').value);
+    if (!t) return;
+    b.disabled = true;
+    formPost(`종류: 떼창\n곡: ${so.name}\n곡키: ${so.key}\n누가: ${by}\n내용: ${t}`).then(() => {
+      boxWrite(CH_SENT, [...sent.filter(x => x.id !== chId(so.key, t)), { id: chId(so.key, t), key: so.key, t, at: Date.now() }].slice(-200));
+      toast(b.matches('.ch-up') ? '♥ 눌렀어요.' : '공유했어요. 5~10분쯤 뒤 모두에게 보여요.');
+      chRedraw(so);
+    }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
   });
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
   function songMemos(so) {
