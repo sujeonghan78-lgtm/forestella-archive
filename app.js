@@ -4094,7 +4094,14 @@
       <label class="add-f"><span>맞는 날짜</span><input type="date" class="dt-in" value="${esc(e.date)}"></label>
       <button type="button" class="bpill add-send dt-send" data-id="${esc(e.id)}">보내기</button>
       <p class="src-note dt-msg">다른 두 분이 맞다고 하면 날짜가 바뀌어요. 그 전엔 원래 날짜 옆에 같이 보여요.</p></div></details>`;
-  const formPost = text => { const f = window.CONFIG.form; return fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ [f.fields.content]: text }) }); };
+  // 폼 보내기: fetch가 막히면(일부 브라우저·광고 차단) sendBeacon으로 한 번 더 보내요
+  const formPost = text => {
+    const f = window.CONFIG.form, url = f.url.replace(/viewform.*$/, 'formResponse'), body = () => new URLSearchParams({ [f.fields.content]: text });
+    return fetch(url, { method: 'POST', mode: 'no-cors', body: body() }).catch(err => {
+      if (navigator.sendBeacon && navigator.sendBeacon(url, body())) return null;
+      throw err;
+    });
+  };
   const slOkAdd = k => { try { const a = JSON.parse(localStorage.getItem(SL_OK) || '[]'); a.push(k); localStorage.setItem(SL_OK, JSON.stringify(a.slice(-300))); } catch (err) { /* 괜찮아요 */ } };
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.dt-send, .dt-ok');
@@ -4112,7 +4119,7 @@
         if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.dt-msg').textContent = `보냈어요: ${md2(e.date)} → ${md2(to)}. 5~10분쯤 뒤 일정에 같이 떠요.`; }
         else b.closest('.dt-state').outerHTML = dtState({ ...e, dateWas: '', dateProps: (e.dateProps || []).filter(p => p.to === to) });
       })
-      .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; });
+      .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; if (send) box.querySelector('.dt-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하거나, 광고 차단·보안 기능을 잠깐 끄고 다시 보내 주세요.'; });
   });
   // ---------- 장소 고치기 ----------
   // 장소가 비어 있으면 보낸 장소가 바로 들어가고(확인 n/2), 있던 장소를 바꾸는 건 다른 두 분이 맞다고 하면 바뀌어요
