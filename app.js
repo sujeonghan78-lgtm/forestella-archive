@@ -1520,8 +1520,8 @@
   const MAP_OFF_PL = true;
   function offList(off, rough = []) {
     const abroad = off.filter(x => x.l.region === '해외'), priv = off.filter(x => x.l.region === PLACE_PRIV), none = off.filter(x => x.l.region !== '해외' && x.l.region !== PLACE_PRIV);
-    const row = (x, pl, pv) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<span class="map-off-act"><a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a>${pv ? `<button type="button" class="chip map-off-pv${sendQHas('pv:' + x.e.id) ? ' on' : ''}" data-id="${esc(x.e.id)}">${sendQHas('pv:' + x.e.id) ? '🔒 담았어요' : '🔒 비공개'}</button>` : ''}</span>` : ''}</div>`;
-    const how = MAP_OFF_PL ? `<div class="map-off-how"><p><b>하나씩 찾기</b> · 아래 줄마다 📍 장소 알려주기를 눌러 그 일정 장소를 골라요</p><p><b>한 번에 찾기</b> · 장소 이름으로 차례로 검색해 맞는 곳만 골라 담아요. 네이버 지도 링크를 여러 개 보내도 돼요</p><p><b>🔒 비공개</b> · 팬사인회처럼 장소를 당첨자에게만 알려 준 일정은 비공개로 담아 주세요</p><div class="drive-btns"><a class="bpill" href="#/placefind">🔎 한꺼번에 찾기</a><a class="chip" href="#/opinion?w=map">🗺 네이버 링크 여러 곳 보내기</a></div></div>` : '';
+    const row = (x, pl, pv) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<span class="map-off-act"><a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a></span>` : ''}</div>`;
+    const how = MAP_OFF_PL ? `<div class="map-off-how"><p><b>하나씩 찾기</b> · 아래 줄마다 📍 장소 알려주기를 눌러 그 일정 장소를 골라요</p><p><b>한 번에 찾기</b> · 장소 이름으로 차례로 검색해 맞는 곳만 골라 담아요. 네이버 지도 링크를 여러 개 보내도 돼요</p><p><b>🔒 비공개</b> · 팬사인회처럼 장소를 당첨자에게만 알려 준 일정은 📍 장소 알려주기 창에서 비공개를 골라 주세요</p><div class="drive-btns"><a class="bpill" href="#/placefind">🔎 한꺼번에 찾기</a><a class="chip" href="#/opinion?w=map">🗺 네이버 링크 여러 곳 보내기</a></div></div>` : '';
     return how + (none.length ? `<h3 class="map-off-h">장소 모름 ${none.length}</h3>${none.map(x => row(x, MAP_OFF_PL, !placeOf(x.e))).join('')}` : '')
       + (rough.length ? `<h3 class="map-off-h">대략 위치로만 찍힘 ${rough.length}</h3><p class="map-off-n">공연장 좌표를 몰라서 지역 가운데에 찍혀 있어요</p>${rough.map(x => row(x, MAP_OFF_PL)).join('')}` : '')
       + (abroad.length ? `<h3 class="map-off-h">✈ 해외 ${abroad.length}</h3>${abroad.map(x => row(x, false)).join('')}` : '')
@@ -4310,12 +4310,13 @@
     }).join('');
   }
   const plForm = e => e.ytOnly ? '' : `<details class="fix-box"${new URLSearchParams(location.hash.split('?')[1] || '').get('pl') ? ' open id="pl-open"' : ''}><summary>📍 ${e.place ? '장소가 달라요' : '장소 알려주기'}</summary><div class="op-form">
+      ${e.place === PLACE_PRIV ? '' : `<div class="pl-kind"><button type="button" class="chip on" data-k="pub">📍 장소 공개됨</button><button type="button" class="chip" data-k="priv">🔒 장소 비공개</button></div>`}
       ${e.place ? `<label class="add-f"><span>지금 장소</span><input type="text" value="${esc(e.place)}" disabled></label>` : ''}
       <form class="pin-find pl-find"><input type="search" class="pl-in" maxlength="80" placeholder="공연장 이름이나 주소로 찾기" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
       <div class="pin-res pl-res"></div>
       <label class="add-f pl-nv"><span>또는 네이버 지도 링크</span><input type="url" class="pl-link" inputmode="url" placeholder="네이버 지도 앱 → 장소 → 공유 → 링크 복사" autocomplete="off"></label>
       <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}" disabled>보내기</button>
-      ${e.place === PLACE_PRIV ? '' : `<button type="button" class="link-btn pl-priv" data-id="${esc(e.id)}">🔒 장소가 공개되지 않은 일정이에요</button>`}
+      ${e.place === PLACE_PRIV ? '' : `<div class="pl-privbox" hidden><p class="src-note">팬사인회처럼 장소를 당첨자에게만 알려 준 일정이에요. 보내면 지도에서 '🔒 장소 비공개'로 따로 묶여요.</p><button type="button" class="bpill add-send pl-priv" data-id="${esc(e.id)}">🔒 비공개로 보내기</button></div>`}
       <p class="src-note pl-msg">찾은 곳 중에 맞는 곳을 고르거나, 네이버 지도에서 그 장소를 공유한 링크를 붙여 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '다른 두 분이 맞다고 하면 장소가 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
   const privText = e => `종류: 장소수정\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${PLACE_PRIV}\n누가: ${myUid()}`;
   // 장소 찾기: OpenStreetMap 검색 결과 중 하나를 고르면 이름·좌표를 같이 보내요
@@ -4375,6 +4376,15 @@
         else b.closest('.pl-state').outerHTML = plState({ ...e, placeWas: undefined, placeProps: (e.placeProps || []).filter(p => p.to === to) });
       })
       .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; });
+  });
+  // 장소 알려주기 창 위 '공개됨 / 비공개' 고르기: 비공개면 검색 칸을 숨기고 비공개 보내기만 보여요
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.pl-kind .chip');
+    if (!b) return;
+    const f = b.closest('.op-form'), priv = b.dataset.k === 'priv';
+    b.parentNode.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === b));
+    f.querySelectorAll(':scope > :not(.pl-kind):not(.pl-privbox)').forEach(el => { el.style.display = priv ? 'none' : ''; });
+    f.querySelector('.pl-privbox').hidden = !priv;
   });
   // 장소 비공개(팬사인회처럼 당첨자에게만 알려 준 곳): 장소를 '비공개'로 보내요. 다른 두 분이 맞다고 하면 확정이에요
   document.addEventListener('click', ev => {
