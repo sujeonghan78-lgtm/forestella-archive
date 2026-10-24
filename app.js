@@ -1382,8 +1382,8 @@
     }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
   });
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
-  // 버전 메모가 있는 곡 (분류 필터 '버전 여러 개')
-  const hasVersions = so => { if (so._vAt !== data) { so._vAt = data; so._v = !!songMemos(so); } return so._v; };
+  // 버전 메모가 두 가지 이상인 곡 (분류 필터 '버전 여러 개')
+  const hasVersions = so => { if (so._vAt !== data) { so._vAt = data; so._v = new Set((songMemos(so).match(/<b>[^<]*<\/b>/g) || [])).size >= 2; } return so._v; };
   function songMemos(so) {
     const loose = t => t.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
     const own = loose(so.name + ' ' + so.key + ' ' + Object.keys(so.names || {}).join(' '));
