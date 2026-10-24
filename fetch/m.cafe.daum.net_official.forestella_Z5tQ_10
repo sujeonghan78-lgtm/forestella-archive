@@ -1,0 +1,486 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+<!doctype html>
+<html lang="ko" class="os_unknown none unknown version_0">
+<head>
+	<title>포레스텔라 공식 팬카페</title>
+		<meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, shrink-to-fit=no">
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<meta name="format-detection" content="telephone=no"> 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	
+	<link rel="shortcut icon" href="/favicon.ico"> 	<link rel="apple-touch-icon-precomposed" href="//t1.daumcdn.net/cafe_image/mobile/ico_favicon_mw.png">
+	<link rel="stylesheet" type="text/css" href="//t1.daumcdn.net/cafe_cj/mobileweb/build/css/mobile_cafe-881c685b38.min.css">
+	<link rel="stylesheet" type="text/css" href="//t1.daumcdn.net/cafe_cj/mobileweb/build/css/custom-f6c2f631a4.min.css">
+	<link rel="stylesheet" type="text/css" href="//t1.daumcdn.net/cafe_cj/mobileweb/build/css/mobile_cafe_invite-424ce78f69.min.css">
+	<script>
+		var CAFEAPP = {
+			CONTEXT_PATH: "/official.forestella/Z5tQ/10",
+			GRPID:"1Z91X",
+			GRPCODE:"official.forestella",
+			GRPNAME: "포레스텔라 공식 팬카페",
+			IS_PUBLIC:"true",
+			FLDID:"Z5tQ",
+			BOARDNAME: "팬사인회",
+			BOARDTYPE:"",
+			DATAID:"",
+			IS_MEMBER: "false",
+			LOGIN_URL: "https://logins.daum.net",
+			MEMBER_URL: "https://member.daum.net",
+			DAUMID:"",
+			DAUMNAME: '',
+            // [신규회원]  KAKAOEMAIL:"",
+			IS_GAMECAFE: "false",
+			IS_FANCAFE: 'true',
+			DID_LOGIN: 'false',
+			IS_DEV: 'false'
+		};
+	</script>
+	<script src="//t1.daumcdn.net/cafe_cj/mobileweb/js/2.1.3/lib/jquery-2.1.3.min.js"></script>
+	<script src="//t1.daumcdn.net/cafe_cj/mobileweb/js/1.4.1/lib/jquery.cookie.js"></script>
+	<script src="//t1.daumcdn.net/cafe_cj/mobileweb/js/1.7.2/lib/jquery.storageapi.min.js"></script>
+	<script src="//t1.daumcdn.net/cafe_cj/mobileweb/build/js/cafe_util-fe8adfb271.min.js"></script>
+	<script src="//t1.daumcdn.net/cafe_cj/mobileweb/build/js/cafe_common-d65cb156ed.min.js"></script>
+	
+
+    <meta property="og:url" content="/official.forestella/Z5tQ/10">
+	<meta property="og:title" content="포레스텔라 공식 팬카페">
+	<meta property="og:article:author" content="포레스텔라 공식 팬카페">
+	<meta property="og:image" content="https://t1.daumcdn.net/cafe_image/cafe_meta_image_260813.png">
+	<meta property="og:description" content="비트인터렉티브에서 운영하는 포레스텔라(Forestella) 공식 팬카페입니다.">
+	<meta name="description" content="모든 이야기의 시작, Daum 카페">
+</head>
+
+<script>
+	jQuery(function () {
+		var KOR = 'kor_wrap';
+		var ENG = 'eng_wrap';
+		var selectedLanguage = (window.navigator.language !== "ko-KR") ? ENG : KOR;
+		setLanguage(selectedLanguage);
+
+		function setLanguage(lang){
+			var l = (lang) ? lang : (selectedLanguage === KOR) ? ENG : KOR;
+			var bodyWrap = jQuery('body');
+			bodyWrap.removeClass(KOR).removeClass(ENG).addClass(l);
+			selectedLanguage = l;
+		}
+	});
+</script>
+<body>
+<div id="daumWrap" class="cafe_type3">
+	<header id="daumHead" class="daum_head">
+		<div class="cafe_head">
+		<!-- 네비게이션바 -->
+			<div class="d_head #cafe_home_gnb">
+		<div class="wrap_tit">
+			<h1 class="tit_daum">
+				<a href="/?t__nil_logo=cafe" id="daumServiceLogo" class="tit_service">
+					<span class="cafe_logo"><span class="sr_only">cafe</span></span>
+				</a>
+			</h1>
+			<h2 class="tit_cafename"><a href="/official.forestella" class="link_cafename">포레스텔라 공식 팬카페</a></h2>
+		</div>
+		<div class="wrap_util">
+							<a href="javascript:;" id="btn_cafe_profile" class="link_info #cafe_profile"><span class="ico_cafe ico_info"><span class="sr_only">카페 정보 보기</span></span></a>
+							<a href="javascript:;" id="btn_cafe_search" class="link_search #search_btn"><span class="ico_cafe ico_search"><span class="sr_only">개별 카페 검색</span></span></a>
+				</div>
+	</div><!-- end d_head -->
+	<script type="text/javascript">
+		jQuery(function () {
+			CafeProfileViewController.init();
+		});
+	</script>
+		<!-- 카페 프로필 -->
+				<div class="d_visual" aria-hidden="true" style="background-image:url(https://img1.daumcdn.net/thumb/R600x0/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fcafe_image%2Fmobile%2Fapp%2Fhome%2F20240201%2Fimg_cafe_default_4.jpg)">
+		<div class="inner_visual">
+			<div class="cont_visual">
+				<span class="visual_img">
+					<span class="ico_cafe cafe_img"><img src="https://img1.daumcdn.net/thumb/C100x100/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fcafeattach%2F1Z91X%2F6119150faea3e77fbbe6992751be4d20bf834eb7" width="50" height="50" class="thumb_cafe" alt=""></span>
+				</span>
+				<strong class="tit_visual">포레스텔라 공식 팬카페</strong>
+				<span class="desc_visual">
+					회원<span class="num_info member_number">27,060</span>
+																</span>
+																				<div class="append_btns">
+					<a class="visual_link_calendar #calendar_shortcut">
+						<span class="txt_month_wrap">
+							<span class="txt_month"></span>
+						</span>
+						<span class="txt_day"></span>
+						<span class="ico_new">
+							<span class="sr_only">new</span>
+							<img src="//t1.daumcdn.net/cafe_image/mobile/svg/15_new.svg" width="15" height="15" alt="">
+						</span>
+					</a><!--
+				 --><a href="/_fancafe?grpcode=official.forestella" class="cheer_rank #fancafe_ranking">
+						<span class="txt_ranking_wrap">
+							<span class="txt_ranking">RANKING</span>
+						</span>
+						<em id="rank-number" class="txt_ranking_number">-</em>
+					</a>
+				</div>
+												<link rel="stylesheet" href="//t1.daumcdn.net/cafe_cj/fancafe_widget/odometer/0.4.6/odometer_default.css" type="text/css">
+				<link rel="stylesheet" href="//t1.daumcdn.net/cafe_cj/mobileweb/build/css/fancafe_widget_style-4bbc69fd4d.min.css">
+				<div class="fancafe_widget"></div>
+				<script src="//t1.daumcdn.net/cafe_cj/fancafe_widget/odometer/0.4.6/odometer.min.js"></script>
+				<script src="//t1.daumcdn.net/cafe_cj/mobileweb/build/js/fancafe_apicaller-a4015e0ea2.js" charset="utf-8"></script>
+				<link rel="stylesheet" href="//t1.daumcdn.net/cafe_cj/mobileweb/build/css/extra-info-generator-8926dde7eb.min.css">
+				<script src="//t1.daumcdn.net/cafe_cj/mobileweb/build/js/extra-info-generator-60bb1b17f5.min.js" charset="utf-8"></script>
+				<script src="//t1.daumcdn.net/cafe_cj/mobileweb/build/js/fancafe_widget-a881b3d727.js" charset="utf-8"></script>
+				<script>
+					(function (jQuery, grpid, host) {
+						cafe.fancafe.host = host
+
+						jQuery(cafe.fancafe.apiCaller).on('fancafe_info_generate', function () {
+							cafe.fancafe.apiCaller.getWidgetConfig({grpid: grpid}, function (result) {
+								var config = result;
+
+								document.getElementById('rank-number').innerText = config.fandomRank;
+
+								config.daumWrap = '#daumWrap';
+								config.visualArea = '.d_visual';
+								config.title = '.tit_visual';
+								config.cafelogo = '.cafe_logo';
+								config.widgetArea = '.fancafe_widget';
+								config.navHead = '.d_head';
+
+
+								if (cafe.util.isStorageAvailable(sessionStorage)) {
+									sessionStorage.setItem('fancafeInfo', JSON.stringify(cafe.fancafe.fancafeInfo));
+									sessionStorage.setItem('fancafeWidgetConfig', JSON.stringify(result));
+								}
+								cafe.fancafe.widget.init(config);
+							}, function () {
+								var fandomRank = document.getElementById('rank-number').parentNode;
+								fandomRank.parentNode.removeChild(fandomRank);
+							});
+						});
+
+						jQuery(function () {
+							cafe.fancafe.apiCaller.generateFancafeInfo({grpid: grpid});
+						});
+
+						var fancafeInfo = sessionStorage.getItem("fancafeInfo");
+						var fancafeWidgetConfig = sessionStorage.getItem("fancafeWidgetConfig");
+
+						var parsedFancafeInfo = JSON.parse(fancafeInfo);
+
+						if (parsedFancafeInfo != null && fancafeWidgetConfig != null && location.pathname.slice(1).startsWith(parsedFancafeInfo.cafe.grpcode)) {
+							cafe.fancafe.fancafeInfo = parsedFancafeInfo;
+							cafe.fancafe.widget.init(JSON.parse(fancafeWidgetConfig));
+						}
+
+						// 스타스케줄 상단바 아이콘 표시
+						// 팬카페가 아닌 카페에서도 스케줄 기능을 사용할 경우, 이 부분을 분리해 주세요.
+						var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SPT', 'OCT', 'NOV', 'DEC'];
+						var today = new Date();
+						var calendar = jQuery('.visual_link_calendar');
+						calendar.find('.txt_month').html(months[today.getMonth()]);
+						calendar.find('.txt_day').html(today.getDate());
+
+						var url = location.pathname.split('/');
+						var NOT_FOUND = 404;
+
+						jQuery.ajax({
+							method: 'GET',
+							url: '/' + CAFEAPP.GRPCODE + '/calendar'
+						}).done(function (result) {
+							calendar.attr('href', '/' + CAFEAPP.GRPCODE + '/' + result.data.fldid + '?boardType=Q');
+							calendar.css('display', 'inline-block');
+						}).fail(function (res, status, error) {
+							if (res.status === NOT_FOUND) {
+								return;
+							}
+						});
+					})(jQuery, '1Z91X', 'fancafe-external-api.cafe.daum.net');
+				</script>
+							</div>
+		</div>
+	</div>
+			<!-- 툴바 -->
+					
+	<div class="cafe_navi" id="cafe_navi_default" >
+					<span class="tab_btns">
+				<button class="link_refresh" id="board_refesh"><span class="ico_cafe ico_refresh">새로고침</span></button>
+																							<a href="/official.forestella/_newmember" class="link_btns" onclick="accountUtil.checkHasEmail(event);"><span class="kor">가입하기</span><span class="eng">Join</span></a>
+						</span>
+			<h2><a href="/official.forestella" class="link_pre"><strong class="tit_pre"><span class="ico_cafe ico_arr"></span>팬사인회</strong></a></h2>
+			</div>
+	<script>
+		jQuery(function () {
+			var boardType = '';
+			var NoticeToggleManager = createNoticeToggleManager(boardType);
+
+			NoticeToggleManager.init(parseInt(''));
+
+			NoticeToggleManager.bindEventTo({
+				selector: '#boardNoticeYn',
+				eventName: 'click'
+			});
+		});
+	</script>
+				</div>
+	</header>
+						
+	<hr class="hide" >
+	
+	<div id="daumContent" class="cont_cafe"><!-- 2014-08-04 수정 -->
+		<article id="mArticle">
+			<h3 class="sr_only">에러</h3>
+			<div class="cafe_error">
+				<span class="ico_error ico_auth"></span>
+																																													<p class="tit_error">회원님은 현재 <span class='txt_auth'>손님</span>이세요.<br>이 게시글은 <span class='txt_auth'>숲별</span>이상 읽기 가능해요.</p>
+				
+																																											<p class="desc_error">카페 가입 후<br>모든 이야기 시작, Daum카페를 즐겨보세요.</p>
+				
+				<div class="desc_btns">
+																										<div class="desc_btns">
+									<a href="#" class="link_go" onclick="history.back(); return false">뒤로가기</a>
+									<a href="/official.forestella/_newmember" class="link_go link_rel">카페 가입</a>
+								</div>
+																						</div>
+			</div>
+		</article>
+	</div>
+
+		
+	<hr class="hide">
+	<div id="footContent" class="foot_content" data-isdaumapp="false">
+	<a href="#" class="link_top" id="footLinkTop"><span class="ico_cafe ico_top"></span>맨위로</a>
+</div>
+
+	<footer id="daumFoot" class="d_foot">
+	<ul class="list_foot">
+		<li id="daumMinidaum"></li>
+		<li><a href="https://m.daum.net/site.daum?t__nil_footer=sitemap">전체보기</a></li>
+		<li><a href="https://cafe.daum.net/official.forestella"
+			   onclick="Utils.goPcUrl('https://cafe.daum.net/official.forestella'); return false;">PC화면</a></li>
+		<li><a href="https://search.daum.net/search?w=tot&amp;DA=BESE&amp;q=다음카페앱" id="footLinkApp">카페앱</a></li>
+		<li><a href="https://policy.daum.net/policy/info">서비스 약관</a></li>
+	</ul>
+	<ul class="list_foot">
+		<li><a href="https://policy.daum.net/policy/youthpolicy">청소년보호정책</a></li>
+		<li><a href="https://m.cafe.daum.net/_agreement?svc=webview">카페 이용 약관</a></li>
+		<li><a href="https://top.cafe.daum.net/_c21_/conflict">상거래피해구제신청</a></li>
+		<li><a href="https://policy.daum.net/policy/privacy"><strong>개인정보처리방침</strong></a></li>
+	</ul>
+	<small class="copr_info"><a href="https://daumcorp.com/" class="link_daumcorp">&copy; <b>Daum Corp.</b></a></small>
+</footer>
+
+<h2 class="sr_only">카페 검색</h2>
+
+    <div id="cafeSearchLayer" class="sch_wrap hide">
+        <div class="sch_inner_wrap">
+                                                <button type="button" id="btn_close_cafesearch" class="link_prev">
+                <span class="ico_table ico_prev">취소</span>
+            </button>
+            <form id="cafeSearchForm" action="/official.forestella/Z5tQ/search" class="inner_schall">
+                <fieldset>
+                    <legend class="sr_only">카페 검색어 입력폼</legend>
+                    <div class="box_search">
+                        <button type="submit" id="btn_search_cafesearch_top" class="search_top_btn">
+                            <span class="sr_only">검색</span>
+                            <span class="ico_table ico_search"></span>
+                        </button>
+                        <input type="hidden" id="return_url_value" name="r" value="" class="input_return_value">
+                        <input type="search" id="query_cafesearch" class="inp_sch tf_keyword" value="" name="query"
+                               title="검색어 입력"
+                               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                               placeholder='현재 게시판 내용 검색'>
+                        <button type="button" id="btn_reset_cafesearch" class="search_reset_btn">
+                            <span class="ico_table ico_del">검색어 지우기</span>
+                        </button>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+
+
+<script>
+	document.domain = "daum.net"
+</script>
+<script src="//developers.kakao.com/sdk/js/kakao.min.js" charset="UTF-8"></script>
+<script src='//t1.daumcdn.net/cafe_cj/mobileweb/build/js/cafe_common-d65cb156ed.min.js'></script>
+<script src='//t1.daumcdn.net/cafe_cj/mobileweb/build/js/cafe_board-48c073c108.js'></script>
+<script src="//m1.daumcdn.net/svc/original/U03/cssjs/slide/slide-1.2.13.standalone.min.js"></script>
+<script src="//m1.daumcdn.net/svc/original/U03/cssjs/coco/coco-1.0.27.min.js"></script>
+<script src="//search1.daumcdn.net/search/suggest_pc/suggest-1.2.16.min.js" charset="utf-8"></script>
+<script src="//t1.kakaocdn.net/axz_keditor/attachmap-viewer/attachmap.view.js"></script>
+<!--[if lte IE 8]>
+<script src="//m1.daumcdn.net/svc/original/U03/cssjs/sizzle/sizzle-1.10.7.min.js"></script>
+<script src="//m1.daumcdn.net/svc/original/U0301/cssjs/JSON-js/fc535e9cc8/json2.min.js"></script>
+<![endif]-->
+<script>
+	// init coco library 
+	var initWeb2App = function () {
+		coco.configure = {
+			totalSearch: ["daumHead", "daumContent", "daumAd", "daumFoot", "realIssuWrap"],
+			navigation: {
+				type: "layer"
+			}
+		};
+		coco.start();
+	};
+
+	initWeb2App();
+
+	var svcParam = '';
+	var isMobileTop = '' === 'true' || 'official.forestella' === '';
+	var isArticleView = '' === 'true';
+
+	if (isMobileTop) {
+		CafeSearchController.init({
+			viewType: "search",
+			totalSearch: ["#daumHead", "#daumContent", "#mAside", "#daumFoot", "#footContent", "#realIssuWrap"],
+			searchId: "#btn_cafe_search",
+			searchFormId: '#cafeTopSearchForm',
+			layerId: "#cafeTopSearchLayer",
+			inputId: "#query_cafesearch_top",
+			resetId: "#btn_reset_cafesearch_top",
+			closeId: "#btn_close_cafesearch_top",
+			suggest: {
+				inputEl: 'query_cafesearch_top',
+				suggestBoxEl: 'suggest_box',
+				searchLayer: '#cafeTopSearchLayer',
+				searchForm: '#cafeTopSearchForm',
+				searchInnerLayer: '.sch_inner_wrap'
+			}
+		});
+	} else {
+		CafeSearchController.init({
+			viewType: "search",
+			totalSearch: ["#daumHead", "#daumContent", "#mAside", "#daumFoot", "#footContent", "#realIssuWrap"],
+			searchId: "#btn_cafe_search",
+			searchFormId: '#cafeSearchForm',
+			layerId: "#cafeSearchLayer",
+			inputId: "#query_cafesearch",
+			resetId: "#btn_reset_cafesearch",
+			closeId: "#btn_close_cafesearch"
+		});
+		VisitCafeManager.add('1Z91X');
+	}
+
+	// 
+	var minidaum_options = {
+		disableTracker: true
+	};
+	if (isMobileTop) {
+		minidaum_options.returnUrl = 'https://m.cafe.daum.net/';
+	}
+</script>
+	
+<!-- 토스트, 스낵바 컨테이너 -->
+<div id="extra-info-viewer">
+	<div class="toast-container"></div>
+	<div class="snackbar-container"></div>
+</div>
+
+<script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js"></script>
+<script src="https://go.daum.net/minidaum_mobile.daum" charset="utf-8" async></script>
+
+	<div class="dimmed_layer dimmed_invite_layer" id="dimmed_invite_layer" style="display: none;" onclick="displayNoneInviteLayer();"></div>
+<div class="invite_layer" id="invite_layer" style="display: none;">
+	<div class="inner_layer">
+		<div class="layer_head">
+			<strong class="tit_popup">초대하기</strong>
+			<p class="txt_popup">초대 링크로 가입하면 가입 신청서 없이 <br> 바로 가입할 수 있습니다.</p>
+		</div>
+		<div class="layer_body">
+			<strong class="screen_out">sns 공유하기</strong>
+			<ul class="list_share2">
+				<li class="on">
+					<a href="javascript:" onclick="shareUsingKakaoTalk();" class="link_share" id="share2_talk">
+						<span class="ico_share ico_talk"></span>카카오톡 공유하기
+					</a>
+				</li>
+				<li>
+					<a href="javascript:" onclick="showCopyLayer();" class="link_share" id="share2_link">
+						<span class="ico_share ico_link"></span>초대링크 복사하기
+					</a>
+				</li>
+				<li>
+					<a href="javascript:" onclick="sendSmsInviteLink();" class="link_share" id="share2_mms">
+						<span class="ico_share ico_mms"></span>문자로 공유하기
+					</a>
+				</li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+<div class="copyurl_layer" id="copyurl_layer" style="display: none;">
+	<div class="innner_body">
+		<strong class="tit_copyurl">초대링크를 복사한 후<br>원하는 곳에 공유해보세요.</strong>
+		<div class="sns_copyurl">
+			<a href="javascript:" class="link_copyurl">
+				<span class="screen_out">현재페이지 URL복사</span>
+				<span class="txt_url" id="inviteLinkCopy"></span>
+				<span class="txt_copy" onclick="copyInviteLink();">URL복사</span>
+			</a>
+		</div>
+	</div>
+	<div class="popup_foot">
+		<a href="javascript:" class="btn_close" onclick="displayNoneInviteLayer();">
+			<span class="ico_close">닫기</span>
+		</a>
+	</div>
+</div>
+
+<div class="toast_popup" style="display: none;">
+	<div class="inner_popup">
+		<p class="txt_popup">복사되었습니다.</p>
+	</div>
+</div>
+
+<script>
+	Utils = Utils || {};
+	Utils.kakaoAPIKey = '53e566aa17534bc816eb1b5d8f7415ee';
+	Utils.kakaoAPIExtraKey = '290e3fe0b2d63e49088831bdbadb4fe5';
+
+	if (!Kakao.Share) {
+		Kakao.Share = Kakao.Link;
+	}
+</script>
+<script src='//t1.daumcdn.net/cafe_cj/mobileweb/build/js/invite-63d721f4ad.js'></script>
+</div>
+</body>
+</html>
