@@ -201,7 +201,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, places] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -221,8 +221,9 @@
       fetchText('data/extra_events.json').catch(() => ''),
       fetchText('data/member_career.json').catch(() => ''),
       fetchText('data/naver_links.json').catch(() => ''),
+      fetchText('data/places.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, places, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -422,6 +423,32 @@
     }
     // 장소 고치기(종류: 장소수정 일정/전/후 → '맞아요'는 종류: 장소확인): 장소가 비어 있던 일정은 바로 채우고 확인을 기다려요.
     // 있던 장소를 바꾸는 건 올린 사람 말고 두 명이 맞다고 하거나 관리자가 확정(서명된 숨김 줄, 번호 'pl'+일정·장소)하면 바뀌어요
+    // 지도 위치 고치기(종류: 장소좌표 장소/좌표 → '맞아요'는 종류: 좌표확인): 올린 사람 말고 두 명이 맞다고 하거나
+    // 관리자가 확정하면(서명된 숨김 줄, 번호 'g'+장소·좌표) 그 장소는 이 좌표로 찍어요. 확정된 것 중 가장 최근 것을 써요
+    const pins = {};
+    let placeOk = new Set();
+    try { placeOk = new Set(Object.entries(JSON.parse(raw.places || '{}').found || {}).filter(([, v]) => v.c === 'ok').map(([k]) => k)); } catch (err) { /* 없어도 괜찮아요 */ }
+    if (raw.reports) {
+      const okMark = window.SB_EV_HIDE || new Set();
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if ((r.type !== '장소좌표' && r.type !== '좌표확인') || !r.by) return;
+        const place = line0(r, '장소'), m = line0(r, '좌표').match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+        if (!place || !m) return;
+        const lat = +(+m[1]).toFixed(5), lng = +(+m[2]).toFixed(5), c = lat + ',' + lng;
+        const o = pins[place] = pins[place] || { cands: {} }, k = o.cands[c] = o.cands[c] || { lat, lng, c, by: '', who: new Set(), at: 0 };
+        if (r.type === '장소좌표' && !k.by) { k.by = r.by; k.at = tsMs(r.time); } else k.who.add(r.by);
+        // 한꺼번에 찾기는 끝자리 0까지 붙인 좌표 글자로 서명해요 ('35.01230,126.70000') → 그 글자 번호도 같이 봐요
+        (k.raw = k.raw || new Set()).add(m[1] + ',' + m[2]);
+      });
+      Object.entries(pins).forEach(([place, o]) => {
+        const cs = Object.values(o.cands).filter(k => k.by);
+        // 정확한 좌표가 없던 장소는 처음 보낸 위치를 바로 써요. 이미 있는 위치를 바꿀 땐 두 명 확인이에요
+        const first = placeOk.has(place) ? null : cs.slice().sort((a, b) => a.at - b.at)[0];
+        cs.forEach(k => { k.who.delete(k.by); k.n = Math.min(k.who.size, 2); k.id = 'g' + slVer([place, k.c]); k.done = k === first || k.who.size >= 2 || okMark.has(k.id) || [...(k.raw || [])].some(x => okMark.has('g' + slVer([place, x]))); });
+        const done = cs.filter(k => k.done).sort((a, b) => b.at - a.at)[0];
+        pins[place] = { ok: done ? { lat: done.lat, lng: done.lng } : null, pend: cs.filter(k => !k.done && (!done || k.at > done.at)).map(k => ({ lat: k.lat, lng: k.lng, c: k.c, by: k.by, n: k.n, id: k.id })) };
+      });
+    }
     if (raw.reports) {
       const px = {}, okMark = window.SB_EV_HIDE || new Set();
       // 네이버 지도 링크로 보낸 장소는 깃허브가 찾아 둔 이름·좌표(data/naver_links.json)로 채워요. 아직 못 찾았으면 기다려요
@@ -445,8 +472,10 @@
         const ps = Object.values(px[e.id] || {}).filter(p => p.by && p.to !== e.place);
         if (!ps.length) return;
         ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); p.id = 'pl' + slVer([e.id, p.to]); p.done = p.who.size >= 2 || okMark.has(p.id); });
+        // 정확한 위치가 없던 일정은 처음 보낸 위치(좌표 있는 것)를 바로 써요
+        if (e.place && !placeOk.has(e.place) && !(pins[e.place] && pins[e.place].ok)) { const f = ps.filter(p => p.loc).sort((a, b) => a.at - b.at)[0]; if (f) { f.done = true; f.first = true; } }
         const done = ps.filter(p => p.done).sort((a, b) => b.at - a.at)[0];
-        if (done) { e.placeWas = e.place || ''; e.place = done.to; if (done.loc) e.placeLoc = done.loc; return; }
+        if (done) { if (!done.first) e.placeWas = e.place || ''; e.place = done.to; if (done.loc) e.placeLoc = done.loc; return; }
         // 비어 있던 장소: 가장 먼저 온 걸 바로 채우고 확인을 기다려요
         if (!e.place) { const f = ps.sort((a, b) => a.at - b.at)[0]; e.place = f.to; e.placeNew = f; if (f.loc) e.placeLoc = f.loc; }
         e.placeProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id, now: p === e.placeNew, ...(p.loc ? { loc: p.loc } : {}) }));
@@ -519,28 +548,6 @@
     // 숨기거나 지운 일정에 대한 제보는 빼고, 최근 것부터
     const evIds = new Set(events.map(e => e.id));
     const fan = fanLog.filter(l => evIds.has(l.id)).sort((a, b) => b.at - a.at);
-    // 지도 위치 고치기(종류: 장소좌표 장소/좌표 → '맞아요'는 종류: 좌표확인): 올린 사람 말고 두 명이 맞다고 하거나
-    // 관리자가 확정하면(서명된 숨김 줄, 번호 'g'+장소·좌표) 그 장소는 이 좌표로 찍어요. 확정된 것 중 가장 최근 것을 써요
-    const pins = {};
-    if (raw.reports) {
-      const okMark = window.SB_EV_HIDE || new Set();
-      buildReports(toObjects(raw.reports), true).forEach(r => {
-        if ((r.type !== '장소좌표' && r.type !== '좌표확인') || !r.by) return;
-        const place = line0(r, '장소'), m = line0(r, '좌표').match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
-        if (!place || !m) return;
-        const lat = +(+m[1]).toFixed(5), lng = +(+m[2]).toFixed(5), c = lat + ',' + lng;
-        const o = pins[place] = pins[place] || { cands: {} }, k = o.cands[c] = o.cands[c] || { lat, lng, c, by: '', who: new Set(), at: 0 };
-        if (r.type === '장소좌표' && !k.by) { k.by = r.by; k.at = tsMs(r.time); } else k.who.add(r.by);
-        // 한꺼번에 찾기는 끝자리 0까지 붙인 좌표 글자로 서명해요 ('35.01230,126.70000') → 그 글자 번호도 같이 봐요
-        (k.raw = k.raw || new Set()).add(m[1] + ',' + m[2]);
-      });
-      Object.entries(pins).forEach(([place, o]) => {
-        const cs = Object.values(o.cands).filter(k => k.by);
-        cs.forEach(k => { k.who.delete(k.by); k.n = Math.min(k.who.size, 2); k.id = 'g' + slVer([place, k.c]); k.done = k.who.size >= 2 || okMark.has(k.id) || [...(k.raw || [])].some(x => okMark.has('g' + slVer([place, x]))); });
-        const done = cs.filter(k => k.done).sort((a, b) => b.at - a.at)[0];
-        pins[place] = { ok: done ? { lat: done.lat, lng: done.lng } : null, pend: cs.filter(k => !k.done && (!done || k.at > done.at)).map(k => ({ lat: k.lat, lng: k.lng, c: k.c, by: k.by, n: k.n, id: k.id })) };
-      });
-    }
     const videos = buildVideos(toObjects(raw.videos));
     // 시트에 없는 관련 영상(보충 파일 videos): 같은 영상이 시트에 있으면 시트 우선
     const sheetVids = new Set(videos.map(v => v.videoId));

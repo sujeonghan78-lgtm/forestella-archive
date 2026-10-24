@@ -1837,7 +1837,7 @@
     return `
       <a class="back" href="${adm ? '#/admin' : '#/map'}">‹ ${adm ? '관리자 기기' : '숲별 발자국'}</a>
       <h1 class="h1 page-title">장소 한꺼번에 찾기</h1>
-      <p class="sub">지도에서 정확한 위치를 못 찾은 장소예요. 이 폰이 차례로 검색해서 후보를 보여줘요. ${adm ? '맞는 후보를 누르면 바로 확정돼요.' : "맞는 후보를 누르면 오른쪽 위 '📤 보낼 목록'에 담겨요. 다 고른 뒤 한 번에 보내 주세요. 다른 두 분이 맞다고 하면 지도에 확정돼요."} 없으면 검색어를 고쳐서 다시 찾아 주세요.</p>
+      <p class="sub">지도에서 정확한 위치를 못 찾은 장소예요. 이 폰이 차례로 검색해서 후보를 보여줘요. ${adm ? '맞는 후보를 누르면 바로 확정돼요.' : "맞는 후보를 누르면 오른쪽 위 '📤 보낼 목록'에 담겨요. 다 고른 뒤 한 번에 보내 주세요. 처음 알려 주는 위치는 바로 지도에 들어가요."} 없으면 검색어를 고쳐서 다시 찾아 주세요.</p>
       ${(() => { const ok = Object.entries(data.pins || {}).filter(([, v]) => v.ok); return ok.length ? `<p class="src-note">확정한 위치 ${ok.length}곳 <button type="button" class="chip" id="pf-copy" data-t="${esc(ok.map(([k, v]) => k + ' | ' + v.ok.lat + ',' + v.ok.lng).join('\n'))}">복사하기</button></p>` : ''; })()}
       <div id="pf-list"><p class="src-note">장소 목록을 불러오는 중…</p></div>`;
   }
@@ -4324,7 +4324,7 @@
       <label class="add-f pl-nv"><span>또는 네이버 지도 링크</span><input type="url" class="pl-link" inputmode="url" placeholder="네이버 지도 앱 → 장소 → 공유 → 링크 복사" autocomplete="off"></label>
       <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}" disabled>보내기</button>
       ${e.place === PLACE_PRIV ? '' : `<div class="pl-privbox" hidden><p class="src-note">팬사인회처럼 장소를 당첨자에게만 알려 준 일정이에요. 보내면 지도에서 '🔒 장소 비공개'로 따로 묶여요.</p><button type="button" class="bpill add-send pl-priv" data-id="${esc(e.id)}">🔒 비공개로 보내기</button></div>`}
-      <p class="src-note pl-msg">찾은 곳 중에 맞는 곳을 고르거나, 네이버 지도에서 그 장소를 공유한 링크를 붙여 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '다른 두 분이 맞다고 하면 장소가 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
+      <p class="src-note pl-msg">찾은 곳 중에 맞는 곳을 고르거나, 네이버 지도에서 그 장소를 공유한 링크를 붙여 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '정확한 위치가 없던 곳은 바로 들어가고, 이미 위치가 있는 곳은 다른 두 분이 맞다고 하면 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
   const privText = e => `종류: 장소수정\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${PLACE_PRIV}\n누가: ${myUid()}`;
   // 장소 찾기: OpenStreetMap 검색 결과 중 하나를 고르면 이름·좌표를 같이 보내요
   document.addEventListener('submit', async ev => {
