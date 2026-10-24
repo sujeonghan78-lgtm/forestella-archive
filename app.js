@@ -1059,7 +1059,8 @@
     return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
   }
   // 곡 줄 아래 회색 한 줄: 🎤무대 ▶영상 🎫콘서트 · 타이틀 · 음반 (길면 음반 이름이 잘려요)
-  const songLine = so => [[so.events.length ? `<b>🎤${so.events.length}</b>` : '', (so.official || []).length ? `▶${so.official.length}` : '', so.tours.length ? `🎫${so.tours.length}` : ''].filter(Boolean).join(' '), so.titleOf.length ? '타이틀' : '', so.albums[0] ? esc(so.albums[0].name) : ''].filter(Boolean).join(' · ');
+  const songNum = () => !!boxRead('sb-song-num');
+  const songLine = so => !songNum() ? (so.albums[0] ? esc(so.albums[0].name) : '') : [[so.events.length ? `<b>🎤${so.events.length}</b>` : '', (so.official || []).length ? `▶${so.official.length}` : '', so.tours.length ? `🎫${so.tours.length}` : ''].filter(Boolean).join(' '), so.titleOf.length ? '타이틀' : '', so.albums[0] ? esc(so.albums[0].name) : ''].filter(Boolean).join(' · ');
   function songsView() {
     const st = songState(), f = songF(), sort = st.s || 'name';
     songBack = location.hash || '#/songs';
@@ -1074,14 +1075,14 @@
     const side = so => sort === 'first' && so.since ? fmtDate(so.since, false) : sort === 'recent' && songLast(so) ? (daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘') : '';
     const marks = so => SONG_PICKS.filter(([k]) => pickHas(k, so)).map(([, l]) => l.slice(0, 2)).join('');
     return `
-      <h1 class="h1 page-title">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. 🎤 영상으로 확인된 무대 · ▶ 공식 영상 · 🎫 콘서트 셋리 수예요. ♡로 하트, ⋯로 최애곡·소취곡·입덕곡을 고를 수 있어요.')}</h1>
+      <h1 class="h1 page-title">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. ‘🎤 숫자’를 켜면 🎤 영상으로 확인된 무대 · ▶ 공식 영상 · 🎫 콘서트 셋리 수가 보여요. ♡로 하트, ⋯로 최애곡·소취곡·입덕곡을 고를 수 있어요.')}</h1>
       <div class="stick">
       <form class="searchbox song-search" role="search" onsubmit="return false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="song-q" aria-label="곡 찾기" placeholder="곡 찾기 · 초성 OK" autocomplete="off">
       </form>
       ${bar.row}
-      <div class="view-row"><p class="sub">${list.length.toLocaleString()}곡${bar.clear}</p><select id="song-sort" class="song-sort" aria-label="정렬">${SONG_SORTS.map(([v, l]) => `<option value="${v}"${v === sort ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="view-row"><p class="sub">${list.length.toLocaleString()}곡${bar.clear}</p><span class="song-opt"><label class="song-numl"><input type="checkbox" id="song-num"${songNum() ? ' checked' : ''}> 🎤 숫자</label><select id="song-sort" class="song-sort" aria-label="정렬">${SONG_SORTS.map(([v, l]) => `<option value="${v}"${v === sort ? ' selected' : ''}>${l}</option>`).join('')}</select></span></div>
       </div>
       ${st.my.includes('heard') && !box.w.length ? '<p class="src-note">일정에서 🎫 직관했어요를 누르면 그날 들은 곡이 여기 모여요.</p>' : ''}
       <div class="song-list">
@@ -1100,6 +1101,8 @@
     const st = songState();
     bindF(songF(), st);
     const ss = document.getElementById('song-sort');
+    const sn = document.getElementById('song-num');
+    if (sn) sn.onchange = () => { boxWrite('sb-song-num', sn.checked ? 1 : null); renderBase('songs'); };
     if (ss) ss.onchange = () => { location.hash = fLink('#/songs', { ...st, s: ss.value === 'name' ? '' : ss.value }); };
     // 곡 이름 찾기: 다시 그리지 않고 목록에서 숨기기만 해요 (입력 중 자판이 닫히지 않게)
     const q = document.getElementById('song-q');
