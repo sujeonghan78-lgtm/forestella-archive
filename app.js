@@ -176,7 +176,7 @@
   const HEART_SENT = 'sb-heart-sent';
   // 소취곡(숲별 카드 + 곡 화면 🙏)도 같은 줄에 실어 보내서 '듣고 싶어 하는 팬' 수를 세요
   const wishKeys = () => { try { return pickList('wish').map(so => so.key).slice(0, 200); } catch (e) { return []; } };
-  const heartLists = () => ({ s: box.s.filter(x => !/^p[fwd]:/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys() });
+  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys() });
   let heartTimer = null;
   function heartSync() {
     clearTimeout(heartTimer);
@@ -1152,7 +1152,7 @@
     }
     if (m) {
       const so = data.songs.get(m.dataset.key), w = document.getElementById('yf-wrap'); if (!so || !w) return;
-      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="내 곡 고르기"><div class="yf-head"><b>${esc(so.name)}</b><span class="sub">숲별 카드에 넣은 곡은 카드에서 빼요</span></div>${songPickRow(so)}${chantBox(so).replace(/<details class="song-memo ch-box" open>/, '<details class="song-memo ch-box">')}${lyricBox(so).replace(/<details class="song-memo ly-box" open>/, '<details class="song-memo ly-box">')}<a class="chip sheet-go" href="#/song/${encodeURIComponent(so.key)}">곡 화면으로 ›</a></section>`;
+      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="내 곡 고르기"><div class="yf-head"><b>${esc(so.name)}</b><span class="sub">숲별 카드에 넣은 곡은 카드에서 빼요</span></div>${songPickRow(so)}${chantBox(so).replace(/<details class="song-memo ch-box" open>/, '<details class="song-memo ch-box">')}${lyricBox(so).replace(/<details class="song-memo ly-box" open>/, '<details class="song-memo ly-box">')}<button type="button" class="chip fd-btn" data-key="${esc(so.key)}">📁 폴더에 담기</button> <a class="chip sheet-go" href="#/song/${encodeURIComponent(so.key)}">곡 화면으로 ›</a></section>`;
       w.hidden = false;
       w.querySelector('.yf-back').onclick = () => { w.hidden = true; if (currentRoute() === 'songs') renderBase('songs'); };
     }
@@ -1200,7 +1200,7 @@
     return `
       <a class="back" href="${esc(songBack)}">‹ 곡 아카이브</a>
       <section class="song-hero">
-        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${heartTag('s', so.key)}${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>${wishTag(so.key)}
+        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${heartTag('s', so.key)}${boxBtn('s', so.key, 'heart-btn')}<button type="button" class="share-round fd-btn${folders().some(f => inFolder(f.id, so.key)) ? ' on' : ''}" data-key="${esc(so.key)}" aria-label="폴더에 담기">📁</button>${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>${wishTag(so.key)}
         <div class="song-pills"><span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>${so.langs ? `<span class="count-pill lang-pill">🌐 ${esc(so.langs.join(' · '))}</span>` : ''}</div>
         ${songPending(so) ? '<p class="src-note">팬이 올린 셋리에서 새로 들어온 곡이에요. 셋리가 확정되면 이 표시도 사라져요.</p>' : ''}
         ${albumRow}
@@ -1210,7 +1210,7 @@
           ${songLast(so) ? `<div class="fact"><b>마지막 무대</b><span>${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘'} · ${fmtDate(songLast(so), false)}</span></div>` : ''}
         </div>` : ''}
         ${songPickRow(so)}
-        <div class="chips song-writes"><button type="button" class="chip song-write" data-t="떼창" data-f=".ch-in">📣 떼창 적기</button><button type="button" class="chip song-write" data-t="가사" data-f=".ly-in">💬 가사 저장</button><button type="button" class="chip song-write" data-t="TMI" data-f=".tmi-in">💡 TMI 남기기</button></div>
+        <div class="chips song-writes"><button type="button" class="chip song-write" data-t="떼창" data-f=".ch-in">📣 떼창 적기</button><button type="button" class="chip song-write" data-t="가사" data-f=".ly-in">💬 가사 저장</button><button type="button" class="chip song-write" data-t="TMI" data-f=".tmi-in">💡 TMI 남기기</button></div><button type="button" class="song-fix-go">✏️ 곡 정보 고치기 <small>이름 · 언어 · 같은 곡 · 개인곡</small></button>
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
       </section>
@@ -1238,6 +1238,38 @@
   const pickHas = (k, so) => inCard(k, so) || box.s.includes(pickPre(k) + so.key);
   // 카드 곡 + 보관함 곡 (겹치면 한 번만)
   const pickList = k => { const out = []; [...cardPicks(k).map(pickSong), ...box.s.filter(x => x.startsWith(pickPre(k))).map(x => data.songs.get(x.slice(3)))].forEach(so => { if (so && !out.includes(so)) out.push(so); }); return out; };
+  // 내 곡 폴더: 보관함 곡 목록 s에 'fn:폴더id:이름'(폴더)과 'fd:폴더id:곡키'(담은 곡)로 넣어서 다른 폰 이어 쓰기도 따라가요
+  const folders = () => box.s.filter(x => x.startsWith('fn:')).map(x => { const i = x.indexOf(':', 3); return { id: x.slice(3, i), name: x.slice(i + 1), raw: x }; });
+  const folderSongs = id => box.s.filter(x => x.startsWith('fd:' + id + ':')).map(x => data.songs.get(x.slice(4 + id.length))).filter(Boolean);
+  const inFolder = (id, key) => box.s.includes(`fd:${id}:${key}`);
+  const boxSetS = list => { box.s = list; box.t = Date.now(); boxDirty = true; boxWrite(BOX_KEY, box); boxPush(); };
+  const fdName = v => v.replace(/\s+/g, ' ').trim().slice(0, 20);
+  const fdNew = name => { const id = Date.now().toString(36); boxSetS([...box.s, 'fn:' + id + ':' + name]); return id; };
+  function folderSheet(so) {
+    let w = document.getElementById('fd-wrap');
+    if (!w) { w = document.createElement('div'); w.id = 'fd-wrap'; w.className = 'yf-wrap'; document.body.appendChild(w); }
+    const draw = () => {
+      const fs = folders();
+      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="폴더에 담기"><div class="yf-head"><b>📁 폴더에 담기</b><span class="sub">${esc(so.name)}</span></div>
+        ${fs.length ? `<div class="yf-opts fd-opts">${fs.map(f => `<button type="button" class="chip${inFolder(f.id, so.key) ? ' on' : ''}" data-fd="${esc(f.id)}">📁 ${esc(f.name)} <small>${folderSongs(f.id).length}</small></button>`).join('')}</div>` : '<p class="src-note">아직 폴더가 없어요. 아래에서 만들어 보세요.</p>'}
+        <div class="fd-new"><input type="text" class="op-in fd-in" maxlength="20" placeholder="새 폴더 이름 (예: 겨울에 듣는 곡)"><button type="button" class="bpill fd-make">만들고 담기</button></div>
+        <button type="button" class="bpill yf-ok fd-done">다 했어요</button></section>`;
+      w.hidden = false;
+      const close = () => { w.hidden = true; const r = currentRoute(); if (r === 'box' || r === 'song' || r === 'songs') { const y = scrollY; renderBase(r); scrollTo(0, y); } };
+      w.querySelector('.yf-back').onclick = close;
+      w.querySelector('.fd-done').onclick = close;
+      w.querySelectorAll('[data-fd]').forEach(b => b.onclick = () => { const k = `fd:${b.dataset.fd}:${so.key}`; boxSetS(box.s.includes(k) ? box.s.filter(x => x !== k) : [...box.s, k]); draw(); });
+      w.querySelector('.fd-make').onclick = () => { const n = fdName(w.querySelector('.fd-in').value); if (!n) { toast('폴더 이름을 적어 주세요.'); return; } const id = fdNew(n); boxSetS([...box.s, `fd:${id}:${so.key}`]); toast(`'${n}' 폴더에 담았어요.`); draw(); };
+    };
+    draw();
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.fd-btn');
+    if (!b) return;
+    const so = data.songs.get(b.dataset.key); if (!so) return;
+    const w = document.getElementById('yf-wrap'); if (w) w.hidden = true;
+    folderSheet(so);
+  });
   const songPickRow = so => `<div class="chips song-picks">${SONG_PICKS.map(([k, l]) => `<button type="button" class="chip song-pick${pickHas(k, so) ? ' on' : ''}" data-pk="${k}" data-key="${esc(so.key)}" aria-pressed="${pickHas(k, so)}">${l}</button>`).join('')}</div>`;
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.song-pick');
@@ -1490,6 +1522,8 @@
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
   // 곡 화면 위 '적기' 버튼: 그 탭을 열고 입력칸으로 가요
   document.addEventListener('click', ev => {
+    const g = ev.target.closest('.song-fix-go');
+    if (g) { const d = document.querySelector('.song-edit'); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
     const b = ev.target.closest('.song-write');
     if (!b) return;
     const tab = [...document.querySelectorAll('.pane-tabs button')].find(x => x.textContent.includes(b.dataset.t));
@@ -1885,7 +1919,7 @@
   function boxView() {
     const { wentAll, went, seen, liked, songs, heardList, topRegion, first } = boxStats();
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
-    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length) && !(boxRead('sb-tmi-sent') || []).some(x => !x.del) && !Object.keys(lyMine()).length && !(boxRead(CH_SENT) || []).some(x => !x.del) && !(data.lyrics || []).some(l => l.who.includes(myUid()) && l.first !== myUid()) && !(boxRead('sb-ly-up') || []).length;
+    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length) && !(boxRead('sb-tmi-sent') || []).some(x => !x.del) && !Object.keys(lyMine()).length && !(boxRead(CH_SENT) || []).some(x => !x.del) && !(data.lyrics || []).some(l => l.who.includes(myUid()) && l.first !== myUid()) && !(boxRead('sb-ly-up') || []).length && !folders().length;
     const LIMIT = 8;
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
     // 탭은 일정 · 곡 · 내 글 세 개, 안에서 작은 칩으로 골라요 (주소 #/box?t=그룹&s=칩&y=연도)
@@ -1912,9 +1946,9 @@
     const tmRow = x => `<a class="box-ev" href="${tmHref(x.key)}"><span>${esc(tmWhere(x.key))}</span><b>${esc(x.t)}</b></a>`;
     const groups = [
       ['ev', '🎫 일정', [['w', '🎫 직관', went, 'ev'], ['b', '📺 시청', seen, 'ev'], ['e', '♥ 좋아요', liked, 'ev']]],
-      ['song', '🎵 곡', [['s', '♥ 하트', songs, 'chip'], ...SONG_PICKS.map(([k, l]) => [k, l, pickList(k), 'chip']), ['h', '🎧 들은 곡', heardList, 'chip']]],
+      ['song', '🎵 곡', [['s', '♥ 하트', songs, 'chip'], ...SONG_PICKS.map(([k, l]) => [k, l, pickList(k), 'chip']), ['h', '🎧 들은 곡', heardList, 'chip'], ...folders().map(f => ['f-' + f.id, '📁 ' + f.name, folderSongs(f.id), 'chip', true])]],
       ['my', '✍️ 내 글', [['l', '💬 가사', ly, lyRow], ['c', '📣 떼창', ch, chRow], ['tmi', '💡 TMI', tm, tmRow], ['up', '♥ 누른 글', upList, upRow]]],
-    ].map(([k, l, subs]) => [k, l, subs.filter(x => x[2].length)]).filter(g => g[2].length);
+    ].map(([k, l, subs]) => [k, l, subs.filter(x => x[2].length || x[4])]).filter(g => g[2].length);
     // 예전 주소(#/box?t=w 등)는 그 칩이 든 탭으로
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
     let t = q.get('t') || '', sub = q.get('s') || '';
@@ -1931,7 +1965,9 @@
       if (years.length > 1) yearBar = `<select class="box-year" aria-label="연도"><option value="${link(t, sub)}">전체 연도</option>${years.map(x => `<option value="${link(t, sub, x)}"${x === y ? ' selected' : ''}>${x} · ${list.filter(e => e.date.startsWith(x)).length}</option>`).join('')}</select>`;
       if (y) list = list.filter(e => e.date.startsWith(y));
     }
-    const html = sc[3] === 'ev' ? list.map(evRow).join('') : sc[3] === 'chip' ? chipsOf(list) + (SONG_PICKS.some(([k]) => k === sub) ? '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>' : '') : list.map(sc[3]).join('');
+    const fdCur = sub.startsWith('f-') ? folders().find(f => 'f-' + f.id === sub) : null;
+    const fdTools = t === 'song' ? `<div class="fd-tools">${fdCur ? `<button type="button" class="link-btn fd-ren" data-id="${esc(fdCur.id)}">이름 바꾸기</button><button type="button" class="link-btn fd-del" data-id="${esc(fdCur.id)}">폴더 지우기</button>` : ''}<button type="button" class="link-btn fd-add">＋ 새 폴더</button></div>` : '';
+    const html = fdTools + (fdCur && !list.length ? '<p class="empty">아직 빈 폴더예요. 곡 화면의 📁 버튼으로 곡을 담아 보세요.</p>' : '') + (sc[3] === 'ev' ? list.map(evRow).join('') : sc[3] === 'chip' ? chipsOf(list) + (SONG_PICKS.some(([k]) => k === sub) ? '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>' : '') : list.map(sc[3]).join(''));
     const cur = { n: list.length, html };
     const subBar = g[2].length > 1 || yearBar ? `<div class="box-subrow"><div class="box-subs">${g[2].length > 1 ? g[2].map(x => `<a class="box-sub${x[0] === sub ? ' on' : ''}" href="${link(t, x[0])}">${x[1]} <small>${x[2].length}</small></a>`).join('') : ''}</div>${yearBar}</div>` : '';
     // 검색용: 일정·곡·내 글을 한 목록에
@@ -3382,6 +3418,12 @@
     return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };
   function bindBox() {
+    const fa = document.querySelector('.fd-add');
+    if (fa) fa.onclick = () => { const n = fdName(prompt('새 폴더 이름', '') || ''); if (!n) return; const id = fdNew(n); location.hash = '#/box?t=song&s=f-' + id; };
+    const fr = document.querySelector('.fd-ren');
+    if (fr) fr.onclick = () => { const f = folders().find(x => x.id === fr.dataset.id); if (!f) return; const n = fdName(prompt('폴더 이름', f.name) || ''); if (!n || n === f.name) return; boxSetS(box.s.map(x => x === f.raw ? 'fn:' + f.id + ':' + n : x)); renderBase('box'); };
+    const fx = document.querySelector('.fd-del');
+    if (fx) fx.onclick = () => { const f = folders().find(x => x.id === fx.dataset.id); if (!f || !confirm(`'${f.name}' 폴더를 지울까요? 곡은 다른 곳에 그대로 있어요.`)) return; boxSetS(box.s.filter(x => x !== f.raw && !x.startsWith('fd:' + f.id + ':'))); location.hash = '#/box?t=song'; };
     const yr = document.querySelector('.box-year');
     if (yr) yr.onchange = () => { location.hash = yr.value; };
     const more = document.querySelector('.box-more');
