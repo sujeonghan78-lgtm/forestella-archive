@@ -4871,6 +4871,15 @@
       : isAdmin() ? `<p class="sub">이 기기는 관리자 기기예요. <a href="#/opinion">의견 탭</a>에서 처리 표시를, 일정 화면에서 숨기기를 할 수 있어요.</p>
         <h2 class="h3 list-title">삭제 요청</h2>
         ${(q => q.length ? [...new Set(q.map(x => x.id))].map(id => `<div class="del-box">${q.filter(x => x.id === id).map(x => delReqHtml(x, true)).join('')}${delActs(id)}</div>`).join('') : '<p class="src-note">새 삭제 요청이 없어요.</p>')(delPending())}
+        <h2 class="h3 list-title">제보 폼 제보 <span class="song-count">${repOpen().length}</span></h2>
+        ${repOpen().length ? repOpen().map(r => { const e = repEvent(r); return `<div class="report">
+            <span class="report-badge">${esc(fmtDate(r.date, false) || '날짜 없음')}</span>
+            ${e ? `<a href="#/e/${encodeURIComponent(e.id)}"><b>${esc(e.title)}</b></a>` : `<b>${esc(r.title || '일정 없음')}</b>`}
+            <span>${esc([r.type, r.song].filter(Boolean).join(' · '))}</span>
+            ${r.message ? `<span class="report-msg">${esc(r.message)}</span>` : ''}
+            ${/^https?:\/\//.test(r.link) ? `<a href="${esc(r.link)}" target="_blank" rel="noopener nofollow">근거 링크 ›</a>` : ''}
+            <button type="button" class="link-btn rep-done" data-id="${esc(r.id)}">반영했어요 · 숨기기</button>
+          </div>`; }).join('') : '<p class="src-note">남은 제보가 없어요.</p>'}
         <a class="map-entry" href="#/placefind">📍 지도 장소 한꺼번에 찾기 <span>›</span></a>
         <h2 class="h3 list-title">숨긴 일정</h2>
         ${(data.hidden || []).length ? data.hidden.map(h => `<div class="op-item"><div class="op-head"><span class="op-who">${esc(h.date)} ${esc(h.title)}</span></div><div class="op-foot"><button type="button" class="link-btn ev-unhide" data-id="${esc(h.id)}">다시 보이기</button></div></div>`).join('') : '<p class="src-note">숨긴 일정이 없어요.</p>'}
@@ -5367,6 +5376,9 @@
       </div>`;
   }
 
+  // 관리자 기기: 아직 숨기지 않은 제보 폼 제보 전체 (최근 것부터)와 그 제보가 붙는 일정
+  const repOpen = () => { const done = window.SB_EV_HIDE || new Set(); return data.reports.filter(r => !done.has(r.id)).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')); };
+  const repEvent = r => data.events.find(e => r.date === e.date && (!r.title || norm(e.title).includes(norm(r.title)) || norm(r.title).includes(norm(e.title))));
   function reportsFor(e) {
     const t = norm(e.title);
     const done = window.SB_EV_HIDE || new Set();
