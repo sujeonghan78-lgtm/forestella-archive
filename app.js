@@ -1356,7 +1356,7 @@
       if (sh) { b.disabled = true; lySend(so, t).then(() => { toast('공유했어요. 5~10분쯤 뒤 모두에게 보여요.'); lyRedraw(so); }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); }); }
       else { toast('이 폰에 저장했어요.'); lyRedraw(so); }
     } else if (b.matches('.ly-up')) {
-      b.disabled = true; lySend(so, b.dataset.t).then(() => lyRedraw(so)).catch(() => { b.disabled = false; });
+      b.disabled = true; lySend(so, b.dataset.t).then(() => { boxWrite('sb-ly-up', [...(boxRead('sb-ly-up') || []).filter(x => x.id !== lyId(so.key, b.dataset.t)), { id: lyId(so.key, b.dataset.t), key: so.key, t: b.dataset.t, at: Date.now() }].slice(-300)); lyRedraw(so); }).catch(() => { b.disabled = false; });
     } else {
       const m = list[Number(b.dataset.i)];
       if (!m) return;
@@ -1407,7 +1407,7 @@
     if (banned()) { toast(banMsg()); return; }
     b.disabled = true;
     formPost(`종류: 떼창\n곡: ${so.name}\n곡키: ${so.key}\n누가: ${by}\n내용: ${t}`).then(() => {
-      boxWrite(CH_SENT, [...sent.filter(x => x.id !== chId(so.key, t)), { id: chId(so.key, t), key: so.key, t, at: Date.now() }].slice(-200));
+      boxWrite(CH_SENT, [...sent.filter(x => x.id !== chId(so.key, t)), { id: chId(so.key, t), key: so.key, t, at: Date.now(), ...(b.matches('.ch-up') ? { up: 1 } : {}) }].slice(-200));
       toast(b.matches('.ch-up') ? '♥ 눌렀어요.' : '공유했어요. 5~10분쯤 뒤 모두에게 보여요.');
       chRedraw(so);
     }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
@@ -1482,7 +1482,7 @@
     if (banned()) { toast(banMsg()); return; }
     b.disabled = true;
     formPost(`종류: TMI\n곡: ${title}\n곡키: ${key}\n출처: ${src}\n누가: ${by}\n내용: ${t}`).then(() => {
-      boxWrite(TMI_SENT, [...sent.filter(x => x.id !== tmiId(key, t)), { id: tmiId(key, t), key, t, src, at: Date.now() }].slice(-200));
+      boxWrite(TMI_SENT, [...sent.filter(x => x.id !== tmiId(key, t)), { id: tmiId(key, t), key, t, src, at: Date.now(), ...(b.matches('.tmi-up') ? { up: 1 } : {}) }].slice(-200));
       toast(b.matches('.tmi-up') ? '♥ 눌렀어요.' : '남겼어요. 5~10분쯤 뒤 모두에게 보여요.');
       tmiRedraw(key);
     }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
@@ -1885,7 +1885,7 @@
   function boxView() {
     const { wentAll, went, seen, liked, songs, heardList, topRegion, first } = boxStats();
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
-    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length) && !(boxRead('sb-tmi-sent') || []).some(x => !x.del) && !Object.keys(lyMine()).length && !(boxRead(CH_SENT) || []).some(x => !x.del);
+    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length) && !(boxRead('sb-tmi-sent') || []).some(x => !x.del) && !Object.keys(lyMine()).length && !(boxRead(CH_SENT) || []).some(x => !x.del) && !(data.lyrics || []).some(l => l.who.includes(myUid()) && l.first !== myUid()) && !(boxRead('sb-ly-up') || []).length;
     const LIMIT = 8;
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
     // 탭은 일정 · 곡 · 내 글 세 개, 안에서 작은 칩으로 골라요 (주소 #/box?t=그룹&s=칩&y=연도)
@@ -1894,15 +1894,24 @@
     const tmHref = k => k.startsWith('e:') ? '#/e/' + encodeURIComponent(k.slice(2)) : k.startsWith('t:') ? '#/tour/' + encodeURIComponent(k.slice(2)) : '#/song/' + encodeURIComponent(k.slice(2));
     const tmWhere = k => k.startsWith('e:') ? ((data.byId.get(k.slice(2)) || {}).title || '일정') : k.startsWith('t:') ? (((data.tours || []).find(t => t.id === k.slice(2)) || (data.concerts || []).find(c => c.id === k.slice(2)) || {}).name || '콘서트') : ((data.songs.get(k.slice(2)) || {}).name || '곡');
     const ly = Object.entries(lyMine()).flatMap(([k, list]) => list.map(m => [data.songs.get(k), m])).filter(x => x[0]).sort((a, b) => b[1].at - a[1].at);
-    const ch = (boxRead(CH_SENT) || []).filter(x => !x.del && data.songs.get(x.key)).sort((a, b) => b.at - a.at);
-    const tm = (boxRead('sb-tmi-sent') || []).filter(x => !x.del).sort((a, b) => b.at - a.at);
+    // 내가 ♥ 누른 남의 글: 시트에서 내 번호가 든 글(첫 글쓴이가 내가 아닌 것) + 이 폰에 남긴 ♥ 기록
+    const uid = myUid(), othersUp = new Map((data.lyrics || []).filter(l => l.who.includes(uid) && l.first && l.first !== uid).map(l => [l.id, l]));
+    const ch = (boxRead(CH_SENT) || []).filter(x => !x.del && !x.up && !othersUp.has(x.id) && data.songs.get(x.key)).sort((a, b) => b.at - a.at);
+    const tm = (boxRead('sb-tmi-sent') || []).filter(x => !x.del && !x.up && !othersUp.has(x.id)).sort((a, b) => b.at - a.at);
+    const ups = new Map([...othersUp.values()].map(l => [l.id, { kind: l.kind, key: l.key, t: l.text, at: l.at }]));
+    (boxRead('sb-ly-up') || []).forEach(x => ups.has(x.id) || ups.set(x.id, { kind: '가사', key: x.key, t: x.t, at: x.at }));
+    (boxRead(CH_SENT) || []).filter(x => x.up && !x.del).forEach(x => ups.has(x.id) || ups.set(x.id, { kind: '떼창', key: x.key, t: x.t, at: x.at }));
+    (boxRead('sb-tmi-sent') || []).filter(x => x.up && !x.del).forEach(x => ups.has(x.id) || ups.set(x.id, { kind: 'TMI', key: x.key, t: x.t, at: x.at }));
+    const upList = [...ups.values()].filter(x => x.kind === 'TMI' || data.songs.get(x.key)).sort((a, b) => b.at - a.at);
+    const UP_ICON = { '가사': '💬', '떼창': '📣', 'TMI': '💡' };
+    const upRow = x => { const tmi = x.kind === 'TMI'; return `<a class="box-ev" href="${tmi ? tmHref(x.key) : '#/song/' + encodeURIComponent(x.key)}"><span>${esc(tmi ? tmWhere(x.key) : data.songs.get(x.key).name)}</span><b>${UP_ICON[x.kind] || ''} ${esc(x.t)}</b></a>`; };
     const lyRow = ([so, m]) => `<a class="box-ev" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(so.name)}</span><b>“${esc(m.t)}”</b></a>`;
     const chRow = x => `<a class="box-ev" href="#/song/${encodeURIComponent(x.key)}"><span>${esc(data.songs.get(x.key).name)}</span><b>📣 ${esc(x.t)}</b></a>`;
     const tmRow = x => `<a class="box-ev" href="${tmHref(x.key)}"><span>${esc(tmWhere(x.key))}</span><b>${esc(x.t)}</b></a>`;
     const groups = [
       ['ev', '🎫 일정', [['w', '🎫 직관', went, 'ev'], ['b', '📺 시청', seen, 'ev'], ['e', '♥ 좋아요', liked, 'ev']]],
       ['song', '🎵 곡', [['s', '♥ 하트', songs, 'chip'], ...SONG_PICKS.map(([k, l]) => [k, l, pickList(k), 'chip']), ['h', '🎧 들은 곡', heardList, 'chip']]],
-      ['my', '✍️ 내 글', [['l', '💬 가사', ly, lyRow], ['c', '📣 떼창', ch, chRow], ['tmi', '💡 TMI', tm, tmRow]]],
+      ['my', '✍️ 내 글', [['l', '💬 가사', ly, lyRow], ['c', '📣 떼창', ch, chRow], ['tmi', '💡 TMI', tm, tmRow], ['up', '♥ 누른 글', upList, upRow]]],
     ].map(([k, l, subs]) => [k, l, subs.filter(x => x[2].length)]).filter(g => g[2].length);
     // 예전 주소(#/box?t=w 등)는 그 칩이 든 탭으로
     const q = new URLSearchParams(location.hash.split('?')[1] || '');

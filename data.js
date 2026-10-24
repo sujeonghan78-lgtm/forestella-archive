@@ -622,7 +622,7 @@
       // 막힌 동안 쓴 글은 그 사람 몫을 빼요
       lyr.forEach(l => l.by.forEach((_, u) => { if (bansAll[u] && (l.times.get(u) || 0) < bansAll[u] && (l.times.get(u) || 0) > bansAll[u] - 31 * 864e5 && u !== l.first) l.by.delete(u); }));
       flaggedAll = flagged.sort((a, b) => b.at - a.at);
-      lyricsAll = [...lyr.values()].filter(l => l.by.size && !gone.has('ly' + l.id) && !l.autoHidden && !(bansAll[l.first] && l.at > bansAll[l.first] - 31 * 864e5 && l.at < bansAll[l.first] && strikes.get(l.first) && l.at > strikes.get(l.first).last)).map(l => ({ id: l.id, key: l.key, kind: l.kind, text: l.text, src: l.src, n: l.by.size, who: [...l.by.keys()], at: l.at }));
+      lyricsAll = [...lyr.values()].filter(l => l.by.size && !gone.has('ly' + l.id) && !l.autoHidden && !(bansAll[l.first] && l.at > bansAll[l.first] - 31 * 864e5 && l.at < bansAll[l.first] && strikes.get(l.first) && l.at > strikes.get(l.first).last)).map(l => ({ id: l.id, key: l.key, kind: l.kind, text: l.text, src: l.src, n: l.by.size, who: [...l.by.keys()], first: l.first, at: l.at }));
       // 날짜만 있는 회차는 같은 날 시간 있는 회차가 들어오면 빼요 (겹쳐 보이지 않게)
       events.forEach(e => { if (e.casts) e.casts = e.casts.filter(c => c.t || !e.casts.some(x => x !== c && x.d === c.d && x.t)); });
       events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));
