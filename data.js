@@ -73,9 +73,7 @@
     ['라틴어', /\b(dies irae|requiem|sis puella)\b/],
   ];
   // 짐작이 틀리는 곡 (곡키 → 언어)
-  const LANG_FIX = { 'time to say goodbye': '이탈리아어', 'plastic love': '일본어', 'amor fati': '한국어', 'now we are free': '이탈리아어', 'la la la': '영어', libertango: '연주곡' };
-  // 포레 음반에 들어 있지만 영어로 부른 곡
-  const EN_COVER = new Set(['dream a little dream of me', 'you change my world', 'angel', 'my favorite things', "all the king's horses", 'bohemian rhapsody', 'my heart will go on', 'thriller', 'champions (we are the champions)', 'champions', 'scarborough fair', 'the show must go on', 'be my love', 'the sky and the dawn and the sun', 'stand by me']);
+  const LANG_FIX = { 'time to say goodbye': '이탈리아어', 'plastic love': '일본어', 'now we are free': '이탈리아어', 'la la la': '영어', libertango: '연주곡' };
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
   // '월의 어느 멋진날에(무반주 한소절)'처럼 뒤가 달라도 앞 '10'만 되살려요
   const slFix = x => x.replace(/^월의\s*어느\s*멋진/, '10월의 어느 멋진');
@@ -786,13 +784,13 @@
         if (titles.includes(so.key) && !so.titleOf.includes(a)) so.titleOf.push(a);
       });
     });
-    // 곡 언어: 제목 낱말로 짐작 → 포레·멤버 음반 수록곡(영어 제목이어도 자작곡)은 한국어 → 팬 고치기(3명 또는 관리자 확정 'lg'+번호)
+    // 곡 언어: 제목 기준(한글 제목 한국어, 그 밖엔 낱말로 짐작, 나머지 영어) → 팬 고치기(3명 또는 관리자 확정 'lg'+번호)
     const gone = window.SB_EV_HIDE || new Set();
     songs.forEach(so => {
       const t = [so.name, so.key, ...Object.keys(so.names || {})].join(' ').toLowerCase();
       let l = LANG_FIX[so.key] || '';
       if (!l) l = (LANG_RX.find(([, rx]) => rx.test(t)) || [])[0] || '';
-      if (!l) l = /[가-힣]/.test(so.name) ? '한국어' : so.albums.some(a => !/방송/.test(a.kind || '')) && !EN_COVER.has(so.key) ? '한국어' : '영어';
+      if (!l) l = /[가-힣]/.test(so.name) ? '한국어' : '영어';
       so.langAuto = l;
       so.langProps = Object.entries(langVotes.get(so.key) || {}).filter(([x]) => x !== l).map(([x, v]) => ({ lang: x, n: v.by.size, who: [...v.by], at: v.at, ok: v.by.size >= 3 || gone.has('lg' + slVer([so.key, x])) }));
       const won = so.langProps.filter(p => p.ok).sort((a, b) => b.at - a.at)[0];
