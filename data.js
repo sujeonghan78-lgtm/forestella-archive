@@ -75,7 +75,8 @@
     '전설속의 누군가처럼': '전설 속의 누군가처럼', 'hand clap': 'handclap', '딴따라블루스': '딴따라 블루스', '새야새야 파랑새야': '새야 새야 파랑새야', '좋은걸 어떡해': '좋은 걸 어떡해',
     // 사랑의 찬가 표기 합치기 (2026-10-24 팬 의견)
     "사랑의 찬가(hymne à l'amour)": '사랑의 찬가', "사랑의 찬가 (hymne à l'amour)": '사랑의 찬가', "hymne à l'amour": '사랑의 찬가', "hymne a l'amour": '사랑의 찬가', "l'hymne à l'amour": '사랑의 찬가', "사랑의 찬가(hymne a l'amour)": '사랑의 찬가', "사랑의 찬가 (hymne a l'amour)": '사랑의 찬가',
-    '그대가 그대를 (live a long long time)': '그대가 그대를' };
+    '그대가 그대를 (live a long long time)': '그대가 그대를',
+    'phantom of the opera': 'the phantom of the opera' };
   // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
   const PROD_CH = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티/;
   const LINK_SKIP = new Set([
@@ -458,6 +459,11 @@
       // 보충 파일 casts {일정ID: [{d, t}]}: 따로 등록됐다 지운 공연 날짜 등을 회차로 넣어요
       Object.entries(extra.casts || {}).forEach(([id, list]) => { const e = byEv.get(id); if (e) list.forEach(c => { const cid = 'c' + slVer([e.id, c.d, c.t || '']); if (!gone.has(cid) && !(e.casts || []).some(x => x.id === cid)) (e.casts = e.casts || []).push({ d: c.d, t: c.t || '', id: cid, by: '' }); }); });
       events.forEach(e => (e.fanCasts || []).forEach(c => { const cid = 'c' + slVer([e.id, c.d, c.t]); if (!gone.has(cid) && !(e.casts || []).some(x => x.id === cid)) (e.casts = e.casts || []).push({ ...c, id: cid }); }));
+      // 보충 파일 castSet {일정ID: {날짜: [시간…]}}: 그날 회차를 이 시간들로 정해요 (팬이 다른 시간으로 올린 건 빠져요)
+      Object.entries(extra.castSet || {}).forEach(([id, days]) => { const e = byEv.get(id); if (!e) return; Object.entries(days).forEach(([d, ts]) => {
+        e.casts = (e.casts || []).filter(c => c.d !== d || ts.includes(c.t));
+        ts.forEach(t => { if (!e.casts.some(c => c.d === d && c.t === t)) e.casts.push({ d, t, id: 'c' + slVer([e.id, d, t]), by: '' }); });
+      }); });
       events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));
     }
     // 숨기거나 지운 일정에 대한 제보는 빼고, 최근 것부터
