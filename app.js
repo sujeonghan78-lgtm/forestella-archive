@@ -1121,6 +1121,7 @@
           ${songLast(so) ? `<div class="fact"><b>마지막으로 부른 지</b><span>${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 (${fmtDate(songLast(so), false)})` : '오늘'}</span></div>` : ''}
         </div>` : ''}
         ${songPickRow(so)}
+        ${lyricBox(so)}
         ${songMemos(so)}
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
@@ -1156,6 +1157,62 @@
     boxToggle('s', pickPre(k) + so.key);
     b.closest('.song-picks').outerHTML = songPickRow(so);
     toast(had ? `${l}에서 뺐어요.` : `${l}에 넣었어요. 보관함 '⭐ 내 곡'에 모여요.`);
+  });
+  // 좋아하는 가사: 이 폰에 저장(sb-lyrics {곡키: [{t, sh, at}]}), '다른 팬과 공유'를 고른 줄만 제보 폼(종류: 가사)으로 올라가요
+  const LY_KEY = 'sb-lyrics';
+  const lyMine = () => boxRead(LY_KEY) || {};
+  const lyId = (key, t) => window.DATA.slVer([key, t.replace(/\s+/g, ' ').trim().toLowerCase()]);
+  const lyClean = t => t.replace(/\s+/g, ' ').trim().slice(0, 120);
+  function lyricBox(so) {
+    const mine = lyMine()[so.key] || [], uid = myUid();
+    const shared = (data.lyrics || []).filter(l => l.key === so.key).sort((a, b) => b.n - a.n || b.at - a.at);
+    const sentLocal = boxRead('sb-ly-sent') || [];
+    const row = l => {
+      const me = l.who.includes(uid) || sentLocal.includes(l.id);
+      return `<div class="ly-line"><q>${esc(l.text)}</q><span class="ly-side"><button type="button" class="bpill ly-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''}>♥ ${l.n + (sentLocal.includes(l.id) && !l.who.includes(uid) ? 1 : 0)}</button>${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
+    };
+    const myRow = (m, i) => `<div class="ly-line mine"><q>${esc(m.t)}</q><span class="ly-side"><small>${m.sh ? '공유함' : '🔒 나만'}</small><button type="button" class="link-btn ly-del" data-key="${esc(so.key)}" data-i="${i}" aria-label="지우기">×</button></span></div>`;
+    const n = shared.length + mine.filter(m => !m.sh).length;
+    return `<details class="song-memo ly-box"${n ? ' open' : ''}><summary>💬 좋아하는 가사${n ? ` ${n}` : ''}</summary>
+      ${shared.length ? `<p class="src-note">팬들이 고른 가사</p>${shared.map(row).join('')}` : ''}
+      ${mine.length ? `<p class="src-note">내가 저장한 가사</p>${mine.map(myRow).join('')}` : ''}
+      <div class="op-form ly-form"><textarea class="op-in ly-in" rows="2" maxlength="120" placeholder="좋아하는 가사 한두 줄"></textarea>
+      <label class="ly-sh"><input type="checkbox" class="ly-share"> 다른 팬과 공유하기</label>
+      <button type="button" class="bpill add-send ly-save" data-key="${esc(so.key)}">저장</button>
+      <p class="src-note">저작권 때문에 한두 줄만 적어 주세요. 공유한 가사는 5~10분쯤 뒤 모두에게 보여요.</p></div></details>`;
+  }
+  const lyRedraw = so => { const d = document.querySelector('.ly-box'); if (d) { d.outerHTML = lyricBox(so); document.querySelector('.ly-box').open = true; } };
+  const lySend = (so, t) => {
+    const by = myUid();
+    return formPost(`종류: 가사\n곡: ${so.name}\n곡키: ${so.key}\n누가: ${by}\n내용: ${t}`).then(() => {
+      boxWrite('sb-ly-sent', [...(boxRead('sb-ly-sent') || []), lyId(so.key, t)].slice(-300));
+    });
+  };
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.ly-save, .ly-up, .ly-del, .ly-hide');
+    if (!b) return;
+    if (b.matches('.ly-hide')) { b.disabled = true; sendEvMark('ly' + b.dataset.id, '숨김').then(() => toast('숨겼어요. 5~10분쯤 뒤 모두에게서 빠져요.')).catch(() => { b.disabled = false; }); return; }
+    const so = data.songs.get(b.dataset.key);
+    if (!so) return;
+    const all = lyMine(), list = all[so.key] || [];
+    if (b.matches('.ly-save')) {
+      const box = b.closest('.ly-form'), t = lyClean(box.querySelector('.ly-in').value), sh = box.querySelector('.ly-share').checked;
+      if (!t) return;
+      if (!list.some(m => m.t === t)) list.unshift({ t, sh, at: Date.now() });
+      all[so.key] = list; boxWrite(LY_KEY, all);
+      if (sh) { b.disabled = true; lySend(so, t).then(() => { toast('공유했어요. 5~10분쯤 뒤 모두에게 보여요.'); lyRedraw(so); }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); }); }
+      else { toast('이 폰에 저장했어요.'); lyRedraw(so); }
+    } else if (b.matches('.ly-up')) {
+      b.disabled = true; lySend(so, b.dataset.t).then(() => lyRedraw(so)).catch(() => { b.disabled = false; });
+    } else {
+      const m = list[Number(b.dataset.i)];
+      if (!m) return;
+      list.splice(Number(b.dataset.i), 1);
+      all[so.key] = list; if (!list.length) delete all[so.key]; boxWrite(LY_KEY, Object.keys(all).length ? all : null);
+      if (m.sh) formPost(`종류: 가사삭제\n번호: ${window.DATA.slVer([myUid(), so.key, m.t.toLowerCase()])}\n누가: ${myUid()}`).catch(() => {});
+      toast(m.sh ? '지웠어요. 공유한 가사도 5~10분쯤 뒤 빠져요.' : '지웠어요.');
+      lyRedraw(so);
+    }
   });
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
   function songMemos(so) {
@@ -1493,6 +1550,10 @@
         const groups = SONG_PICKS.map(([k, l]) => [l, pickList(k)]).filter(g => g[1].length);
         const n = groups.reduce((a, g) => a + g[1].length, 0);
         return [['p', '⭐ 내 곡', n, groups.map(([l, list]) => `<p class="src-note">${l} ${list.length}</p><div class="chips box-songs">${list.map(so => songChip(so)).join('')}</div>`).join('') + '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>']];
+      })(),
+      ...(() => {
+        const ly = Object.entries(lyMine()).flatMap(([k, list]) => list.map(m => [data.songs.get(k), m])).filter(x => x[0]).sort((a, b) => b[1].at - a[1].at);
+        return [['l', '💬 가사', ly.length, ly.map(([so, m]) => `<a class="box-ev" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(so.name)}</span><b>“${esc(m.t)}”</b></a>`).join('')]];
       })(),
       ['s', '♥ 곡', songs.length, `<div class="chips box-songs">${songs.map(so => songChip(so)).join('')}</div>`],
       ['h', '들은 곡', heardList.length, `<div class="chips box-songs">${heardList.map(([so, n]) => songChip(so, n)).join('')}</div>`],

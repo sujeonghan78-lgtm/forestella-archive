@@ -1391,3 +1391,12 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .song-memo .box-ev small { display: block; font-size: 11px; color: var(--muted); }
 .same-song { margin-top: 18px; }
 .song-picks { margin-top: 10px; }
+.ly-line { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.ly-line q { font-size: 14px; line-height: 1.5; quotes: '“' '”'; }
+.ly-side { display: flex; gap: 6px; align-items: center; flex: none; }
+.ly-side small { font-size: 11px; color: var(--muted); }
+.ly-up.on { opacity: .7; }
+.ly-sh { display: flex; gap: 6px; align-items: center; font-size: 13px; margin: 6px 0; }
+.ly-form { margin-top: 8px; }
+.op-form .ly-sh { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 6px; width: auto; }
+.op-form .ly-sh input { width: 18px; height: 18px; flex: none; margin: 0; }

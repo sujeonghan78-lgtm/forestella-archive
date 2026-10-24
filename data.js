@@ -189,7 +189,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '가사삭제' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -521,6 +521,7 @@
     events.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     // 뮤지컬 캐스팅 회차(종류: 캐스팅 일정/날짜/시간): 누구나 올리면 바로 그 일정에 회차로 붙고, 직관은 회차 중에서 골라요.
     // 관리자가 지우면(서명된 숨김 줄, 번호 'c'+일정·날짜·시간) 빠져요
+    let lyricsAll = [];
     if (raw.reports) {
       const gone = window.SB_EV_HIDE || new Set(), byEv = new Map(events.map(e => [e.id, e]));
       buildReports(toObjects(raw.reports), true).forEach(r => {
@@ -541,6 +542,20 @@
         e.casts = (e.casts || []).filter(c => c.d !== d || ts.includes(c.t));
         ts.forEach(t => { if (!e.casts.some(c => c.d === d && c.t === t)) e.casts.push({ d, t, id: 'c' + slVer([e.id, d, t]), by: '' }); });
       }); });
+      // 팬들이 고른 가사 한 줄 (종류: 가사 곡키/누가/내용): 같은 줄을 고른 사람 수를 세요.
+      // 올린 사람이 지우거나(종류: 가사삭제 번호, 누가 같을 때만) 관리자가 숨기면('ly'+번호 숨김 서명) 빠져요
+      const lyr = new Map(), lyDel = new Set();
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if (r.type === '가사삭제' && r.by) lyDel.add(line0(r, '번호') + '|' + r.by);
+        if (r.type !== '가사' || !r.by) return;
+        const key = line0(r, '곡키'), text = (r.message || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+        if (!key || !text) return;
+        const id = slVer([key, text.toLowerCase()]);
+        if (!lyr.has(id)) lyr.set(id, { id, key, text, by: new Map(), at: tsMs(r.time) });
+        lyr.get(id).by.set(r.by, slVer([r.by, key, text.toLowerCase()]));
+      });
+      lyr.forEach(l => { l.by.forEach((mine, by) => { if (lyDel.has(mine + '|' + by)) l.by.delete(by); }); });
+      lyricsAll = [...lyr.values()].filter(l => l.by.size && !gone.has('ly' + l.id)).map(l => ({ id: l.id, key: l.key, text: l.text, n: l.by.size, who: [...l.by.keys()], at: l.at }));
       // 날짜만 있는 회차는 같은 날 시간 있는 회차가 들어오면 빼요 (겹쳐 보이지 않게)
       events.forEach(e => { if (e.casts) e.casts = e.casts.filter(c => c.t || !e.casts.some(x => x !== c && x.d === c.d && x.t)); });
       events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));
@@ -991,7 +1006,7 @@
     songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, lyrics: lyricsAll, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
