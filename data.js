@@ -160,6 +160,14 @@
   // 셋리 판 구분 번호: 곡 목록이 같으면 같은 번호
   const slVer = songs => { let h = 5381; songs.join('/').split('').forEach(ch => { h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0; }); return h.toString(36); };
   const line0 = (r, key) => (((r.raw || '').match(new RegExp('^[ \\t]*' + key + '[ \\t]*[:：][ \\t]*(.*)$', 'm')) || [])[1] || '').trim();
+  // 관리자가 중복이라 원본에 합친 일정(window.SB_EV_MERGE {중복ID: 원본ID})에 들어온 이름 고치기·캐스팅 회차·셋리 고치기는 원본 일정 것으로 쳐요.
+  // 날짜·장소 제안과 삭제 요청은 안 옮겨요 (날짜는 원본 것, 장소는 원본 빈 칸만 채워요)
+  const MV_TYPES = new Set(['이름수정', '이름확인', '캐스팅', '셋리스트', '셋리확인']);
+  function mvMerged(list) {
+    const to = window.SB_EV_MERGE || {}, hid = window.SB_EV_HIDE || new Set();
+    list.forEach(r => { if (!MV_TYPES.has(r.type)) return; r.title = (r.title || '').replace(/\[ID ([\w-]+)\]/, (m, id) => hid.has(id) && to[id] ? `[ID ${to[id]}]` : m); });
+    return list;
+  }
   function buildReports(rows, all) {
     const pick = (r, word) => {
       const k = Object.keys(r).find(k => k.includes(word));
@@ -167,7 +175,7 @@
     };
     // 통합형 폼: "제보 내용" 한 칸에 "종류: … / 날짜: … / 일정: … / 곡: … / 링크: … / 내용: …" 줄로 들어와요 (예전 칸 나뉜 응답도 읽어요)
     const line = (txt, key) => { const v = (((txt || '').match(new RegExp('^[ \\t]*' + key + '[ \\t]*[:：][ \\t]*(.*)$', 'm')) || [])[1] || '').trim(); return /중 하나$/.test(v) ? '' : v; };
-    return rows.map(r => {
+    return mvMerged(rows.map(r => {
       const c = pick(r, '내용');
       const free = c && !/^\s*(종류|날짜|일정|곡|링크|내용)\s*[:：]/m.test(c) ? c.trim() : '';
       return {
@@ -181,7 +189,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type)));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -465,7 +473,7 @@
       });
     }
     // 관리자가 숨긴 일정: 사이트가 서명을 확인한 번호만 window.SB_EV_HIDE에 들어와요
-    // 관리자가 '원본에 합치기'를 한 일정은 장소·시간·영상·셋리를 원본의 빈 칸에 옮기고 숨겨요
+    // 관리자가 '원본에 합치기'를 한 일정은 장소·시간·영상·셋리를 원본의 빈 칸에 옮기고 숨겨요 (날짜는 원본 것, 이름·캐스팅·셋리 고치기 제보는 mvMerged가 원본으로 옮겨요)
     const evHide = window.SB_EV_HIDE || new Set(), evTo = window.SB_EV_MERGE || {}, hidden = [];
     events.filter(e => evHide.has(e.id) && evTo[e.id]).forEach(e => {
       const t = events.find(x => x.id === evTo[e.id]);
@@ -473,6 +481,7 @@
       if (!t.place && e.place) t.place = e.place;
       if (!t.start && e.start) t.start = e.start;
       if (!t.videoId && e.videoId) t.videoId = e.videoId;
+      if (e.fanCasts) t.fanCasts = (t.fanCasts || []).concat(e.fanCasts);
       if (!t.songs.length && e.songs.length) Object.assign(t, { songs: e.songs.slice(), songKeys: e.songKeys.slice(), songSource: e.songSource, fanSet: e.fanSet, fanSrc: e.fanSrc });
     });
     for (let i = events.length - 1; i >= 0; i--) if (evHide.has(events[i].id)) hidden.push(events.splice(i, 1)[0]);
@@ -496,7 +505,7 @@
         fanLog.push({ k: 'cast', id: e.id, at: tsMs(r.time), by: r.by, to: d });
       });
       // 보충 파일 casts {일정ID: [{d, t}]}: 따로 등록됐다 지운 공연 날짜 등을 회차로 넣어요
-      Object.entries(extra.casts || {}).forEach(([id, list]) => { const e = byEv.get(id); if (e) list.forEach(c => { const cid = 'c' + slVer([e.id, c.d, c.t || '']); if (!gone.has(cid) && !(e.casts || []).some(x => x.id === cid)) (e.casts = e.casts || []).push({ d: c.d, t: c.t || '', id: cid, by: '' }); }); });
+      Object.entries(extra.casts || {}).forEach(([id, list]) => { const e = byEv.get(id) || byEv.get((window.SB_EV_MERGE || {})[id]); if (e) list.forEach(c => { const cid = 'c' + slVer([e.id, c.d, c.t || '']); if (!gone.has(cid) && !(e.casts || []).some(x => x.id === cid)) (e.casts = e.casts || []).push({ d: c.d, t: c.t || '', id: cid, by: '' }); }); });
       events.forEach(e => (e.fanCasts || []).forEach(c => { const cid = 'c' + slVer([e.id, c.d, c.t]); if (!gone.has(cid) && !(e.casts || []).some(x => x.id === cid)) (e.casts = e.casts || []).push({ ...c, id: cid }); }));
       // 보충 파일 castSet {일정ID: {날짜: [시간…]}}: 그날 회차를 이 시간들로 정해요 (팬이 다른 시간으로 올린 건 빠져요)
       Object.entries(extra.castSet || {}).forEach(([id, days]) => { const e = byEv.get(id); if (!e) return; Object.entries(days).forEach(([d, ts]) => {
