@@ -71,20 +71,35 @@
     'alone with tears': '눈물 속에 홀로', 'the innocent macho': '순정마초', 'i still remember': '아직도 기억하고 있어요', stay: '멀어지지 말아주세요',
     'the forest song': '숲의 노래', 'your song': '당신이 듣던', 'close your eyes': '눈을 감아도', 'the journey of love': '사랑의 여정',
     // 같은 곡 표기 차이 (2026-10-22 곡 목록 점검)
-    'the phantom of the opera': 'phantom of the opera', 'bohemian rapsody': 'bohemian rhapsody', '그날들 (the days)': '그날들',
+    'bohemian rapsody': 'bohemian rhapsody', '그날들 (the days)': '그날들',
     '전설속의 누군가처럼': '전설 속의 누군가처럼', 'hand clap': 'handclap', '딴따라블루스': '딴따라 블루스', '새야새야 파랑새야': '새야 새야 파랑새야', '좋은걸 어떡해': '좋은 걸 어떡해',
     // 사랑의 찬가 표기 합치기 (2026-10-24 팬 의견)
     "사랑의 찬가(hymne à l'amour)": '사랑의 찬가', "사랑의 찬가 (hymne à l'amour)": '사랑의 찬가', "hymne à l'amour": '사랑의 찬가', "hymne a l'amour": '사랑의 찬가', "l'hymne à l'amour": '사랑의 찬가', "사랑의 찬가(hymne a l'amour)": '사랑의 찬가', "사랑의 찬가 (hymne a l'amour)": '사랑의 찬가',
     '그대가 그대를 (live a long long time)': '그대가 그대를',
     'phantom of the opera': 'the phantom of the opera',
     // Champions = 퀸 We Are The Champions (방송·공식 영상은 'Champions', 3집·왕중왕전은 원제)
-    'we are the champions': 'champions' };
+    'we are the champions': 'champions',
+    // 띄어쓰기·악센트·오타 차이 (2026-10-25 곡 목록 전체 점검)
+    '별헤는 밤': '별 헤는 밤', lavita: 'la vita', '사랑 그 쓸쓸함에 대하여': '사랑, 그 쓸쓸함에 대하여', mistique: 'mystique',
+    'my favorite thing': 'my favorite things', 'scaborough fair': 'scarborough fair', 'los pájaros perdidos': 'los pajaros perdidos',
+    'à la folie': 'a la folie', '백야': 'white night', 'united state of eurasia': 'united states of eurasia', 'oh carol': 'oh! carol',
+    'o grand amor': 'o grande amor', 'girl from ipanema': 'the girl from ipanema', 'alo alo marciano': 'alô alô marciano',
+    'mr. sendman': 'mr. sandman', 'liber tango[밴드]': 'libertango', 'liber tango': 'libertango', 'agora tá': 'agora ta', apocalyse: 'apocalypse',
+    'the rain of castamere': 'the rains of castamere', 'i left my hear in san francisco': 'i left my heart in san francisco',
+    'ternure antiga': 'ternura antiga', '뮤지컬 모차르트 - 나는나는음악': '나는 나는 음악', '나는나는음악': '나는 나는 음악',
+    '뮤지컬 드라큘라-loving you keeps me alive': 'loving you keeps me alive', '내 나라 내 겨레 -민규&우림': '내 나라 내 겨레',
+    '(다함께) 아름다운 나라': '아름다운 나라' };
   // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
   const PROD_CH = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티/;
   const LINK_SKIP = new Set([
     'ZSleXc9DR_Q>ev:10166', 'r05dSSCyGjc>ev:120245', 'r05dSSCyGjc>ev:120246',
   ]);
-  const songKey = name => { const k = songBase(name).toLowerCase().replace(/\s+/g, ' '); return SONG_SAME[k] || k; };
+  // '꽃병 (flower vase)'처럼 괄호 안이 같은 곡의 다른 이름이면 바깥 이름으로 합쳐요
+  const songKey = name => {
+    const k = songBase(name).toLowerCase().replace(/\s+/g, ' '), m = k.match(/^(.+?) \((.+)\)$/);
+    if (!SONG_SAME[k] && m) { const o = SONG_SAME[m[1]] || m[1], i = SONG_SAME[m[2]] || m[2]; if (o === i) return o; }
+    return SONG_SAME[k] || k;
+  };
 
   // 일정명 앞의 [강형호], [두훈/우림] 같은 표시에서 멤버 뽑기
   const MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
@@ -924,7 +939,7 @@
     });
     // 합친 곡의 대표 이름
     // 한국어 제목이 있는 곡은 '한국어 (영어)'로 (유튜브 뮤직 공식 음원 기준). so.match는 글·영상 찾을 때 쓰는 원래 이름
-    const SONG_NAME = { champions: 'Champions (We Are The Champions)', mama: 'MAMA', '정신차려': '정신차려', 'nella fantasia': 'Nella Fantasia', '시간여행': '시간여행 (Time Travel)', '달의 아들': '달의 아들 (Hijo de la Luna)', 'white night': '백야 (White Night)',
+    const SONG_NAME = { mystique: 'Mystique', 'mr. sandman': 'Mr. Sandman', libertango: 'Libertango', 'agora ta': 'Agora Tá', apocalypse: 'Apocalypse', 'the rains of castamere': 'The Rains of Castamere', 'i left my heart in san francisco': 'I Left My Heart In San Francisco', 'ternura antiga': 'Ternura Antiga', 'los pajaros perdidos': 'Los Pájaros Perdidos', 'the phantom of the opera': 'The Phantom of the Opera', champions: 'Champions (We Are The Champions)', mama: 'MAMA', '정신차려': '정신차려', 'nella fantasia': 'Nella Fantasia', '시간여행': '시간여행 (Time Travel)', '달의 아들': '달의 아들 (Hijo de la Luna)', 'white night': '백야 (White Night)',
       '그리고 봄': '그리고 봄 (And Spring)', '창귀': '창귀 (CHANGGWI)', '달하 노피곰 도다샤': '달하 노피곰 도다샤 (Dear Moon)', '마법의 성': '마법의 성 (Magic Castle)',
       '꽃병': '꽃병 (Flower Vase)', '야상곡': '야상곡 (Nocturne)', '새야 새야 파랑새야': '새야 새야 파랑새야 (Bird, Bird, Blue Bird)', '바람이 건네준 말': '바람이 건네준 말 (Words From The Wind)',
       '함께라는 이유': '함께라는 이유 (Together)', '연': '연 (Ties)', '눈물 속에 홀로': '눈물 속에 홀로 (Alone With Tears)', '순정마초': '순정마초 (The Innocent Macho)',
