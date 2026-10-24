@@ -1345,9 +1345,9 @@
     const sentLocal = boxRead('sb-ly-sent') || [];
     const row = l => {
       const me = l.who.includes(uid) || sentLocal.includes(l.id);
-      return `<div class="ly-line"><q>${esc(l.text)}</q><span class="ly-side"><button type="button" class="bpill ly-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''}>♥ ${l.n + (sentLocal.includes(l.id) && !l.who.includes(uid) ? 1 : 0)}</button>${me ? '' : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
+      return `<div class="ly-line"><q>${esc(l.text)}</q><span class="ly-side"><button type="button" class="bpill ly-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''}>♥ ${l.n + (sentLocal.includes(l.id) && !l.who.includes(uid) ? 1 : 0)}</button><button type="button" class="link-btn lyc-btn" data-key="${esc(so.key)}" data-t="${esc(l.text)}" aria-label="가사 카드 만들기">🖼</button>${me ? '' : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
     };
-    const myRow = (m, i) => `<div class="ly-line mine"><q>${esc(m.t)}</q><span class="ly-side"><small>${m.sh ? '공유함' : '🔒 나만'}</small><button type="button" class="link-btn ly-del" data-key="${esc(so.key)}" data-i="${i}" aria-label="지우기">×</button></span></div>`;
+    const myRow = (m, i) => `<div class="ly-line mine"><q>${esc(m.t)}</q><span class="ly-side"><small>${m.sh ? '공유함' : '🔒 나만'}</small><button type="button" class="link-btn lyc-btn" data-key="${esc(so.key)}" data-t="${esc(m.t)}" aria-label="가사 카드 만들기">🖼</button><button type="button" class="link-btn ly-del" data-key="${esc(so.key)}" data-i="${i}" aria-label="지우기">×</button></span></div>`;
     const n = shared.length + mine.filter(m => !m.sh).length;
     return `<details class="song-memo ly-box"${n ? ' open' : ''}><summary>💬 좋아하는 가사${n ? ` ${n}` : ''}</summary>
       ${shared.length ? `<p class="src-note">팬들이 고른 가사</p>${shared.map(row).join('')}` : ''}
@@ -1358,6 +1358,122 @@
       <p class="src-note">저작권 때문에 한두 줄만 적어 주세요. 공유한 가사는 5~10분쯤 뒤 모두에게 보여요.</p></div>
       ${lyricLinks(so)}</details>`;
   }
+  // ---------- 가사 카드: 고른 가사 한두 줄을 정사각형 이미지로 (폰 안에서 그려서 저장·공유) ----------
+  const LYC_BG = [['album', '앨범'], ['forest', '숲'], ['night', '밤'], ['dawn', '새벽'], ['cream', '크림']];
+  const LYC_COL = { forest: ['#1F5E46', '#3E8E6A', '#A6D99B'], night: ['#0E1A2E', '#25385E', '#5B6FA8'], dawn: ['#F6C7B4', '#C9B7E8', '#8FB8E8'], cream: ['#FBF6EC', '#F3EAD7', '#E8DCC2'] };
+  const LYC_FONT = [['myeong', '명조'], ['dodum', '둥근'], ['pen', '손글씨'], ['plex', '고딕']];
+  const LYC_KEY = 'sb-lyc';
+  // 그림 바탕으로 쓸 수 있는 앨범 표지: 이 사이트 표지(covers/)나 공식 X 사진만 (다른 곳 그림은 저장이 막혀요)
+  const lycCover = so => { const al = so.albums.find(a => a.img && (/^covers\//.test(a.img) || /pbs\.twimg\.com/.test(a.img))); return al ? imgSize(al.img, 'medium') : ''; };
+  let lycImg = null, lycImgSrc = '';
+  function lycDraw(cv, so, text, o) {
+    const S = 1080, ctx = cv.getContext('2d');
+    cv.width = cv.height = S;
+    const dark = o.bg !== 'cream' && o.bg !== 'dawn';
+    if (o.bg === 'album' && lycImg && lycImg.complete && lycImg.naturalWidth) {
+      // 흐리게: 아주 작게 그렸다가 크게 늘려요 (모든 폰에서 되는 방법)
+      const t = document.createElement('canvas'); t.width = t.height = 24;
+      const tc = t.getContext('2d'), iw = lycImg.naturalWidth, ih = lycImg.naturalHeight, m = Math.min(iw, ih);
+      tc.drawImage(lycImg, (iw - m) / 2, (ih - m) / 2, m, m, 0, 0, 24, 24);
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(t, -40, -40, S + 80, S + 80);
+      ctx.fillStyle = 'rgba(10,20,16,.42)'; ctx.fillRect(0, 0, S, S);
+      // 가운데 위 작은 표지
+      const c = 150, cx = (S - c) / 2, cy = 120;
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 30; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(cx, cy, c, c, 18) : ctx.rect(cx, cy, c, c); ctx.clip();
+      ctx.drawImage(lycImg, (iw - m) / 2, (ih - m) / 2, m, m, cx, cy, c, c); ctx.restore();
+    } else {
+      const col = LYC_COL[o.bg] || LYC_COL.forest, g = ctx.createLinearGradient(0, 0, S, S);
+      g.addColorStop(0, col[0]); g.addColorStop(.6, col[1]); g.addColorStop(1, col[2]);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
+    }
+    const ink = dark || o.bg === 'album' ? '#FFFFFF' : '#23332B', sub = dark || o.bg === 'album' ? 'rgba(255,255,255,.78)' : 'rgba(35,51,43,.7)';
+    const F = CARD_FONTS[o.font] || CARD_FONTS.myeong;
+    // 큰 따옴표
+    ctx.fillStyle = dark || o.bg === 'album' ? 'rgba(255,255,255,.28)' : 'rgba(35,51,43,.18)';
+    ctx.font = `800 220px ${CARD_FONTS.myeong.f}`; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    if (o.bg !== 'album') ctx.fillText('“', 90, 300);
+    // 가사: 글자 크기를 줄여 가며 7줄 안에 맞춰요
+    const maxW = S - 220, words = text.replace(/\s+/g, ' ').trim();
+    let size = 66, lines = [];
+    const wrap = sz => {
+      ctx.font = `${F.big} ${Math.round(sz * F.k)}px ${F.f}`;
+      const out = [];
+      words.split(/\s*\/\s*/).forEach(part => {
+        let cur = '';
+        part.split(' ').forEach(w => {
+          const next = cur ? cur + ' ' + w : w;
+          if (ctx.measureText(next).width > maxW && cur) { out.push(cur); cur = w; } else cur = next;
+          while (ctx.measureText(cur).width > maxW && cur.length > 1) { let i = cur.length - 1; while (i > 1 && ctx.measureText(cur.slice(0, i)).width > maxW) i--; out.push(cur.slice(0, i)); cur = cur.slice(i); }
+        });
+        if (cur) out.push(cur);
+      });
+      return out;
+    };
+    for (; size >= 38; size -= 4) { lines = wrap(size); if (lines.length <= 7) break; }
+    lines = lines.slice(0, 8);
+    const lh = Math.round(size * F.k * 1.55), top = o.bg === 'album' ? 330 : 300, room = S - top - 230;
+    let y = top + Math.max(0, (room - lh * lines.length) / 2) + lh * .8;
+    ctx.fillStyle = ink; ctx.textAlign = 'center';
+    if (o.bg === 'album') { ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 12; }
+    lines.forEach(l => { ctx.fillText(l, S / 2, y); y += lh; });
+    ctx.shadowBlur = 0;
+    // 아래: 곡 제목 · 음반 · 사이트 이름
+    const al = so.albums[0];
+    ctx.font = `700 40px ${CARD_SANS}`; ctx.fillStyle = ink; ctx.fillText(`「${so.name}」`, S / 2, S - 150);
+    ctx.font = `400 28px ${CARD_SANS}`; ctx.fillStyle = sub;
+    ctx.fillText([al ? al.member || '포레스텔라' : '포레스텔라', al ? al.name : ''].filter(Boolean).join(' · '), S / 2, S - 102);
+    ctx.font = `700 24px ${CARD_SANS}`; ctx.fillStyle = sub; ctx.fillText('숲별 기록장 🌲', S / 2, S - 48);
+  }
+  function lycOpen(so, text) {
+    let w = document.getElementById('lyc-wrap');
+    if (!w) { w = document.createElement('div'); w.id = 'lyc-wrap'; w.className = 'yf-wrap'; document.body.appendChild(w); }
+    const cover = lycCover(so), saved = boxRead(LYC_KEY) || {};
+    const o = { bg: saved.bg && (saved.bg !== 'album' || cover) ? saved.bg : cover ? 'album' : 'forest', font: saved.font || 'myeong' };
+    const bgs = LYC_BG.filter(([k]) => k !== 'album' || cover);
+    w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet lyc-sheet" role="dialog" aria-label="가사 카드">
+      <div class="yf-head"><b>🖼 가사 카드</b><span class="sub">${esc(so.name)}</span></div>
+      <canvas class="lyc-cv" width="1080" height="1080"></canvas>
+      <p class="src-note">배경</p><div class="chips lyc-opts">${bgs.map(([k, l]) => `<button type="button" class="chip${o.bg === k ? ' on' : ''}" data-bg="${k}">${l}</button>`).join('')}</div>
+      <p class="src-note">글씨</p><div class="chips lyc-opts">${LYC_FONT.map(([k, l]) => `<button type="button" class="chip${o.font === k ? ' on' : ''}" data-font="${k}">${l}</button>`).join('')}</div>
+      <div class="lyc-acts"><button type="button" class="bpill lyc-save">이미지 저장</button><button type="button" class="chip lyc-share">공유하기</button></div>
+      <p class="src-note lyc-msg"></p></section>`;
+    w.hidden = false;
+    const cv = w.querySelector('.lyc-cv'), msg = w.querySelector('.lyc-msg');
+    const redraw = () => { try { lycDraw(cv, so, text, o); } catch (err) { /* 그림 실패는 넘어가요 */ } };
+    const fontsP = cardFontsReady(text).then(() => document.fonts && Promise.all(LYC_FONT.map(([k]) => document.fonts.load(`${CARD_FONTS[k].big} 60px ${CARD_FONTS[k].f}`, text))).catch(() => {}));
+    if (cover && lycImgSrc !== cover) { lycImg = new Image(); lycImg.crossOrigin = 'anonymous'; lycImg.onload = redraw; lycImg.onerror = () => { lycImg = null; }; lycImg.src = lycImgSrc = cover; }
+    redraw(); fontsP.then(redraw);
+    w.querySelectorAll('[data-bg],[data-font]').forEach(b => b.onclick = () => {
+      if (b.dataset.bg) o.bg = b.dataset.bg; else o.font = b.dataset.font;
+      w.querySelectorAll(b.dataset.bg ? '[data-bg]' : '[data-font]').forEach(x => x.classList.toggle('on', x === b));
+      boxWrite(LYC_KEY, o); redraw();
+    });
+    w.querySelector('.yf-back').onclick = () => { w.hidden = true; };
+    const blobOf = () => new Promise(res => { try { cv.toBlob(res, 'image/png'); } catch (err) { res(null); } });
+    const fname = `숲별가사_${so.name.replace(/[\\/:*?"<>|]/g, '')}.png`;
+    w.querySelector('.lyc-save').onclick = async () => {
+      const b = await blobOf(); if (!b) { msg.textContent = '이 배경은 저장이 안 돼요. 다른 배경을 골라 주세요.'; return; }
+      const file = new File([b], fname, { type: 'image/png' });
+      const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (ios && navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (err) { if (err.name === 'AbortError') return; } }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = fname; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      msg.textContent = '저장했어요. 갤러리나 다운로드 폴더에서 볼 수 있어요.';
+    };
+    w.querySelector('.lyc-share').onclick = async () => {
+      const b = await blobOf(); if (!b) { msg.textContent = '이 배경은 공유가 안 돼요. 다른 배경을 골라 주세요.'; return; }
+      const file = new File([b], fname, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text: `포레스텔라 「${so.name}」 #포레스텔라 #숲별가사` }); } catch (err) { /* 닫음 */ } }
+      else msg.textContent = '이 브라우저는 바로 공유가 안 돼요. 이미지 저장 후 올려 주세요.';
+    };
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.lyc-btn');
+    if (!b) return;
+    const so = data.songs.get(b.dataset.key); if (!so) return;
+    const yw = document.getElementById('yf-wrap'); if (yw) yw.hidden = true;
+    lycOpen(so, b.dataset.t);
+  });
   // 가사 찾아보기 바로가기 (음원 사이트 검색 → 곡 화면의 가사)
   function lyricLinks(so) {
     const artist = (so.albums[0] && so.albums[0].member) || '포레스텔라', name = (so.match || so.name).replace(/\s*\([^)]*\)\s*$/, '');
@@ -1410,7 +1526,7 @@
     sent.filter(x => x.key === so.key && !list.some(l => l.id === x.id) && !x.del).forEach(x => list.push({ id: x.id, text: x.t, n: 1, who: [uid], at: x.at, wait: true }));
     const row = l => {
       const me = l.who.includes(uid) || ids.has(l.id);
-      return `<div class="ly-line"><span class="ch-t">${esc(l.text)}${l.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill ch-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''} aria-label="나도 이렇게 불러요">♥ ${l.n + (ids.has(l.id) && !l.who.includes(uid) && !l.wait ? 1 : 0)}</button>${me ? `<button type="button" class="link-btn ch-del" data-key="${esc(so.key)}" data-t="${esc(l.text)}" aria-label="지우기">×</button>` : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
+      return `<div class="ly-line"><span class="ch-t">${esc(l.text)}${l.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill ch-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''} aria-label="나도 이렇게 불러요">♥ ${l.n + (ids.has(l.id) && !l.who.includes(uid) && !l.wait ? 1 : 0)}</button><button type="button" class="link-btn lyc-btn" data-key="${esc(so.key)}" data-t="${esc(l.text)}" aria-label="가사 카드 만들기">🖼</button>${me ? `<button type="button" class="link-btn ch-del" data-key="${esc(so.key)}" data-t="${esc(l.text)}" aria-label="지우기">×</button>` : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
     };
     return `<details class="song-memo ch-box"${list.length ? ' open' : ''}><summary>📣 떼창 구간${list.length ? ` ${list.length}` : ''}</summary>
       ${list.map(row).join('')}

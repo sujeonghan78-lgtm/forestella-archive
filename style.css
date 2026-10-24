@@ -1486,3 +1486,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .fd-opts .chip small { margin-left: 3px; opacity: .7; }
 .song-fix-go { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 6px; padding: 8px; border: 1px dashed rgba(51,68,60,.25); border-radius: 12px; background: transparent; font-size: 12px; color: #4A5C53; }
 .song-fix-go small { color: var(--muted); font-size: 11px; }
+.lyc-btn { font-size: 15px; padding: 0 4px; }
+.lyc-sheet { max-height: 92vh; overflow-y: auto; }
+.lyc-cv { display: block; width: min(100%, 360px); aspect-ratio: 1; height: auto; margin: 6px auto 8px; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.lyc-opts { flex-wrap: wrap; margin-bottom: 6px; }
+.lyc-acts { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
