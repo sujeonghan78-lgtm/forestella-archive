@@ -88,7 +88,7 @@
     'the rain of castamere': 'the rains of castamere', 'i left my hear in san francisco': 'i left my heart in san francisco',
     'ternure antiga': 'ternura antiga', '뮤지컬 모차르트 - 나는나는음악': '나는 나는 음악', '나는나는음악': '나는 나는 음악',
     '뮤지컬 드라큘라-loving you keeps me alive': 'loving you keeps me alive', '내 나라 내 겨레 -민규&우림': '내 나라 내 겨레',
-    '(다함께) 아름다운 나라': '아름다운 나라' };
+    '(다함께) 아름다운 나라': '아름다운 나라', '아름다운 우리나라': '아름다운 나라' };
   // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
   const PROD_CH = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티/;
   const LINK_SKIP = new Set([
