@@ -943,7 +943,18 @@
   let songSort = 'name';
   let songFilter = '';
   const songMem = new Set();   // 멤버 개인 곡 필터 (여러 명 고르면 그중 누구라도)
-  const SONG_FILTERS = [['', '분류 전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡']];
+  let songYear = '';
+  const SONG_FILTERS = [['', '분류 전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡'], ['heard', '직관에서 들은 곡']];
+  // 마지막으로 부른 날: 확인된 무대·콘서트 셋리 중 가장 늦은 날 (오늘 뒤 날짜는 빼요)
+  const songLast = so => {
+    if (so._lastAt === data) return so._last;
+    const today = new Date().toISOString().slice(0, 10);
+    const ds = [so.last && so.last.date, ...so.tours.map(t => t.dates[t.dates.length - 1])].filter(d => d && d <= today).sort();
+    so._lastAt = data; return (so._last = ds[ds.length - 1] || '');
+  };
+  const daysAgo = d => Math.max(0, Math.round((new Date(new Date().toISOString().slice(0, 10)) - new Date(d)) / 864e5));
+  // 그 해에 부른 곡·나온 곡 (무대·콘서트·음반)
+  const songInYear = (so, y) => so.events.some(e => e.date.startsWith(y)) || so.tours.some(t => t.dates.some(d => d.startsWith(y))) || so.albums.some(a => (a.date || '').startsWith(y));
   // 멤버 혼자만 부른 곡: 무대가 모두 멤버 개인 일정([형호] …, 강형호 단독 콘서트)이고, 음반도 멤버 솔로 음반뿐이고, 포레스텔라 콘서트 셋리에 없는 곡
   const evMember = e => { const m = (e.title.match(/^\[(두훈|형호|민규|우림)\]/) || [])[1]; if (m) return m; const f = Object.keys(SOLO_SHORT).find(n => e.title.includes(n)); return f && !/포레스텔라|forestella/i.test(e.title) ? SOLO_SHORT[f] : ''; };
   const soloOf = so => {
@@ -1003,9 +1014,12 @@
   }
 
   function songsView() {
-    const pass = so => (!songFilter || (songFilter === 'video' ? so.events.length || (so.official || []).length : songFilter === 'album' ? so.albums.length : so.tours.length)) && (!songMem.size || soloOf(so).some(m => songMem.has(m)));
+    const heard = songFilter === 'heard' ? new Set(boxStats().heardList.map(([so]) => so.key)) : null;
+    const pass = so => (!songFilter || (songFilter === 'video' ? so.events.length || (so.official || []).length : songFilter === 'album' ? so.albums.length : songFilter === 'heard' ? heard.has(so.key) : so.tours.length)) && (!songMem.size || soloOf(so).some(m => songMem.has(m))) && (!songYear || songInYear(so, songYear));
+    const years = [...new Set([...data.songs.values()].flatMap(so => [...so.events.map(e => e.date), ...so.tours.flatMap(t => t.dates), ...so.albums.map(a => a.date || '')]).map(d => d.slice(0, 4)).filter(y => /^\d{4}$/.test(y)))].sort().reverse();
     const list = [...data.songs.values()].filter(pass).sort((a, b) =>
       songSort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
+        : songSort === 'recent' ? (songLast(a) ? 0 : 1) - (songLast(b) ? 0 : 1) || songLast(b).localeCompare(songLast(a)) || hangulFirst(a.name, b.name)
         : songSort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
           : hangulFirst(a.name, b.name));
     const chip = (attr, val, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-${attr}="${val}" aria-pressed="${on}">${label}</button>`;
@@ -1017,10 +1031,11 @@
         <input type="search" id="song-q" aria-label="곡 찾기" placeholder="곡 찾기 · 초성 OK" autocomplete="off">
       </form>
       <div class="chips tl-cats" id="song-sort">
-        ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}
+        ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}${chip('sort', 'recent', '최근 부른 순', songSort === 'recent')}
       </div>
       <div class="chips tl-cats" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v).replace(v ? '' : 'class="chip', v ? '' : 'class="chip chip-all') + (v ? '' : '<span class="chip-br"></span>')).join('')}</div>
-      <div class="chips tl-cats" id="song-mem">${['두훈', '형호', '민규', '우림'].map(m => chip('mem', m, m, songMem.has(m))).join('')}</div>
+      <div class="chips tl-cats" id="song-mem">${['두훈', '형호', '민규', '우림'].map(m => chip('mem', m, m, songMem.has(m))).join('')}<select id="song-y" class="chip song-y" aria-label="연도"><option value="">모든 해</option>${years.map(y => `<option value="${y}"${y === songYear ? ' selected' : ''}>${y}년</option>`).join('')}</select></div>
+      ${songFilter === 'heard' && !box.w.length ? '<p class="src-note">일정에서 🎫 직관했어요를 누르면 그날 들은 곡이 여기 모여요.</p>' : ''}
       <div class="view-row"><p class="sub">${list.length.toLocaleString()}곡</p>${chipsBtn()}</div>
       </div>
       <div>
@@ -1031,7 +1046,7 @@
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(songText(so) + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(songText(so)))}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
             <span class="song-name">${esc(so.name)}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
-            ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}
+            ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}${songSort === 'recent' && songLast(so) ? `<span class="song-first">${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘'}</span>` : ''}
             <span class="song-n">${meta} ›</span>
           </a>`;
         }).join('')}
@@ -1040,7 +1055,8 @@
   function bindSongs() {
     document.querySelectorAll('#song-sort .chip').forEach(b => b.onclick = () => { songSort = b.dataset.sort; renderBase('songs'); });
     document.querySelectorAll('#song-filter .chip').forEach(b => b.onclick = () => { songFilter = b.dataset.filter; renderBase('songs'); });
-    document.querySelectorAll('#song-mem .chip').forEach(b => b.onclick = () => { const m = b.dataset.mem; if (songMem.has(m)) songMem.delete(m); else songMem.add(m); renderBase('songs'); });
+    const sy = document.getElementById('song-y'); if (sy) sy.onchange = () => { songYear = sy.value; renderBase('songs'); };
+    document.querySelectorAll('#song-mem button.chip').forEach(b => b.onclick = () => { const m = b.dataset.mem; if (songMem.has(m)) songMem.delete(m); else songMem.add(m); renderBase('songs'); });
     // 곡 이름 찾기: 다시 그리지 않고 목록에서 숨기기만 해요 (입력 중 자판이 닫히지 않게)
     const q = document.getElementById('song-q');
     if (q) q.oninput = () => {
@@ -1079,7 +1095,7 @@
     const albumRow = so.albums.length ? `<div class="song-albums">${so.albums.map(a => `
       <a class="song-album" href="${albHref(a)}">
         ${a.img ? `<img src="${esc(imgSize(a.img, 'thumb'))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createElement('span'))">` : '<span></span>'}
-        <span><b>${esc(a.name)}${unsure(a.unsure)}</b><small>${a.member ? esc(a.member) + ' · ' : ''}${esc(a.date.slice(0, 4))} · ${esc(a.kind || '')}${so.titleOf.includes(a) ? ' · 타이틀곡' : ''}</small></span>
+        <span><b>${esc(a.name)}${unsure(a.unsure)}</b><small>${a.member ? esc(a.member) + ' · ' : ''}${/^\d{4}-\d\d-\d\d$/.test(a.date) ? fmtDate(a.date, false) : esc(a.date.slice(0, 4))} · ${esc(a.kind || '')}${so.titleOf.includes(a) ? ' · 타이틀곡' : ''}</small></span>
       </a>`).join('')}</div>` : '';
     // 무대 목록은 연도별로 묶고, 가장 최근 해만 펼쳐 둬요
     const byYear = new Map();
@@ -1096,10 +1112,12 @@
         <span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>
         ${songPending(so) ? '<p class="src-note">팬이 올린 셋리에서 새로 들어온 곡이에요. 셋리가 확정되면 이 표시도 사라져요.</p>' : ''}
         ${albumRow}
-        ${so.first ? `<div class="facts">
-          <div class="fact"><b>처음 확인</b><span>${fmtDate(so.first.date, false)} · ${esc(so.first.title)}</span></div>
-          ${so.events.length > 1 ? `<div class="fact"><b>최근 확인</b><span>${fmtDate(so.last.date, false)} · ${esc(so.last.title)}</span></div>` : ''}
+        ${so.first || songLast(so) ? `<div class="facts">
+          ${so.first ? `<div class="fact"><b>처음 확인</b><span>${fmtDate(so.first.date, false)} · ${esc(so.first.title)}</span></div>
+          ${so.events.length > 1 ? `<div class="fact"><b>최근 확인</b><span>${fmtDate(so.last.date, false)} · ${esc(so.last.title)}</span></div>` : ''}` : ''}
+          ${songLast(so) ? `<div class="fact"><b>마지막으로 부른 지</b><span>${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 (${fmtDate(songLast(so), false)})` : '오늘'}</span></div>` : ''}
         </div>` : ''}
+        ${songMemos(so)}
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
       </section>
@@ -1110,8 +1128,57 @@
         { label: '음원', n: so.tracks.length, html: so.tracks.length || so.albums.length ? songTracks(so) : '' },
         { label: '콘서트', n: so.tours.length, html: so.tours.length ? `<p class="src-note">콘서트 셋리스트 기준이에요. 무대 목록과 달리 영상으로 확인한 건 아니에요.</p><div class="tour-chips">${so.tours.slice().sort((a, b) => (a.dates[0] < b.dates[0] ? 1 : -1)).map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : '' },
         { label: '공식 X', n: xs.length, html: xList(xs) },
-      ])}`;
+      ])}
+      ${sameSongBox(so)}`;
   }
+  // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
+  function songMemos(so) {
+    const loose = t => t.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+    const own = loose(so.name + ' ' + so.key + ' ' + Object.keys(so.names || {}).join(' '));
+    const memoOf = raw => {
+      const parts = [];
+      let n = raw.trim().replace(/^\(([^)]*)\)\s*/, (m, x) => { parts.push(x); return ''; });
+      n = n.replace(/\s*-\s*([가-힣&·, ]+)$/, (m, x) => { parts.push(x); return ''; });
+      [...n.matchAll(/[(\[]([^)\]]+)[)\]]/g)].forEach(m => parts.push(m[1]));
+      return parts.map(x => x.trim()).filter(x => x && !/^\d+곡$|신곡예정/.test(x) && !own.includes(loose(x)) && loose(x) !== loose(so.name));
+    };
+    const rows = [];
+    so.events.forEach(e => e.songs.forEach(x => {
+      if (window.DATA.songKey(x) !== so.key) return;
+      const m = memoOf(x);
+      if (m.length) rows.push({ d: e.date, memo: m.join(' · '), href: '#/e/' + encodeURIComponent(e.id), t: e.title });
+    }));
+    so.tours.forEach(t => t.songs.forEach(x => {
+      if (!x.note || window.DATA.songKey(window.DATA.setlistName(x.t.split(' / ')[0])) !== so.key && !x.t.split(/ \/ |\s+[+&]\s+/).some(p => window.DATA.songKey(window.DATA.setlistName(p)) === so.key)) return;
+      const note = x.note.replace(/^\d부( 첫 곡| 마지막)?( · )?/, '').trim();
+      if (note || /메들리/.test(x.t)) rows.push({ d: t.dates[0] || '', memo: [/^메들리/.test(x.t) ? '메들리' : '', note].filter(Boolean).join(' · '), href: '#/tour/' + encodeURIComponent(t.id), t: t.name });
+    }));
+    if (!rows.length) return '';
+    const seen = new Set(), list = rows.sort((a, b) => b.d.localeCompare(a.d)).filter(r => { const k = r.href + r.memo; if (seen.has(k)) return false; seen.add(k); return true; });
+    return `<details class="song-memo"${list.length <= 3 ? ' open' : ''}><summary>버전 메모 ${list.length}개</summary>
+      ${list.map(r => `<a class="box-ev" href="${r.href}"><span>${r.d ? fmtDate(r.d, false) : ''}</span><b>${esc(r.memo)}</b><small>${esc(r.t)}</small></a>`).join('')}</details>`;
+  }
+  // 같은 곡이에요: 표기만 다른 곡이 따로 있으면 알려 줘요 (의견 탭 '정보 수정'으로)
+  const sameSongBox = so => `<details class="fix-box same-song"><summary>🔁 같은 곡이 따로 있어요</summary><div class="op-form">
+      <label class="add-f"><span>같은 곡</span><input type="text" class="ss-in" list="ss-list" maxlength="80" placeholder="곡 이름으로 찾기" autocomplete="off"></label>
+      <datalist id="ss-list">${[...data.songs.values()].filter(x => x !== so).map(x => `<option value="${esc(x.name)}">`).join('')}</datalist>
+      <textarea class="op-in ss-memo" rows="2" maxlength="300" placeholder="더 적을 말 (안 써도 돼요)"></textarea>
+      <button type="button" class="bpill add-send ss-send" data-key="${esc(so.key)}">보내기</button>
+      <p class="src-note ss-msg">의견 탭에 '정보 수정'으로 올라가요. 확인하고 한 곡으로 합칠게요.</p></div></details>`;
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.ss-send');
+    if (!b) return;
+    const bx = b.closest('.op-form'), other = bx.querySelector('.ss-in').value.trim(), memo = bx.querySelector('.ss-memo').value.trim(), so = data.songs.get(b.dataset.key);
+    if (!other || !so) { bx.querySelector('.ss-msg').textContent = '같은 곡 이름을 적어 주세요.'; return; }
+    const by = myUid(), text = `같은 곡이에요: 「${so.name}」 = 「${other}」${memo ? '\n' + memo : ''}`;
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: 의견\n분류: 정보 수정\n곡: ${so.name}\n이름: \n누가: ${by}\n내용: ${text}`).then(() => {
+      const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name: '', cat: '정보 수정', by, at: Date.now() });
+      try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
+      b.textContent = '보냈어요 ✓';
+      bx.querySelector('.ss-msg').innerHTML = '고마워요! <a href="#/opinion">의견 탭</a>에서 처리됐는지 볼 수 있어요.';
+    }).catch(() => { b.disabled = false; b.textContent = '다시 보내기'; });
+  });
 
   // ---------- 연표 ----------
   const FIRST_YEAR = 2018;   // 포레스텔라 데뷔 해

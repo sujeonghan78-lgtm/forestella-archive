@@ -1385,3 +1385,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .report + .report { margin-top: 10px; }
 .report.rep-ok { background: #EEF8E8; border-color: #A8D88A; border-style: solid; }
 .report.rep-ok .report-badge { background: #D8F0C8; color: #2F6B1E; }
+.song-y { appearance: none; -webkit-appearance: none; font: inherit; padding-right: 22px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 12px) 55%, calc(100% - 8px) 55%; background-size: 4px 4px; background-repeat: no-repeat; }
+.song-memo { margin: 10px 0 0; }
+.song-memo summary { font-size: 13px; color: var(--muted); cursor: pointer; padding: 4px 0; }
+.song-memo .box-ev small { display: block; font-size: 11px; color: var(--muted); }
+.same-song { margin-top: 18px; }
