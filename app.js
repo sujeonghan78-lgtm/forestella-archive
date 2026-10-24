@@ -174,16 +174,18 @@
   }
   // 모든 팬의 하트 수: 이 폰의 하트 목록(곡·일정)이 바뀌면 한 줄로 보내요 (처음 한 번은 이미 눌러 둔 하트도 같이)
   const HEART_SENT = 'sb-heart-sent';
-  const heartLists = () => ({ s: box.s.filter(x => !/^p[fwd]:/.test(x)).slice(0, 400), e: box.e.slice(0, 400) });
+  // 소취곡(숲별 카드 + 곡 화면 🙏)도 같은 줄에 실어 보내서 '듣고 싶어 하는 팬' 수를 세요
+  const wishKeys = () => { try { return pickList('wish').map(so => so.key).slice(0, 200); } catch (e) { return []; } };
+  const heartLists = () => ({ s: box.s.filter(x => !/^p[fwd]:/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys() });
   let heartTimer = null;
   function heartSync() {
     clearTimeout(heartTimer);
     heartTimer = setTimeout(() => {
-      const h = heartLists(), sig = window.DATA.slVer([h.s.join('|'), h.e.join('|')]), was = boxRead(HEART_SENT);
+      const h = heartLists(), sig = window.DATA.slVer([h.s.join('|'), h.e.join('|'), h.w.join('|')]), was = boxRead(HEART_SENT);
       if (was && was.sig === sig) return;
-      if (!was && !h.s.length && !h.e.length) return;
+      if (!was && !h.s.length && !h.e.length && !h.w.length) return;
       const by = myUid(); window.SB_UID = by;
-      formPost(`종류: 하트\n누가: ${by}\n하트곡: ${h.s.join('|')}\n하트일정: ${h.e.join('|')}`).then(() => boxWrite(HEART_SENT, { sig, s: h.s, e: h.e })).catch(() => { /* 다음에 다시 보내요 */ });
+      formPost(`종류: 하트\n누가: ${by}\n하트곡: ${h.s.join('|')}\n하트일정: ${h.e.join('|')}\n소취곡: ${h.w.join('|')}`).then(() => boxWrite(HEART_SENT, { sig, s: h.s, e: h.e, w: h.w })).catch(() => { /* 다음에 다시 보내요 */ });
     }, 3000);
   }
   // 보여 줄 하트 수: 시트에 모인 수에서 내 예전 하트를 빼고 지금 하트를 더해요 (3개 이상일 때만)
@@ -191,6 +193,11 @@
     const H = data.hearts || { s: {}, e: {} }, mine = H.mine;
     return Math.max(0, (H[k][id] || 0) - (mine && (mine[k] || []).includes(id) ? 1 : 0) + (boxHas(k, id) ? 1 : 0));
   };
+  const wishN = key => {
+    const H = data.hearts || {}, mine = H.mine;
+    return Math.max(0, ((H.w || {})[key] || 0) - (mine && (mine.w || []).includes(key) ? 1 : 0) + (wishKeys().includes(key) ? 1 : 0));
+  };
+  const wishTag = key => { const n = wishN(key); return n >= 3 ? `<p class="wish-n">🙏 ${n.toLocaleString()}명이 듣고 싶어 해요</p>` : ''; };
   const heartTag = (k, id) => { const n = heartN(k, id); return n >= 3 ? `<span class="heart-n" title="이 ${k === 's' ? '곡' : '일정'}에 하트를 누른 팬">♥ ${n.toLocaleString()}</span>` : ''; };
   // 앱을 열 때 서버 쪽이 더 새로우면 받아와요
   function boxPull() {
@@ -1189,7 +1196,7 @@
     return `
       <a class="back" href="${esc(songBack)}">‹ 곡 아카이브</a>
       <section class="song-hero">
-        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${heartTag('s', so.key)}${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>
+        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${heartTag('s', so.key)}${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>${wishTag(so.key)}
         <div class="song-pills"><span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>${so.langs ? `<span class="count-pill lang-pill">🌐 ${esc(so.langs.join(' · '))}</span>` : ''}</div>
         ${songPending(so) ? '<p class="src-note">팬이 올린 셋리에서 새로 들어온 곡이에요. 셋리가 확정되면 이 표시도 사라져요.</p>' : ''}
         ${albumRow}
@@ -3913,12 +3920,20 @@
     ['pins', '자주 쓰는 메뉴', () => { const g = pinsGot(); return `<section class="block pin-box home-pins"><div class="pin-h"><b>자주 쓰는 메뉴</b><a class="link-btn" href="#/more">${g.length ? '바꾸기' : '고르기'}</a></div>${g.length ? pinTiles(g) : '<p class="src-note">더보기에서 ☆를 눌러 메뉴를 골라 주세요.</p>'}</section>`; }, true],
     ['random', '오늘의 랜덤 무대', () => homeRandom()],
     ['members', '멤버별 활동', () => homeMembers()],
+    ['wish', '듣고 싶은 곡 TOP 5', () => homeWish()],
     ['videos', '유튜브 새 영상', () => homeVideos()],
     ['shortcuts', '음반 · 콘서트', () => homeShortcuts()],
     ['programs', '프로그램별 모아보기', () => homePrograms()],
     ['ago', '지난 오늘', () => homeAgo()],
     ['month', '이달의 기록', () => homeMonth()],
   ];
+  // 소취곡: 3명 이상이 듣고 싶어 하는 곡만, 많은 순 5곡
+  function homeWish() {
+    const top = [...data.songs.values()].map(so => [so, wishN(so.key)]).filter(x => x[1] >= 3).sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name)).slice(0, 5);
+    if (!top.length) return '';
+    return `<section class="block home-wish"><div class="block-head"><h2 class="h2">🙏 듣고 싶은 곡 TOP 5${help('곡 화면이나 숲별 카드에서 🙏 소취곡으로 고른 팬 수예요. 3명 이상 모인 곡만 보여요.')}</h2></div>
+      ${top.map(([so, n], i) => `<a class="box-ev wish-row" href="#/song/${encodeURIComponent(so.key)}"><span class="wish-rank">${i + 1}</span><b>${esc(so.name)}</b><small>🙏 ${n.toLocaleString()}</small></a>`).join('')}</section>`;
+  }
   const HOME_HR = new Set(['videos', 'ago']);
   let homeEdit = false;
   function homeCfg() {

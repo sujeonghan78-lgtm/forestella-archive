@@ -542,7 +542,7 @@
     // 관리자가 지우면(서명된 숨김 줄, 번호 'c'+일정·날짜·시간) 빠져요
     let lyricsAll = [], flaggedAll = [];
     const bansAll = {};
-    const heartsAll = { s: {}, e: {}, mine: null };
+    const heartsAll = { s: {}, e: {}, w: {}, mine: null };
     const langVotes = new Map();   // 곡키 → {언어: Set(누가)}
     const songVotes = new Map();   // 곡키|항목|값 → {k, what, val, by: Set, at}
     if (raw.reports) {
@@ -605,9 +605,9 @@
       });
       // 모든 팬의 하트 (종류: 하트 누가/하트곡/하트일정): 사람마다 가장 늦게 보낸 목록만 세요
       const hl = new Map();
-      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type === '하트' && r.by) { const at = tsMs(r.time); if (!hl.has(r.by) || hl.get(r.by).at <= at) hl.set(r.by, { at, s: line0(r, '하트곡'), e: line0(r, '하트일정') }); } });
-      hl.forEach((h, by) => ['s', 'e'].forEach(k => new Set(h[k].split('|').filter(Boolean)).forEach(id => { heartsAll[k][id] = (heartsAll[k][id] || 0) + 1; })));
-      heartsAll.mine = hl.has(window.SB_UID) ? { s: hl.get(window.SB_UID).s.split('|'), e: hl.get(window.SB_UID).e.split('|') } : null;
+      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type === '하트' && r.by) { const at = tsMs(r.time); if (!hl.has(r.by) || hl.get(r.by).at <= at) hl.set(r.by, { at, s: line0(r, '하트곡'), e: line0(r, '하트일정'), w: line0(r, '소취곡') }); } });
+      hl.forEach((h, by) => ['s', 'e', 'w'].forEach(k => new Set(h[k].split('|').filter(Boolean)).forEach(id => { heartsAll[k][id] = (heartsAll[k][id] || 0) + 1; })));
+      heartsAll.mine = hl.has(window.SB_UID) ? { s: hl.get(window.SB_UID).s.split('|'), e: hl.get(window.SB_UID).e.split('|'), w: hl.get(window.SB_UID).w.split('|') } : null;
       // 신고 3명 이상 → 자동 숨김 (관리자가 복구한 건 빼고). 숨겨진 글 수로 기기 글쓰기 막기
       const flagged = [];
       lyr.forEach(l => {

@@ -1463,3 +1463,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .box-sync-on summary { cursor: pointer; list-style: none; color: var(--muted); }
 .box-sync-on summary::-webkit-details-marker { display: none; }
 .box-sync-on > span, .box-sync-on > button { display: block; margin-top: 6px; }
+.wish-n { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.wish-row { align-items: center; }
+.wish-row .wish-rank { width: 18px; font-weight: 700; color: var(--ink); text-align: center; }
+.wish-row b { flex: 1; min-width: 0; }
+.wish-row small { flex: none; font-size: 12px; color: var(--muted); }
