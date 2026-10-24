@@ -1895,12 +1895,12 @@
     const link = (tt, ss, yy) => `#/box?t=${tt}${ss ? '&s=' + ss : ''}${yy ? '&y=' + yy : ''}`;
     if (sc[3] === 'ev') {
       const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort().reverse(), y = years.includes(q.get('y')) ? q.get('y') : '';
-      if (years.length > 1) yearBar = `<div class="chips box-years"><a class="chip${y ? '' : ' on'}" href="${link(t, sub)}">전체</a>${years.map(x => `<a class="chip${x === y ? ' on' : ''}" href="${link(t, sub, x)}">${x} <small>${list.filter(e => e.date.startsWith(x)).length}</small></a>`).join('')}</div>`;
+      if (years.length > 1) yearBar = `<select class="box-year" aria-label="연도"><option value="${link(t, sub)}">전체 연도</option>${years.map(x => `<option value="${link(t, sub, x)}"${x === y ? ' selected' : ''}>${x} · ${list.filter(e => e.date.startsWith(x)).length}</option>`).join('')}</select>`;
       if (y) list = list.filter(e => e.date.startsWith(y));
     }
     const html = sc[3] === 'ev' ? list.map(evRow).join('') : sc[3] === 'chip' ? chipsOf(list) + (SONG_PICKS.some(([k]) => k === sub) ? '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>' : '') : list.map(sc[3]).join('');
     const cur = { n: list.length, html };
-    const subBar = g[2].length > 1 ? `<div class="chips box-subs">${g[2].map(x => `<a class="chip${x[0] === sub ? ' on' : ''}" href="${link(t, x[0])}">${x[1]} <small>${x[2].length}</small></a>`).join('')}</div>` : '';
+    const subBar = g[2].length > 1 || yearBar ? `<div class="box-subrow"><div class="box-subs">${g[2].length > 1 ? g[2].map(x => `<a class="box-sub${x[0] === sub ? ' on' : ''}" href="${link(t, x[0])}">${x[1]} <small>${x[2].length}</small></a>`).join('') : ''}</div>${yearBar}</div>` : '';
     // 검색용: 일정·곡·내 글을 한 목록에
     const findAttr = t => `data-n="${esc(norm(t))}" data-c="${esc(chosung(t))}"`;
     const allEv = [...new Map([...liked, ...wentAll, ...seen].map(e => [e.castKey || e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
@@ -1952,8 +1952,8 @@
         <p class="empty" id="box-none" hidden>찾는 게 없어요.</p>
       </section>
       <div id="box-tabs-wrap">
-      <div class="chips box-tabs">${groups.map(([k, label, subs]) => `<a class="chip${k === t ? ' on' : ''}" href="#/box?t=${k}"${k === t ? ' aria-current="true"' : ''}>${label} ${subs.reduce((n, x) => n + x[2].length, 0)}</a>`).join('')}</div>
-      ${subBar}${yearBar}
+      <div class="box-tabs">${groups.map(([k, label]) => `<a class="box-tab${k === t ? ' on' : ''}" href="#/box?t=${k}"${k === t ? ' aria-current="true"' : ''}>${label}</a>`).join('')}</div>
+      ${subBar}
       <section class="block box-list${cur.n > LIMIT ? ' short' : ''}">
         ${cur.html || '<p class="empty">아직 없어요.</p>'}
         ${cur.n > LIMIT ? `<button type="button" class="link-btn box-more">${cur.n}개 전체 보기</button>` : ''}
@@ -3345,6 +3345,8 @@
     return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };
   function bindBox() {
+    const yr = document.querySelector('.box-year');
+    if (yr) yr.onchange = () => { location.hash = yr.value; };
     const more = document.querySelector('.box-more');
     if (more) more.onclick = () => { more.parentNode.classList.remove('short'); more.remove(); };
     const bq = document.getElementById('box-q');
