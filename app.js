@@ -1010,7 +1010,10 @@
     const tr = (so.tracks || [])[0];
     if (tr) return `https://i.ytimg.com/vi/${encodeURIComponent(tr.id)}/mqdefault.jpg`;
     const xp = songX(so).find(p => p.img);
-    return xp ? imgSize(xp.img, 'thumb') : '';
+    if (xp) return imgSize(xp.img, 'thumb');
+    // 그래도 없으면 이 곡을 부른 콘서트 포스터
+    const tp = so.tours.slice().reverse().find(t => t.info && t.info.img);
+    return tp ? imgSize(tp.info.img, 'thumb') : '';
   }
 
   function songsView() {
