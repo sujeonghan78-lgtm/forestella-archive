@@ -2850,7 +2850,8 @@
     return r ? r[0] : '그 외';
   };
   // 공연 + 뮤지컬 + '기타'로 들어온 축제·행사·팬사인회도 같이 보여줘요 (방송 녹화·영화 개봉은 빼요)
-  const isLocalEvent = e => !e.ytOnly && (e.category === '공연' || e.category === '뮤지컬' || (e.category === '기타' && !/녹화|개봉/.test(e.title)));
+  // 음반 발매일은 가는 행사가 아니라서 빼요 (발매 기념 팬싸인회·쇼케이스는 남겨요)
+  const isLocalEvent = e => !e.ytOnly && !/발매(\s*\([^)]*\))?\s*$/.test(e.title || '') && (e.category === '공연' || e.category === '뮤지컬' || (e.category === '기타' && !/녹화|개봉/.test(e.title)));
   const hasVideo = e => !!(e.videoId || e.related.length || e.ytMain || (e.ytStage || []).length);
   let localQ = '';
   const LOCAL_REG = ['서울', '경기·인천', '강원', '충청', '전라', '경상', '제주', '해외', '그 외'];
