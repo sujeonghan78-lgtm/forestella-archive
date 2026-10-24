@@ -592,7 +592,8 @@
     });
     events.forEach(e => { e.xBehind = []; });
     xFeed.forEach(p => {
-      const a = byId.get(p.after), b = byId.get(p.behind);
+      // 관리자가 원본에 합친 중복 일정의 X 글은 원본으로 따라가요
+      const mg = window.SB_EV_MERGE || {}, a = byId.get(mg[p.after] || p.after), b = byId.get(mg[p.behind] || p.behind);
       if (a && !a.xPost) a.xPost = p;
       if (b) b.xBehind.push(p);
     });
