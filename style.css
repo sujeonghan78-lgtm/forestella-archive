@@ -1431,3 +1431,4 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .ch-tag { background: #FFF1DC; color: #A35A12; }
 .yf-sheet { max-height: 85vh; overflow-y: auto; }
 .yf-sheet .sheet-go { margin-top: 12px; }
+.song-stat { max-width: 38%; text-align: right; line-height: 1.45; font-size: 11px; }

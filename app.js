@@ -1058,9 +1058,10 @@
     const my = x => x === 'heart' ? boxHas('s', so.key) : x === 'heard' ? songHeard.has(so.key) : pickHas(x, so);
     return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.l.length || st.l.some(l => (so.langs || []).includes(l))) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
   }
-  // 곡 줄 아래 회색 한 줄: 🎤무대 ▶영상 🎫콘서트 · 타이틀 · 음반 (길면 음반 이름이 잘려요)
-  const songNum = () => !!boxRead('sb-song-num');
-  const songLine = so => !songNum() ? (so.albums[0] ? esc(so.albums[0].name) : '') : [[so.events.length ? `<b>🎤${so.events.length}</b>` : '', (so.official || []).length ? `▶${so.official.length}` : '', so.tours.length ? `🎫${so.tours.length}` : ''].filter(Boolean).join(' '), so.titleOf.length ? '타이틀' : '', so.albums[0] ? esc(so.albums[0].name) : ''].filter(Boolean).join(' · ');
+    const songNum = () => !!boxRead('sb-song-num');
+  const songLine = so => so.albums[0] ? esc(so.albums[0].name) : '';
+  // '집계'를 켜면 오른쪽에: 🎤무대 ▶영상 🎫콘서트 / 타이틀 · 언어
+  const songStat = so => [[so.events.length ? `<b>🎤${so.events.length}</b>` : '', (so.official || []).length ? `▶${so.official.length}` : '', so.tours.length ? `🎫${so.tours.length}` : ''].filter(Boolean).join(' '), [so.titleOf.length ? '타이틀' : '', esc((so.langs || []).join('·'))].filter(Boolean).join(' · ')].filter(Boolean).join('<br>');
   function songsView() {
     const st = songState(), f = songF(), sort = st.s || 'name';
     songBack = location.hash || '#/songs';
@@ -1090,7 +1091,7 @@
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
             <span class="song-name"><span class="song-t">${esc(so.name)}${marks(so) ? ` <span class="song-marks">${marks(so)}</span>` : ''}${chantOf(so).length ? ' <span class="solo-tag ch-tag">📣 떼창</span>' : ''}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}</span><small>${songLine(so)}</small></span>
-            ${side(so) ? `<span class="song-first">${side(so)}</span>` : ''}
+            ${side(so) ? `<span class="song-first">${side(so)}</span>` : ''}${songNum() ? `<span class="song-n song-stat">${songStat(so)}</span>` : ''}
           </a>
           <span class="song-acts"><button type="button" class="song-hb${boxHas('s', so.key) ? ' on' : ''}" data-key="${esc(so.key)}" aria-label="이 곡 하트" aria-pressed="${boxHas('s', so.key)}">${boxHas('s', so.key) ? '♥' : '♡'}${heartN('s', so.key) >= 3 ? `<small>${heartN('s', so.key)}</small>` : ''}</button><button type="button" class="song-more" data-key="${esc(so.key)}" aria-label="최애곡·소취곡·입덕곡 고르기">⋯</button></span>
         </div>`).join('')}
