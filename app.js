@@ -3982,10 +3982,10 @@
 
   // ---------- 공연장 위치 모으기 (기간 한정 안내) ----------
   // 하트 수 안내: 새로고침 한 번 부탁 (✕로 닫으면 이 폰에선 다시 안 떠요, config.heartNotice로 끔)
-  const heartNotice = () => window.CONFIG.heartNotice === false || boxRead('sb-heart-nt') ? '' : `<section class="drive heart-nt"><b class="drive-t">💚 이제 모든 팬의 하트 수가 보여요</b>
-      <p class="drive-s">곡과 일정에 팬들이 누른 하트 수가 떠요. 전에 눌러 둔 하트도 같이 세어지도록 <b>화면을 한 번만 새로고침</b>해 주세요. 하트 수는 3개 이상부터 보여요.</p>
+  const heartNotice = () => window.CONFIG.heartNotice === false || boxRead('sb-heart-nt2') ? '' : `<section class="drive heart-nt"><b class="drive-t">💚 곡마다 숲별들과 같이 나눠요</b>
+      <p class="drive-s"><a href="#/songs">곡 화면</a>에서 💚 최애곡·🙏 소취곡을 고르고, 📣 떼창 구간·💬 좋아하는 가사·💡 TMI를 숲별들과 공유할 수 있어요. 하트·소취곡 수는 3명 이상 모이면 보여요. 전에 골라 둔 것도 세어지도록 <b>화면을 한 번만 새로고침</b>해 주세요.</p>
       <button type="button" class="heart-nt-x" aria-label="닫기">✕</button></section>`;
-  document.addEventListener('click', ev => { const b = ev.target.closest('.heart-nt-x'); if (!b) return; boxWrite('sb-heart-nt', 1); b.closest('.heart-nt').remove(); });
+  document.addEventListener('click', ev => { const b = ev.target.closest('.heart-nt-x'); if (!b) return; boxWrite('sb-heart-nt2', 1); b.closest('.heart-nt').remove(); });
   // config.placeDrive가 켜져 있을 때만 홈·숲별 발자국 맨 위에 떠요. 보낸 건 의견(분류 '지도 링크', 기본 비밀글)으로 들어가요
   const DRIVE_X = 'sb-drive-x';
   const driveOn = () => !!(window.CONFIG.placeDrive && (window.CONFIG.form || {}).fields);
