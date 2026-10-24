@@ -1065,7 +1065,8 @@
   }
   function songView() {
     const key = decodeURIComponent(location.hash.split('/')[2] || '');
-    const so = data.songs.get(key);
+    // 합쳐진 곡의 예전 주소도 열리게 (예: we are the champions → champions)
+    const so = data.songs.get(key) || data.songs.get(window.DATA.songKey(key));
     if (!so) return `<p class="empty">이 곡을 찾지 못했어요. <a href="#/songs">곡 목록으로 ›</a></p>`;
     const stages = so.events.slice().reverse();
     const play = playAllUrl(stages);

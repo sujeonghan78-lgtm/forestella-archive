@@ -76,7 +76,9 @@
     // 사랑의 찬가 표기 합치기 (2026-10-24 팬 의견)
     "사랑의 찬가(hymne à l'amour)": '사랑의 찬가', "사랑의 찬가 (hymne à l'amour)": '사랑의 찬가', "hymne à l'amour": '사랑의 찬가', "hymne a l'amour": '사랑의 찬가', "l'hymne à l'amour": '사랑의 찬가', "사랑의 찬가(hymne a l'amour)": '사랑의 찬가', "사랑의 찬가 (hymne a l'amour)": '사랑의 찬가',
     '그대가 그대를 (live a long long time)': '그대가 그대를',
-    'phantom of the opera': 'the phantom of the opera' };
+    'phantom of the opera': 'the phantom of the opera',
+    // Champions = 퀸 We Are The Champions (방송·공식 영상은 'Champions', 3집·왕중왕전은 원제)
+    'we are the champions': 'champions' };
   // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
   const PROD_CH = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티/;
   const LINK_SKIP = new Set([
@@ -922,7 +924,7 @@
     });
     // 합친 곡의 대표 이름
     // 한국어 제목이 있는 곡은 '한국어 (영어)'로 (유튜브 뮤직 공식 음원 기준). so.match는 글·영상 찾을 때 쓰는 원래 이름
-    const SONG_NAME = { mama: 'MAMA', '정신차려': '정신차려', 'nella fantasia': 'Nella Fantasia', '시간여행': '시간여행 (Time Travel)', '달의 아들': '달의 아들 (Hijo de la Luna)', 'white night': '백야 (White Night)',
+    const SONG_NAME = { champions: 'Champions (We Are The Champions)', mama: 'MAMA', '정신차려': '정신차려', 'nella fantasia': 'Nella Fantasia', '시간여행': '시간여행 (Time Travel)', '달의 아들': '달의 아들 (Hijo de la Luna)', 'white night': '백야 (White Night)',
       '그리고 봄': '그리고 봄 (And Spring)', '창귀': '창귀 (CHANGGWI)', '달하 노피곰 도다샤': '달하 노피곰 도다샤 (Dear Moon)', '마법의 성': '마법의 성 (Magic Castle)',
       '꽃병': '꽃병 (Flower Vase)', '야상곡': '야상곡 (Nocturne)', '새야 새야 파랑새야': '새야 새야 파랑새야 (Bird, Bird, Blue Bird)', '바람이 건네준 말': '바람이 건네준 말 (Words From The Wind)',
       '함께라는 이유': '함께라는 이유 (Together)', '연': '연 (Ties)', '눈물 속에 홀로': '눈물 속에 홀로 (Alone With Tears)', '순정마초': '순정마초 (The Innocent Macho)',
