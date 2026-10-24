@@ -17,7 +17,7 @@ window.CONFIG = {
   // 보관함(♡·직관)을 다른 폰에서 이어 쓰는 Apps Script 웹 앱 주소. 비어 있으면 이 폰에만 저장해요.
   // 의견·제보 사진 올리기: 보관함 Apps Script에 사진 받는 코드를 붙인 뒤 true로 켜요
   photoUpload: true,
-  placeDrive: true,  // 공연장 위치 모으기 안내 (홈·숲별 발자국 위). 다 모이면 false로
+  placeDrive: false,  // 공연장 위치 모으기 안내 (홈·숲별 발자국 위). 다 모이면 false로
   boxApi: 'https://script.google.com/macros/s/AKfycbwYlE1fytf4V0tpm9HkRHvGZqA7Pnv6YwwM2Cek6cKHPFg_RpxCev9vhv8ZdBF3e5Fkfg/exec',
   // 의견 '처리했어요' 표시는 관리자 기기(#/admin에서 만든 열쇠)의 서명만 인정해요. 여기는 확인용 공개 열쇠예요.
   // 관리자 기기가 여러 대면 줄을 더해요
