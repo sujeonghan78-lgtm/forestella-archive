@@ -1436,7 +1436,7 @@
       <canvas class="lyc-cv" width="1080" height="1080"></canvas>
       <p class="src-note">배경</p><div class="chips lyc-opts">${bgs.map(([k, l]) => `<button type="button" class="chip${o.bg === k ? ' on' : ''}" data-bg="${k}">${l}</button>`).join('')}</div>
       <p class="src-note">글씨</p><div class="chips lyc-opts">${LYC_FONT.map(([k, l]) => `<button type="button" class="chip${o.font === k ? ' on' : ''}" data-font="${k}">${l}</button>`).join('')}</div>
-      <div class="lyc-acts"><button type="button" class="bpill lyc-save">이미지 저장</button><button type="button" class="chip lyc-share">공유하기</button></div>
+      <div class="lyc-acts"><button type="button" class="bpill lyc-save">이미지 저장</button><button type="button" class="chip lyc-share">공유하기</button><button type="button" class="chip lyc-x">X에 올리기</button></div>
       <p class="src-note lyc-msg"></p></section>`;
     w.hidden = false;
     const cv = w.querySelector('.lyc-cv'), msg = w.querySelector('.lyc-msg');
@@ -1460,10 +1460,17 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = fname; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
       msg.textContent = '저장했어요. 갤러리나 다운로드 폴더에서 볼 수 있어요.';
     };
+    // X는 글에 사진을 바로 못 붙여서: 먼저 이미지를 저장해 두고, 곡 링크가 적힌 글쓰기 창을 열어요
+    w.querySelector('.lyc-x').onclick = async () => {
+      const short = text.length > 60 ? text.slice(0, 58) + '…' : text;
+      const t = `“${short}”\n포레스텔라 「${so.name}」\n#포레스텔라 #Forestella #숲별가사\n`;
+      window.open('https://x.com/intent/post?text=' + encodeURIComponent(t) + '&url=' + encodeURIComponent(link('#/song/' + encodeURIComponent(so.key))), '_blank', 'noopener');
+      msg.textContent = '카드 이미지는 위 \'이미지 저장\'으로 저장한 뒤 X 글에 붙여 주세요.';
+    };
     w.querySelector('.lyc-share').onclick = async () => {
       const b = await blobOf(); if (!b) { msg.textContent = '이 배경은 공유가 안 돼요. 다른 배경을 골라 주세요.'; return; }
       const file = new File([b], fname, { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text: `포레스텔라 「${so.name}」 #포레스텔라 #숲별가사` }); } catch (err) { /* 닫음 */ } }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text: `포레스텔라 「${so.name}」 #포레스텔라 #숲별가사\n${link('#/song/' + encodeURIComponent(so.key))}` }); } catch (err) { /* 닫음 */ } }
       else msg.textContent = '이 브라우저는 바로 공유가 안 돼요. 이미지 저장 후 올려 주세요.';
     };
   }
