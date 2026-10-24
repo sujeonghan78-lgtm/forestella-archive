@@ -598,7 +598,7 @@
       if (b) b.xBehind.push(p);
     });
     xFeed.reverse();  // 모아보기는 최신 글부터
-    videos.forEach(v => { const e = byId.get(v.eventId); if (e) e.related.push(v); });
+    videos.forEach(v => { const e = byId.get((window.SB_EV_MERGE || {})[v.eventId] || v.eventId); if (e) e.related.push(v); });
     // 곡별로 확인된 무대 모으기 (이름은 가장 많이 쓰인 표기로)
     const songs = new Map();
     events.forEach(e => {
