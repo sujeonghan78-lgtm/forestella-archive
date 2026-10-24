@@ -961,11 +961,11 @@
     const ha = /^[가-힣]/.test(a), hb = /^[가-힣]/.test(b);
     return ha !== hb ? (ha ? -1 : 1) : koCollator.compare(a, b);
   };
-  let songSort = 'name';
-  let songFilter = '';
-  const songMem = new Set();   // 멤버 개인 곡 필터 (여러 명 고르면 그중 누구라도)
-  let songYear = '';
-  const SONG_FILTERS = [['', '분류 전체'], ['video', '영상 있음'], ['album', '음반 수록곡'], ['concert', '콘서트에서 부른 곡'], ['heard', '직관에서 들은 곡']];
+  // 곡 아카이브 필터·정렬은 주소에 들어가요: #/songs?c=분류&m=멤버&y=연도&my=내 곡&s=정렬
+  let songBack = '#/songs';
+  const SONG_SORTS = [['name', '가나다순'], ['many', '많이 부른 순'], ['first', '처음 부른 순'], ['recent', '최근 부른 순'], ['heart', '하트 많은 순']];
+  const SONG_CATS = { video: '영상 있음', album: '음반 수록곡', concert: '콘서트에서 부른 곡', title: '타이틀곡' };
+  const SONG_MY = { heart: '♥ 하트', fav: '💚 최애곡', wish: '🙏 소취곡', debut: '🌱 입덕곡', heard: '🎫 직관에서 들은 곡' };
   // 마지막으로 부른 날: 확인된 무대·콘서트 셋리 중 가장 늦은 날 (오늘 뒤 날짜는 빼요)
   const songLast = so => {
     if (so._lastAt === data) return so._last;
@@ -1037,60 +1037,96 @@
     return tp ? imgSize(tp.info.img, 'thumb') : '';
   }
 
+  function songState() {
+    const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+    const sort = qs.get('s') || '';
+    return { c: multiOf(qs, 'c'), m: multiOf(qs, 'm'), y: multiOf(qs, 'y'), my: multiOf(qs, 'my'), s: SONG_SORTS.some(x => x[0] === sort) ? sort : '' };
+  }
+  function songF() {
+    const all = [...data.songs.values()];
+    const years = [...new Set(all.flatMap(so => [...so.events.map(e => e.date), ...so.tours.flatMap(t => t.dates), ...so.albums.map(a => a.date || '')]).map(d => d.slice(0, 4)).filter(y => /^\d{4}$/.test(y)))].sort().reverse();
+    return {
+      base: '#/songs', keys: ['c', 'm', 'y', 'my'], noSort: true,
+      F: { c: ['분류', x => SONG_CATS[x]], m: ['멤버', x => x + ' 개인곡'], y: ['연도', x => x], my: ['내 곡', x => SONG_MY[x]] },
+      opts: { c: Object.keys(SONG_CATS), m: ['두훈', '형호', '민규', '우림'], y: years, my: Object.keys(SONG_MY) },
+      cnt: (k, x) => all.filter(so => songPass(so, { c: [], m: [], y: [], my: [], [k]: [x] })).length,
+    };
+  }
+  let songHeard = null;
+  function songPass(so, st) {
+    const cat = x => x === 'video' ? so.events.length || (so.official || []).length : x === 'album' ? so.albums.length : x === 'concert' ? so.tours.length : so.titleOf.length;
+    const my = x => x === 'heart' ? boxHas('s', so.key) : x === 'heard' ? songHeard.has(so.key) : pickHas(x, so);
+    return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
+  }
+  // 곡 줄 아래 회색 한 줄: 🎤무대 ▶영상 🎫콘서트 · 타이틀 · 음반 (길면 음반 이름이 잘려요)
+  const songLine = so => [[so.events.length ? `<b>🎤${so.events.length}</b>` : '', (so.official || []).length ? `▶${so.official.length}` : '', so.tours.length ? `🎫${so.tours.length}` : ''].filter(Boolean).join(' '), so.titleOf.length ? '타이틀' : '', so.albums[0] ? esc(so.albums[0].name) : ''].filter(Boolean).join(' · ');
   function songsView() {
-    const heard = songFilter === 'heard' ? new Set(boxStats().heardList.map(([so]) => so.key)) : null;
-    const pass = so => (!songFilter || (songFilter === 'video' ? so.events.length || (so.official || []).length : songFilter === 'album' ? so.albums.length : songFilter === 'heard' ? heard.has(so.key) : so.tours.length)) && (!songMem.size || soloOf(so).some(m => songMem.has(m))) && (!songYear || songInYear(so, songYear));
-    const years = [...new Set([...data.songs.values()].flatMap(so => [...so.events.map(e => e.date), ...so.tours.flatMap(t => t.dates), ...so.albums.map(a => a.date || '')]).map(d => d.slice(0, 4)).filter(y => /^\d{4}$/.test(y)))].sort().reverse();
-    const list = [...data.songs.values()].filter(pass).sort((a, b) =>
-      songSort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
-        : songSort === 'heart' ? heartN('s', b.key) - heartN('s', a.key) || hangulFirst(a.name, b.name)
-        : songSort === 'recent' ? (songLast(a) ? 0 : 1) - (songLast(b) ? 0 : 1) || songLast(b).localeCompare(songLast(a)) || hangulFirst(a.name, b.name)
-        : songSort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
-          : hangulFirst(a.name, b.name));
-    const chip = (attr, val, label, on) => `<button type="button" class="chip${on ? ' on' : ''}" data-${attr}="${val}" aria-pressed="${on}">${label}</button>`;
+    const st = songState(), f = songF(), sort = st.s || 'name';
+    songBack = location.hash || '#/songs';
+    songHeard = new Set(boxStats().heardList.map(([so]) => so.key));
+    const list = [...data.songs.values()].filter(so => songPass(so, st)).sort((a, b) =>
+      sort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
+        : sort === 'heart' ? heartN('s', b.key) - heartN('s', a.key) || hangulFirst(a.name, b.name)
+        : sort === 'recent' ? (songLast(a) ? 0 : 1) - (songLast(b) ? 0 : 1) || songLast(b).localeCompare(songLast(a)) || hangulFirst(a.name, b.name)
+          : sort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
+            : hangulFirst(a.name, b.name));
+    const bar = fBar(f, st);
+    const side = so => sort === 'first' && so.since ? fmtDate(so.since, false) : sort === 'recent' && songLast(so) ? (daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘') : '';
+    const marks = so => SONG_PICKS.filter(([k]) => pickHas(k, so)).map(([, l]) => l.slice(0, 2)).join('');
     return `
-      <h1 class="h1 page-title">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. 한 곡을 누르면 무대, 음반, 콘서트가 모두 나와요. 초록 숫자는 영상으로 확인된 무대 수예요.')}</h1>
+      <h1 class="h1 page-title">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. 🎤 영상으로 확인된 무대 · ▶ 공식 영상 · 🎫 콘서트 셋리 수예요. ♡로 하트, ⋯로 최애곡·소취곡·입덕곡을 고를 수 있어요.')}</h1>
       <div class="stick">
       <form class="searchbox song-search" role="search" onsubmit="return false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="song-q" aria-label="곡 찾기" placeholder="곡 찾기 · 초성 OK" autocomplete="off">
       </form>
-      <div class="chips tl-cats" id="song-sort">
-        ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}${chip('sort', 'recent', '최근 부른 순', songSort === 'recent')}${chip('sort', 'heart', '하트 많은 순', songSort === 'heart')}
+      ${bar.row}
+      <div class="view-row"><p class="sub">${list.length.toLocaleString()}곡${bar.clear}</p><select id="song-sort" class="song-sort" aria-label="정렬">${SONG_SORTS.map(([v, l]) => `<option value="${v}"${v === sort ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
       </div>
-      <div class="chips tl-cats" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v).replace(v ? '' : 'class="chip', v ? '' : 'class="chip chip-all') + (v ? '' : '<span class="chip-br"></span>')).join('')}</div>
-      <div class="chips tl-cats" id="song-mem">${['두훈', '형호', '민규', '우림'].map(m => chip('mem', m, m, songMem.has(m))).join('')}<select id="song-y" class="chip song-y" aria-label="연도"><option value="">모든 해</option>${years.map(y => `<option value="${y}"${y === songYear ? ' selected' : ''}>${y}년</option>`).join('')}</select></div>
-      ${songFilter === 'heard' && !box.w.length ? '<p class="src-note">일정에서 🎫 직관했어요를 누르면 그날 들은 곡이 여기 모여요.</p>' : ''}
-      <div class="view-row"><p class="sub">${list.length.toLocaleString()}곡</p>${chipsBtn()}</div>
-      </div>
-      <div>
-        ${list.map(so => {
-          const al = so.albums[0];
-          const meta = songMeta(so);
-          return `
-          <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(songText(so) + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(songText(so)))}">
+      ${st.my.includes('heard') && !box.w.length ? '<p class="src-note">일정에서 🎫 직관했어요를 누르면 그날 들은 곡이 여기 모여요.</p>' : ''}
+      <div class="song-list">
+        ${list.map(so => `<div class="song-row" data-n="${esc(norm(songText(so) + ' ' + (so.albums[0] ? so.albums[0].name : '')))}" data-c="${esc(chosung(songText(so)))}">
+          <a class="song-item" href="#/song/${encodeURIComponent(so.key)}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
-            <span class="song-name">${esc(so.name)}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
-            ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}${songSort === 'heart' && heartN('s', so.key) >= 3 ? `<span class="song-first">♥ ${heartN('s', so.key)}</span>` : ''}${songSort === 'recent' && songLast(so) ? `<span class="song-first">${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘'}</span>` : ''}
-            <span class="song-n">${meta} ›</span>
-          </a>`;
-        }).join('')}
-      </div>`;
+            <span class="song-name"><span class="song-t">${esc(so.name)}${marks(so) ? ` <span class="song-marks">${marks(so)}</span>` : ''}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}</span><small>${songLine(so)}</small></span>
+            ${side(so) ? `<span class="song-first">${side(so)}</span>` : ''}
+          </a>
+          <span class="song-acts"><button type="button" class="song-hb${boxHas('s', so.key) ? ' on' : ''}" data-key="${esc(so.key)}" aria-label="이 곡 하트" aria-pressed="${boxHas('s', so.key)}">${boxHas('s', so.key) ? '♥' : '♡'}${heartN('s', so.key) >= 3 ? `<small>${heartN('s', so.key)}</small>` : ''}</button><button type="button" class="song-more" data-key="${esc(so.key)}" aria-label="최애곡·소취곡·입덕곡 고르기">⋯</button></span>
+        </div>`).join('')}
+      </div>
+      <div class="yf-wrap" id="yf-wrap" hidden></div>`;
   }
   function bindSongs() {
-    document.querySelectorAll('#song-sort .chip').forEach(b => b.onclick = () => { songSort = b.dataset.sort; renderBase('songs'); });
-    document.querySelectorAll('#song-filter .chip').forEach(b => b.onclick = () => { songFilter = b.dataset.filter; renderBase('songs'); });
-    const sy = document.getElementById('song-y'); if (sy) sy.onchange = () => { songYear = sy.value; renderBase('songs'); };
-    document.querySelectorAll('#song-mem button.chip').forEach(b => b.onclick = () => { const m = b.dataset.mem; if (songMem.has(m)) songMem.delete(m); else songMem.add(m); renderBase('songs'); });
+    const st = songState();
+    bindF(songF(), st);
+    const ss = document.getElementById('song-sort');
+    if (ss) ss.onchange = () => { location.hash = fLink('#/songs', { ...st, s: ss.value === 'name' ? '' : ss.value }); };
     // 곡 이름 찾기: 다시 그리지 않고 목록에서 숨기기만 해요 (입력 중 자판이 닫히지 않게)
     const q = document.getElementById('song-q');
     if (q) q.oninput = () => {
       const v = norm(q.value), c = q.value.replace(/\s/g, ''), alt = aliasOf(q.value), na = alt && norm(alt);
-      document.querySelectorAll('.song-item').forEach(a => {
+      document.querySelectorAll('.song-row').forEach(a => {
         a.hidden = !!v && (isChosungOnly(c) ? !a.dataset.c.includes(c) : !a.dataset.n.includes(v) && !(na && a.dataset.n.includes(na)));
       });
     };
   }
+  // 곡 목록 ♡ · ⋯ (다시 그리지 않고 그 줄만 바꿔요)
+  document.addEventListener('click', ev => {
+    const h = ev.target.closest('.song-hb'), m = ev.target.closest('.song-more');
+    if (h) {
+      const so = data.songs.get(h.dataset.key); if (!so) return;
+      boxToggle('s', so.key);
+      const on = boxHas('s', so.key), n = heartN('s', so.key);
+      h.classList.toggle('on', on); h.setAttribute('aria-pressed', on); h.innerHTML = (on ? '♥' : '♡') + (n >= 3 ? `<small>${n}</small>` : '');
+      return;
+    }
+    if (m) {
+      const so = data.songs.get(m.dataset.key), w = document.getElementById('yf-wrap'); if (!so || !w) return;
+      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="내 곡 고르기"><div class="yf-head"><b>${esc(so.name)}</b><span class="sub">숲별 카드에 넣은 곡은 카드에서 빼요</span></div>${songPickRow(so)}<a class="chip" href="#/song/${encodeURIComponent(so.key)}">곡 화면으로 ›</a></section>`;
+      w.hidden = false;
+      w.querySelector('.yf-back').onclick = () => { w.hidden = true; if (currentRoute() === 'songs') renderBase('songs'); };
+    }
+  });
 
   // 곡의 음원: 유튜브 뮤직 공식 음원(앨범의 그 곡) + 다른 음원 사이트 검색 바로가기
   const MUSIC_SITES = [['멜론', 'https://www.melon.com/search/total/index.htm?q='], ['지니', 'https://www.genie.co.kr/search/searchMain?query='], ['벅스', 'https://music.bugs.co.kr/search/integrated?q='],
@@ -1131,7 +1167,7 @@
         <div class="stack">${list.map(resultCard).join('')}</div>
       </details>`).join('');
     return `
-      <a class="back" href="#/songs">‹ 곡 아카이브</a>
+      <a class="back" href="${esc(songBack)}">‹ 곡 아카이브</a>
       <section class="song-hero">
         <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${heartTag('s', so.key)}${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>
         <span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>
@@ -3965,8 +4001,8 @@
       st[k].forEach(x => pills.push(pill(f.F[k][1](x), { ...st, [k]: st[k].filter(z => z !== x) })));
     });
     return {
-      row: `<div class="yf-row">${f.keys.map(btn).join('')}<button type="button" class="yf-btn yf-sort" data-ff="o">${st.o === 'old' ? '오래된' : '최신'} ⇅</button></div>${pills.length ? `<div class="yf-pills">${pills.join('')}</div>` : ''}`,
-      clear: pills.length ? ` · <a class="yf-clear" href="${fLink(f.base, { o: st.o })}">모두 지우기</a>` : '',
+      row: `<div class="yf-row">${f.keys.map(btn).join('')}${f.noSort ? '' : `<button type="button" class="yf-btn yf-sort" data-ff="o">${st.o === 'old' ? '오래된' : '최신'} ⇅</button>`}</div>${pills.length ? `<div class="yf-pills">${pills.join('')}</div>` : ''}`,
+      clear: pills.length ? ` · <a class="yf-clear" href="${fLink(f.base, f.noSort ? { s: st.s } : { o: st.o })}">모두 지우기</a>` : '',
     };
   }
   function fSheet(f, st, k) {

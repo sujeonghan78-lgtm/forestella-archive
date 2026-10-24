@@ -1405,3 +1405,16 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .heart-nt { background: linear-gradient(135deg, #EEF8E6, #E2F3EC); border-color: #B9DFC4; box-shadow: none; padding-right: 36px; }
 .heart-nt-x { position: absolute; top: 8px; right: 8px; border: 0; background: none; font-size: 15px; color: var(--muted); cursor: pointer; padding: 4px; }
 .heart-nt .drive-t { color: #2F7A5A; }
+.song-row { display: flex; align-items: center; border-bottom: 1px solid #EAF1EC; }
+.song-row[hidden] { display: none; }
+.song-row .song-item { flex: 1; min-width: 0; border-bottom: 0; padding-right: 0; }
+.song-t { display: block; }
+.song-name small b { color: var(--green); font-weight: 600; }
+.song-marks { font-size: 11px; letter-spacing: -1px; }
+.song-acts { display: flex; align-items: center; flex: none; }
+.song-hb, .song-more { border: 0; background: none; color: var(--muted); cursor: pointer; width: 34px; min-height: 44px; font-size: 18px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
+.song-hb.on { color: #D0587E; }
+.song-hb small { font-size: 10px; margin-top: 2px; color: var(--muted); }
+.song-more { font-size: 16px; letter-spacing: 1px; }
+.song-sort { font: inherit; font-size: 13px; color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; background: var(--card, #fff); }
+.yf-sheet .song-picks { margin: 6px 0 12px; }
