@@ -1423,7 +1423,7 @@
         <textarea class="op-in tmi-in" rows="3" maxlength="300" placeholder="예: 앵콜 때 형호가 가사를 바꿔 불렀어요"></textarea>
         <input type="text" class="tmi-src-in" maxlength="200" placeholder="출처 (선택) — 영상 몇 분, 링크 등">
         <button type="button" class="bpill add-send tmi-send" data-key="${esc(key)}">남기기</button>
-        <p class="src-note">같은 걸 봤다면 ♥를 눌러 주세요. 멤버 건강·사생활 추측이나 깎아내리는 글은 숨겨질 수 있어요. 이상한 글은 🚩로 알려 주세요.</p></div></details></section>`;
+        <p class="src-note">마음에 들거나 같은 걸 봤다면 ♥를 눌러 주세요. 멤버 건강·사생활 추측이나 깎아내리는 글은 숨겨질 수 있어요. 이상한 글은 🚩로 알려 주세요.</p></div></details></section>`;
   }
   const tmiRedraw = key => { const d = document.querySelector(`.tmi-box[data-key="${CSS.escape(key)}"]`); if (d) d.outerHTML = tmiBox(key, d.dataset.title); };
   document.addEventListener('click', ev => {
@@ -1851,6 +1851,13 @@
       ...(() => {
         const ly = Object.entries(lyMine()).flatMap(([k, list]) => list.map(m => [data.songs.get(k), m])).filter(x => x[0]).sort((a, b) => b[1].at - a[1].at);
         return [['l', '💬 가사', ly.length, ly.map(([so, m]) => `<a class="box-ev" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(so.name)}</span><b>“${esc(m.t)}”</b></a>`).join('')]];
+      })(),
+      ...(() => {
+        // ♥ 누르거나 내가 남긴 TMI (이 폰 sb-tmi-sent)
+        const href = k => k.startsWith('e:') ? '#/e/' + encodeURIComponent(k.slice(2)) : k.startsWith('t:') ? '#/tour/' + encodeURIComponent(k.slice(2)) : '#/song/' + encodeURIComponent(k.slice(2));
+        const where = k => k.startsWith('e:') ? ((data.byId.get(k.slice(2)) || {}).title || '일정') : k.startsWith('t:') ? (((data.tours || []).find(t => t.id === k.slice(2)) || (data.concerts || []).find(c => c.id === k.slice(2)) || {}).name || '콘서트') : ((data.songs.get(k.slice(2)) || {}).name || '곡');
+        const tm = (boxRead('sb-tmi-sent') || []).filter(x => !x.del).sort((a, b) => b.at - a.at);
+        return [['tmi', '💡 TMI', tm.length, tm.map(x => `<a class="box-ev" href="${href(x.key)}"><span>${esc(where(x.key))}</span><b>${esc(x.t)}</b></a>`).join('')]];
       })(),
       ['s', '♥ 곡', songs.length, `<div class="chips box-songs">${songs.map(so => songChip(so)).join('')}</div>`],
       ['h', '들은 곡', heardList.length, `<div class="chips box-songs">${heardList.map(([so, n]) => songChip(so, n)).join('')}</div>`],
