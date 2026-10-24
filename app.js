@@ -1125,7 +1125,7 @@
     }
     if (m) {
       const so = data.songs.get(m.dataset.key), w = document.getElementById('yf-wrap'); if (!so || !w) return;
-      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="내 곡 고르기"><div class="yf-head"><b>${esc(so.name)}</b><span class="sub">숲별 카드에 넣은 곡은 카드에서 빼요</span></div>${songPickRow(so)}<a class="chip" href="#/song/${encodeURIComponent(so.key)}">곡 화면으로 ›</a></section>`;
+      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="내 곡 고르기"><div class="yf-head"><b>${esc(so.name)}</b><span class="sub">숲별 카드에 넣은 곡은 카드에서 빼요</span></div>${songPickRow(so)}${chantBox(so).replace(/<details class="song-memo ch-box" open>/, '<details class="song-memo ch-box">')}${lyricBox(so).replace(/<details class="song-memo ly-box" open>/, '<details class="song-memo ly-box">')}<a class="chip sheet-go" href="#/song/${encodeURIComponent(so.key)}">곡 화면으로 ›</a></section>`;
       w.hidden = false;
       w.querySelector('.yf-back').onclick = () => { w.hidden = true; if (currentRoute() === 'songs') renderBase('songs'); };
     }
