@@ -3656,7 +3656,10 @@
   const YT_KINDS = ['M/V', '무대', '직캠', '라이브', '클립', '가사 영상', '비하인드', '티저', '쇼츠', '영상'];
   const YT_KEY = 'sb-yt-f';
   const YT_CH_NAMES = { 강형호: '[PITTA]강형호 & 이용우', 조민규: '조민규 ChoMinGyu', 고우림: 'Official KOWOORIM' };
-  const ytChLabel = c => c === '포레스텔라' || c === '방송사' ? c : YT_CH_NAMES[c] || c + ' 채널';
+  // 방송사 채널 중 제작사·소속사 채널(data.js PROD_CH + 음반사)은 따로 '소속사·제작사'로 나눠요
+  const YT_PROD = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티|유니버설뮤직/;
+  const ytChOf = (v, c) => c === '포레스텔라' ? !v.ch && !v.bc : c === '방송사' ? v.bc && !YT_PROD.test(v.bc) : c === '소속사·제작사' ? v.bc && YT_PROD.test(v.bc) : v.ch === c;
+  const ytChLabel = c => c === '포레스텔라' || c === '방송사' || c === '소속사·제작사' ? c : YT_CH_NAMES[c] || c + ' 채널';
   const YT_SORTS = { '': '최신순', old: '오래된순' };
   function ytState() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -3665,7 +3668,7 @@
   const ytLink = st => { const s = new URLSearchParams(Object.entries(st).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v]).filter(x => x[1])).toString(); return '#/yt' + (s ? '?' + s : ''); };
   function ytOpts(all) {
     return {
-      ch: ['포레스텔라', ...MEMBER_LIST.filter(m => all.some(v => v.ch === m)), ...(all.some(v => v.bc) ? ['방송사'] : [])],
+      ch: ['포레스텔라', ...MEMBER_LIST.filter(m => all.some(v => v.ch === m)), ...['방송사', '소속사·제작사'].filter(c => all.some(v => ytChOf(v, c)))],
       kind: YT_KINDS.filter(k => all.some(v => v.kind === k)),
       y: [...new Set(all.map(v => v.date.slice(0, 4)))].sort().reverse(),
       m: MEMBER_LIST,
@@ -3683,7 +3686,7 @@
     const st = ytState();
     const all = data.official || [];
     const qm = matcher(st.q);
-    const chOk = v => !st.ch.length || st.ch.some(c => c === '포레스텔라' ? !v.ch && !v.bc : c === '방송사' ? v.bc : v.ch === c);
+    const chOk = v => !st.ch.length || st.ch.some(c => ytChOf(v, c));
     let list = all.filter(v => chOk(v) && (!st.kind.length || st.kind.includes(v.kind)) && (!st.y.length || st.y.includes(v.date.slice(0, 4))) && (!st.m.length || st.m.some(m => v.members.includes(m))) && (!qm || qm(vidText(v))));
     list = [...list].sort((a, b) => st.o === 'old' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
     const btn = k => `<button type="button" class="yf-btn${st[k].length ? ' on' : ''}" data-yf="${k}">${ytBtnLabel(k, st[k])}</button>`;
@@ -3717,7 +3720,7 @@
         <div class="yf-opts">${Object.entries(YT_SORTS).map(([v, t]) => `<a class="chip${st.o === v ? ' on' : ''}" href="${ytLink({ ...st, o: v })}">${t}</a>`).join('')}</div></section>`;
     } else {
       const opts = ytOpts(all)[k], [name, lab] = YT_F[k];
-      const cnt = x => all.filter(v => k === 'ch' ? (x === '포레스텔라' ? !v.ch && !v.bc : x === '방송사' ? v.bc : v.ch === x) : k === 'kind' ? v.kind === x : k === 'y' ? v.date.startsWith(x) : v.members.includes(x)).length;
+      const cnt = x => all.filter(v => k === 'ch' ? ytChOf(v, x) : k === 'kind' ? v.kind === x : k === 'y' ? v.date.startsWith(x) : v.members.includes(x)).length;
       const asc = [...opts].sort();
       const range = k === 'y' ? `<div class="yf-range"><span>기간</span><select id="yf-from">${asc.map(y => `<option${y === asc[0] ? ' selected' : ''}>${y}</option>`).join('')}</select><span>~</span><select id="yf-to">${asc.map(y => `<option${y === asc[asc.length - 1] ? ' selected' : ''}>${y}</option>`).join('')}</select><button type="button" class="bpill yf-rng">기간으로 고르기</button></div>` : '';
       w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="${name} 고르기">
