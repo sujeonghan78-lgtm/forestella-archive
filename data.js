@@ -61,6 +61,21 @@
     do { prev = n; n = n.replace(/\s*\(([^)]*)\)\s*$/, (m, inner) => /[가-힣]|^with\s|ver\.?$|version|special track|^feat\.|remaster|^inst|^to\.\s/i.test(inner) || inner.trim().toLowerCase() === n.replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase() ? '' : m); } while (n !== prev);
     return n.trim();
   }
+  // 곡 언어 (곡 아카이브 필터). 낱말로 짐작해서 틀릴 수 있고, 팬이 고칠 수 있어요
+  const SONG_LANGS = ['한국어', '영어', '이탈리아어', '스페인어', '프랑스어', '포르투갈어', '라틴어', '아일랜드어', '일본어', '연주곡'];
+  const LANG_RX = [
+    ['연주곡', /^(intro\b|overture|prelude de la luna|instrumental)/],
+    ['이탈리아어', /\b(il|gli|della|dell|nella|nelle|amore|vita|mio|sole|notte|che|altra|piu|più|parla|mondo|libro|eterno|addio|odissea|immensit\w*|mirto|funiculi|calunnia|impossibile|manchi|vivere|fantasia|tue|mani)\b|un'/],
+    ['프랑스어', /\b(je|les|du|ne|rien|suis|malade|ciel|foule|padam|folie|amour|hymne|vie en rose)\b/],
+    ['포르투갈어', /\b(os|filhos|redescobrir|guerreiro|agora|aprendendo|jogar|lanca|lança|ternura|antiga|grande amor|alô|alo|marciano|abaraão)\b/],
+    ['스페인어', /\b(el|los|las|de la|mi|suerte|loco|para|noche|ultima|última|pájaros|pajaros|despacito|sabor|toda una|mujer|fuego|balada|recuerdos|alejate|aléjate|soy|lihue|amapola|amor)\b|ñ/],
+    ['아일랜드어', /téir|abhaile|dulaman/],
+    ['라틴어', /\b(dies irae|requiem|sis puella)\b/],
+  ];
+  // 짐작이 틀리는 곡 (곡키 → 언어)
+  const LANG_FIX = { 'time to say goodbye': '이탈리아어', 'plastic love': '일본어', 'amor fati': '한국어', 'now we are free': '이탈리아어', 'la la la': '영어', libertango: '연주곡' };
+  // 포레 음반에 들어 있지만 영어로 부른 곡
+  const EN_COVER = new Set(['dream a little dream of me', 'you change my world', 'angel', 'my favorite things', "all the king's horses", 'bohemian rhapsody', 'my heart will go on', 'thriller', 'champions (we are the champions)', 'champions', 'scarborough fair', 'the show must go on', 'be my love', 'the sky and the dawn and the sun', 'stand by me']);
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
   // '월의 어느 멋진날에(무반주 한소절)'처럼 뒤가 달라도 앞 '10'만 되살려요
   const slFix = x => x.replace(/^월의\s*어느\s*멋진/, '10월의 어느 멋진');
@@ -189,7 +204,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '가사삭제' && r.type !== '하트' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -523,6 +538,7 @@
     // 관리자가 지우면(서명된 숨김 줄, 번호 'c'+일정·날짜·시간) 빠져요
     let lyricsAll = [];
     const heartsAll = { s: {}, e: {}, mine: null };
+    const langVotes = new Map();   // 곡키 → {언어: Set(누가)}
     if (raw.reports) {
       const gone = window.SB_EV_HIDE || new Set(), byEv = new Map(events.map(e => [e.id, e]));
       buildReports(toObjects(raw.reports), true).forEach(r => {
@@ -556,6 +572,14 @@
         lyr.get(id).by.set(r.by, slVer([r.by, key, text.toLowerCase()]));
       });
       lyr.forEach(l => { l.by.forEach((mine, by) => { if (lyDel.has(mine + '|' + by)) l.by.delete(by); }); });
+      // 곡 언어 고치기 (종류: 언어수정 곡키/언어/누가): 같은 언어를 3명(올린 사람+2명) 보내면 바뀌어요
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if (r.type !== '언어수정' || !r.by) return;
+        const k = line0(r, '곡키'), l = line0(r, '언어');
+        if (!k || !SONG_LANGS.includes(l)) return;
+        if (!langVotes.has(k)) langVotes.set(k, {});
+        const v = langVotes.get(k); (v[l] = v[l] || { by: new Set(), at: tsMs(r.time), first: r.by }).by.add(r.by);
+      });
       // 모든 팬의 하트 (종류: 하트 누가/하트곡/하트일정): 사람마다 가장 늦게 보낸 목록만 세요
       const hl = new Map();
       buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type === '하트' && r.by) { const at = tsMs(r.time); if (!hl.has(r.by) || hl.get(r.by).at <= at) hl.set(r.by, { at, s: line0(r, '하트곡'), e: line0(r, '하트일정') }); } });
@@ -761,6 +785,20 @@
         if (!so.albums.includes(a)) so.albums.push(a);
         if (titles.includes(so.key) && !so.titleOf.includes(a)) so.titleOf.push(a);
       });
+    });
+    // 곡 언어: 제목 낱말로 짐작 → 포레·멤버 음반 수록곡(영어 제목이어도 자작곡)은 한국어 → 팬 고치기(3명 또는 관리자 확정 'lg'+번호)
+    const gone = window.SB_EV_HIDE || new Set();
+    songs.forEach(so => {
+      const t = [so.name, so.key, ...Object.keys(so.names || {})].join(' ').toLowerCase();
+      let l = LANG_FIX[so.key] || '';
+      if (!l) l = (LANG_RX.find(([, rx]) => rx.test(t)) || [])[0] || '';
+      if (!l) l = /[가-힣]/.test(so.name) ? '한국어' : so.albums.some(a => !/방송/.test(a.kind || '')) && !EN_COVER.has(so.key) ? '한국어' : '영어';
+      so.langAuto = l;
+      so.langProps = Object.entries(langVotes.get(so.key) || {}).filter(([x]) => x !== l).map(([x, v]) => ({ lang: x, n: v.by.size, who: [...v.by], at: v.at, ok: v.by.size >= 3 || gone.has('lg' + slVer([so.key, x])) }));
+      const won = so.langProps.filter(p => p.ok).sort((a, b) => b.at - a.at)[0];
+      so.lang = won ? won.lang : l;
+      if (won) so.langWas = l;
+      so.langProps = so.langProps.filter(p => !p.ok);
     });
     // 처음 만난 날: 무대·콘서트·음반 중 가장 이른 날
     songs.forEach(so => {
@@ -1065,5 +1103,5 @@
     const dels = rows.filter(r => r.type === '의견삭제').map(r => ({ id: line0(r, '대상'), by: r.by })).filter(d => d.id && d.by);
     return { ops, marks, dels };
   }
-  window.DATA = { load, rebuild: () => lastRaw && build(lastRaw), parseCSV, normDate, songKey, setlistName, slVer, buildOpinions, fetchText };
+  window.DATA = { load, rebuild: () => lastRaw && build(lastRaw), parseCSV, SONG_LANGS, normDate, songKey, setlistName, slVer, buildOpinions, fetchText };
 })();

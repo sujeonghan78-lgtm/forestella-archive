@@ -1421,3 +1421,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .song-opt { display: flex; align-items: center; gap: 8px; flex: none; }
 .song-numl { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .song-numl input { margin: 0; width: 15px; height: 15px; }
+.lang-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; font-size: 13px; }
+.lang-tag { font-weight: 600; color: var(--ink); }
+.lang-fix summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+.lang-fix[open] { flex-basis: 100%; }
+.lang-fix .chips { margin-top: 6px; }

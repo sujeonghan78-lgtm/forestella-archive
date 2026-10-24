@@ -1040,23 +1040,23 @@
   function songState() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     const sort = qs.get('s') || '';
-    return { c: multiOf(qs, 'c'), m: multiOf(qs, 'm'), y: multiOf(qs, 'y'), my: multiOf(qs, 'my'), s: SONG_SORTS.some(x => x[0] === sort) ? sort : '' };
+    return { c: multiOf(qs, 'c'), m: multiOf(qs, 'm'), l: multiOf(qs, 'l'), y: multiOf(qs, 'y'), my: multiOf(qs, 'my'), s: SONG_SORTS.some(x => x[0] === sort) ? sort : '' };
   }
   function songF() {
     const all = [...data.songs.values()];
     const years = [...new Set(all.flatMap(so => [...so.events.map(e => e.date), ...so.tours.flatMap(t => t.dates), ...so.albums.map(a => a.date || '')]).map(d => d.slice(0, 4)).filter(y => /^\d{4}$/.test(y)))].sort().reverse();
     return {
-      base: '#/songs', keys: ['c', 'm', 'y', 'my'], noSort: true,
-      F: { c: ['분류', x => SONG_CATS[x]], m: ['멤버', x => x + ' 개인곡'], y: ['연도', x => x], my: ['내 곡', x => SONG_MY[x]] },
-      opts: { c: Object.keys(SONG_CATS), m: ['두훈', '형호', '민규', '우림'], y: years, my: Object.keys(SONG_MY) },
-      cnt: (k, x) => all.filter(so => songPass(so, { c: [], m: [], y: [], my: [], [k]: [x] })).length,
+      base: '#/songs', keys: ['c', 'm', 'l', 'y', 'my'], noSort: true,
+      F: { c: ['분류', x => SONG_CATS[x]], m: ['멤버', x => x + ' 개인곡'], l: ['언어', x => x], y: ['연도', x => x], my: ['내 곡', x => SONG_MY[x]] },
+      opts: { c: Object.keys(SONG_CATS), m: ['두훈', '형호', '민규', '우림'], l: window.DATA.SONG_LANGS.filter(x => all.some(so => so.lang === x)), y: years, my: Object.keys(SONG_MY) },
+      cnt: (k, x) => all.filter(so => songPass(so, { c: [], m: [], l: [], y: [], my: [], [k]: [x] })).length,
     };
   }
   let songHeard = null;
   function songPass(so, st) {
     const cat = x => x === 'video' ? so.events.length || (so.official || []).length : x === 'album' ? so.albums.length : x === 'concert' ? so.tours.length : so.titleOf.length;
     const my = x => x === 'heart' ? boxHas('s', so.key) : x === 'heard' ? songHeard.has(so.key) : pickHas(x, so);
-    return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
+    return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.l.length || st.l.includes(so.lang)) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
   }
   // 곡 줄 아래 회색 한 줄: 🎤무대 ▶영상 🎫콘서트 · 타이틀 · 음반 (길면 음반 이름이 잘려요)
   const songNum = () => !!boxRead('sb-song-num');
@@ -1181,6 +1181,7 @@
           ${so.events.length > 1 ? `<div class="fact"><b>최근 확인</b><span>${fmtDate(so.last.date, false)} · ${esc(so.last.title)}</span></div>` : ''}` : ''}
           ${songLast(so) ? `<div class="fact"><b>마지막으로 부른 지</b><span>${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 (${fmtDate(songLast(so), false)})` : '오늘'}</span></div>` : ''}
         </div>` : ''}
+        ${langBox(so)}
         ${songPickRow(so)}
         ${lyricBox(so)}
         ${songMemos(so)}
@@ -1218,6 +1219,29 @@
     boxToggle('s', pickPre(k) + so.key);
     b.closest('.song-picks').outerHTML = songPickRow(so);
     toast(had ? `${l}에서 뺐어요.` : `${l}에 넣었어요. 보관함 '⭐ 내 곡'에 모여요.`);
+  });
+  // 곡 언어: 제목으로 짐작한 거라 틀릴 수 있어요. '언어가 달라요'로 보내고, 같은 언어를 3명(올린 사람+2명)이 보내면 바뀌어요
+  function langBox(so) {
+    if (!so.lang) return '';
+    const sent = boxRead('sb-lang-sent') || [], uid = myUid();
+    const mineFor = l => sent.includes(so.key + '|' + l);
+    const props = (so.langProps || []).map(p => {
+      const me = p.who.includes(uid) || mineFor(p.lang);
+      return `<div class="sl-state"><span class="src-badge">언어 확인 · ${Math.min(p.n, 3)}/3</span><span class="sl-state-msg"><b class="dt-chg">${esc(so.lang)} → ${esc(p.lang)}</b> ${me ? '보냈어요. 다른 분들이 맞다고 하면 바뀌어요.' : "맞으면 '맞아요'를 눌러 주세요."}</span>${me ? '' : `<button type="button" class="bpill lg-send" data-key="${esc(so.key)}" data-l="${esc(p.lang)}">맞아요</button>`}${isAdmin() ? `<button type="button" class="link-btn lg-adm" data-key="${esc(so.key)}" data-l="${esc(p.lang)}">바로 확정 (관리자)</button>` : ''}</div>`;
+    }).join('');
+    return `<div class="lang-row"><span class="lang-tag">🌐 ${esc(so.lang)}</span>${so.langWas ? okMini('언어 고침', `팬분들 확인을 받아 고쳤어요. (원래 ${esc(so.langWas)})`) : ''}
+      <details class="lang-fix"><summary>언어가 달라요</summary><div class="chips wrap">${window.DATA.SONG_LANGS.filter(l => l !== so.lang).map(l => `<button type="button" class="chip lg-send" data-key="${esc(so.key)}" data-l="${l}">${l}</button>`).join('')}</div><p class="src-note">${isAdmin() ? '관리자 기기라 누르면 바로 바뀌어요.' : '같은 언어를 다른 두 분이 더 고르면 바뀌어요. 여러 언어로 부른 곡은 가장 많이 부른 언어로 골라 주세요.'}</p></details></div>${props}`;
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.lg-send, .lg-adm');
+    if (!b) return;
+    const so = data.songs.get(b.dataset.key), l = b.dataset.l;
+    if (!so) return;
+    b.disabled = true;
+    const adm = isAdmin();
+    const done = () => { boxWrite('sb-lang-sent', [...(boxRead('sb-lang-sent') || []), so.key + '|' + l].slice(-200)); toast(adm ? '바꿨어요. 5~10분쯤 뒤 모두에게 반영돼요.' : '보냈어요! 다른 분들이 맞다고 하면 바뀌어요.'); };
+    const p = formPost(`종류: 언어수정\n곡: ${so.name}\n곡키: ${so.key}\n언어: ${l}\n누가: ${myUid()}`);
+    (adm ? p.then(() => sendEvMark('lg' + window.DATA.slVer([so.key, l]), '숨김')) : p).then(done).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
   });
   // 좋아하는 가사: 이 폰에 저장(sb-lyrics {곡키: [{t, sh, at}]}), '다른 팬과 공유'를 고른 줄만 제보 폼(종류: 가사)으로 올라가요
   const LY_KEY = 'sb-lyrics';
