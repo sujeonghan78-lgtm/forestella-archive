@@ -1372,3 +1372,10 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-off-pv{font-size:12px;padding:4px 9px;white-space:nowrap}
 .map-off-pv.on{background:var(--soft);border-color:var(--green);color:var(--green)}
 .pl-priv{display:block;margin:10px 0 0;font-size:12.5px}
+.edit-box .edit-tabs{margin:10px 0 4px;flex-wrap:wrap}
+.edit-box .edit-pane{display:none}
+.edit-box .edit-pane.on{display:block}
+.edit-box .edit-pane>details>summary{display:none}
+.edit-box .edit-pane>details{border:0;padding:0;margin:0;background:none}
+.edit-box .edit-del{font-size:12px;color:var(--muted);border-color:transparent;background:none}
+.edit-box .edit-del.on{color:var(--ink);border-color:var(--line)}

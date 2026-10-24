@@ -444,6 +444,26 @@
         e.placeProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id, now: p === e.placeNew }));
       });
     }
+    // 일정 이름 고치기(종류: 이름수정 일정/전/후 → '맞아요'는 종류: 이름확인): 올린 사람 말고 두 명이 맞다고 하거나
+    // 관리자가 확정(서명된 숨김 줄, 번호 'nm'+일정·이름)하면 바뀌어요. 그 전엔 원래 이름 그대로 두고 제안만 보여요
+    if (raw.reports) {
+      const nx = {}, okMark = window.SB_EV_HIDE || new Set();
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if ((r.type !== '이름수정' && r.type !== '이름확인') || !r.by) return;
+        const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = line0(r, '후').replace(/\s+/g, ' ').trim().slice(0, 120);
+        if (!id || !to) return;
+        const o = nx[id] = nx[id] || {}, p = o[to] = o[to] || { to, by: '', who: new Set(), at: 0 };
+        if (r.type === '이름수정' && !p.by) { p.by = r.by; p.at = tsMs(r.time); } else p.who.add(r.by);
+      });
+      events.forEach(e => {
+        const ps = Object.values(nx[e.id] || {}).filter(p => p.by && p.to !== e.title);
+        if (!ps.length) return;
+        ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); p.id = 'nm' + slVer([e.id, p.to]); p.done = p.who.size >= 2 || okMark.has(p.id); });
+        const done = ps.filter(p => p.done).sort((a, b) => b.at - a.at)[0];
+        if (done) { e.titleWas = e.title; e.title = done.to; return; }
+        e.nameProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id }));
+      });
+    }
     // 관리자가 숨긴 일정: 사이트가 서명을 확인한 번호만 window.SB_EV_HIDE에 들어와요
     // 관리자가 '원본에 합치기'를 한 일정은 장소·시간·영상·셋리를 원본의 빈 칸에 옮기고 숨겨요
     const evHide = window.SB_EV_HIDE || new Set(), evTo = window.SB_EV_MERGE || {}, hidden = [];

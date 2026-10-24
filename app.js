@@ -4246,6 +4246,57 @@
       })
       .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; if (send) box.querySelector('.dt-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하거나, 광고 차단·보안 기능을 잠깐 끄고 다시 보내 주세요.'; });
   });
+  // ---------- 일정 이름 고치기 ----------
+  // 남이 올린 일정 이름도 고칠 수 있어요. 다른 두 분이 맞다고 하거나 관리자가 확정하면 바뀌어요
+  const nmForm = e => e.ytOnly ? '' : `<details class="fix-box"><summary>🏷 일정 이름</summary><div class="op-form">
+      <label class="add-f"><span>지금 이름</span><input type="text" value="${esc(e.title)}" disabled></label>
+      <label class="add-f"><span>맞는 이름</span><input type="text" class="nm-in" maxlength="120" value="${esc(e.title)}"></label>
+      <button type="button" class="bpill add-send nm-send" data-id="${esc(e.id)}">보내기</button>
+      <p class="src-note nm-msg">앞의 [두훈] 같은 멤버 표시는 그대로 두면 돼요. 다른 두 분이 맞다고 하면 이름이 바뀌어요.</p></div></details>`;
+  function nmState(e) {
+    const was = e.titleWas ? okMini('이름 고침', `확인을 받아 이름을 고쳤어요. (원래 ${esc(e.titleWas)})`) : '';
+    return was + (e.nameProps || []).map(p => {
+      const mine = p.by === myUid(), done = slOked(`nm:${e.id}:${p.to}`);
+      const btn = !mine && !done ? `<button type="button" class="bpill nm-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>` : '';
+      const adm = isAdmin() ? `<button type="button" class="link-btn pl-adm" data-mid="${esc(p.id)}">바로 확정 (관리자)</button>` : '';
+      const msg = mine ? '내가 보낸 이름이에요. 다른 두 분이 맞다고 하면 바뀌어요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "이 이름이 맞으면 '맞아요'를 눌러 주세요.";
+      return `<div class="sl-state nm-state"><span class="src-badge">이름 확인 · ${p.n}/2</span><span class="sl-state-msg"><b class="dt-chg">🏷 ${esc(p.to)}</b> ${msg}</span>${btn}${adm}</div>`;
+    }).join('');
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.nm-send, .nm-ok');
+    if (!b) return;
+    const e = data.events.find(x => x.id === b.dataset.id);
+    if (!e) return;
+    const send = b.classList.contains('nm-send'), box = b.closest('.op-form');
+    const to = (send ? box.querySelector('.nm-in').value : b.dataset.to || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (send && (!to || to === e.title)) { box.querySelector('.nm-msg').textContent = to ? '지금 이름과 같아요.' : '맞는 이름을 적어 주세요.'; return; }
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: ${send ? '이름수정' : '이름확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.title}\n후: ${to}\n누가: ${myUid()}`)
+      .then(() => {
+        slOkAdd(`nm:${e.id}:${to}`);
+        if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.nm-msg').textContent = `보냈어요: 🏷 ${to}. 5~10분쯤 뒤 일정에 확인 요청으로 떠요.`; }
+        else b.closest('.nm-state').outerHTML = nmState({ ...e, titleWas: '', nameProps: (e.nameProps || []).filter(p => p.to === to) });
+      })
+      .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; });
+  });
+  // ---------- ✏️ 정보 고치기: 날짜·장소·이름·그 밖·삭제 요청을 한 버튼 안에 모아요 ----------
+  function editBox(e) {
+    if (e.ytOnly) return fixBox(e);
+    const pl = !!new URLSearchParams(location.hash.split('?')[1] || '').get('pl');
+    const tabs = [['dt', '📅 날짜'], ['pl', '📍 장소'], ['nm', '🏷 일정 이름'], ['fx', '✏️ 그 밖에 틀린 곳'], ...(isAdmin() ? [] : [['del', '삭제 요청']])];
+    const body = { dt: dtForm(e), pl: plForm(e), nm: nmForm(e), fx: fixBox(e), del: delBox(e) };
+    return `<details class="fix-box edit-box"${pl ? ' open' : ''}><summary>✏️ 정보 고치기</summary>
+      <div class="chips edit-tabs">${tabs.map(([k, l]) => `<button type="button" class="chip${k === 'del' ? ' edit-del' : ''}${pl && k === 'pl' ? ' on' : ''}" data-edit="${k}">${l}</button>`).join('')}</div>
+      ${tabs.map(([k]) => `<div class="edit-pane${pl && k === 'pl' ? ' on' : ''}" data-pane="${k}">${body[k]}</div>`).join('')}</details>`;
+  }
+  document.addEventListener('click', ev => {
+    const c = ev.target.closest('.edit-tabs [data-edit]');
+    if (!c) return;
+    const box = c.closest('.edit-box'), k = c.dataset.edit, was = c.classList.contains('on');
+    box.querySelectorAll('[data-edit]').forEach(x => x.classList.toggle('on', !was && x === c));
+    box.querySelectorAll('.edit-pane').forEach(p => { const on = !was && p.dataset.pane === k; p.classList.toggle('on', on); const d = p.querySelector('details'); if (d) d.open = on; });
+  });
   // ---------- 장소 고치기 ----------
   // 장소가 비어 있으면 보낸 장소가 바로 들어가고(확인 n/2), 있던 장소를 바꾸는 건 다른 두 분이 맞다고 하면 바뀌어요
   function plState(e) {
@@ -4859,12 +4910,12 @@
   }
   const photoLink = o => o.photo && /^[\w-]{20,}$/.test(o.photo) ? (isAdmin() ? `<a class="link-btn op-photo-view" href="https://drive.google.com/file/d/${esc(o.photo)}/view" target="_blank" rel="noopener">📷 사진 보기</a>` : '<span class="op-photo-has">📷 사진 있음</span>') : '';
   // 날짜 변경·삭제는 일정 화면에서 바로 요청할 수 있다는 작은 안내 (의견·정보 수정·제보 쓰는 곳)
-  const HOW_TIP = '<p class="src-note how-tip">날짜가 틀렸거나 지워야 하는 일정이면, 그 일정 화면 아래 \'날짜가 달라요\' · \'이 일정 삭제 요청\'으로 보내 주세요. 더 빨리 반영돼요.</p>';
+  const HOW_TIP = '<p class="src-note how-tip">날짜·장소·일정 이름이 틀렸거나 지워야 하는 일정이면, 그 일정 화면 아래 \'✏️ 정보 고치기\'에서 골라 보내 주세요. 더 빨리 반영돼요.</p>';
   const fixBox = e => `<details class="fix-box"><summary>✏️ 틀린 곳 알려주기</summary><div class="op-form">
       <textarea class="op-in fix-in" rows="4" maxlength="1000" placeholder="${esc(OP_FIX_EX)}"></textarea>
       ${photoPick()}
       <button type="button" class="bpill add-send fix-send" data-id="${esc(e.id)}">보내기</button>
-      <p class="src-note fix-msg">의견 탭에 '정보 수정'으로 올라가요. 반영까지 5~10분쯤 걸려요.</p><p class="src-note how-tip">날짜가 틀렸으면 위 \'날짜가 달라요\', 지워야 하면 맨 아래 \'이 일정 삭제 요청\'이 더 빨라요.</p></div></details>`;
+      <p class="src-note fix-msg">의견 탭에 '정보 수정'으로 올라가요. 반영까지 5~10분쯤 걸려요.</p><p class="src-note how-tip">날짜·장소·일정 이름은 위 칸에서 고르면 더 빨라요.</p></div></details>`;
   document.addEventListener('click', async ev => {
     const b = ev.target.closest('.fix-send');
     if (!b) return;
@@ -5458,6 +5509,7 @@
         ${evState(e)}
         ${dtState(e)}
         ${plState(e)}
+        ${nmState(e)}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
         <div class="box-row">${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
@@ -5469,11 +5521,8 @@
         </div>
         ${findRow(findQuery(e.title))}
         ${castBlock(e)}
-        ${dtForm(e)}
-        ${plForm(e)}
-        ${fixBox(e)}
+        ${editBox(e)}
         ${hideBtn(e)}
-        ${delBox(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
         ${(e.ytStage || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">방송 영상 <span class="song-count">${e.ytStage.length}</span>${help('방송사 공식 유튜브 영상 중 제목의 프로그램 이름과 방송 날짜로 이 일정에 붙인 거예요. 가끔 다른 회차일 수 있어요.')}</h2></div>${ytStrip(e.ytStage)}</section>` : ''}
         ${xBlock(e)}
