@@ -1447,6 +1447,17 @@
         <button type="button" class="bpill add-send tmi-send" data-key="${esc(key)}">남기기</button>
         <p class="src-note">마음에 들거나 같은 걸 봤다면 ♥를 눌러 주세요. 멤버 건강·사생활 추측이나 깎아내리는 글은 숨겨질 수 있어요. 이상한 글은 🚩로 알려 주세요.</p></div></details></section>`;
   }
+  // 화면 위쪽 'TMI 남기기' 버튼: 아래 TMI 칸으로 내려가서 입력칸을 열어요
+  const tmiJump = key => { const n = tmiOf(key).length; return `<div class="chips tmi-jumps"><button type="button" class="chip tmi-jump" data-key="${esc(key)}">💡 TMI${n ? ` ${n}` : ''} · 남기기</button></div>`; };
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.tmi-jump');
+    if (!b) return;
+    const box = document.querySelector(`.tmi-box[data-key="${CSS.escape(b.dataset.key)}"]`);
+    if (!box) return;
+    const d = box.querySelector('.tmi-add'); if (d) d.open = true;
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => { const i = box.querySelector('.tmi-in'); if (i) i.focus({ preventScroll: true }); }, 400);
+  });
   const tmiRedraw = key => { const d = document.querySelector(`.tmi-box[data-key="${CSS.escape(key)}"]`); if (d) d.outerHTML = tmiBox(key, d.dataset.title); };
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.tmi-send, .tmi-up, .tmi-del');
@@ -4101,7 +4112,7 @@
     about: aboutView,
     install: installView,
     concerts: concertsView,
-    tour: () => { const h = tourView(), id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0]; return h.includes('class="empty"') && !h.includes('<h1') ? h : h + `<hr class="divider">${tmiBox('t:' + id, id)}`; },
+    tour: () => { const h = tourView(), id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0]; return h.includes('class="empty"') && !h.includes('<h1') ? h : h.replace(/(<\/h1>[\s\S]*?<\/div>)/, '$1' + tmiJump('t:' + id)) + `<hr class="divider">${tmiBox('t:' + id, id)}`; },
     add: addView,
     opinion: opinionView,
     news: newsView,
@@ -6109,7 +6120,7 @@
         ${plState(e)}
         ${nmState(e)}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
-        <div class="box-row">${boxBtn('e', e.id, 'bpill')}${heartTag('e', e.id)}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
+        <div class="box-row">${boxBtn('e', e.id, 'bpill')}${heartTag('e', e.id)}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}${e.ytOnly ? '' : `<button type="button" class="bpill tmi-jump" data-key="${esc('e:' + e.id)}">💡 TMI${tmiOf('e:' + e.id).length ? ' ' + tmiOf('e:' + e.id).length : ''}</button>`}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
         <div class="share-row">

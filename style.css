@@ -1468,3 +1468,4 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .wish-row .wish-rank { width: 18px; font-weight: 700; color: var(--ink); text-align: center; }
 .wish-row b { flex: 1; min-width: 0; }
 .wish-row small { flex: none; font-size: 12px; color: var(--muted); }
+.tmi-jumps { margin: 8px 0 0; }
