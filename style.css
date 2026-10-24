@@ -822,7 +822,7 @@ b > .help-pop[hidden] { display: none; }
 .box-songs { flex-wrap: wrap; overflow: visible; }
 .box-search { margin-top: 16px; }
 .box-hit[hidden], #box-found[hidden], #box-tabs-wrap[hidden], #box-none[hidden] { display: none !important; }
-.box-list.short > .box-ev:nth-of-type(n+9), .box-list.short .box-songs > .chip:nth-child(n+9) { display: none; }
+.box-list.short > .box-ev:nth-of-type(n+9), .box-list.short .box-songs > .chip:nth-child(n+9), .box-list.short .box-songlist > .song-item:nth-child(n+9) { display: none; }
 .box-more { margin-top: 12px; }
 .box-ev { display: flex; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
 .box-ev span { flex: none; font-size: 12px; color: var(--muted); }
@@ -1469,3 +1469,12 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .wish-row b { flex: 1; min-width: 0; }
 .wish-row small { flex: none; font-size: 12px; color: var(--muted); }
 .tmi-jumps { margin: 8px 0 0; }
+/* 곡 화면 위 칩: 3칸 같은 너비로 정리 */
+.song-hero .song-picks, .song-hero .song-writes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+.song-hero .song-writes { margin-top: 6px; }
+.song-hero .song-pick, .song-hero .song-write { height: 38px; padding: 0 4px; justify-content: center; border-radius: 12px; border: 1px solid rgba(255,255,255,.9); background: rgba(255,255,255,.72); font-size: 13px; color: #33443C; white-space: nowrap; box-shadow: 0 1px 2px rgba(15,42,34,.05); }
+.song-hero .song-write { height: 34px; font-size: 12px; background: rgba(255,255,255,.45); border-color: rgba(255,255,255,.6); color: #4A5C53; }
+.song-hero .song-pick.on { background: #fff; border-color: #62D3A1; color: #0F2A22; font-weight: 700; }
+.song-hero .find-row { margin-top: 10px; }
+.box-songlist { margin-top: 4px; }
+.box-songlist .song-item { padding-right: 0; }

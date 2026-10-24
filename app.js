@@ -1890,7 +1890,9 @@
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
     // 탭은 일정 · 곡 · 내 글 세 개, 안에서 작은 칩으로 골라요 (주소 #/box?t=그룹&s=칩&y=연도)
     const evRow = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}${e.category ? `<small>${esc(e.category)}</small>` : ''}</b></a>`;
-    const chipsOf = list => `<div class="chips box-songs">${list.map(x => Array.isArray(x) ? songChip(x[0], x[1]) : songChip(x)).join('')}</div>`;
+    // 곡은 칩 말고 곡 아카이브처럼 사진 + 이름 + 음반 줄로 (위 칩 필터와 헷갈리지 않게)
+    const songRowB = (so, n) => `<a class="song-item box-song" href="#/song/${encodeURIComponent(so.key)}">${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}<span class="song-name"><span class="song-t">${esc(so.name)}</span><small>${so.albums[0] ? esc(so.albums[0].name) : ''}</small></span>${n > 1 ? `<span class="song-n"><b>${n}번</b></span>` : ''}</a>`;
+    const chipsOf = list => `<div class="song-list box-songlist">${list.map(x => Array.isArray(x) ? songRowB(x[0], x[1]) : songRowB(x)).join('')}</div>`;
     const tmHref = k => k.startsWith('e:') ? '#/e/' + encodeURIComponent(k.slice(2)) : k.startsWith('t:') ? '#/tour/' + encodeURIComponent(k.slice(2)) : '#/song/' + encodeURIComponent(k.slice(2));
     const tmWhere = k => k.startsWith('e:') ? ((data.byId.get(k.slice(2)) || {}).title || '일정') : k.startsWith('t:') ? (((data.tours || []).find(t => t.id === k.slice(2)) || (data.concerts || []).find(c => c.id === k.slice(2)) || {}).name || '콘서트') : ((data.songs.get(k.slice(2)) || {}).name || '곡');
     const ly = Object.entries(lyMine()).flatMap(([k, list]) => list.map(m => [data.songs.get(k), m])).filter(x => x[0]).sort((a, b) => b[1].at - a[1].at);
