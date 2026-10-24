@@ -1174,19 +1174,15 @@
       <a class="back" href="${esc(songBack)}">‹ 곡 아카이브</a>
       <section class="song-hero">
         <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${heartTag('s', so.key)}${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>
-        <span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>
+        <div class="song-pills"><span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>${so.langs ? `<span class="count-pill lang-pill">🌐 ${esc(so.langs.join(' · '))}</span>` : ''}</div>
         ${songPending(so) ? '<p class="src-note">팬이 올린 셋리에서 새로 들어온 곡이에요. 셋리가 확정되면 이 표시도 사라져요.</p>' : ''}
         ${albumRow}
         ${so.first || songLast(so) ? `<div class="facts">
           ${so.first ? `<div class="fact"><b>처음 확인</b><span>${fmtDate(so.first.date, false)} · ${esc(so.first.title)}</span></div>
           ${so.events.length > 1 ? `<div class="fact"><b>최근 확인</b><span>${fmtDate(so.last.date, false)} · ${esc(so.last.title)}</span></div>` : ''}` : ''}
-          ${songLast(so) ? `<div class="fact"><b>마지막으로 부른 지</b><span>${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 (${fmtDate(songLast(so), false)})` : '오늘'}</span></div>` : ''}
+          ${songLast(so) ? `<div class="fact"><b>마지막 무대</b><span>${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘'} · ${fmtDate(songLast(so), false)}</span></div>` : ''}
         </div>` : ''}
-        ${langBox(so)}
         ${songPickRow(so)}
-        ${chantBox(so)}
-        ${lyricBox(so)}
-        ${songMemos(so)}
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
       </section>
@@ -1197,8 +1193,11 @@
         { label: '음원', n: so.tracks.length, html: so.tracks.length || so.albums.length ? songTracks(so) : '' },
         { label: '콘서트', n: so.tours.length, html: so.tours.length ? `<p class="src-note">콘서트 셋리스트 기준이에요. 무대 목록과 달리 영상으로 확인한 건 아니에요.</p><div class="tour-chips">${so.tours.slice().sort((a, b) => (a.dates[0] < b.dates[0] ? 1 : -1)).map(t => `<a class="chip" href="#/tour/${encodeURIComponent(t.id)}">${esc(t.name)}</a>`).join('')}</div>` : '' },
         { label: '공식 X', n: xs.length, html: xList(xs) },
+        { label: '📣 떼창', n: chantOf(so).length, html: flatBox(chantBox(so)) },
+        { label: '💬 가사', n: (data.lyrics || []).filter(l => l.key === so.key && l.kind !== '떼창').length, html: flatBox(lyricBox(so)) },
+        { label: '버전', n: songMemoN(so), html: flatBox(songMemos(so)) },
       ])}
-      ${sameSongBox(so)}`;
+      <div class="song-fix">${langBox(so)}${sameSongBox(so)}</div>`;
   }
   // 최애곡·소취곡·입덕곡: 숲별 카드에 고른 곡은 그대로 불러오고, 곡 화면에서 고른 곡은 개수 제한 없이 보관함에 따로 저장해요
   // (보관함 곡 목록 s에 'pf:곡키'처럼 넣어서 다른 폰 이어 쓰기도 같이 따라가요)
@@ -1305,7 +1304,7 @@
     const sites = [['멜론', 'https://www.melon.com/search/lyric/index.htm?q=' + encodeURIComponent(name)], ['지니', 'https://www.genie.co.kr/search/searchLyrics?query=' + q], ['벅스', 'https://music.bugs.co.kr/search/lyrics?q=' + q], ['구글', 'https://www.google.com/search?q=' + q + encodeURIComponent(' 가사')]];
     return `<p class="src-note">가사 찾아보기</p><div class="chips wrap">${sites.map(([n, u]) => `<a class="chip" href="${u}" target="_blank" rel="noopener">${n} ↗</a>`).join('')}</div><p class="src-note ly-warn">가사 전체는 저작권 때문에 이 사이트에 옮겨 올 수 없어요. 음원 사이트에서 봐 주세요.</p>`;
   }
-  const lyRedraw = so => { const d = document.querySelector('.ly-box'); if (d) { d.outerHTML = lyricBox(so); document.querySelector('.ly-box').open = true; } };
+  const lyRedraw = so => { const d = document.querySelector('.ly-box'); if (!d) return; const flat = d.tagName === 'DIV'; d.outerHTML = flat ? flatBox(lyricBox(so)) : lyricBox(so); if (!flat) document.querySelector('.ly-box').open = true; };
   const lySend = (so, t) => {
     const by = myUid();
     return formPost(`종류: 가사\n곡: ${so.name}\n곡키: ${so.key}\n누가: ${by}\n내용: ${t}`).then(() => {
@@ -1357,7 +1356,7 @@
       <button type="button" class="bpill add-send ch-send" data-key="${esc(so.key)}">공유하기</button>
       <p class="src-note">콘서트에서 같이 부르는 곳을 적어 주세요. 같은 내용이면 ♥를 눌러 주세요. 가사는 짧게만 적어 주세요.</p></div></details>`;
   }
-  const chRedraw = so => { const d = document.querySelector('.ch-box'); if (d) { d.outerHTML = chantBox(so); document.querySelector('.ch-box').open = true; } };
+  const chRedraw = so => { const d = document.querySelector('.ch-box'); if (!d) return; const flat = d.tagName === 'DIV'; d.outerHTML = flat ? flatBox(chantBox(so)) : chantBox(so); if (!flat) document.querySelector('.ch-box').open = true; };
   const chId = (key, t) => window.DATA.slVer(['떼창', key, t.replace(/\s+/g, ' ').toLowerCase()]);
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.ch-send, .ch-up, .ch-del');
@@ -1383,6 +1382,9 @@
     }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
   });
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
+  // 곡 화면 탭 안에서는 접는 칸 없이 펼쳐서 보여요
+  const flatBox = html => html.replace(/^\s*<details class="song-memo([^"]*)"[^>]*><summary>[\s\S]*?<\/summary>/, '<div class="tab-box$1">').replace(/<\/details>\s*$/, '</div>');
+  const songMemoN = so => (songMemos(so).match(/class="box-ev"/g) || []).length;
   // 버전 메모가 두 가지 이상인 곡 (분류 필터 '버전 여러 개')
   const hasVersions = so => { if (so._vAt !== data) { so._vAt = data; so._v = new Set((songMemos(so).match(/<b>[^<]*<\/b>/g) || [])).size >= 2; } return so._v; };
   function songMemos(so) {

@@ -1432,3 +1432,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .yf-sheet { max-height: 85vh; overflow-y: auto; }
 .yf-sheet .sheet-go { margin-top: 12px; }
 .song-stat { max-width: 38%; text-align: right; line-height: 1.45; font-size: 11px; }
+.song-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.lang-pill { background: rgba(255,255,255,.7); color: var(--ink); font-weight: 500; }
+.tab-box { padding: 4px 0; }
+.song-fix { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.song-fix .lang-row { margin-top: 0; }
