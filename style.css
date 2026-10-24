@@ -1352,3 +1352,11 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-off-row{display:flex;align-items:center;gap:8px}
 .map-off-row .box-ev{flex:1;min-width:0}
 .map-off-pl{flex:none;font-size:12px;padding:4px 9px;white-space:nowrap}
+.map-off-n{font-size:12px;color:var(--muted);margin:0 0 4px}
+.map-off>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font-size:14px;font-weight:700}
+.map-off>summary::-webkit-details-marker{display:none}
+.map-off>summary::before{content:'📍'}
+.map-off>summary::after{content:'펼치기 ▾';margin-left:auto;font-size:12px;font-weight:400;color:var(--green)}
+.map-off[open]>summary::after{content:'접기 ▴'}
+.map-off-how{margin:12px 0 4px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:12.5px;color:var(--ink)}
+.map-off-how p{margin:0 0 6px}

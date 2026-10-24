@@ -1516,10 +1516,12 @@
   }
   // 못 찍은 일정: 해외와 장소 모름을 나눠서, 장소 모름엔 📍 장소 알려주기를 달아요 (MAP_OFF_PL이 켜져 있을 때)
   const MAP_OFF_PL = true;
-  function offList(off) {
+  function offList(off, rough = []) {
     const abroad = off.filter(x => x.l.region === '해외'), none = off.filter(x => x.l.region !== '해외');
     const row = (x, pl) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a>` : ''}</div>`;
-    return (none.length ? `<h3 class="map-off-h">장소 모름 ${none.length}</h3>${none.map(x => row(x, MAP_OFF_PL)).join('')}` : '')
+    const how = MAP_OFF_PL ? `<div class="map-off-how"><p><b>하나씩 찾기</b> · 아래 줄마다 📍 장소 알려주기를 눌러 그 일정 장소를 골라요</p><p><b>한 번에 찾기</b> · 네이버 지도 링크 여러 개를 목록으로 모아 한 번에 보내요</p><div class="drive-btns"><a class="bpill" href="#/opinion?w=map">🗺 여러 곳 한 번에 보내기</a>${isAdmin() ? '<a class="chip" href="#/placefind">🔎 한꺼번에 찾기 (관리자)</a>' : ''}</div></div>` : '';
+    return how + (none.length ? `<h3 class="map-off-h">장소 모름 ${none.length}</h3>${none.map(x => row(x, MAP_OFF_PL)).join('')}` : '')
+      + (rough.length ? `<h3 class="map-off-h">대략 위치로만 찍힘 ${rough.length}</h3><p class="map-off-n">공연장 좌표를 몰라서 지역 가운데에 찍혀 있어요</p>${rough.map(x => row(x, MAP_OFF_PL)).join('')}` : '')
       + (abroad.length ? `<h3 class="map-off-h">✈ 해외 ${abroad.length}</h3>${abroad.map(x => row(x, false)).join('')}` : '');
   }
   function mapView() {
@@ -1554,7 +1556,7 @@
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
-      ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개</summary>${offList(ml.off)}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
+      ${ml.off.length || ml.on.some(x => !x.l.exact) ? `<details class="map-off"><summary>위치 확인이 필요한 일정 ${ml.off.length + ml.on.filter(x => !x.l.exact).length}개</summary>${offList(ml.off, ml.on.filter(x => !x.l.exact))}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
       : ml.off.length ? `<p class="empty">이 기간 일정 ${ml.off.length}개는 장소를 몰라서 지도에 못 찍었어요. 아는 분은 📍 장소 알려주기로 알려 주세요.</p><div class="map-off">${offList(ml.off)}</div>` : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
     const reset = () => { mapSt.i = -1; mapSt.tour = false; mapSt.uz = 0; mapStop(); bindMap(); };
