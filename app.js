@@ -1062,7 +1062,7 @@
     const songNum = () => !!boxRead('sb-song-num');
   const songLine = so => so.albums[0] ? esc(so.albums[0].name) : '';
   // '집계'를 켜면 오른쪽에: 🎤무대 ▶영상 🎫콘서트 / 타이틀 · 언어
-  const songStat = so => [[so.events.length ? `<b>🎤${so.events.length}</b>` : '', (so.official || []).length ? `▶${so.official.length}` : '', so.tours.length ? `🎫${so.tours.length}` : ''].filter(Boolean).join(' '), [so.titleOf.length ? '타이틀' : '', esc((so.langs || []).join('·'))].filter(Boolean).join(' · ')].filter(Boolean).join('<br>');
+  const songStat = so => [[so.events.length ? `<b>🎤${so.events.length}</b>` : '', (so.official || []).length ? `▶${so.official.length}` : '', so.tours.length ? `🎫${so.tours.length}` : '', tmiOf('s:' + so.key).length ? `💡${tmiOf('s:' + so.key).length}` : ''].filter(Boolean).join(' '), [so.titleOf.length ? '타이틀' : '', esc((so.langs || []).join('·'))].filter(Boolean).join(' · ')].filter(Boolean).join('<br>');
   function songsView() {
     const st = songState(), f = songF(), sort = st.s || 'name';
     songBack = location.hash || '#/songs';
@@ -1077,7 +1077,7 @@
     const side = so => sort === 'first' && so.since ? fmtDate(so.since, false) : sort === 'recent' && songLast(so) ? (daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘') : '';
     const marks = so => SONG_PICKS.filter(([k]) => pickHas(k, so)).map(([, l]) => l.slice(0, 2)).join('');
     return `
-      <h1 class="h1 page-title">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. ‘집계’를 켜면 🎤 영상으로 확인된 무대 · ▶ 공식 영상 · 🎫 콘서트 셋리 수가 보여요. ♡로 하트, ⋯로 최애곡·소취곡·입덕곡을 고를 수 있어요.')}</h1>
+      <h1 class="h1 page-title">곡 아카이브${help('무대 영상으로 확인된 곡, 음반 수록곡, 콘서트 셋리스트 곡을 모았어요. ‘집계’를 켜면 🎤 영상으로 확인된 무대 · ▶ 공식 영상 · 🎫 콘서트 셋리 · 💡 TMI 수와 언어가 보여요. ♡로 하트, ⋯로 최애곡·소취곡·입덕곡을 고를 수 있어요.')}</h1>
       <div class="stick">
       <form class="searchbox song-search" role="search" onsubmit="return false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -1197,6 +1197,7 @@
         { label: '공식 X', n: xs.length, html: xList(xs) },
         { label: '📣 떼창', n: chantOf(so).length, html: flatBox(chantBox(so)) },
         { label: '💬 가사', n: (data.lyrics || []).filter(l => l.key === so.key && l.kind !== '떼창').length, html: flatBox(lyricBox(so)) },
+        { label: '💡 TMI', n: tmiOf('s:' + so.key).length, html: tmiBox('s:' + so.key, so.name) },
         { label: '버전', n: songMemoN(so), html: flatBox(songMemos(so)) },
       ])}
       ${songFixState(so)}${songEditBox(so)}`;
@@ -1286,7 +1287,7 @@
     const sentLocal = boxRead('sb-ly-sent') || [];
     const row = l => {
       const me = l.who.includes(uid) || sentLocal.includes(l.id);
-      return `<div class="ly-line"><q>${esc(l.text)}</q><span class="ly-side"><button type="button" class="bpill ly-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''}>♥ ${l.n + (sentLocal.includes(l.id) && !l.who.includes(uid) ? 1 : 0)}</button>${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
+      return `<div class="ly-line"><q>${esc(l.text)}</q><span class="ly-side"><button type="button" class="bpill ly-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''}>♥ ${l.n + (sentLocal.includes(l.id) && !l.who.includes(uid) ? 1 : 0)}</button>${me ? '' : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
     };
     const myRow = (m, i) => `<div class="ly-line mine"><q>${esc(m.t)}</q><span class="ly-side"><small>${m.sh ? '공유함' : '🔒 나만'}</small><button type="button" class="link-btn ly-del" data-key="${esc(so.key)}" data-i="${i}" aria-label="지우기">×</button></span></div>`;
     const n = shared.length + mine.filter(m => !m.sh).length;
@@ -1325,6 +1326,7 @@
       if (!t) return;
       if (!list.some(m => m.t === t)) list.unshift({ t, sh, at: Date.now() });
       all[so.key] = list; boxWrite(LY_KEY, all);
+      if (sh && banned()) { toast(banMsg()); return; }
       if (sh) { b.disabled = true; lySend(so, t).then(() => { toast('공유했어요. 5~10분쯤 뒤 모두에게 보여요.'); lyRedraw(so); }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); }); }
       else { toast('이 폰에 저장했어요.'); lyRedraw(so); }
     } else if (b.matches('.ly-up')) {
@@ -1350,7 +1352,7 @@
     sent.filter(x => x.key === so.key && !list.some(l => l.id === x.id) && !x.del).forEach(x => list.push({ id: x.id, text: x.t, n: 1, who: [uid], at: x.at, wait: true }));
     const row = l => {
       const me = l.who.includes(uid) || ids.has(l.id);
-      return `<div class="ly-line"><span class="ch-t">${esc(l.text)}${l.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill ch-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''} aria-label="나도 이렇게 불러요">♥ ${l.n + (ids.has(l.id) && !l.who.includes(uid) && !l.wait ? 1 : 0)}</button>${me ? `<button type="button" class="link-btn ch-del" data-key="${esc(so.key)}" data-t="${esc(l.text)}" aria-label="지우기">×</button>` : ''}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
+      return `<div class="ly-line"><span class="ch-t">${esc(l.text)}${l.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill ch-up${me ? ' on' : ''}" data-key="${esc(so.key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''} aria-label="나도 이렇게 불러요">♥ ${l.n + (ids.has(l.id) && !l.who.includes(uid) && !l.wait ? 1 : 0)}</button>${me ? `<button type="button" class="link-btn ch-del" data-key="${esc(so.key)}" data-t="${esc(l.text)}" aria-label="지우기">×</button>` : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
     };
     return `<details class="song-memo ch-box"${list.length ? ' open' : ''}><summary>📣 떼창 구간${list.length ? ` ${list.length}` : ''}</summary>
       ${list.map(row).join('')}
@@ -1376,11 +1378,76 @@
     }
     const t = b.matches('.ch-up') ? b.dataset.t : chClean(b.closest('.ly-form').querySelector('.ch-in').value);
     if (!t) return;
+    if (banned()) { toast(banMsg()); return; }
     b.disabled = true;
     formPost(`종류: 떼창\n곡: ${so.name}\n곡키: ${so.key}\n누가: ${by}\n내용: ${t}`).then(() => {
       boxWrite(CH_SENT, [...sent.filter(x => x.id !== chId(so.key, t)), { id: chId(so.key, t), key: so.key, t, at: Date.now() }].slice(-200));
       toast(b.matches('.ch-up') ? '♥ 눌렀어요.' : '공유했어요. 5~10분쯤 뒤 모두에게 보여요.');
       chRedraw(so);
+    }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
+  });
+  // ---------- 🚩 신고 · 글쓰기 막기 ----------
+  // 다른 사람 글(떼창·공유 가사·TMI)에 신고(종류: 신고 번호/누가). 3명이면 자동으로 숨겨지고 관리자 화면에만 떠요.
+  const RP_SENT = 'sb-rp-sent';
+  const rpBtn = l => l.wait ? '' : `<button type="button" class="link-btn rp-btn" data-id="${esc(l.id)}" aria-label="신고하기" title="신고하기">🚩</button>`;
+  const banned = () => (data.bans || {})[myUid()] > Date.now();
+  const banMsg = () => { const d = new Date((data.bans || {})[myUid()]); return `신고가 쌓여 ${d.getMonth() + 1}월 ${d.getDate()}일까지 이 기기에선 글을 올릴 수 없어요.`; };
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.rp-btn');
+    if (!b) return;
+    if ((boxRead(RP_SENT) || []).includes(b.dataset.id)) { toast('이미 신고했어요.'); return; }
+    if (!confirm('이 글을 신고할까요? 세 분이 신고하면 숨겨지고 관리자가 확인해요.')) return;
+    formPost(`종류: 신고\n번호: ${b.dataset.id}\n누가: ${myUid()}`).then(() => {
+      boxWrite(RP_SENT, [...(boxRead(RP_SENT) || []), b.dataset.id].slice(-300));
+      const row = b.closest('.ly-line'); if (row) row.classList.add('rp-done');
+      toast('신고했어요. 고마워요!');
+    }).catch(() => toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'));
+  });
+  // ---------- 💡 TMI ----------
+  // 곡('s:곡키')·일정('e:일정ID')·콘서트('t:투어ID')마다 팬이 TMI를 달아요 (종류: TMI 곡키/출처/누가/내용). ♥ '나도 봤어요'가 많은 순.
+  const TMI_SENT = 'sb-tmi-sent';
+  const tmiOf = key => (data.lyrics || []).filter(l => l.kind === 'TMI' && l.key === key);
+  const tmiId = (key, t) => window.DATA.slVer(['TMI', key, t.replace(/\s+/g, ' ').toLowerCase()]);
+  function tmiBox(key, title) {
+    const uid = myUid(), sent = boxRead(TMI_SENT) || [], ids = new Set(sent.map(x => x.id)), rpd = boxRead(RP_SENT) || [];
+    const list = tmiOf(key).sort((a, b) => b.n - a.n || a.at - b.at);
+    sent.filter(x => x.key === key && !x.del && !list.some(l => l.id === x.id)).forEach(x => list.push({ id: x.id, text: x.t, src: x.src, n: 1, who: [uid], at: x.at, wait: true }));
+    const srcHtml = u => !u ? '' : /^https?:\/\//.test(u) ? `<a class="tmi-src" href="${esc(u)}" target="_blank" rel="noopener">출처 ↗</a>` : `<span class="tmi-src">출처: ${esc(u)}</span>`;
+    const row = l => {
+      const me = l.who.includes(uid) || ids.has(l.id);
+      return `<div class="ly-line${rpd.includes(l.id) ? ' rp-done' : ''}"><span class="ch-t">${esc(l.text)} ${srcHtml(l.src)}${l.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill tmi-up${me ? ' on' : ''}" data-key="${esc(key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''} aria-label="나도 봤어요">♥ ${l.n + (ids.has(l.id) && !l.who.includes(uid) && !l.wait ? 1 : 0)}</button>${me ? `<button type="button" class="link-btn tmi-del" data-key="${esc(key)}" data-t="${esc(l.text)}" aria-label="지우기">×</button>` : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
+    };
+    return `<section class="tmi-box" data-key="${esc(key)}" data-title="${esc(title)}"><div class="block-head"><h2 class="h3">💡 TMI${list.length ? ` <span class="song-count">${list.length}</span>` : ''}</h2></div>
+      ${list.length ? list.map(row).join('') : '<p class="src-note">아직 TMI가 없어요. 알고 있는 뒷이야기를 남겨 주세요.</p>'}
+      <details class="tmi-add"><summary>＋ TMI 남기기</summary><div class="op-form ly-form">
+        <textarea class="op-in tmi-in" rows="3" maxlength="300" placeholder="예: 앵콜 때 형호가 가사를 바꿔 불렀어요"></textarea>
+        <input type="text" class="tmi-src-in" maxlength="200" placeholder="출처 (선택) — 영상 몇 분, 링크 등">
+        <button type="button" class="bpill add-send tmi-send" data-key="${esc(key)}">남기기</button>
+        <p class="src-note">같은 걸 봤다면 ♥를 눌러 주세요. 멤버 건강·사생활 추측이나 깎아내리는 글은 숨겨질 수 있어요. 이상한 글은 🚩로 알려 주세요.</p></div></details></section>`;
+  }
+  const tmiRedraw = key => { const d = document.querySelector(`.tmi-box[data-key="${CSS.escape(key)}"]`); if (d) d.outerHTML = tmiBox(key, d.dataset.title); };
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.tmi-send, .tmi-up, .tmi-del');
+    if (!b) return;
+    const key = b.dataset.key, by = myUid(), sent = boxRead(TMI_SENT) || [], title = (b.closest('.tmi-box') || {}).dataset ? b.closest('.tmi-box').dataset.title : key;
+    if (b.matches('.tmi-del')) {
+      const t = b.dataset.t;
+      formPost(`종류: 가사삭제\n번호: ${window.DATA.slVer([by, 'TMI', key, t.replace(/\s+/g, ' ').toLowerCase()])}\n누가: ${by}`).catch(() => {});
+      boxWrite(TMI_SENT, sent.map(x => x.id === tmiId(key, t) ? { ...x, del: true } : x));
+      toast('지웠어요. 5~10분쯤 뒤 모두에게서 빠져요.');
+      const row = b.closest('.ly-line'); if (row) row.remove();
+      return;
+    }
+    const form = b.closest('.ly-form');
+    const t = b.matches('.tmi-up') ? b.dataset.t : form.querySelector('.tmi-in').value.replace(/\s+/g, ' ').trim().slice(0, 300);
+    const src = form ? form.querySelector('.tmi-src-in').value.trim().slice(0, 200) : '';
+    if (!t) return;
+    if (banned()) { toast(banMsg()); return; }
+    b.disabled = true;
+    formPost(`종류: TMI\n곡: ${title}\n곡키: ${key}\n출처: ${src}\n누가: ${by}\n내용: ${t}`).then(() => {
+      boxWrite(TMI_SENT, [...sent.filter(x => x.id !== tmiId(key, t)), { id: tmiId(key, t), key, t, src, at: Date.now() }].slice(-200));
+      toast(b.matches('.tmi-up') ? '♥ 눌렀어요.' : '남겼어요. 5~10분쯤 뒤 모두에게 보여요.');
+      tmiRedraw(key);
     }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
   });
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
@@ -3970,7 +4037,7 @@
     about: aboutView,
     install: installView,
     concerts: concertsView,
-    tour: tourView,
+    tour: () => { const h = tourView(), id = decodeURIComponent(location.hash.split('/')[2] || '').split('?')[0]; return h.includes('class="empty"') && !h.includes('<h1') ? h : h + `<hr class="divider">${tmiBox('t:' + id, id)}`; },
     add: addView,
     opinion: opinionView,
     news: newsView,
@@ -5282,6 +5349,20 @@
   });
 
   // 관리자 기기 정하기: 이 기기 안에서 열쇠를 만들고, 공개 열쇠만 보여줘요
+  // 신고된 글(떼창·공유 가사·TMI): 3명이면 자동 숨김. '복구'는 'ok'+번호(다시 자동으로 안 숨김), '숨김 유지'는 'ly'+번호
+  function flagHtml() {
+    const fl = (data.flagged || []).filter(f => !f.restored && !(f.kept && !f.reports));
+    const where = k => k.startsWith('e:') ? ((data.byId.get(k.slice(2)) || {}).title || '일정') : k.startsWith('t:') ? '콘서트 ' + k.slice(2) : k.startsWith('s:') ? ((data.songs.get(k.slice(2)) || {}).name || '곡') : ((data.songs.get(k) || {}).name || k);
+    const bans = Object.entries(data.bans || {}).filter(([, t]) => t > Date.now());
+    return (fl.length ? fl.map(f => `<div class="op-item${f.hidden ? '' : ' rep-ok'}"><div class="op-head"><span class="op-who">${esc(f.kind)} · ${esc(where(f.key))}</span><span class="op-when">신고 ${f.reports} · ${f.kept ? '숨김 유지' : f.hidden ? '자동 숨김' : '보이는 중'}</span></div><p class="op-text">${esc(f.text)}</p><div class="op-foot">${f.kept ? '' : `<button type="button" class="link-btn fl-keep" data-id="${esc(f.id)}">숨김 유지</button>`}<button type="button" class="link-btn fl-ok" data-id="${esc(f.id)}">복구 (문제없음)</button><small class="src-note">기기 ${esc(f.author || '')}</small></div></div>`).join('') : '<p class="src-note">신고된 글이 없어요.</p>')
+      + (bans.length ? `<p class="src-note">글쓰기 막힌 기기: ${bans.map(([u, t]) => `${esc(u)} (${new Date(t).getMonth() + 1}/${new Date(t).getDate()}까지)`).join(', ')}</p>` : '');
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.fl-keep, .fl-ok');
+    if (!b) return;
+    b.disabled = true;
+    sendEvMark((b.matches('.fl-ok') ? 'ok' : 'ly') + b.dataset.id, '숨김').then(() => { toast(b.matches('.fl-ok') ? '복구했어요. 5~10분쯤 뒤 다시 보여요.' : '숨김을 유지해요.'); b.closest('.op-item').classList.add('rep-ok'); }).catch(() => { b.disabled = false; });
+  });
   function adminView() {
     const k = adminJwk(), c = adminKeys().length;
     const pub = k ? JSON.stringify({ x: k.x, y: k.y }) : '';
@@ -5293,6 +5374,8 @@
       : isAdmin() ? `<p class="sub">이 기기는 관리자 기기예요. <a href="#/opinion">의견 탭</a>에서 처리 표시를, 일정 화면에서 숨기기를 할 수 있어요.</p>
         <h2 class="h3 list-title">삭제 요청</h2>
         ${(q => q.length ? [...new Set(q.map(x => x.id))].map(id => `<div class="del-box">${q.filter(x => x.id === id).map(x => delReqHtml(x, true)).join('')}${delActs(id)}</div>`).join('') : '<p class="src-note">새 삭제 요청이 없어요.</p>')(delPending())}
+        <h2 class="h3 list-title">🚩 신고된 글</h2>
+        ${flagHtml()}
         <a class="map-entry" href="#/placefind">📍 지도 장소 한꺼번에 찾기 <span>›</span></a>
         <h2 class="h3 list-title">숨긴 일정</h2>
         ${(data.hidden || []).length ? data.hidden.map(h => `<div class="op-item"><div class="op-head"><span class="op-who">${esc(h.date)} ${esc(h.title)}</span></div><div class="op-foot"><button type="button" class="link-btn ev-unhide" data-id="${esc(h.id)}">다시 보이기</button></div></div>`).join('') : '<p class="src-note">숨긴 일정이 없어요.</p>'}
@@ -5972,6 +6055,7 @@
         </div>
         ${findRow(findQuery(e.title))}
         ${castBlock(e)}
+        ${e.ytOnly ? '' : tmiBox('e:' + e.id, e.title)}
         ${editBox(e)}
         ${hideBtn(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
