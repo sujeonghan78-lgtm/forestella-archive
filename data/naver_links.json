@@ -179,7 +179,7 @@
   },
   "https://naver.me/xE1xMgYG": {
    "t": "fail",
-   "n": 2,
+   "n": 3,
    "why": "fetch failed"
   },
   "https://naver.me/G9UDOjsb": {
@@ -351,6 +351,30 @@
    "addr": "경기 성남시 분당구 성남대로 808 성남아트센터",
    "lat": 37.402937,
    "lng": 127.130567,
+   "at": "2026-10-24"
+  },
+  "https://naver.me/x8lDIiUX": {
+   "t": "fail",
+   "n": 1,
+   "why": "fetch failed"
+  },
+  "https://naver.me/xmr0h4W0": {
+   "t": "fail",
+   "n": 1,
+   "why": "fetch failed"
+  },
+  "https://naver.me/5QiFsEwS": {
+   "t": "fail",
+   "n": 1,
+   "why": "fetch failed"
+  },
+  "https://naver.me/5Hy2qE1R": {
+   "t": "place",
+   "id": "13283859",
+   "name": "우리금융아트홀",
+   "addr": "서울 송파구 올림픽로 424 ,",
+   "lat": 37.516869,
+   "lng": 127.125033,
    "at": "2026-10-24"
   }
  }
