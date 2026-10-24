@@ -449,7 +449,7 @@
         if (done) { e.placeWas = e.place || ''; e.place = done.to; if (done.loc) e.placeLoc = done.loc; return; }
         // 비어 있던 장소: 가장 먼저 온 걸 바로 채우고 확인을 기다려요
         if (!e.place) { const f = ps.sort((a, b) => a.at - b.at)[0]; e.place = f.to; e.placeNew = f; if (f.loc) e.placeLoc = f.loc; }
-        e.placeProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id, now: p === e.placeNew }));
+        e.placeProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id, now: p === e.placeNew, ...(p.loc ? { loc: p.loc } : {}) }));
       });
     }
     // 일정 이름 고치기(종류: 이름수정 일정/전/후 → '맞아요'는 종류: 이름확인): 올린 사람 말고 두 명이 맞다고 하거나

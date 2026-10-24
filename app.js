@@ -1849,7 +1849,8 @@
     data.events.forEach(e => { const p = placeOf(e); if (p) cnt.set(p, (cnt.get(p) || 0) + 1); });
     const hint = pfAll.hint || {}, fd = pfAll.found || {}, maybe = Object.entries(fd).filter(([, v]) => v.c !== 'ok').map(([k]) => k);
     // 일정에 쓰인 장소 중 정확한 좌표가 없는 곳 (해외·비공개·팬이 정확한 위치를 이미 알려 준 곳은 빼요)
-    const exactEv = new Set(data.events.filter(e => e.placeLoc).map(e => placeOf(e)));
+    // 정확한 위치가 이미 있거나, 일정 화면에서 새 장소(좌표 포함)를 보내 확인을 기다리는 곳은 빼요
+    const exactEv = new Set(data.events.filter(e => e.placeLoc || (e.placeProps || []).some(p => p.loc)).map(e => placeOf(e)));
     const todo = [...cnt.keys()].filter(p => !(fd[p] && fd[p].c === 'ok') && !(pins[p] && pins[p].ok) && p !== PLACE_PRIV && !exactEv.has(p) && regionOf({ place: p, title: '', id: '' }) !== '해외')
       .sort((a, b) => (maybe.includes(b) - maybe.includes(a)) || cnt.get(b) - cnt.get(a));
     if (!todo.length) { box.innerHTML = '<p class="src-note">찾을 장소가 없어요. 다 찾았어요!</p>'; return; }
