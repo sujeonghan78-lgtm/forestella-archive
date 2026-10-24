@@ -1836,7 +1836,7 @@
   function boxView() {
     const { wentAll, went, seen, liked, songs, heardList, topRegion, first } = boxStats();
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
-    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length);
+    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length) && !(boxRead('sb-tmi-sent') || []).some(x => !x.del) && !Object.keys(lyMine()).length;
     const LIMIT = 8;
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
     const tabs = [
