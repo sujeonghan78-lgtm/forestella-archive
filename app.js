@@ -1496,7 +1496,7 @@
     const st = boxStats();
     const mine = st.wentAll.slice().sort((a, b) => a.date.localeCompare(b.date));
     if (!mapSt.mode) mapSt.mode = mine.length ? 'w' : 'all';
-    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !/^\[/.test(e.title) && !MAP_ONLINE.test(e.title)).sort((a, b) => a.date.localeCompare(b.date));
+    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !/^\[/.test(e.title) && !MAP_ONLINE.test(e.title) && !(/팬사인회|팬싸인회|팬싸/.test(e.title) && !placeOf(e))).sort((a, b) => a.date.localeCompare(b.date));
     const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort();
     // 기간 고르기: from/to는 'YYYY-MM'
     const inRange = e => memOk(mapSt.mem)(e) && (!mapSt.kind || mapKind(e) === mapSt.kind) && (!mapSt.from || e.date.slice(0, 7) >= mapSt.from) && (!mapSt.to || e.date.slice(0, 7) <= mapSt.to);
@@ -1504,6 +1504,7 @@
     return { all: items, on: items.filter(x => x.l.lat != null), off: items.filter(x => x.l.lat == null), mine: mine.length, years, first: list[0], last: list[list.length - 1] };
   }
   // 온라인으로만 본 공연은 갈 수 있는 곳이 아니라서 '모든 일정' 지도에선 빼요
+  // 팬사인회는 장소를 당첨자에게만 알려줘서, 장소가 없으면 '모든 일정' 지도에선 빼요 (내 직관 지도엔 남아요)
   const MAP_ONLINE = /온택트|온라인|비대면|랜선/;
   // 종류: 콘서트·팬미팅 / 뮤지컬 / 그 밖의 행사
   const MAP_KINDS = [['', '모든 종류'], ['c', '콘서트·팬미팅'], ['ev', '행사·축제'], ['mu', '뮤지컬']];
