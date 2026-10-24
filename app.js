@@ -1514,7 +1514,7 @@
     return `<div class="chips map-years">${MEM_CHIPS.slice(2).concat([MEM_CHIPS[1]]).map(([v, l]) => b('data-mem', v, l, v === mapSt.mem)).join('')}<span class="map-sep"></span>${MAP_KINDS.slice(1).map(([v, l]) => b('data-kind', v, l, v === mapSt.kind)).join('')}</div>`;
   }
   // 못 찍은 일정: 해외와 장소 모름을 나눠서, 장소 모름엔 📍 장소 알려주기를 달아요 (MAP_OFF_PL이 켜져 있을 때)
-  const MAP_OFF_PL = false;
+  const MAP_OFF_PL = true;
   function offList(off) {
     const abroad = off.filter(x => x.l.region === '해외'), none = off.filter(x => x.l.region !== '해외');
     const row = (x, pl) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a>` : ''}</div>`;
