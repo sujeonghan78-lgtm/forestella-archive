@@ -4578,8 +4578,8 @@
     const cchip = (v, l) => `<a class="chip${c === v ? ' on' : ''}" href="${href(f, v)}">${l}</a>`;
     return `
       <div class="chips tl-cats">${chip('', `전체 ${list.length}`)}${chip('todo', `처리 전 ${list.filter(o => !opDone.has(o.id)).length}`)}${chip('done', `처리됨 ${list.filter(o => opDone.has(o.id)).length}`)}</div>
-      <div class="chips tl-cats">${cchip('', '모든 분류')}${OP_CATS.map(x => cchip(x, x)).join('')}${repOpen().length ? cchip('제보 폼', `📮 제보 폼 ${repOpen().length}`) : ''}</div>
-      ${c === '제보 폼' ? repListHtml() : shown.length ? shown.map((o, i) => `${!o.local && opNewIds && !opNewIds.has(o.id) && shown.slice(0, i).some(x => opNewIds.has(x.id)) && !shown.slice(0, i).some(x => !x.local && !opNewIds.has(x.id)) ? '<div class="op-read">여기까지 새 의견이에요 · 아래는 읽은 의견</div>' : ''}
+      <div class="chips tl-cats">${cchip('', '모든 분류')}${OP_CATS.map(x => cchip(x, x)).join('')}${data.reports.length ? cchip('제보 폼', `📮 제보 폼 ${repOpen().length}`) : ''}</div>
+      ${c === '제보 폼' ? repListHtml(f) : shown.length ? shown.map((o, i) => `${!o.local && opNewIds && !opNewIds.has(o.id) && shown.slice(0, i).some(x => opNewIds.has(x.id)) && !shown.slice(0, i).some(x => !x.local && !opNewIds.has(x.id)) ? '<div class="op-read">여기까지 새 의견이에요 · 아래는 읽은 의견</div>' : ''}
         ${opItem(o, me, admin, opNewIds && opNewIds.has(o.id), kids)}`).join('') : '<p class="empty">아직 의견이 없어요.</p>'}`;
   }
   function opinionView() {
@@ -4793,7 +4793,23 @@
     const b = ev.target.closest('.rep-done');
     if (!b || !isAdmin()) return;
     b.disabled = true; b.textContent = '숨기는 중…';
-    try { await sendEvMark(b.dataset.id, '숨김'); const box = b.closest('.report'); if (box) box.remove(); } catch (err) { b.disabled = false; b.textContent = '다시 눌러 주세요'; }
+    try {
+      await sendEvMark(b.dataset.id, '숨김');
+      const box = b.closest('.report');
+      if (box && box.closest('#op-list')) { (window.SB_EV_HIDE = window.SB_EV_HIDE || new Set()).add(b.dataset.id); const r = data.reports.find(x => x.id === b.dataset.id); if (r) box.outerHTML = repItem(r); } else if (box) box.remove();
+    } catch (err) { b.disabled = false; b.textContent = '다시 눌러 주세요'; }
+  });
+  // 반영 취소(관리자): 같은 번호에 '보이기' 서명 줄을 보내서 다시 처리 전으로 돌려요
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.rep-undo');
+    if (!b || !isAdmin()) return;
+    b.disabled = true; b.textContent = '되돌리는 중…';
+    try {
+      await sendEvMark(b.dataset.id, '보이기');
+      (window.SB_EV_HIDE || new Set()).delete(b.dataset.id);
+      const r = data.reports.find(x => x.id === b.dataset.id), box = b.closest('.report');
+      if (r && box) box.outerHTML = repItem(r);
+    } catch (err) { b.disabled = false; b.textContent = '다시 눌러 주세요'; }
   });
   async function sendEvMark(id, state, to = '') {
     const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
@@ -5369,17 +5385,21 @@
   }
 
   // 관리자 기기: 아직 숨기지 않은 제보 폼 제보 전체 (최근 것부터)와 그 제보가 붙는 일정
-  const repOpen = () => { const done = window.SB_EV_HIDE || new Set(); return data.reports.filter(r => !done.has(r.id)).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')); };
+  const repDone = r => (window.SB_EV_HIDE || new Set()).has(r.id);
+  const repAll = () => data.reports.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const repOpen = () => repAll().filter(r => !repDone(r));
   const repEvent = r => data.events.find(e => r.date === e.date && (!r.title || norm(e.title).includes(norm(r.title)) || norm(r.title).includes(norm(e.title))));
-  // 의견 탭 '제보 폼' 분류: 예전 제보 폼으로 들어온 노란 제보 (관리자는 반영했어요로 숨겨요)
-  const repListHtml = () => `<p class="src-note">제보 폼으로 들어온 제보예요. 일정 이름을 누르면 그 일정으로 가요.</p>${repOpen().length ? repOpen().map(r => { const e = repEvent(r); return `<div class="report">
-            <span class="report-badge">${esc(fmtDate(r.date, false) || '날짜 없음')}</span>
+  const repBtn = r => !isAdmin() ? '' : repDone(r) ? `<button type="button" class="link-btn rep-undo" data-id="${esc(r.id)}">반영 취소</button>` : `<button type="button" class="link-btn rep-done" data-id="${esc(r.id)}">반영했어요</button>`;
+  const repItem = r => { const e = repEvent(r), d = repDone(r); return `<div class="report${d ? ' rep-ok' : ''}">
+            <span class="report-badge">${esc(fmtDate(r.date, false) || '날짜 없음')}${d ? ' · ✓ 반영함' : ''}</span>
             ${e ? `<a href="#/e/${encodeURIComponent(e.id)}"><b>${esc(e.title)}</b></a>` : `<b>${esc(r.title || '일정 없음')}</b>`}
             <span>${esc([r.type, r.song].filter(Boolean).join(' · '))}</span>
             ${r.message ? `<span class="report-msg">${esc(r.message)}</span>` : ''}
             ${/^https?:\/\//.test(r.link) ? `<a href="${esc(r.link)}" target="_blank" rel="noopener nofollow">근거 링크 ›</a>` : ''}
-            ${isAdmin() ? `<button type="button" class="link-btn rep-done" data-id="${esc(r.id)}">반영했어요 · 숨기기</button>` : ''}
-          </div>`; }).join('') : '<p class="src-note">남은 제보가 없어요.</p>'}`;
+            ${repBtn(r)}
+          </div>`; };
+  // 의견 탭 '제보 폼' 분류: 예전 제보 폼으로 들어온 노란 제보. 반영한 것도 초록 바탕으로 같이 보여요 (처리 전·처리됨 칩으로 나눠 볼 수 있어요)
+  const repListHtml = f => { const l = repAll().filter(r => !f || (f === 'done') === repDone(r)); return `<p class="src-note">제보 폼으로 들어온 제보예요. 일정 이름을 누르면 그 일정으로 가요.</p>${l.length ? l.map(repItem).join('') : '<p class="src-note">제보가 없어요.</p>'}`; };
   function reportsFor(e) {
     const t = norm(e.title);
     const done = window.SB_EV_HIDE || new Set();

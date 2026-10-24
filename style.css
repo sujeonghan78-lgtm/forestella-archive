@@ -1383,3 +1383,5 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .pl-kind .chip { flex: 1; justify-content: center; }
 .pl-privbox[hidden] { display: none; }
 .report + .report { margin-top: 10px; }
+.report.rep-ok { background: #EEF8E8; border-color: #A8D88A; border-style: solid; }
+.report.rep-ok .report-badge { background: #D8F0C8; color: #2F6B1E; }
