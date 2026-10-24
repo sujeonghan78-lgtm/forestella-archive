@@ -1185,6 +1185,7 @@
           ${songLast(so) ? `<div class="fact"><b>마지막 무대</b><span>${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘'} · ${fmtDate(songLast(so), false)}</span></div>` : ''}
         </div>` : ''}
         ${songPickRow(so)}
+        <div class="chips song-writes"><button type="button" class="chip song-write" data-t="떼창" data-f=".ch-in">📣 떼창 적기</button><button type="button" class="chip song-write" data-t="가사" data-f=".ly-in">💬 가사 저장</button><button type="button" class="chip song-write" data-t="TMI" data-f=".tmi-in">💡 TMI 남기기</button></div>
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
       </section>
@@ -1451,6 +1452,18 @@
     }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
   });
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
+  // 곡 화면 위 '적기' 버튼: 그 탭을 열고 입력칸으로 가요
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.song-write');
+    if (!b) return;
+    const tab = [...document.querySelectorAll('.pane-tabs button')].find(x => x.textContent.includes(b.dataset.t));
+    if (!tab) return;
+    tab.click();
+    const pane = [...document.querySelectorAll('.pane-wrap > .pane')].find(p => !p.hidden), add = pane && pane.querySelector('.tmi-add');
+    if (add) add.open = true;
+    const inp = pane && pane.querySelector(b.dataset.f);
+    if (inp) { inp.scrollIntoView({ block: 'center' }); setTimeout(() => inp.focus(), 250); }
+  });
   // 곡 화면 탭 안에서는 접는 칸 없이 펼쳐서 보여요
   const flatBox = html => html.replace(/^\s*<details class="song-memo([^"]*)"[^>]*><summary>[\s\S]*?<\/summary>/, '<div class="tab-box$1">').replace(/<\/details>\s*$/, '</div>');
   const songMemoN = so => (songMemos(so).match(/class="box-ev"/g) || []).length;
