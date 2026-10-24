@@ -1360,3 +1360,15 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-off[open]>summary::after{content:'접기 ▴'}
 .map-off-how{margin:12px 0 4px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:12.5px;color:var(--ink)}
 .map-off-how p{margin:0 0 6px}
+.sendq-btn{position:fixed;top:calc(52px + env(safe-area-inset-top,0px));right:16px;z-index:30;display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 13px;border-radius:17px;border:0;background:var(--green);color:#fff;font-size:13px;font-weight:700;box-shadow:0 4px 14px rgba(20,60,40,.25);cursor:pointer}
+.sendq-btn[hidden],.sendq-panel[hidden]{display:none}
+.sendq-btn b{background:#fff;color:var(--green);border-radius:9px;padding:0 6px;font-size:12px}
+.sendq-panel{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;padding:calc(60px + env(safe-area-inset-top,0px)) 16px 16px}
+.sendq-box{width:100%;max-width:460px;max-height:75vh;overflow:auto;background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.sendq-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sendq-list{list-style:none;margin:0 0 12px;padding:0}
+.sendq-list li{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.map-off-act{display:flex;flex-direction:column;gap:4px;flex:none}
+.map-off-pv{font-size:12px;padding:4px 9px;white-space:nowrap}
+.map-off-pv.on{background:var(--soft);border-color:var(--green);color:var(--green)}
+.pl-priv{display:block;margin:10px 0 0;font-size:12.5px}

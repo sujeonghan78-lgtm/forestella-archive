@@ -47,7 +47,7 @@ def places():
             t = '\n'.join(r)
             if re.search(r'^\s*종류\s*[:：]\s*(새일정|장소수정)\s*$', t, re.M):
                 m = re.search(r'^\s*(?:장소|후)\s*[:：][ \t]*(\S.*)$', t, re.M)
-                if m and len(m.group(1).strip()) >= 2:
+                if m and len(m.group(1).strip()) >= 2 and m.group(1).strip() != '비공개':
                     out[m.group(1).strip()] = out.get(m.group(1).strip(), 0) + 1
     except Exception as err:
         print('제보 탭 못 읽음', err)

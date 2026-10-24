@@ -1474,7 +1474,9 @@
   const loadPlaces = () => placesP = placesP || fetch('data/places.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => j.found || {});
   // 일정 장소 이름: 장소 칸, 없으면 내용의 '장소:' 줄
   const placeOf = e => (e.place || '').trim() || (((e.content || '').match(/장소\s*[:：]\s*(.+)/) || [])[1] || '').trim();
+  const PLACE_PRIV = '비공개';
   function locOf(e, found) {
+    if (placeOf(e) === PLACE_PRIV) return { lat: null, lng: null, exact: false, place: PLACE_PRIV, region: PLACE_PRIV };
     // 큰 지역은 일정 글자(장소·제목)로 먼저 정하고, 모르면 좌표로
     const r = regionOf(e), rk = REGION_C[r] ? r : '';
     if (e.placeLoc) return { ...e.placeLoc, exact: true, place: placeOf(e), region: rk || regionNear(e.placeLoc) };
@@ -1517,13 +1519,24 @@
   // 못 찍은 일정: 해외와 장소 모름을 나눠서, 장소 모름엔 📍 장소 알려주기를 달아요 (MAP_OFF_PL이 켜져 있을 때)
   const MAP_OFF_PL = true;
   function offList(off, rough = []) {
-    const abroad = off.filter(x => x.l.region === '해외'), none = off.filter(x => x.l.region !== '해외');
-    const row = (x, pl) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a>` : ''}</div>`;
-    const how = MAP_OFF_PL ? `<div class="map-off-how"><p><b>하나씩 찾기</b> · 아래 줄마다 📍 장소 알려주기를 눌러 그 일정 장소를 골라요</p><p><b>한 번에 찾기</b> · 네이버 지도 링크 여러 개를 목록으로 모아 한 번에 보내요</p><div class="drive-btns"><a class="bpill" href="#/opinion?w=map">🗺 여러 곳 한 번에 보내기</a>${isAdmin() ? '<a class="chip" href="#/placefind">🔎 한꺼번에 찾기 (관리자)</a>' : ''}</div></div>` : '';
-    return how + (none.length ? `<h3 class="map-off-h">장소 모름 ${none.length}</h3>${none.map(x => row(x, MAP_OFF_PL)).join('')}` : '')
+    const abroad = off.filter(x => x.l.region === '해외'), priv = off.filter(x => x.l.region === PLACE_PRIV), none = off.filter(x => x.l.region !== '해외' && x.l.region !== PLACE_PRIV);
+    const row = (x, pl, pv) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<span class="map-off-act"><a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a>${pv ? `<button type="button" class="chip map-off-pv${sendQHas('pv:' + x.e.id) ? ' on' : ''}" data-id="${esc(x.e.id)}">${sendQHas('pv:' + x.e.id) ? '🔒 담았어요' : '🔒 비공개'}</button>` : ''}</span>` : ''}</div>`;
+    const how = MAP_OFF_PL ? `<div class="map-off-how"><p><b>하나씩 찾기</b> · 아래 줄마다 📍 장소 알려주기를 눌러 그 일정 장소를 골라요</p><p><b>한 번에 찾기</b> · 장소 이름으로 차례로 검색해 맞는 곳만 골라 담아요. 네이버 지도 링크를 여러 개 보내도 돼요</p><p><b>🔒 비공개</b> · 팬사인회처럼 장소를 당첨자에게만 알려 준 일정은 비공개로 담아 주세요</p><div class="drive-btns"><a class="bpill" href="#/placefind">🔎 한꺼번에 찾기</a><a class="chip" href="#/opinion?w=map">🗺 네이버 링크 여러 곳 보내기</a></div></div>` : '';
+    return how + (none.length ? `<h3 class="map-off-h">장소 모름 ${none.length}</h3>${none.map(x => row(x, MAP_OFF_PL, !placeOf(x.e))).join('')}` : '')
       + (rough.length ? `<h3 class="map-off-h">대략 위치로만 찍힘 ${rough.length}</h3><p class="map-off-n">공연장 좌표를 몰라서 지역 가운데에 찍혀 있어요</p>${rough.map(x => row(x, MAP_OFF_PL)).join('')}` : '')
-      + (abroad.length ? `<h3 class="map-off-h">✈ 해외 ${abroad.length}</h3>${abroad.map(x => row(x, false)).join('')}` : '');
+      + (abroad.length ? `<h3 class="map-off-h">✈ 해외 ${abroad.length}</h3>${abroad.map(x => row(x, false)).join('')}` : '')
+      + (priv.length ? `<h3 class="map-off-h">🔒 장소 비공개 ${priv.length}</h3><p class="map-off-n">장소를 당첨자에게만 알려 준 일정이에요</p>${priv.map(x => row(x, false)).join('')}` : '');
   }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.map-off-pv');
+    if (!b) return;
+    const e = data.events.find(x => x.id === b.dataset.id);
+    if (!e) return;
+    const k = 'pv:' + e.id;
+    if (sendQHas(k)) { sendQDel(k); b.classList.remove('on'); b.textContent = '🔒 비공개'; return; }
+    sendQAdd({ k, label: `🔒 ${fmtDate(e.date, false)} ${e.title} → 장소 비공개`, text: privText(e), slok: `pl:${e.id}:${PLACE_PRIV}` });
+    b.classList.add('on'); b.textContent = '🔒 담았어요';
+  });
   function mapView() {
     return `
       <a class="back" href="#/box">‹ 보관함</a>
@@ -1556,7 +1569,7 @@
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
-      ${ml.off.length || ml.on.some(x => !x.l.exact) ? `<details class="map-off"><summary>위치 확인이 필요한 일정 ${ml.off.length + ml.on.filter(x => !x.l.exact).length}개</summary>${offList(ml.off, ml.on.filter(x => !x.l.exact))}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
+      ${ml.off.length || ml.on.some(x => !x.l.exact) ? `<details class="map-off"><summary>위치 확인이 필요한 일정 ${ml.off.filter(x => x.l.region !== PLACE_PRIV).length + ml.on.filter(x => !x.l.exact).length}개</summary>${offList(ml.off, ml.on.filter(x => !x.l.exact))}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
       : ml.off.length ? `<p class="empty">이 기간 일정 ${ml.off.length}개는 장소를 몰라서 지도에 못 찍었어요. 아는 분은 📍 장소 알려주기로 알려 주세요.</p><div class="map-off">${offList(ml.off)}</div>` : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
     const reset = () => { mapSt.i = -1; mapSt.tour = false; mapSt.uz = 0; mapStop(); bindMap(); };
@@ -1818,11 +1831,11 @@
   let pfAll = null;
   const PF_DONE = 'sb-pf-done', pfDone = () => boxRead(PF_DONE) || {};
   function placeFindView() {
-    if (!isAdmin()) return '<p class="sub">준비 중인 화면이에요.</p>';
+    const adm = isAdmin();
     return `
-      <a class="back" href="#/admin">‹ 관리자 기기</a>
+      <a class="back" href="${adm ? '#/admin' : '#/map'}">‹ ${adm ? '관리자 기기' : '숲별 발자국'}</a>
       <h1 class="h1 page-title">장소 한꺼번에 찾기</h1>
-      <p class="sub">지도에서 정확한 위치를 못 찾은 장소예요. 이 폰이 차례로 검색해서 후보를 보여줘요. 맞는 후보를 누르면 바로 확정돼요. 없으면 검색어를 고쳐서 다시 찾아 주세요.</p>
+      <p class="sub">지도에서 정확한 위치를 못 찾은 장소예요. 이 폰이 차례로 검색해서 후보를 보여줘요. ${adm ? '맞는 후보를 누르면 바로 확정돼요.' : "맞는 후보를 누르면 오른쪽 위 '📤 보낼 목록'에 담겨요. 다 고른 뒤 한 번에 보내 주세요. 다른 두 분이 맞다고 하면 지도에 확정돼요."} 없으면 검색어를 고쳐서 다시 찾아 주세요.</p>
       ${(() => { const ok = Object.entries(data.pins || {}).filter(([, v]) => v.ok); return ok.length ? `<p class="src-note">확정한 위치 ${ok.length}곳 <button type="button" class="chip" id="pf-copy" data-t="${esc(ok.map(([k, v]) => k + ' | ' + v.ok.lat + ',' + v.ok.lng).join('\n'))}">복사하기</button></p>` : ''; })()}
       <div id="pf-list"><p class="src-note">장소 목록을 불러오는 중…</p></div>`;
   }
@@ -1834,12 +1847,15 @@
     if (!pfAll) pfAll = await fetch('data/places.json', { cache: 'no-cache' }).then(r => r.json()).catch(() => ({}));
     const pins = data.pins || {}, cnt = new Map();
     data.events.forEach(e => { const p = placeOf(e); if (p) cnt.set(p, (cnt.get(p) || 0) + 1); });
-    const hint = pfAll.hint || {}, maybe = Object.entries(pfAll.found || {}).filter(([, v]) => v.c !== 'ok').map(([k]) => k);
-    const todo = [...(pfAll.miss || []).filter(p => hint[p]), ...maybe].filter(p => !(pins[p] && pins[p].ok) && cnt.get(p));
+    const hint = pfAll.hint || {}, fd = pfAll.found || {}, maybe = Object.entries(fd).filter(([, v]) => v.c !== 'ok').map(([k]) => k);
+    // 일정에 쓰인 장소 중 정확한 좌표가 없는 곳 (해외·비공개·팬이 정확한 위치를 이미 알려 준 곳은 빼요)
+    const exactEv = new Set(data.events.filter(e => e.placeLoc).map(e => placeOf(e)));
+    const todo = [...cnt.keys()].filter(p => !(fd[p] && fd[p].c === 'ok') && !(pins[p] && pins[p].ok) && p !== PLACE_PRIV && !exactEv.has(p) && regionOf({ place: p, title: '', id: '' }) !== '해외')
+      .sort((a, b) => (maybe.includes(b) - maybe.includes(a)) || cnt.get(b) - cnt.get(a));
     if (!todo.length) { box.innerHTML = '<p class="src-note">찾을 장소가 없어요. 다 찾았어요!</p>'; return; }
     const done = pfDone();
     box.innerHTML = todo.map((p, i) => `<section class="pf-item${done[p] ? ' pf-done' : ''}" data-i="${i}">
-        <div class="pf-h"><b>${esc(p)}</b><span>${done[p] ? `확정했어요 ✓ ${esc(done[p])} · 5~10분 뒤 지도에 반영돼요` : `일정 ${cnt.get(p)}개${maybe.includes(p) ? ' · 자동으로 찾았지만 확실치 않음' : ''}`}</span></div>
+        <div class="pf-h"><b>${esc(p)}</b><span>${done[p] ? `확정했어요 ✓ ${esc(done[p])} · 5~10분 뒤 지도에 반영돼요` : sendQHas('pin:' + p) ? '📤 보낼 목록에 담았어요' : `일정 ${cnt.get(p)}개${maybe.includes(p) ? ' · 자동으로 찾았지만 확실치 않음' : ''}${pins[p] && pins[p].pend && pins[p].pend.length ? ' · 다른 분이 찾은 위치가 확인을 기다려요' : ''}`}</span></div>
         <form class="pin-find"><input type="search" value="${esc(hint[p] || p)}" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
         <div class="pin-res"><span class="src-note">차례를 기다리는 중…</span></div></section>`).join('');
     const items = [...box.querySelectorAll('.pf-item')];
@@ -1854,6 +1870,12 @@
         const h = r[+b.dataset.j], c = (+h.lat).toFixed(5) + ',' + (+h.lon).toFixed(5);
         res.querySelectorAll('.pin-hit').forEach(o => { o.disabled = true; });
         b.classList.add('on');
+        if (!isAdmin()) {
+          sendQAdd({ k: 'pin:' + p, label: `📍 ${p} → ${h.name || c}`, text: `종류: 장소좌표\n장소: ${p}\n좌표: ${c}\n누가: ${myUid()}` });
+          el.querySelector('.pf-h span').textContent = `📤 보낼 목록에 담았어요 · ${h.name || ''}`;
+          res.querySelectorAll('.pin-hit').forEach(o => { o.disabled = false; });
+          return;
+        }
         try {
           await formPost(`종류: 장소좌표\n장소: ${p}\n좌표: ${c}\n누가: ${myUid()}`);
           boxWrite(PF_DONE, { ...pfDone(), [p]: h.name || c });
@@ -2853,7 +2875,7 @@
     ['충청', /Daejeon|Cheongju|in DA|대전|세종시|충남|충북|충청|천안|아산|이순신종합운동장|이순신 종합운동장|계룡|예산|제천|청주|공주|금강|대백제전|당진|서산|논산|충주/],
     ['전라', /Gwangju|Jeonju|광주|타이거즈|전남|전북|전라|목포|여수|나주|순천|장흥|보림사|곡성|익산|원광|남원|광한루|영광|화순|지스트|엘로우시티|드래곤즈|광양|함평|군산|전주|고창|정읍|해남|강진|수묵/],
     ['경상', /Busan|Daegu|Ulsan|Changwon|in BU|부산|대구|울산|경북|경남|경상|창원|김해|통영|용호도|경주|칠곡|직지사|김천|영도|벡스코|BNK|포항|안동|구미|영덕|예주|울진|연호문화센터|태화강|3\.15|거제|진주|양산|APEC|창녕|밀양|상주|문경/],
-    ['서울', /서울|seoul|경희대|광운대|건국대|성수|압구정|잠실|올림픽공원|올림픽홀|88잔디|롯데콘서트홀|코엑스|장충|은평|서리풀|홍대|노량진|동작|세종대|고려대|한전아트센터|유니버설아트센터|플라자호텔|KBS홀|블루스퀘어|예술의전당(?!.*(광주|대구|경주|부산))/i],
+    ['서울', /서울|seoul|대학로|동숭|충무아트|디큐브|백암아트|아트원씨어터|동양예술극장|유니플렉스|이해랑|예스24스테이지|두산아트센터|경희대|광운대|건국대|성수|압구정|잠실|올림픽공원|올림픽홀|88잔디|롯데콘서트홀|코엑스|장충|은평|서리풀|홍대|노량진|동작|세종대|고려대|한전아트센터|유니버설아트센터|플라자호텔|KBS홀|블루스퀘어|예술의전당(?!.*(광주|대구|경주|부산))/i],
   ];
   const regionOf = e => {
     const fix = ((data.extra || {}).region || {})[e.id];
@@ -4167,6 +4189,44 @@
       throw err;
     });
   };
+  // 📤 보낼 목록: 한꺼번에 찾기·비공개 표시처럼 여러 개를 고를 땐 바로 안 보내고 모았다가 한 번에 보내요 (이 폰에만 저장)
+  const SEND_Q = 'sb-send-q';
+  const sendQ = () => boxRead(SEND_Q) || [];
+  const sendQAdd = it => { boxWrite(SEND_Q, [...sendQ().filter(x => x.k !== it.k), it]); sendQRender(); };
+  const sendQDel = k => { const q = sendQ().filter(x => x.k !== k); boxWrite(SEND_Q, q.length ? q : null); sendQRender(); };
+  const sendQHas = k => sendQ().some(x => x.k === k);
+  function sendQRender() {
+    let b = document.getElementById('sendq-btn');
+    const n = sendQ().length;
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.id = 'sendq-btn'; b.className = 'sendq-btn'; document.body.appendChild(b); b.onclick = sendQOpen; }
+    b.hidden = !n; b.innerHTML = `📤 보낼 목록 <b>${n}</b>`;
+  }
+  function sendQOpen() {
+    let pn = document.getElementById('sendq-panel');
+    if (!pn) { pn = document.createElement('div'); pn.id = 'sendq-panel'; pn.className = 'sendq-panel'; document.body.appendChild(pn); }
+    const q = sendQ();
+    pn.hidden = false;
+    pn.innerHTML = `<div class="sendq-box" role="dialog" aria-label="보낼 목록"><div class="sendq-h"><b>📤 보낼 목록 ${q.length}개</b><button type="button" class="link-btn sendq-x">닫기</button></div>
+      ${q.length ? `<ul class="sendq-list">${q.map(x => `<li><span>${esc(x.label)}</span><button type="button" class="link-btn sendq-del" data-k="${esc(x.k)}" aria-label="빼기">✕</button></li>`).join('')}</ul>
+      <button type="button" class="bpill add-send sendq-go">모두 보내기</button><p class="src-note sendq-msg">보내면 다른 두 분이 맞다고 할 때 확정돼요.</p>` : '<p class="src-note">담은 게 없어요.</p>'}</div>`;
+    pn.querySelector('.sendq-x').onclick = () => { pn.hidden = true; };
+    pn.onclick = ev => { if (ev.target === pn) pn.hidden = true; };
+    pn.querySelectorAll('.sendq-del').forEach(d => d.onclick = () => { sendQDel(d.dataset.k); sendQOpen(); });
+    const go = pn.querySelector('.sendq-go');
+    if (go) go.onclick = async () => {
+      go.disabled = true;
+      let ok = 0, bad = 0;
+      for (const x of sendQ()) {
+        go.textContent = `보내는 중… ${ok + bad + 1}/${q.length}`;
+        try { await formPost(x.text); if (x.mark && isAdmin()) await sendEvMark(x.mark, '숨김'); if (x.slok) slOkAdd(x.slok); sendQDel(x.k); ok++; } catch (err) { bad++; }
+        await new Promise(r => setTimeout(r, 400));
+      }
+      go.textContent = bad ? '다시 보내기' : '보냈어요 ✓'; go.disabled = false;
+      pn.querySelector('.sendq-msg').textContent = bad ? `${ok}개 보냈고 ${bad}개는 못 보냈어요. 다시 보내기를 눌러 주세요.` : `${ok}개 모두 보냈어요! 5~10분쯤 뒤 반영돼요.`;
+      if (!bad) setTimeout(() => { pn.hidden = true; }, 1500);
+    };
+  }
+  setTimeout(sendQRender, 0);
   const slOkAdd = k => { try { const a = JSON.parse(localStorage.getItem(SL_OK) || '[]'); a.push(k); localStorage.setItem(SL_OK, JSON.stringify(a.slice(-300))); } catch (err) { /* 괜찮아요 */ } };
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.dt-send, .dt-ok');
@@ -4204,7 +4264,9 @@
       <div class="pin-res pl-res"></div>
       <label class="add-f pl-nv"><span>또는 네이버 지도 링크</span><input type="url" class="pl-link" inputmode="url" placeholder="네이버 지도 앱 → 장소 → 공유 → 링크 복사" autocomplete="off"></label>
       <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}" disabled>보내기</button>
+      ${e.place === PLACE_PRIV ? '' : `<button type="button" class="link-btn pl-priv" data-id="${esc(e.id)}">🔒 장소가 공개되지 않은 일정이에요</button>`}
       <p class="src-note pl-msg">찾은 곳 중에 맞는 곳을 고르거나, 네이버 지도에서 그 장소를 공유한 링크를 붙여 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '다른 두 분이 맞다고 하면 장소가 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
+  const privText = e => `종류: 장소수정\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${PLACE_PRIV}\n누가: ${myUid()}`;
   // 장소 찾기: OpenStreetMap 검색 결과 중 하나를 고르면 이름·좌표를 같이 보내요
   document.addEventListener('submit', async ev => {
     const f = ev.target.closest('.pl-find');
@@ -4262,6 +4324,15 @@
         else b.closest('.pl-state').outerHTML = plState({ ...e, placeWas: undefined, placeProps: (e.placeProps || []).filter(p => p.to === to) });
       })
       .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; });
+  });
+  // 장소 비공개(팬사인회처럼 당첨자에게만 알려 준 곳): 장소를 '비공개'로 보내요. 다른 두 분이 맞다고 하면 확정이에요
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.pl-priv');
+    if (!b) return;
+    const e = data.events.find(x => x.id === b.dataset.id);
+    if (!e) return;
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(privText(e)).then(() => { slOkAdd(`pl:${e.id}:${PLACE_PRIV}`); b.textContent = '보냈어요 ✓ 장소 비공개로 알렸어요'; }).catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
   });
   document.addEventListener('click', async ev => {
     const b = ev.target.closest('.pl-adm');
@@ -5509,7 +5580,7 @@
     if (name === 'card') bindCard();
     if (name === 'map') bindMap();
     if (name === 'more') bindMore();
-    if (name === 'placefind' && isAdmin()) bindPlaceFind();
+    if (name === 'placefind') bindPlaceFind();
     if (name === 'home') bindAsk();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
