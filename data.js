@@ -512,6 +512,8 @@
         e.casts = (e.casts || []).filter(c => c.d !== d || ts.includes(c.t));
         ts.forEach(t => { if (!e.casts.some(c => c.d === d && c.t === t)) e.casts.push({ d, t, id: 'c' + slVer([e.id, d, t]), by: '' }); });
       }); });
+      // 날짜만 있는 회차는 같은 날 시간 있는 회차가 들어오면 빼요 (겹쳐 보이지 않게)
+      events.forEach(e => { if (e.casts) e.casts = e.casts.filter(c => c.t || !e.casts.some(x => x !== c && x.d === c.d && x.t)); });
       events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));
     }
     // 숨기거나 지운 일정에 대한 제보는 빼고, 최근 것부터
