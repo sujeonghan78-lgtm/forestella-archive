@@ -79,7 +79,7 @@
     return ls.sort((a, b) => at(a) - at(b) || a.localeCompare(b)).join(', ');
   };
   // 짐작이 틀리는 곡 (곡키 → 언어)
-  const LANG_FIX = { 'time to say goodbye': '이탈리아어', 'shape of you': '영어, 줄루어', 'plastic love': '일본어', 'now we are free': '이탈리아어', 'la la la': '영어', libertango: '연주곡' };
+  const LANG_FIX = { 'time to say goodbye': '이탈리아어', 'shape of you': '영어, 줄루어', champions: '영어, 라틴어, 독일어', 'plastic love': '일본어', 'now we are free': '이탈리아어', 'la la la': '영어', libertango: '연주곡' };
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
   // '월의 어느 멋진날에(무반주 한소절)'처럼 뒤가 달라도 앞 '10'만 되살려요
   const slFix = x => x.replace(/^월의\s*어느\s*멋진/, '10월의 어느 멋진');
