@@ -1496,7 +1496,7 @@
     const st = boxStats();
     const mine = st.wentAll.slice().sort((a, b) => a.date.localeCompare(b.date));
     if (!mapSt.mode) mapSt.mode = mine.length ? 'w' : 'all';
-    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !/^\[/.test(e.title) && !MAP_ONLINE.test(e.title) && !(/팬사인회|팬싸인회|팬싸/.test(e.title) && !placeOf(e))).sort((a, b) => a.date.localeCompare(b.date));
+    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !MAP_ONLINE.test(e.title) && !(/팬사인회|팬싸인회|팬싸/.test(e.title) && !placeOf(e))).sort((a, b) => a.date.localeCompare(b.date));
     const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort();
     // 기간 고르기: from/to는 'YYYY-MM'
     const inRange = e => memOk(mapSt.mem)(e) && (!mapSt.kind || mapKind(e) === mapSt.kind) && (!mapSt.from || e.date.slice(0, 7) >= mapSt.from) && (!mapSt.to || e.date.slice(0, 7) <= mapSt.to);
