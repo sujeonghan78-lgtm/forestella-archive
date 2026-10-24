@@ -4374,6 +4374,8 @@
     if (send && to && to === e.place) { box.querySelector('.pl-msg').textContent = '지금 장소와 같아요.'; return; }
     b.disabled = true; b.textContent = '보내는 중…';
     formPost(`종류: ${send ? '장소수정' : '장소확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${to}${send && b.dataset.c ? `\n좌표: ${b.dataset.c}` : ''}${link ? `\n링크: ${link}` : ''}\n누가: ${myUid()}`)
+      // 관리자 기기에서 보낸 장소는 바로 확정해요 (서명된 숨김 줄, 번호 'pl'+일정·장소)
+      .then(() => send && to && e.place && isAdmin() ? sendEvMark('pl' + window.DATA.slVer([e.id, to]), '숨김').catch(() => {}) : null)
       .then(() => {
         if (to) slOkAdd(`pl:${e.id}:${to}`);
         if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.pl-msg').textContent = link ? '보냈어요! 15~30분쯤 뒤 장소와 지도 위치가 들어가요.' : `보냈어요: 📍 ${to}. 5~10분쯤 뒤 일정에 떠요.`; }
