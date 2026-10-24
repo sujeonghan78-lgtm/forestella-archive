@@ -1496,13 +1496,15 @@
     const st = boxStats();
     const mine = st.wentAll.slice().sort((a, b) => a.date.localeCompare(b.date));
     if (!mapSt.mode) mapSt.mode = mine.length ? 'w' : 'all';
-    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !/^\[/.test(e.title)).sort((a, b) => a.date.localeCompare(b.date));
+    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !/^\[/.test(e.title) && !MAP_ONLINE.test(e.title)).sort((a, b) => a.date.localeCompare(b.date));
     const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort();
     // 기간 고르기: from/to는 'YYYY-MM'
     const inRange = e => memOk(mapSt.mem)(e) && (!mapSt.kind || mapKind(e) === mapSt.kind) && (!mapSt.from || e.date.slice(0, 7) >= mapSt.from) && (!mapSt.to || e.date.slice(0, 7) <= mapSt.to);
     const items = list.filter(inRange).map(e => ({ e, l: locOf(e, found) }));
     return { all: items, on: items.filter(x => x.l.lat != null), off: items.filter(x => x.l.lat == null), mine: mine.length, years, first: list[0], last: list[list.length - 1] };
   }
+  // 온라인으로만 본 공연은 갈 수 있는 곳이 아니라서 '모든 일정' 지도에선 빼요
+  const MAP_ONLINE = /온택트|온라인|비대면|랜선/;
   // 종류: 콘서트·팬미팅 / 뮤지컬 / 그 밖의 행사
   const MAP_KINDS = [['', '모든 종류'], ['c', '콘서트·팬미팅'], ['ev', '행사·축제'], ['mu', '뮤지컬']];
   const mapKind = e => e.category === '뮤지컬' ? 'mu' : /콘서트|concert|투어|tour|팬미팅|팬콘|단독 공연|리사이틀/i.test(e.title) && !/게스트|축하/.test(e.title) ? 'c' : 'ev';
@@ -1510,6 +1512,14 @@
   function mapFilters() {
     const b = (attr, v, l, on) => `<button type="button" class="chip${on ? ' on' : ''}" ${attr}="${on ? '' : v}">${l}</button>`;
     return `<div class="chips map-years">${MEM_CHIPS.slice(2).concat([MEM_CHIPS[1]]).map(([v, l]) => b('data-mem', v, l, v === mapSt.mem)).join('')}<span class="map-sep"></span>${MAP_KINDS.slice(1).map(([v, l]) => b('data-kind', v, l, v === mapSt.kind)).join('')}</div>`;
+  }
+  // 못 찍은 일정: 해외와 장소 모름을 나눠서, 장소 모름엔 📍 장소 알려주기를 달아요 (MAP_OFF_PL이 켜져 있을 때)
+  const MAP_OFF_PL = false;
+  function offList(off) {
+    const abroad = off.filter(x => x.l.region === '해외'), none = off.filter(x => x.l.region !== '해외');
+    const row = (x, pl) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a>` : ''}</div>`;
+    return (none.length ? `<h3 class="map-off-h">장소 모름 ${none.length}</h3>${none.map(x => row(x, MAP_OFF_PL)).join('')}` : '')
+      + (abroad.length ? `<h3 class="map-off-h">✈ 해외 ${abroad.length}</h3>${abroad.map(x => row(x, false)).join('')}` : '');
   }
   function mapView() {
     return `
@@ -1543,7 +1553,7 @@
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
-      ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개 (해외 · 장소 모름)</summary>${ml.off.map(x => `<a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>`).join('')}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
+      ${ml.off.length ? `<details class="map-off"><summary>지도에 못 찍은 일정 ${ml.off.length}개</summary>${offList(ml.off)}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
       : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
     const reset = () => { mapSt.i = -1; mapSt.tour = false; mapSt.uz = 0; mapStop(); bindMap(); };
@@ -2833,7 +2843,7 @@
   // ---------- 공연·행사 (축제·기업 행사·지역 공연) ----------
   // 단독 투어·게스트·셋리스트 있는 콘서트는 빼고, 장소·행사명 낱말로 지역을 나눠요 (보충 파일 region으로 고칠 수 있어요)
   const REGIONS = [
-    ['해외', /두바이|해외|일본|미국|도쿄|N\.?AMERICA|Atlanta|Dallas|New York|Vancouver|\bin LA\b/i],
+    ['해외', /두바이|해외|일본|미국|도쿄|N\.?AMERICA|North America|뉴욕|로스앤젤레스|시애틀|댈러스|애틀랜타|밴쿠버|Atlanta|Dallas|New York|Vancouver|\bin LA\b/i],
     ['경기·인천', /경기 광주|인천|송도|부천|광명|안성|분당|성남|고양|킨텍스|수원|의정부|신한대|인스파이어|계양|자라섬|jarasum|가평|용인|경기도|과천|렛츠런파크(?! 제주)|Incheon|Suwon|Goyang/i],
     ['제주', /제주/],
     ['강원', /Gangn[eu]+ng|Gangneong|강원|원주|춘천|강릉|인제|동해(?!문화예술관)|속초|평창|삼척|홍천/],
@@ -4185,7 +4195,7 @@
       return `<div class="sl-state pl-state"><span class="src-badge">장소 확인 · ${p.n}/2</span><span class="sl-state-msg"><b class="dt-chg">📍 ${p.now ? esc(p.to) : `${esc(e.place)} → ${esc(p.to)}`}</b> ${msg}</span>${btn}${adm}</div>`;
     }).join('');
   }
-  const plForm = e => e.ytOnly ? '' : `<details class="fix-box"><summary>📍 ${e.place ? '장소가 달라요' : '장소 알려주기'}</summary><div class="op-form">
+  const plForm = e => e.ytOnly ? '' : `<details class="fix-box"${new URLSearchParams(location.hash.split('?')[1] || '').get('pl') ? ' open id="pl-open"' : ''}><summary>📍 ${e.place ? '장소가 달라요' : '장소 알려주기'}</summary><div class="op-form">
       ${e.place ? `<label class="add-f"><span>지금 장소</span><input type="text" value="${esc(e.place)}" disabled></label>` : ''}
       <form class="pin-find pl-find"><input type="search" class="pl-in" maxlength="80" placeholder="공연장 이름이나 주소로 찾기" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
       <div class="pin-res pl-res"></div>
@@ -5429,6 +5439,8 @@
     sheet.hidden = false;
     document.body.classList.add('sheet-open');
     box.scrollTop = 0;
+    const plo = box.querySelector('#pl-open');
+    if (plo) setTimeout(() => plo.scrollIntoView({ block: 'start' }), 50);
     const c = document.getElementById('sheet-close');
     if (c) c.onclick = closeSheet;
     box.focus({ preventScroll: true });

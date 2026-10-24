@@ -1348,3 +1348,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .drive-has { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #EAF1FB; color: #2F5E9E; font-style: normal; font-size: 11px; font-weight: 700; }
 
 .ma-hint { margin: -4px 0 0; font-size: 12px; color: #9A8576; }
+.map-off-h{font-size:13px;font-weight:700;margin:14px 0 4px;color:var(--ink)}
+.map-off-row{display:flex;align-items:center;gap:8px}
+.map-off-row .box-ev{flex:1;min-width:0}
+.map-off-pl{flex:none;font-size:12px;padding:4px 9px;white-space:nowrap}
