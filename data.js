@@ -373,6 +373,8 @@
         });
       });
     }
+    // 팬이 등록한 일정(u…)에도 placeFix를 한 번 더 (위에서는 아직 없던 일정이라서)
+    Object.entries(extra.placeFix || {}).forEach(([id, p]) => { const e = id[0] === 'u' && events.find(x => x.id === id); if (e && !e.place) e.place = p; });
     // 분류 정리: 비어 있거나 표기가 다른 분류를 맞춰서, 어느 화면에서도 빠지지 않게 해요
     // (공연·행사 화면은 공연·뮤지컬·기타, 프로그램 화면은 TV·라디오를 봐요)
     events.forEach(e => {

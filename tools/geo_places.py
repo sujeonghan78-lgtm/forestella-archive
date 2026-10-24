@@ -36,6 +36,21 @@ def places():
             p = m.group(1).strip() if m else ''
         if p and len(p) >= 2:
             out[p] = out.get(p, 0) + 1
+    # 팬이 사이트에서 등록한 새 일정(제보 탭 '종류: 새일정')의 장소와, 그 일정에 넣은 placeFix도 찾아요
+    for i, p in fix.items():
+        if i.startswith('u') and p:
+            out[p] = out.get(p, 0) + 1
+    try:
+        cfg = open(os.path.join(ROOT, 'config.js'), encoding='utf-8').read()
+        rep = re.search(r"reports:\s*'([^']+)'", cfg).group(1)
+        for r in csv.reader(io.StringIO(get(rep))):
+            t = '\n'.join(r)
+            if re.search(r'^\s*종류\s*[:：]\s*(새일정|장소수정)\s*$', t, re.M):
+                m = re.search(r'^\s*(?:장소|후)\s*[:：][ \t]*(\S.*)$', t, re.M)
+                if m and len(m.group(1).strip()) >= 2:
+                    out[m.group(1).strip()] = out.get(m.group(1).strip(), 0) + 1
+    except Exception as err:
+        print('제보 탭 못 읽음', err)
     try:
         for c in json.load(open(os.path.join(ROOT, 'cafe.json'), encoding='utf-8')).get('events', []):
             if c.get('place'):
