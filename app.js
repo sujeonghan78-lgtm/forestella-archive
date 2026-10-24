@@ -2852,33 +2852,38 @@
   const isLocalEvent = e => !e.ytOnly && (e.category === '공연' || e.category === '뮤지컬' || (e.category === '기타' && !/녹화|개봉/.test(e.title)));
   const hasVideo = e => !!(e.videoId || e.related.length || e.ytMain || (e.ytStage || []).length);
   let localQ = '';
-  const localParams = () => { const qs = new URLSearchParams(location.hash.split('?')[1] || ''); return { r: qs.get('r') || '', y: qs.get('y') || '', m: qs.get('m') || '' }; };
-  const localHref = o => '#/local' + (Object.values(o).some(Boolean) ? '?' + new URLSearchParams(Object.entries(o).filter(x => x[1])).toString() : '');
+  const LOCAL_REG = ['서울', '경기·인천', '강원', '충청', '전라', '경상', '제주', '해외', '그 외'];
+  const localParams = () => { const qs = new URLSearchParams(location.hash.split('?')[1] || ''); return { r: multiOf(qs, 'r'), y: multiOf(qs, 'y'), m: multiOf(qs, 'm'), o: qs.get('o') || '' }; };
+  function localF() {
+    const all = data.events.filter(isLocalEvent), memL = Object.fromEntries(MEM_CHIPS);
+    return {
+      base: '#/local', keys: ['r', 'y', 'm'],
+      F: { r: ['지역', x => x], y: ['연도', x => x], m: ['멤버', x => memL[x] || x] },
+      opts: { r: LOCAL_REG.filter(n => all.some(e => regionOf(e) === n)), y: [...new Set(all.map(e => e.date.slice(0, 4)))].sort().reverse(), m: MEM_CHIPS.slice(1).map(x => x[0]) },
+      cnt: (k, x) => all.filter(e => k === 'r' ? regionOf(e) === x : k === 'y' ? e.date.startsWith(x) : memOk(x)(e)).length,
+    };
+  }
   function localList() {
-    const { r, y, m } = localParams(), hit = qMatch(localQ);
-    return data.events.filter(e => isLocalEvent(e) && (!r || regionOf(e) === r) && (!y || e.date.startsWith(y)) && memOk(m)(e) && (!hit || hit.has(e.id))).slice().reverse();
+    const { r, y, m, o } = localParams(), hit = qMatch(localQ);
+    const list = data.events.filter(e => isLocalEvent(e) && (!r.length || r.includes(regionOf(e))) && (!y.length || y.includes(e.date.slice(0, 4))) && (!m.length || m.some(x => memOk(x)(e))) && (!hit || hit.has(e.id)));
+    return o === 'old' ? list : list.slice().reverse();
   }
   function localView() {
-    const { r, y, m } = localParams();
-    const all = data.events.filter(isLocalEvent);
-    const names = ['서울', '경기·인천', '강원', '충청', '전라', '경상', '제주', '해외', '그 외'];
-    const count = n => all.filter(e => regionOf(e) === n).length;
-    const yrs = [...new Set(all.map(e => e.date.slice(0, 4)))].sort().reverse();
-    const chip = (n, label) => `<a class="chip${n === r ? ' on' : ''}" href="${localHref({ r: n, y, m })}"${n === r ? ' aria-current="true"' : ''}>${esc(label)}</a>`;
+    const st = localParams(), bar = fBar(localF(), st);
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">공연·행사${help('축제·기획 공연·기업 행사처럼 단독 콘서트가 아닌 공연을 지역별로 모았어요. 지역은 장소와 행사 이름으로 나눠서 가끔 틀릴 수 있어요.')}</h1>
       <div class="stick">
       ${filterBox('local-q', '행사 찾기 · 이름, 장소, 곡', localQ)}
-      <div class="chips tl-cats">${chip('', `전체 ${all.length}`)}${names.filter(count).map(n => chip(n, `${n} ${count(n)}`)).join('')}</div>
-      <div class="chips tl-cats" id="local-yr">${memChips(m, v => localHref({ r, y, m: v }))}<span class="chip-sep" aria-hidden="true"></span>${['', ...yrs].map(v => `<a class="chip${v === y ? ' on' : ''}" href="${localHref({ r, y: v, m })}">${v || '모든 해'}</a>`).join('')}</div>
+      ${bar.row}
       <p class="sub" id="local-count">${localCount()}</p>
       </div>
-      <div class="tl" id="local-body">${localBody()}</div>`;
+      <div class="tl" id="local-body">${localBody()}</div>
+      <div class="yf-wrap" id="yf-wrap" hidden></div>`;
   }
-  const localCount = () => { const list = localList(); return `${list.length}개 · ${list.filter(hasVideo).length}개는 영상이 있어요 ${addLink('', 'add-mini')}`; };
+  const localCount = () => { const list = localList(); return `${list.length}개 · 영상 ${list.filter(hasVideo).length}개${fBar(localF(), localParams()).clear} ${addLink('', 'add-mini')}`; };
   function localBody() {
-    const { r } = localParams(), list = localList();
+    const r = localParams().r.length === 1, list = localList();
     const years = new Map();
     list.forEach(e => { const y = e.date.slice(0, 4); if (!years.has(y)) years.set(y, []); years.get(y).push(e); });
     const md = x => x.date.slice(5).replace('-', '.');
@@ -2895,6 +2900,7 @@
     return list.length ? [...years.entries()].map(([y, es]) => `<h2 class="month">${y}년</h2>${groupRuns(es).map(row).join('')}`).join('') : '<p class="empty">조건에 맞는 행사가 없어요.</p>';
   }
   function bindLocal() {
+    bindF(localF(), localParams());
     bindFilterBox('local-q', v => { localQ = v; }, () => { const b = document.getElementById('local-body'); if (b) b.innerHTML = localBody(); document.getElementById('local-count').innerHTML = localCount(); });
   }
 
@@ -3606,12 +3612,7 @@
   // 필터 여러 개 고르기: 주소에 쉼표로 이어 써요 (같은 줄 안에서는 '또는', 다른 줄끼리는 '그리고')
   // '전체'가 기본, 누르면 켜고 다시 누르면 꺼요. 다 끄면 '전체'로 돌아가요
   const multiOf = (qs, k) => (qs.get(k) || '').split(',').filter(Boolean);
-  function multiChips(base, state, key, values, allLabel, label = v => v) {
-    const sel = state[key];
-    const link = next => { const s = new URLSearchParams(Object.entries({ ...state, [key]: next }).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v]).filter(x => x[1])).toString(); return s ? base + '?' + s : base; };
-    const a = (on, h, t) => `<a class="chip${on ? ' on' : ''}" href="${h}">${esc(t)}</a>`;
-    return `<div class="chips tl-cats">${a(!sel.length, link([]), allLabel).replace('class="chip', 'class="chip chip-all')}<span class="chip-br"></span>${values.map(v => a(sel.includes(v), link(sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]), label(v))).join('')}</div>`;
-  }
+
 
   // ---------- 공식 유튜브 모아보기 ----------
   // 필터 2.0: 한 줄 버튼(채널·종류·연도·멤버·정렬) → 아래에서 올라오는 선택 창, 고른 건 ✕ 알약으로. 마지막 필터는 이 폰에 기억(sb-yt-f)
@@ -3716,6 +3717,55 @@
     };
     document.querySelectorAll('.yf-btn').forEach(b => { b.onclick = () => ytSheet(b.dataset.yf); });
   }
+
+  // ---------- 필터 2.0 공통 (공연·행사 · 공식 X) ----------
+  // f = { base, keys, F: {키: [이름, 보이는 글자]}, opts: {키: [값…]}, cnt(키, 값) }. 고른 값은 주소에 'a,b'로 들어가요
+  const fLink = (base, st) => { const s = new URLSearchParams(Object.entries(st).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v]).filter(x => x[1])).toString(); return base + (s ? '?' + s : ''); };
+  function fBar(f, st) {
+    const btn = k => `<button type="button" class="yf-btn${st[k].length ? ' on' : ''}" data-ff="${k}">${f.F[k][0]}${st[k].length ? `<b>${st[k].length}</b>` : ' ▾'}</button>`;
+    const pill = (lab, next) => `<a class="yf-pill" href="${fLink(f.base, next)}">${esc(lab)} <span aria-hidden="true">✕</span></a>`;
+    const pills = [];
+    f.keys.forEach(k => {
+      if (k === 'y' && yRange(st.y)) { pills.push(pill(yRange(st.y), { ...st, y: [] })); return; }
+      st[k].forEach(x => pills.push(pill(f.F[k][1](x), { ...st, [k]: st[k].filter(z => z !== x) })));
+    });
+    return {
+      row: `<div class="yf-row">${f.keys.map(btn).join('')}<button type="button" class="yf-btn yf-sort" data-ff="o">${st.o === 'old' ? '오래된' : '최신'} ⇅</button></div>${pills.length ? `<div class="yf-pills">${pills.join('')}</div>` : ''}`,
+      clear: pills.length ? ` · <a class="yf-clear" href="${fLink(f.base, { o: st.o })}">모두 지우기</a>` : '',
+    };
+  }
+  function fSheet(f, st, k) {
+    const w = document.getElementById('yf-wrap');
+    if (!w) return;
+    if (k === 'o') {
+      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="정렬"><div class="yf-head"><b>정렬</b></div>
+        <div class="yf-opts">${Object.entries(YT_SORTS).map(([v, t]) => `<a class="chip${st.o === v ? ' on' : ''}" href="${fLink(f.base, { ...st, o: v })}">${t}</a>`).join('')}</div></section>`;
+    } else {
+      const opts = f.opts[k], [name, lab] = f.F[k], asc = [...opts].sort();
+      const range = k === 'y' ? `<div class="yf-range"><span>기간</span><select id="yf-from">${asc.map(y => `<option${y === asc[0] ? ' selected' : ''}>${y}</option>`).join('')}</select><span>~</span><select id="yf-to">${asc.map(y => `<option${y === asc[asc.length - 1] ? ' selected' : ''}>${y}</option>`).join('')}</select><button type="button" class="bpill yf-rng">기간으로 고르기</button></div>` : '';
+      w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="${name} 고르기">
+        <div class="yf-head"><b>${name}</b><span class="sub">여러 개 고를 수 있어요</span><button type="button" class="link-btn yf-none">전체</button></div>
+        ${range}
+        <div class="yf-opts">${opts.map(x => `<button type="button" class="chip${st[k].includes(x) ? ' on' : ''}" data-v="${esc(x)}">${esc(lab(x))} <small>${f.cnt(k, x).toLocaleString()}</small></button>`).join('')}</div>
+        <button type="button" class="bpill yf-ok">적용</button></section>`;
+      const sheet = w.querySelector('.yf-sheet');
+      sheet.querySelectorAll('.yf-opts .chip').forEach(c => { c.onclick = () => c.classList.toggle('on'); });
+      sheet.querySelector('.yf-none').onclick = () => sheet.querySelectorAll('.yf-opts .chip').forEach(c => c.classList.remove('on'));
+      const rng = sheet.querySelector('.yf-rng');
+      if (rng) rng.onclick = () => {
+        let a = +sheet.querySelector('#yf-from').value, b = +sheet.querySelector('#yf-to').value;
+        if (a > b) [a, b] = [b, a];
+        sheet.querySelectorAll('.yf-opts .chip').forEach(c => c.classList.toggle('on', +c.dataset.v >= a && +c.dataset.v <= b));
+      };
+      sheet.querySelector('.yf-ok').onclick = () => {
+        const sel = [...sheet.querySelectorAll('.yf-opts .chip.on')].map(c => c.dataset.v);
+        location.hash = fLink(f.base, { ...st, [k]: sel.length === opts.length && k !== 'y' ? [] : sel });
+      };
+    }
+    w.hidden = false;
+    w.querySelector('.yf-back').onclick = () => { w.hidden = true; };
+  }
+  const bindF = (f, st) => document.querySelectorAll('[data-ff]').forEach(b => { b.onclick = () => fSheet(f, st, b.dataset.ff); });
 
   // ---------- 셋리 알려주기 ----------
   // 팬이 셋리 글을 통째로 붙여넣으면 곡으로 나눠 사이트 곡과 맞춰 보여주고, 제보 폼("종류: 셋리스트")으로 보내요.
@@ -4752,6 +4802,15 @@
   // ---------- 공식 X 모아보기 ----------
   const X_CATS = ['일정 후기', '일정 현장', '비하인드·직캠', '사진·일상', '영상', '음반·컴백', '공지·안내', '기사', '생일', '투표·이벤트'];
   const X_MEMBERS = ['배두훈', '강형호', '조민규', '고우림'];
+  function xF() {
+    const all = data.xFeed || [];
+    return {
+      base: '#/xfeed', keys: ['cat', 'y', 'm'],
+      F: { cat: ['종류', x => x], y: ['연도', x => x], m: ['멤버', m => m.slice(1)] },
+      opts: { cat: X_CATS.filter(c => all.some(p => p.cat === c)), y: [...new Set(all.map(p => p.date.slice(0, 4)))].sort().reverse(), m: X_MEMBERS },
+      cnt: (k, x) => all.filter(p => k === 'cat' ? p.cat === x : k === 'y' ? p.date.startsWith(x) : p.m.includes(x)).length,
+    };
+  }
   let xQuery = '';
   // 공식 X 새 글 링크 올리기: 제보 폼에 "종류: 공식X" 줄로 보내고, 이 기기엔 바로 보여줘요.
   // 다른 사람 화면엔 자동 작업(x-sync)이 공식 계정 글인지 확인한 뒤에 떠요.
@@ -4767,7 +4826,7 @@
   function xfeedView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     const rel = qs.get('rel') || '';
-    const st = { cat: multiOf(qs, 'cat'), m: multiOf(qs, 'm'), y: multiOf(qs, 'y') };
+    const st = { cat: multiOf(qs, 'cat'), y: multiOf(qs, 'y'), m: multiOf(qs, 'm'), o: qs.get('o') || '' };
     if (qs.has('q')) xQuery = qs.get('q');  // 통합 검색에서 넘어온 검색어
     let n = 0;
     const fill = () => {
@@ -4777,7 +4836,7 @@
       const have = new Set((data.xFeed || []).map(p => p.id));
       const mine = rel ? [] : xAdded().filter(id => !have.has(id)).map(id => ({ id, url: 'https://x.com/official_fore/status/' + id, date: xIdDate(id), cat: '내가 올린 링크', m: [], text: '눌러서 X에서 보기 · 내용은 확인되면 채워져요', raw: '', img: '', imgs: [] }));
       let list = mine.concat(data.xFeed || []).filter(p => p.cat === '내가 올린 링크' || (rel || ((!st.cat.length || st.cat.includes(p.cat)) && (!st.m.length || st.m.some(m => p.m.includes(m))) && (!st.y.length || st.y.includes(p.date.slice(0, 4))))) && (!rel || p.rel === rel) && (!qm || qm(p.raw)));
-      if (rel) list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
+      if (rel || st.o === 'old') list = list.slice().reverse();  // 음반 이야기는 처음부터 순서대로
       const card = p => xGroup(p, xLinks(p) ? `<div class="x-wrap">${card0(p)}${xLinks(p)}</div>` : card0(p));
       const card0 = p => `
           <a class="x-card${p.img ? '' : ' no-img'}" href="${esc(p.url)}" target="_blank" rel="noopener">
@@ -4799,6 +4858,7 @@
     };
     setTimeout(() => {
       fill();
+      if (!rel) bindF(xF(), st);
       // 공식 X 글 찾기: 입력이 멈추면 목록만 다시 채워요
       const q = document.getElementById('xq');
       let timer;
@@ -4820,6 +4880,7 @@
         }).catch(() => { msg.textContent = '못 올렸어요. 인터넷 연결을 확인해 주세요.'; });
       };
     });
+    const xBar = rel ? null : fBar(xF(), st);
     return `
       ${rel ? albumHead(rel, qs.get('am')) + '<hr class="divider"><div class="view-row">' + albumBtn() + '</div>' + paneTabs([
         { label: '수록곡', html: albumTracks(rel, qs.get('am')) },
@@ -4836,12 +4897,11 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="xq" aria-label="공식 X 글 찾기" placeholder="공식 X 글 찾기 · 초성 OK" value="${esc(xQuery)}" autocomplete="off">
       </form>
-      ${multiChips('#/xfeed', st, 'cat', X_CATS, '종류 전체')}
-      ${multiChips('#/xfeed', st, 'y', [...new Set((data.xFeed || []).map(p => p.date.slice(0, 4)))].sort().reverse(), '연도 전체')}
-      ${multiChips('#/xfeed', st, 'm', X_MEMBERS, '멤버 전체', m => m.slice(1))}
-      <div class="view-row"><p class="sub" id="xcount"></p>${chipsBtn()}${albumBtn()}</div>
+      ${xBar.row}
+      <div class="view-row"><p class="sub"><span id="xcount"></span>${xBar.clear}</p>${albumBtn()}</div>
       </div>
-      <div id="xfeed"><p class="empty">불러오는 중…</p></div>`}`;
+      <div id="xfeed"><p class="empty">불러오는 중…</p></div>
+      <div class="yf-wrap" id="yf-wrap" hidden></div>`}`;
   }
 
   // 같은 이름 음반이 멤버마다 있을 수 있어서(팬텀싱어 올스타전 등) 멤버도 주소에 넣어요
