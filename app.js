@@ -979,6 +979,7 @@
   // 멤버 혼자만 부른 곡: 무대가 모두 멤버 개인 일정([형호] …, 강형호 단독 콘서트)이고, 음반도 멤버 솔로 음반뿐이고, 포레스텔라 콘서트 셋리에 없는 곡
   const evMember = e => { const m = (e.title.match(/^\[(두훈|형호|민규|우림)\]/) || [])[1]; if (m) return m; const f = Object.keys(SOLO_SHORT).find(n => e.title.includes(n)); return f && !/포레스텔라|forestella/i.test(e.title) ? SOLO_SHORT[f] : ''; };
   const soloOf = so => {
+    if (so.soloFix) return so.soloFix;
     if (so._solo !== undefined) return so._solo;
     const ms = new Set();
     let group = (so.tours || []).length > 0;
@@ -1151,7 +1152,8 @@
   function songView() {
     const key = decodeURIComponent(location.hash.split('/')[2] || '');
     // 합쳐진 곡의 예전 주소도 열리게 (예: we are the champions → champions)
-    const so = data.songs.get(key) || data.songs.get(window.DATA.songKey(key));
+    const al = data.songAlias || {};
+    const so = data.songs.get(key) || data.songs.get(al[key]) || data.songs.get(window.DATA.songKey(key)) || data.songs.get(al[window.DATA.songKey(key)]);
     if (!so) return `<p class="empty">이 곡을 찾지 못했어요. <a href="#/songs">곡 목록으로 ›</a></p>`;
     const stages = so.events.slice().reverse();
     const play = playAllUrl(stages);
@@ -1197,7 +1199,7 @@
         { label: '💬 가사', n: (data.lyrics || []).filter(l => l.key === so.key && l.kind !== '떼창').length, html: flatBox(lyricBox(so)) },
         { label: '버전', n: songMemoN(so), html: flatBox(songMemos(so)) },
       ])}
-      <div class="song-fix">${langBox(so)}${sameSongBox(so)}</div>`;
+      ${songFixState(so)}${songEditBox(so)}`;
   }
   // 최애곡·소취곡·입덕곡: 숲별 카드에 고른 곡은 그대로 불러오고, 곡 화면에서 고른 곡은 개수 제한 없이 보관함에 따로 저장해요
   // (보관함 곡 목록 s에 'pf:곡키'처럼 넣어서 다른 폰 이어 쓰기도 같이 따라가요)
@@ -1413,26 +1415,82 @@
     return `<details class="song-memo"${list.length <= 3 ? ' open' : ''}><summary>버전 메모 ${list.length}개</summary>
       ${list.map(r => `<a class="box-ev" href="${r.href}"><span>${r.d ? fmtDate(r.d, false) : ''}</span><b>${esc(r.memo)}</b><small>${esc(r.t)}</small></a>`).join('')}</details>`;
   }
-  // 같은 곡이에요: 표기만 다른 곡이 따로 있으면 알려 줘요 (의견 탭 '정보 수정'으로)
-  const sameSongBox = so => `<details class="fix-box same-song"><summary>🔁 같은 곡이 따로 있어요</summary><div class="op-form">
-      <label class="add-f"><span>같은 곡</span><input type="text" class="ss-in" list="ss-list" maxlength="80" placeholder="곡 이름으로 찾기" autocomplete="off"></label>
-      <datalist id="ss-list">${[...data.songs.values()].filter(x => x !== so).map(x => `<option value="${esc(x.name)}">`).join('')}</datalist>
-      <textarea class="op-in ss-memo" rows="2" maxlength="300" placeholder="더 적을 말 (안 써도 돼요)"></textarea>
-      <button type="button" class="bpill add-send ss-send" data-key="${esc(so.key)}">보내기</button>
-      <p class="src-note ss-msg">의견 탭에 '정보 수정'으로 올라가요. 확인하고 한 곡으로 합칠게요.</p></div></details>`;
-  document.addEventListener('click', ev => {
-    const b = ev.target.closest('.ss-send');
-    if (!b) return;
-    const bx = b.closest('.op-form'), other = bx.querySelector('.ss-in').value.trim(), memo = bx.querySelector('.ss-memo').value.trim(), so = data.songs.get(b.dataset.key);
-    if (!other || !so) { bx.querySelector('.ss-msg').textContent = '같은 곡 이름을 적어 주세요.'; return; }
-    const by = myUid(), text = `같은 곡이에요: 「${so.name}」 = 「${other}」${memo ? '\n' + memo : ''}`;
-    b.disabled = true; b.textContent = '보내는 중…';
-    formPost(`종류: 의견\n분류: 정보 수정\n곡: ${so.name}\n이름: \n누가: ${by}\n내용: ${text}`).then(() => {
-      const mine = opMine(); mine.push({ id: 'tmp' + Date.now(), text, name: '', cat: '정보 수정', by, at: Date.now() });
-      try { localStorage.setItem(OP_MINE, JSON.stringify(mine.slice(-50))); } catch (err) { /* 괜찮아요 */ }
+  // ---------- 곡 정보 고치기 ----------
+  // 곡 이름·같은 곡 합치기·개인곡 멤버(종류: 곡수정)와 언어(종류: 언어수정)는 올린 사람 + 다른 2명이 같은 걸 보내면 바뀌어요. 관리자 폰은 바로 확정.
+  const SF_WHAT = { 이름: '곡 이름', 합치기: '같은 곡 합치기', 개인곡: '개인곡 멤버' };
+  const sfSent = () => boxRead('sb-sf-sent') || [];
+  const sfLabel = (v) => v.what === '합치기' ? `「${esc((data.songs.get(v.val) || {}).name || v.val)}」에 합치기` : v.what === '개인곡' ? (v.val === '없음' ? '개인곡 아님' : esc(v.val.split(',').join('·')) + ' 개인곡') : `이름 → ${esc(v.val)}`;
+  function songFixState(so) {
+    const uid = myUid(), sent = sfSent();
+    const done = [so.nameWas ? okMini('이름 고침', `확인을 받아 이름을 고쳤어요. (원래 ${esc(so.nameWas)})`) : '', (so.mergedFrom || []).length ? okMini('같은 곡 합침', `확인을 받아 「${esc(so.mergedFrom.join('」, 「'))}」을 이 곡으로 합쳤어요.`) : ''].join('');
+    const rows = (so.fixProps || []).map(v => {
+      const me = v.who.includes(uid) || sent.includes([v.k, v.what, v.val].join('|'));
+      return `<div class="sl-state"><span class="src-badge">${SF_WHAT[v.what]} · ${Math.min(v.n, 3)}/3</span><span class="sl-state-msg"><b class="dt-chg">${sfLabel(v)}</b> ${me ? '보냈어요. 다른 분들이 맞다고 하면 바뀌어요.' : "맞으면 '맞아요'를 눌러 주세요."}</span>${me ? '' : `<button type="button" class="bpill sf-send" data-k="${esc(v.k)}" data-w="${esc(v.what)}" data-v="${esc(v.val)}">맞아요</button>`}${isAdmin() ? `<button type="button" class="link-btn sf-send" data-k="${esc(v.k)}" data-w="${esc(v.what)}" data-v="${esc(v.val)}">바로 확정 (관리자)</button>` : ''}</div>`;
+    }).join('');
+    return done || rows ? `<div class="song-fix-state">${done}${rows}</div>` : '';
+  }
+  function songEditBox(so) {
+    const tip = `<p class="src-note">${isAdmin() ? '관리자 기기라 보내면 바로 바뀌어요.' : '다른 두 분이 같은 내용으로 맞다고 하면 바뀌어요.'}</p>`;
+    const solo = soloOf(so);
+    const body = {
+      nm: `<div class="op-form"><label class="add-f"><span>바른 곡 이름</span><input type="text" class="sf-in" maxlength="100" value="${esc(so.name)}"></label><button type="button" class="bpill add-send sf-go" data-k="${esc(so.key)}" data-w="이름">보내기</button>${tip}</div>`,
+      same: `<div class="op-form"><label class="add-f"><span>같은 곡 (이 곡을 그 곡으로 합쳐요)</span><input type="text" class="sf-in" list="ss-list" maxlength="100" placeholder="곡 이름으로 찾기" autocomplete="off"></label>
+        <datalist id="ss-list">${[...data.songs.values()].filter(x => x !== so).map(x => `<option value="${esc(x.name)}">`).join('')}</datalist>
+        <button type="button" class="bpill add-send sf-go" data-k="${esc(so.key)}" data-w="합치기">보내기</button>${tip}</div>`,
+      lang: langBox(so).replace('<details class="lang-fix">', '<details class="lang-fix" open>'),
+      solo: `<div class="op-form"><p class="src-note">멤버 혼자 부른 곡이면 그 멤버를, 포레스텔라가 같이 부른 곡이면 '개인곡 아님'을 골라 주세요.</p>
+        <div class="chips wrap sf-solo">${['두훈', '형호', '민규', '우림'].map(m => `<button type="button" class="chip${solo.includes(m) ? ' on' : ''}" data-m="${m}">${m}</button>`).join('')}<button type="button" class="chip${solo.length ? '' : ' on'}" data-m="없음">개인곡 아님</button></div>
+        <button type="button" class="bpill add-send sf-go" data-k="${esc(so.key)}" data-w="개인곡">보내기</button>${tip}</div>`,
+      etc: `<div class="op-form"><textarea class="op-in sf-etc" rows="3" maxlength="1000" placeholder="예: 수록 음반이 틀렸어요, 타이틀곡이 아니에요"></textarea><button type="button" class="bpill add-send sf-etc-send" data-k="${esc(so.key)}">보내기</button><p class="src-note">의견 탭에 '정보 수정'으로 올라가요.</p></div>`,
+    };
+    const tabs = [['nm', '🏷 곡 이름'], ['same', '🔁 같은 곡'], ['lang', '🌐 언어'], ['solo', '👤 개인곡'], ['etc', '✏️ 그 밖에']];
+    return `<details class="fix-box edit-box song-edit"><summary>✏️ 곡 정보 고치기</summary>
+      <div class="chips edit-tabs">${tabs.map(([k, l]) => `<button type="button" class="chip" data-edit="${k}">${l}</button>`).join('')}</div>
+      ${tabs.map(([k]) => `<div class="edit-pane" data-pane="${k}">${body[k]}</div>`).join('')}</details>`;
+  }
+  const sfPost = (k, what, val, b) => {
+    const so = data.songs.get(k), adm = isAdmin();
+    b.disabled = true;
+    const p = formPost(`종류: 곡수정\n곡: ${so ? so.name : k}\n곡키: ${k}\n항목: ${what}\n값: ${val}\n누가: ${myUid()}`);
+    (adm ? p.then(() => sendEvMark('sf' + window.DATA.slVer([k, what, val]), '숨김')) : p).then(() => {
+      boxWrite('sb-sf-sent', [...sfSent(), [k, what, val].join('|')].slice(-200));
       b.textContent = '보냈어요 ✓';
-      bx.querySelector('.ss-msg').innerHTML = '고마워요! <a href="#/opinion">의견 탭</a>에서 처리됐는지 볼 수 있어요.';
-    }).catch(() => { b.disabled = false; b.textContent = '다시 보내기'; });
+      toast(adm ? '바꿨어요. 5~10분쯤 뒤 모두에게 반영돼요.' : '보냈어요! 다른 두 분이 맞다고 하면 바뀌어요.');
+    }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
+  };
+  document.addEventListener('click', ev => {
+    const c = ev.target.closest('.sf-solo .chip');
+    if (c) {
+      const box = c.parentNode;
+      if (c.dataset.m === '없음') box.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === c));
+      else { c.classList.toggle('on'); box.querySelector('[data-m="없음"]').classList.toggle('on', !box.querySelector('.chip.on:not([data-m="없음"])')); }
+      return;
+    }
+    const s1 = ev.target.closest('.sf-send');
+    if (s1) { sfPost(s1.dataset.k, s1.dataset.w, s1.dataset.v, s1); return; }
+    const e1 = ev.target.closest('.sf-etc-send');
+    if (e1) {
+      const so = data.songs.get(e1.dataset.k), t = e1.closest('.op-form').querySelector('.sf-etc').value.trim();
+      if (!so || !t) return;
+      e1.disabled = true;
+      formPost(`종류: 의견\n분류: 정보 수정\n곡: ${so.name}\n이름: \n누가: ${myUid()}\n내용: 「${so.name}」 ${t}`).then(() => { e1.textContent = '보냈어요 ✓'; toast('고마워요! 의견 탭에서 처리됐는지 볼 수 있어요.'); }).catch(() => { e1.disabled = false; });
+      return;
+    }
+    const g = ev.target.closest('.sf-go');
+    if (!g) return;
+    const so = data.songs.get(g.dataset.k), what = g.dataset.w, pane = g.closest('.op-form');
+    if (!so) return;
+    let val = '';
+    if (what === '이름') { val = pane.querySelector('.sf-in').value.trim(); if (!val || val === so.name) { toast('바꿀 이름을 적어 주세요.'); return; } }
+    else if (what === '합치기') {
+      const n = pane.querySelector('.sf-in').value.trim(), to = [...data.songs.values()].find(x => x.name === n) || data.songs.get(window.DATA.songKey(n));
+      if (!to || to === so) { toast('목록에 있는 곡 이름을 골라 주세요.'); return; }
+      val = to.key;
+    } else {
+      const on = [...pane.querySelectorAll('.sf-solo .chip.on')].map(x => x.dataset.m);
+      val = on.includes('없음') || !on.length ? '없음' : on.join(',');
+    }
+    sfPost(so.key, what, val, g);
   });
 
   // ---------- 연표 ----------

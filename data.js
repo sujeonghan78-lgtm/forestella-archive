@@ -208,7 +208,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -543,6 +543,7 @@
     let lyricsAll = [];
     const heartsAll = { s: {}, e: {}, mine: null };
     const langVotes = new Map();   // 곡키 → {언어: Set(누가)}
+    const songVotes = new Map();   // 곡키|항목|값 → {k, what, val, by: Set, at}
     if (raw.reports) {
       const gone = window.SB_EV_HIDE || new Set(), byEv = new Map(events.map(e => [e.id, e]));
       buildReports(toObjects(raw.reports), true).forEach(r => {
@@ -584,6 +585,15 @@
         if (!k || !l) return;
         if (!langVotes.has(k)) langVotes.set(k, {});
         const v = langVotes.get(k); (v[l] = v[l] || { by: new Set(), at: tsMs(r.time), first: r.by }).by.add(r.by);
+      });
+      // 곡 정보 고치기 (종류: 곡수정 곡키/항목 이름|합치기|개인곡/값/누가): 같은 값을 3명(올린 사람+2명) 보내거나 관리자가 확정('sf'+번호)하면 바뀌어요
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if (r.type !== '곡수정' || !r.by) return;
+        const k = line0(r, '곡키'), what = line0(r, '항목'), val = line0(r, '값').slice(0, 100);
+        if (!k || !val || !['이름', '합치기', '개인곡'].includes(what)) return;
+        const id = [k, what, val].join('|');
+        if (!songVotes.has(id)) songVotes.set(id, { k, what, val, by: new Set(), at: tsMs(r.time) });
+        songVotes.get(id).by.add(r.by);
       });
       // 모든 팬의 하트 (종류: 하트 누가/하트곡/하트일정): 사람마다 가장 늦게 보낸 목록만 세요
       const hl = new Map();
@@ -1055,9 +1065,35 @@
       '당신이 듣던': '당신이 듣던 (Your Song)', '눈을 감아도': '눈을 감아도 (Close Your Eyes)', '사랑의 여정': '사랑의 여정 (The Journey of Love)',
       'thorn bird': '가시나무새 (Thorn Bird)', gashiri: '가시리 (Gashiri)', 'wrongful encounter': '악연 (Wrongful Encounter)', '사랑의 맹세(till)': '사랑의 맹세 (Till)' };
     songs.forEach(so => { so.match = so.match || so.name; if (SONG_NAME[so.key]) so.name = SONG_NAME[so.key]; });
+    // 팬이 고친 곡 정보: 확정된 건 적용하고, 확인 중인 건 곡 화면에 '확인 n/3'으로 보여요
+    const songAlias = {};
+    const gone2 = window.SB_EV_HIDE || new Set();
+    const votes = [...songVotes.values()].map(v => ({ ...v, n: v.by.size, who: [...v.by], ok: v.by.size >= 3 || gone2.has('sf' + slVer([v.k, v.what, v.val])) })).sort((a, b) => a.at - b.at);
+    votes.filter(v => v.ok).forEach(v => {
+      const so = songs.get(songAlias[v.k] || v.k);
+      if (!so) return;
+      if (v.what === '이름') { so.nameWas = so.nameWas || so.name; so.name = v.val; }
+      else if (v.what === '개인곡') so.soloFix = v.val === '없음' ? [] : ['두훈', '형호', '민규', '우림'].filter(m => v.val.includes(m));
+      else if (v.what === '합치기') {
+        const to = songs.get(songAlias[v.val] || v.val);
+        if (!to || to === so) return;
+        // 이 곡을 다른 곡으로 합쳐요 (무대·콘서트·음반·영상을 다 옮기고, 예전 주소는 합친 곡으로 열려요)
+        const uni = (a, b) => [...new Set([...(a || []), ...(b || [])])];
+        to.events = uni(to.events, so.events).sort((a, b) => a.date.localeCompare(b.date));
+        to.tours = uni(to.tours, so.tours); to.albums = uni(to.albums, so.albums); to.titleOf = uni(to.titleOf, so.titleOf);
+        to.official = uni(to.official, so.official); to.tracks = uni(to.tracks, so.tracks);
+        Object.entries(so.names || {}).forEach(([n, c]) => { to.names[n] = (to.names[n] || 0) + c; });
+        to.first = to.events[0]; to.last = to.events[to.events.length - 1];
+        to.since = [to.since, so.since].filter(Boolean).sort()[0] || '';
+        to.mergedFrom = [...(to.mergedFrom || []), so.name];
+        songAlias[so.key] = to.key; Object.keys(songAlias).forEach(x => { if (songAlias[x] === so.key) songAlias[x] = to.key; });
+        songs.delete(so.key);
+      }
+    });
+    votes.filter(v => !v.ok).forEach(v => { const so = songs.get(songAlias[v.k] || v.k); if (so) (so.fixProps = so.fixProps || []).push(v); });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, lyrics: lyricsAll, hearts: heartsAll, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, hearts: heartsAll, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
