@@ -189,7 +189,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -529,10 +529,12 @@
         const lat = +(+m[1]).toFixed(5), lng = +(+m[2]).toFixed(5), c = lat + ',' + lng;
         const o = pins[place] = pins[place] || { cands: {} }, k = o.cands[c] = o.cands[c] || { lat, lng, c, by: '', who: new Set(), at: 0 };
         if (r.type === '장소좌표' && !k.by) { k.by = r.by; k.at = tsMs(r.time); } else k.who.add(r.by);
+        // 한꺼번에 찾기는 끝자리 0까지 붙인 좌표 글자로 서명해요 ('35.01230,126.70000') → 그 글자 번호도 같이 봐요
+        (k.raw = k.raw || new Set()).add(m[1] + ',' + m[2]);
       });
       Object.entries(pins).forEach(([place, o]) => {
         const cs = Object.values(o.cands).filter(k => k.by);
-        cs.forEach(k => { k.who.delete(k.by); k.n = Math.min(k.who.size, 2); k.id = 'g' + slVer([place, k.c]); k.done = k.who.size >= 2 || okMark.has(k.id); });
+        cs.forEach(k => { k.who.delete(k.by); k.n = Math.min(k.who.size, 2); k.id = 'g' + slVer([place, k.c]); k.done = k.who.size >= 2 || okMark.has(k.id) || [...(k.raw || [])].some(x => okMark.has('g' + slVer([place, x]))); });
         const done = cs.filter(k => k.done).sort((a, b) => b.at - a.at)[0];
         pins[place] = { ok: done ? { lat: done.lat, lng: done.lng } : null, pend: cs.filter(k => !k.done && (!done || k.at > done.at)).map(k => ({ lat: k.lat, lng: k.lng, c: k.c, by: k.by, n: k.n, id: k.id })) };
       });
