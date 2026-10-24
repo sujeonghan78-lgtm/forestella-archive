@@ -170,7 +170,28 @@
     box.t = Date.now();
     boxWrite(BOX_KEY, box);
     boxPush();
+    if (k === 's' || k === 'e') heartSync();
   }
+  // 모든 팬의 하트 수: 이 폰의 하트 목록(곡·일정)이 바뀌면 한 줄로 보내요 (처음 한 번은 이미 눌러 둔 하트도 같이)
+  const HEART_SENT = 'sb-heart-sent';
+  const heartLists = () => ({ s: box.s.filter(x => !/^p[fwd]:/.test(x)).slice(0, 400), e: box.e.slice(0, 400) });
+  let heartTimer = null;
+  function heartSync() {
+    clearTimeout(heartTimer);
+    heartTimer = setTimeout(() => {
+      const h = heartLists(), sig = window.DATA.slVer([h.s.join('|'), h.e.join('|')]), was = boxRead(HEART_SENT);
+      if (was && was.sig === sig) return;
+      if (!was && !h.s.length && !h.e.length) return;
+      const by = myUid(); window.SB_UID = by;
+      formPost(`종류: 하트\n누가: ${by}\n하트곡: ${h.s.join('|')}\n하트일정: ${h.e.join('|')}`).then(() => boxWrite(HEART_SENT, { sig, s: h.s, e: h.e })).catch(() => { /* 다음에 다시 보내요 */ });
+    }, 3000);
+  }
+  // 보여 줄 하트 수: 시트에 모인 수에서 내 예전 하트를 빼고 지금 하트를 더해요 (3개 이상일 때만)
+  const heartN = (k, id) => {
+    const H = data.hearts || { s: {}, e: {} }, mine = H.mine;
+    return Math.max(0, (H[k][id] || 0) - (mine && (mine[k] || []).includes(id) ? 1 : 0) + (boxHas(k, id) ? 1 : 0));
+  };
+  const heartTag = (k, id) => { const n = heartN(k, id); return n >= 3 ? `<span class="heart-n" title="이 ${k === 's' ? '곡' : '일정'}에 하트를 누른 팬">♥ ${n.toLocaleString()}</span>` : ''; };
   // 앱을 열 때 서버 쪽이 더 새로우면 받아와요
   function boxPull() {
     if (!boxUser || !boxApi()) return;
@@ -1022,6 +1043,7 @@
     const years = [...new Set([...data.songs.values()].flatMap(so => [...so.events.map(e => e.date), ...so.tours.flatMap(t => t.dates), ...so.albums.map(a => a.date || '')]).map(d => d.slice(0, 4)).filter(y => /^\d{4}$/.test(y)))].sort().reverse();
     const list = [...data.songs.values()].filter(pass).sort((a, b) =>
       songSort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
+        : songSort === 'heart' ? heartN('s', b.key) - heartN('s', a.key) || hangulFirst(a.name, b.name)
         : songSort === 'recent' ? (songLast(a) ? 0 : 1) - (songLast(b) ? 0 : 1) || songLast(b).localeCompare(songLast(a)) || hangulFirst(a.name, b.name)
         : songSort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
           : hangulFirst(a.name, b.name));
@@ -1034,7 +1056,7 @@
         <input type="search" id="song-q" aria-label="곡 찾기" placeholder="곡 찾기 · 초성 OK" autocomplete="off">
       </form>
       <div class="chips tl-cats" id="song-sort">
-        ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}${chip('sort', 'recent', '최근 부른 순', songSort === 'recent')}
+        ${chip('sort', 'name', '가나다순', songSort === 'name')}${chip('sort', 'many', '많이 부른 순', songSort === 'many')}${chip('sort', 'first', '처음 부른 순', songSort === 'first')}${chip('sort', 'recent', '최근 부른 순', songSort === 'recent')}${chip('sort', 'heart', '하트 많은 순', songSort === 'heart')}
       </div>
       <div class="chips tl-cats" id="song-filter">${SONG_FILTERS.map(([v, l]) => chip('filter', v, l, songFilter === v).replace(v ? '' : 'class="chip', v ? '' : 'class="chip chip-all') + (v ? '' : '<span class="chip-br"></span>')).join('')}</div>
       <div class="chips tl-cats" id="song-mem">${['두훈', '형호', '민규', '우림'].map(m => chip('mem', m, m, songMem.has(m))).join('')}<select id="song-y" class="chip song-y" aria-label="연도"><option value="">모든 해</option>${years.map(y => `<option value="${y}"${y === songYear ? ' selected' : ''}>${y}년</option>`).join('')}</select></div>
@@ -1049,7 +1071,7 @@
           <a class="song-item" href="#/song/${encodeURIComponent(so.key)}" data-n="${esc(norm(songText(so) + ' ' + (al ? al.name : '')))}" data-c="${esc(chosung(songText(so)))}">
             ${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}
             <span class="song-name">${esc(so.name)}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}${al ? `<small>${esc(al.name)}</small>` : ''}</span>
-            ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}${songSort === 'recent' && songLast(so) ? `<span class="song-first">${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘'}</span>` : ''}
+            ${songSort === 'first' && so.since ? `<span class="song-first">${fmtDate(so.since, false)}</span>` : ''}${songSort === 'heart' && heartN('s', so.key) >= 3 ? `<span class="song-first">♥ ${heartN('s', so.key)}</span>` : ''}${songSort === 'recent' && songLast(so) ? `<span class="song-first">${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘'}</span>` : ''}
             <span class="song-n">${meta} ›</span>
           </a>`;
         }).join('')}
@@ -1111,7 +1133,7 @@
     return `
       <a class="back" href="#/songs">‹ 곡 아카이브</a>
       <section class="song-hero">
-        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>
+        <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${heartTag('s', so.key)}${boxBtn('s', so.key, 'heart-btn')}${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>
         <span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>
         ${songPending(so) ? '<p class="src-note">팬이 올린 셋리에서 새로 들어온 곡이에요. 셋리가 확정되면 이 표시도 사라져요.</p>' : ''}
         ${albumRow}
@@ -3609,6 +3631,11 @@
   }
 
   // ---------- 공연장 위치 모으기 (기간 한정 안내) ----------
+  // 하트 수 안내: 새로고침 한 번 부탁 (✕로 닫으면 이 폰에선 다시 안 떠요, config.heartNotice로 끔)
+  const heartNotice = () => window.CONFIG.heartNotice === false || boxRead('sb-heart-nt') ? '' : `<section class="drive heart-nt"><b class="drive-t">💚 이제 모든 팬의 하트 수가 보여요</b>
+      <p class="drive-s">곡과 일정에 팬들이 누른 하트 수가 떠요. 전에 눌러 둔 하트도 같이 세어지도록 <b>화면을 한 번만 새로고침</b>해 주세요. 하트 수는 3개 이상부터 보여요.</p>
+      <button type="button" class="heart-nt-x" aria-label="닫기">✕</button></section>`;
+  document.addEventListener('click', ev => { const b = ev.target.closest('.heart-nt-x'); if (!b) return; boxWrite('sb-heart-nt', 1); b.closest('.heart-nt').remove(); });
   // config.placeDrive가 켜져 있을 때만 홈·숲별 발자국 맨 위에 떠요. 보낸 건 의견(분류 '지도 링크', 기본 비밀글)으로 들어가요
   const DRIVE_X = 'sb-drive-x';
   const driveOn = () => !!(window.CONFIG.placeDrive && (window.CONFIG.form || {}).fields);
@@ -3715,6 +3742,7 @@
   const routes = {
     home: () => `
       ${header()}
+      ${heartNotice()}
       ${driveBox()}
       <div id="op-home"></div>
       <div id="news-home"></div>
@@ -4001,6 +4029,7 @@
     return hit ? hit.name : '';
   }
   // 이 브라우저를 구분하는 임의 번호 (셋리 '맞아요'를 같은 사람이 여러 번 세지 않게)
+  try { window.SB_UID = localStorage.getItem('sb-uid') || ''; } catch (err) { /* 괜찮아요 */ }
   const myUid = () => { try { let u = localStorage.getItem('sb-uid'); if (!u) { u = Math.random().toString(36).slice(2, 10); localStorage.setItem('sb-uid', u); } return u; } catch (err) { return ''; } };
   const SL_OK = 'sb-slok';
   const slOked = k => { try { return JSON.parse(localStorage.getItem(SL_OK) || '[]').includes(k); } catch (err) { return false; } };
@@ -5725,7 +5754,7 @@
         ${plState(e)}
         ${nmState(e)}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
-        <div class="box-row">${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
+        <div class="box-row">${boxBtn('e', e.id, 'bpill')}${heartTag('e', e.id)}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
         <div class="share-row">
@@ -5898,6 +5927,7 @@
       render();
       syncHides();
       boxPull();
+      setTimeout(heartSync, 4000);
     } catch (err) {
       showError(err);
     }

@@ -1400,3 +1400,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .ly-form { margin-top: 8px; }
 .op-form .ly-sh { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 6px; width: auto; }
 .op-form .ly-sh input { width: 18px; height: 18px; flex: none; margin: 0; }
+.heart-n { font-size: 12px; color: #C2456B; font-weight: 600; align-self: center; margin-right: 4px; white-space: nowrap; }
+.box-row .heart-n { margin-left: 6px; }
+.heart-nt { background: linear-gradient(135deg, #EEF8E6, #E2F3EC); border-color: #B9DFC4; box-shadow: none; padding-right: 36px; }
+.heart-nt-x { position: absolute; top: 8px; right: 8px; border: 0; background: none; font-size: 15px; color: var(--muted); cursor: pointer; padding: 4px; }
+.heart-nt .drive-t { color: #2F7A5A; }
