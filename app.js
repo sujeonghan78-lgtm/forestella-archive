@@ -964,7 +964,7 @@
   // 곡 아카이브 필터·정렬은 주소에 들어가요: #/songs?c=분류&m=멤버&y=연도&my=내 곡&s=정렬
   let songBack = '#/songs';
   const SONG_SORTS = [['name', '가나다순'], ['many', '많이 부른 순'], ['first', '처음 부른 순'], ['recent', '최근 부른 순'], ['heart', '하트 많은 순']];
-  const SONG_CATS = { video: '영상 있음', album: '음반 수록곡', concert: '콘서트에서 부른 곡', title: '타이틀곡', chant: '📣 떼창 구간 있음', nochant: '떼창 구간 없음' };
+  const SONG_CATS = { video: '영상 있음', album: '음반 수록곡', concert: '콘서트에서 부른 곡', title: '타이틀곡', ver: '버전 여러 개', chant: '📣 떼창 구간 있음', nochant: '떼창 구간 없음' };
   const SONG_MY = { heart: '♥ 하트', fav: '💚 최애곡', wish: '🙏 소취곡', debut: '🌱 입덕곡', heard: '🎫 직관에서 들은 곡' };
   // 마지막으로 부른 날: 확인된 무대·콘서트 셋리 중 가장 늦은 날 (오늘 뒤 날짜는 빼요)
   const songLast = so => {
@@ -1054,7 +1054,7 @@
   }
   let songHeard = null;
   function songPass(so, st) {
-    const cat = x => x === 'chant' ? chantOf(so).length : x === 'nochant' ? !chantOf(so).length : x === 'video' ? so.events.length || (so.official || []).length : x === 'album' ? so.albums.length : x === 'concert' ? so.tours.length : so.titleOf.length;
+    const cat = x => x === 'ver' ? hasVersions(so) : x === 'chant' ? chantOf(so).length : x === 'nochant' ? !chantOf(so).length : x === 'video' ? so.events.length || (so.official || []).length : x === 'album' ? so.albums.length : x === 'concert' ? so.tours.length : so.titleOf.length;
     const my = x => x === 'heart' ? boxHas('s', so.key) : x === 'heard' ? songHeard.has(so.key) : pickHas(x, so);
     return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.l.length || st.l.some(l => (so.langs || []).includes(l))) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
   }
@@ -1382,6 +1382,8 @@
     }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
   });
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
+  // 버전 메모가 있는 곡 (분류 필터 '버전 여러 개')
+  const hasVersions = so => { if (so._vAt !== data) { so._vAt = data; so._v = !!songMemos(so); } return so._v; };
   function songMemos(so) {
     const loose = t => t.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
     const own = loose(so.name + ' ' + so.key + ' ' + Object.keys(so.names || {}).join(' '));
