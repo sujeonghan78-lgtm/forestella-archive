@@ -1302,7 +1302,7 @@
     const artist = (so.albums[0] && so.albums[0].member) || '포레스텔라', name = (so.match || so.name).replace(/\s*\([^)]*\)\s*$/, '');
     const q = encodeURIComponent(artist + ' ' + name);
     const sites = [['멜론', 'https://www.melon.com/search/lyric/index.htm?q=' + encodeURIComponent(name)], ['지니', 'https://www.genie.co.kr/search/searchLyrics?query=' + q], ['벅스', 'https://music.bugs.co.kr/search/lyrics?q=' + q], ['구글', 'https://www.google.com/search?q=' + q + encodeURIComponent(' 가사')]];
-    return `<p class="src-note">가사 찾아보기</p><div class="chips wrap">${sites.map(([n, u]) => `<a class="chip" href="${u}" target="_blank" rel="noopener">${n} ↗</a>`).join('')}</div>`;
+    return `<p class="src-note">가사 찾아보기</p><div class="chips wrap">${sites.map(([n, u]) => `<a class="chip" href="${u}" target="_blank" rel="noopener">${n} ↗</a>`).join('')}</div><p class="src-note ly-warn">가사 전체는 저작권 때문에 이 사이트에 옮겨 올 수 없어요. 음원 사이트에서 봐 주세요.</p>`;
   }
   const lyRedraw = so => { const d = document.querySelector('.ly-box'); if (d) { d.outerHTML = lyricBox(so); document.querySelector('.ly-box').open = true; } };
   const lySend = (so, t) => {
