@@ -1048,7 +1048,7 @@
     return {
       base: '#/songs', keys: ['c', 'm', 'l', 'y', 'my'], noSort: true,
       F: { c: ['분류', x => SONG_CATS[x]], m: ['멤버', x => x + ' 개인곡'], l: ['언어', x => x], y: ['연도', x => x], my: ['내 곡', x => SONG_MY[x]] },
-      opts: { c: Object.keys(SONG_CATS), m: ['두훈', '형호', '민규', '우림'], l: window.DATA.SONG_LANGS.filter(x => all.some(so => so.lang === x)), y: years, my: Object.keys(SONG_MY) },
+      opts: { c: Object.keys(SONG_CATS), m: ['두훈', '형호', '민규', '우림'], l: [...new Set([...window.DATA.SONG_LANGS, ...all.flatMap(so => so.langs || [])])].filter(x => all.some(so => (so.langs || []).includes(x))), y: years, my: Object.keys(SONG_MY) },
       cnt: (k, x) => all.filter(so => songPass(so, { c: [], m: [], l: [], y: [], my: [], [k]: [x] })).length,
     };
   }
@@ -1056,7 +1056,7 @@
   function songPass(so, st) {
     const cat = x => x === 'video' ? so.events.length || (so.official || []).length : x === 'album' ? so.albums.length : x === 'concert' ? so.tours.length : so.titleOf.length;
     const my = x => x === 'heart' ? boxHas('s', so.key) : x === 'heard' ? songHeard.has(so.key) : pickHas(x, so);
-    return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.l.length || st.l.includes(so.lang)) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
+    return (!st.c.length || st.c.some(cat)) && (!st.m.length || soloOf(so).some(m => st.m.includes(m))) && (!st.l.length || st.l.some(l => (so.langs || []).includes(l))) && (!st.y.length || st.y.some(y => songInYear(so, y))) && (!st.my.length || st.my.some(my));
   }
   // 곡 줄 아래 회색 한 줄: 🎤무대 ▶영상 🎫콘서트 · 타이틀 · 음반 (길면 음반 이름이 잘려요)
   const songNum = () => !!boxRead('sb-song-num');
@@ -1224,24 +1224,53 @@
   function langBox(so) {
     if (!so.lang) return '';
     const sent = boxRead('sb-lang-sent') || [], uid = myUid();
-    const mineFor = l => sent.includes(so.key + '|' + l);
     const props = (so.langProps || []).map(p => {
-      const me = p.who.includes(uid) || mineFor(p.lang);
-      return `<div class="sl-state"><span class="src-badge">언어 확인 · ${Math.min(p.n, 3)}/3</span><span class="sl-state-msg"><b class="dt-chg">${esc(so.lang)} → ${esc(p.lang)}</b> ${me ? '보냈어요. 다른 분들이 맞다고 하면 바뀌어요.' : "맞으면 '맞아요'를 눌러 주세요."}</span>${me ? '' : `<button type="button" class="bpill lg-send" data-key="${esc(so.key)}" data-l="${esc(p.lang)}">맞아요</button>`}${isAdmin() ? `<button type="button" class="link-btn lg-adm" data-key="${esc(so.key)}" data-l="${esc(p.lang)}">바로 확정 (관리자)</button>` : ''}</div>`;
+      const me = p.who.includes(uid) || sent.includes(so.key + '|' + p.lang);
+      return `<div class="sl-state"><span class="src-badge">언어 확인 · ${Math.min(p.n, 3)}/3</span><span class="sl-state-msg"><b class="dt-chg">${esc(so.langs.join(' · '))} → ${esc(p.langs.join(' · '))}</b> ${me ? '보냈어요. 다른 분들이 맞다고 하면 바뀌어요.' : "맞으면 '맞아요'를 눌러 주세요."}</span>${me ? '' : `<button type="button" class="bpill lg-ok" data-key="${esc(so.key)}" data-l="${esc(p.lang)}">맞아요</button>`}${isAdmin() ? `<button type="button" class="link-btn lg-ok lg-adm" data-key="${esc(so.key)}" data-l="${esc(p.lang)}">바로 확정 (관리자)</button>` : ''}</div>`;
     }).join('');
-    return `<div class="lang-row"><span class="lang-tag">🌐 ${esc(so.lang)}</span>${so.langWas ? okMini('언어 고침', `팬분들 확인을 받아 고쳤어요. (원래 ${esc(so.langWas)})`) : ''}
-      <details class="lang-fix"><summary>언어가 달라요</summary><div class="chips wrap">${window.DATA.SONG_LANGS.filter(l => l !== so.lang).map(l => `<button type="button" class="chip lg-send" data-key="${esc(so.key)}" data-l="${l}">${l}</button>`).join('')}</div><p class="src-note">${isAdmin() ? '관리자 기기라 누르면 바로 바뀌어요.' : '같은 언어를 다른 두 분이 더 고르면 바뀌어요. 여러 언어로 부른 곡은 가장 많이 부른 언어로 골라 주세요.'}</p></details></div>${props}`;
+    const opts = [...new Set([...window.DATA.SONG_LANGS, ...so.langs])];
+    return `<div class="lang-row"><span class="lang-tag">🌐 ${esc(so.langs.join(' · '))}</span>${so.langWas ? okMini('언어 고침', `팬분들 확인을 받아 고쳤어요. (원래 ${esc(so.langWas)})`) : ''}
+      <details class="lang-fix"><summary>언어가 달라요</summary>
+        <p class="src-note">이 곡에서 부른 언어를 모두 골라 주세요. 여러 개 골라도 돼요.</p>
+        <div class="chips wrap lg-chips">${opts.map(l => `<button type="button" class="chip${so.langs.includes(l) ? ' on' : ''}" data-l="${esc(l)}" aria-pressed="${so.langs.includes(l)}">${esc(l)}</button>`).join('')}</div>
+        <form class="pin-find lg-new"><input type="text" class="lg-in" maxlength="8" placeholder="목록에 없는 언어 (예: 줄루어)"><button type="submit" class="chip">추가</button></form>
+        <button type="button" class="bpill add-send lg-send" data-key="${esc(so.key)}">보내기</button>
+        <p class="src-note">${isAdmin() ? '관리자 기기라 보내면 바로 바뀌어요.' : '같은 언어 조합을 다른 두 분이 더 고르면 바뀌어요.'}</p></details></div>${props}`;
   }
-  document.addEventListener('click', ev => {
-    const b = ev.target.closest('.lg-send, .lg-adm');
-    if (!b) return;
-    const so = data.songs.get(b.dataset.key), l = b.dataset.l;
-    if (!so) return;
+  const lgSend = (so, sig, b) => {
+    const adm = isAdmin() && (b.classList.contains('lg-adm') || b.classList.contains('lg-send'));
     b.disabled = true;
-    const adm = isAdmin();
-    const done = () => { boxWrite('sb-lang-sent', [...(boxRead('sb-lang-sent') || []), so.key + '|' + l].slice(-200)); toast(adm ? '바꿨어요. 5~10분쯤 뒤 모두에게 반영돼요.' : '보냈어요! 다른 분들이 맞다고 하면 바뀌어요.'); };
-    const p = formPost(`종류: 언어수정\n곡: ${so.name}\n곡키: ${so.key}\n언어: ${l}\n누가: ${myUid()}`);
-    (adm ? p.then(() => sendEvMark('lg' + window.DATA.slVer([so.key, l]), '숨김')) : p).then(done).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
+    const p = formPost(`종류: 언어수정\n곡: ${so.name}\n곡키: ${so.key}\n언어: ${sig}\n누가: ${myUid()}`);
+    (adm ? p.then(() => sendEvMark('lg' + window.DATA.slVer([so.key, sig]), '숨김')) : p).then(() => {
+      boxWrite('sb-lang-sent', [...(boxRead('sb-lang-sent') || []), so.key + '|' + sig].slice(-200));
+      toast(adm ? '바꿨어요. 5~10분쯤 뒤 모두에게 반영돼요.' : '보냈어요! 다른 분들이 맞다고 하면 바뀌어요.');
+    }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
+  };
+  document.addEventListener('submit', ev => {
+    const f = ev.target.closest('.lg-new');
+    if (!f) return;
+    ev.preventDefault();
+    const inp = f.querySelector('.lg-in'), v = inp.value.trim();
+    if (!/^[가-힣]{2,8}$/.test(v)) { toast("한글로 적어 주세요. (예: 줄루어)"); return; }
+    const box = f.closest('.lang-fix').querySelector('.lg-chips');
+    let c = [...box.children].find(x => x.dataset.l === v);
+    if (!c) { box.insertAdjacentHTML('beforeend', `<button type="button" class="chip" data-l="${esc(v)}"></button>`); c = box.lastElementChild; c.textContent = v; }
+    c.classList.add('on'); c.setAttribute('aria-pressed', 'true'); inp.value = '';
+  });
+  document.addEventListener('click', ev => {
+    const c = ev.target.closest('.lg-chips .chip');
+    if (c) { c.classList.toggle('on'); c.setAttribute('aria-pressed', c.classList.contains('on')); return; }
+    const b = ev.target.closest('.lg-send, .lg-ok');
+    if (!b) return;
+    const so = data.songs.get(b.dataset.key);
+    if (!so) return;
+    if (b.classList.contains('lg-ok')) { lgSend(so, b.dataset.l, b); return; }
+    const pick = [...b.closest('.lang-fix').querySelectorAll('.lg-chips .chip.on')].map(x => x.dataset.l);
+    const at = x => { const i = window.DATA.SONG_LANGS.indexOf(x); return i < 0 ? 99 : i; };
+    const sig = pick.sort((a, z) => at(a) - at(z) || a.localeCompare(z)).join(', ');
+    if (!sig) { toast('언어를 하나 이상 골라 주세요.'); return; }
+    if (sig === so.lang) { toast('지금 언어와 같아요.'); return; }
+    lgSend(so, sig, b);
   });
   // 좋아하는 가사: 이 폰에 저장(sb-lyrics {곡키: [{t, sh, at}]}), '다른 팬과 공유'를 고른 줄만 제보 폼(종류: 가사)으로 올라가요
   const LY_KEY = 'sb-lyrics';

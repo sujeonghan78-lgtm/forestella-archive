@@ -1426,3 +1426,4 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .lang-fix summary { font-size: 12px; color: var(--muted); cursor: pointer; }
 .lang-fix[open] { flex-basis: 100%; }
 .lang-fix .chips { margin-top: 6px; }
+.lg-new { margin: 8px 0; }

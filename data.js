@@ -72,8 +72,14 @@
     ['아일랜드어', /téir|abhaile|dulaman/],
     ['라틴어', /\b(dies irae|requiem|sis puella)\b/],
   ];
+  // 팬이 보낸 언어 글자 → '영어, 줄루어'처럼 정리 (한글 2~8자, 목록에 없는 언어도 돼요)
+  const langSig = t => {
+    const ls = [...new Set(String(t || '').split(/\s*[,·/]\s*/).map(x => x.trim()).filter(x => /^[가-힣]{2,8}$/.test(x)))].slice(0, 5);
+    const at = x => { const i = SONG_LANGS.indexOf(x); return i < 0 ? 99 : i; };
+    return ls.sort((a, b) => at(a) - at(b) || a.localeCompare(b)).join(', ');
+  };
   // 짐작이 틀리는 곡 (곡키 → 언어)
-  const LANG_FIX = { 'time to say goodbye': '이탈리아어', 'plastic love': '일본어', 'now we are free': '이탈리아어', 'la la la': '영어', libertango: '연주곡' };
+  const LANG_FIX = { 'time to say goodbye': '이탈리아어', 'shape of you': '영어, 줄루어', 'plastic love': '일본어', 'now we are free': '이탈리아어', 'la la la': '영어', libertango: '연주곡' };
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
   // '월의 어느 멋진날에(무반주 한소절)'처럼 뒤가 달라도 앞 '10'만 되살려요
   const slFix = x => x.replace(/^월의\s*어느\s*멋진/, '10월의 어느 멋진');
@@ -573,8 +579,8 @@
       // 곡 언어 고치기 (종류: 언어수정 곡키/언어/누가): 같은 언어를 3명(올린 사람+2명) 보내면 바뀌어요
       buildReports(toObjects(raw.reports), true).forEach(r => {
         if (r.type !== '언어수정' || !r.by) return;
-        const k = line0(r, '곡키'), l = line0(r, '언어');
-        if (!k || !SONG_LANGS.includes(l)) return;
+        const k = line0(r, '곡키'), l = langSig(line0(r, '언어'));
+        if (!k || !l) return;
         if (!langVotes.has(k)) langVotes.set(k, {});
         const v = langVotes.get(k); (v[l] = v[l] || { by: new Set(), at: tsMs(r.time), first: r.by }).by.add(r.by);
       });
@@ -792,9 +798,11 @@
       if (!l) l = (LANG_RX.find(([, rx]) => rx.test(t)) || [])[0] || '';
       if (!l) l = /[가-힣]/.test(so.name) ? '한국어' : '영어';
       so.langAuto = l;
-      so.langProps = Object.entries(langVotes.get(so.key) || {}).filter(([x]) => x !== l).map(([x, v]) => ({ lang: x, n: v.by.size, who: [...v.by], at: v.at, ok: v.by.size >= 3 || gone.has('lg' + slVer([so.key, x])) }));
+      // 고친 언어는 여러 개일 수 있어요 ('영어, 줄루어'), 순서는 기본 목록 순
+      so.langProps = Object.entries(langVotes.get(so.key) || {}).filter(([x]) => x !== l).map(([x, v]) => ({ lang: x, langs: x.split(', '), n: v.by.size, who: [...v.by], at: v.at, ok: v.by.size >= 3 || gone.has('lg' + slVer([so.key, x])) }));
       const won = so.langProps.filter(p => p.ok).sort((a, b) => b.at - a.at)[0];
       so.lang = won ? won.lang : l;
+      so.langs = so.lang.split(', ');
       if (won) so.langWas = l;
       so.langProps = so.langProps.filter(p => !p.ok);
     });
