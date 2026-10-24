@@ -1448,3 +1448,15 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .show-opts { display: flex; flex-direction: column; gap: 10px; }
 .show-opt { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .show-opt input { width: 18px; height: 18px; margin: 0; }
+.box-subs, .box-years { margin: 6px 0 2px; flex-wrap: wrap; }
+.box-subs .chip, .box-years .chip { font-size: 12px; padding: 5px 10px; }
+.box-subs small, .box-years small { color: var(--muted); font-weight: 400; margin-left: 2px; }
+.box-subs .chip.on small, .box-years .chip.on small { color: inherit; opacity: .8; }
+.box-line { margin-top: 6px; }
+.box-sync-on { display: block; }
+.box-sync-on summary { cursor: pointer; list-style: none; }
+.box-sync-on summary::-webkit-details-marker { display: none; }
+.box-sync-on[open] summary { margin-bottom: 8px; }
+.box-sync-on > span, .box-sync-on > button { display: block; margin-top: 6px; }
+.box-subs .chip.on, .box-years .chip.on { background: var(--soft); color: var(--ink); border-color: var(--ink); box-shadow: none; }
+.box-subs small, .box-years small { vertical-align: baseline; font-size: 11px; }

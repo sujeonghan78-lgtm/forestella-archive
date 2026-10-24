@@ -1863,47 +1863,64 @@
   function boxView() {
     const { wentAll, went, seen, liked, songs, heardList, topRegion, first } = boxStats();
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
-    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length) && !(boxRead('sb-tmi-sent') || []).some(x => !x.del) && !Object.keys(lyMine()).length;
+    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length) && !(boxRead('sb-tmi-sent') || []).some(x => !x.del) && !Object.keys(lyMine()).length && !(boxRead(CH_SENT) || []).some(x => !x.del);
     const LIMIT = 8;
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
-    const tabs = [
-      ['w', '🎫 직관', went.length, went.map(row).join('')],
-      ['b', '📺 시청', seen.length, seen.map(row).join('')],
-      ['e', '♥ 일정', liked.length, liked.map(row).join('')],
-      ...(() => {
-        const groups = SONG_PICKS.map(([k, l]) => [l, pickList(k)]).filter(g => g[1].length);
-        const n = groups.reduce((a, g) => a + g[1].length, 0);
-        return [['p', '⭐ 내 곡', n, groups.map(([l, list]) => `<p class="src-note">${l} ${list.length}</p><div class="chips box-songs">${list.map(so => songChip(so)).join('')}</div>`).join('') + '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>']];
-      })(),
-      ...(() => {
-        const ly = Object.entries(lyMine()).flatMap(([k, list]) => list.map(m => [data.songs.get(k), m])).filter(x => x[0]).sort((a, b) => b[1].at - a[1].at);
-        return [['l', '💬 가사', ly.length, ly.map(([so, m]) => `<a class="box-ev" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(so.name)}</span><b>“${esc(m.t)}”</b></a>`).join('')]];
-      })(),
-      ...(() => {
-        // ♥ 누르거나 내가 남긴 TMI (이 폰 sb-tmi-sent)
-        const href = k => k.startsWith('e:') ? '#/e/' + encodeURIComponent(k.slice(2)) : k.startsWith('t:') ? '#/tour/' + encodeURIComponent(k.slice(2)) : '#/song/' + encodeURIComponent(k.slice(2));
-        const where = k => k.startsWith('e:') ? ((data.byId.get(k.slice(2)) || {}).title || '일정') : k.startsWith('t:') ? (((data.tours || []).find(t => t.id === k.slice(2)) || (data.concerts || []).find(c => c.id === k.slice(2)) || {}).name || '콘서트') : ((data.songs.get(k.slice(2)) || {}).name || '곡');
-        const tm = (boxRead('sb-tmi-sent') || []).filter(x => !x.del).sort((a, b) => b.at - a.at);
-        return [['tmi', '💡 TMI', tm.length, tm.map(x => `<a class="box-ev" href="${href(x.key)}"><span>${esc(where(x.key))}</span><b>${esc(x.t)}</b></a>`).join('')]];
-      })(),
-      ['s', '♥ 곡', songs.length, `<div class="chips box-songs">${songs.map(so => songChip(so)).join('')}</div>`],
-      ['h', '들은 곡', heardList.length, `<div class="chips box-songs">${heardList.map(([so, n]) => songChip(so, n)).join('')}</div>`],
-    ].filter(x => x[2]);
-    let t = decodeURIComponent((location.hash.split('?t=')[1] || '').split('&')[0]);
-    if (!tabs.some(x => x[0] === t)) t = (tabs[0] || [''])[0];
-    const curTab = tabs.find(x => x[0] === t) || ['', '', 0, ''];
-    const cur = { n: curTab[2], html: curTab[3] };
-    // 검색용: 직관·좋아요 일정과 곡을 한 목록에
+    // 탭은 일정 · 곡 · 내 글 세 개, 안에서 작은 칩으로 골라요 (주소 #/box?t=그룹&s=칩&y=연도)
+    const evRow = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}${e.category ? `<small>${esc(e.category)}</small>` : ''}</b></a>`;
+    const chipsOf = list => `<div class="chips box-songs">${list.map(x => Array.isArray(x) ? songChip(x[0], x[1]) : songChip(x)).join('')}</div>`;
+    const tmHref = k => k.startsWith('e:') ? '#/e/' + encodeURIComponent(k.slice(2)) : k.startsWith('t:') ? '#/tour/' + encodeURIComponent(k.slice(2)) : '#/song/' + encodeURIComponent(k.slice(2));
+    const tmWhere = k => k.startsWith('e:') ? ((data.byId.get(k.slice(2)) || {}).title || '일정') : k.startsWith('t:') ? (((data.tours || []).find(t => t.id === k.slice(2)) || (data.concerts || []).find(c => c.id === k.slice(2)) || {}).name || '콘서트') : ((data.songs.get(k.slice(2)) || {}).name || '곡');
+    const ly = Object.entries(lyMine()).flatMap(([k, list]) => list.map(m => [data.songs.get(k), m])).filter(x => x[0]).sort((a, b) => b[1].at - a[1].at);
+    const ch = (boxRead(CH_SENT) || []).filter(x => !x.del && data.songs.get(x.key)).sort((a, b) => b.at - a.at);
+    const tm = (boxRead('sb-tmi-sent') || []).filter(x => !x.del).sort((a, b) => b.at - a.at);
+    const lyRow = ([so, m]) => `<a class="box-ev" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(so.name)}</span><b>“${esc(m.t)}”</b></a>`;
+    const chRow = x => `<a class="box-ev" href="#/song/${encodeURIComponent(x.key)}"><span>${esc(data.songs.get(x.key).name)}</span><b>📣 ${esc(x.t)}</b></a>`;
+    const tmRow = x => `<a class="box-ev" href="${tmHref(x.key)}"><span>${esc(tmWhere(x.key))}</span><b>${esc(x.t)}</b></a>`;
+    const groups = [
+      ['ev', '🎫 일정', [['w', '🎫 직관', went, 'ev'], ['b', '📺 시청', seen, 'ev'], ['e', '♥ 좋아요', liked, 'ev']]],
+      ['song', '🎵 곡', [['s', '♥ 하트', songs, 'chip'], ...SONG_PICKS.map(([k, l]) => [k, l, pickList(k), 'chip']), ['h', '🎧 들은 곡', heardList, 'chip']]],
+      ['my', '✍️ 내 글', [['l', '💬 가사', ly, lyRow], ['c', '📣 떼창', ch, chRow], ['tmi', '💡 TMI', tm, tmRow]]],
+    ].map(([k, l, subs]) => [k, l, subs.filter(x => x[2].length)]).filter(g => g[2].length);
+    // 예전 주소(#/box?t=w 등)는 그 칩이 든 탭으로
+    const q = new URLSearchParams(location.hash.split('?')[1] || '');
+    let t = q.get('t') || '', sub = q.get('s') || '';
+    const old = groups.find(g => g[2].some(x => x[0] === t || (t === 'p' && SONG_PICKS.some(([k]) => k === x[0]))));
+    if (old && !groups.some(g => g[0] === t)) { sub = t === 'p' ? '' : t; t = old[0]; }
+    const g = groups.find(x => x[0] === t) || groups[0] || ['', '', []];
+    t = g[0];
+    const sc = g[2].find(x => x[0] === sub) || g[2][0] || ['', '', [], 'ev'];
+    sub = sc[0];
+    let list = sc[2], yearBar = '';
+    const link = (tt, ss, yy) => `#/box?t=${tt}${ss ? '&s=' + ss : ''}${yy ? '&y=' + yy : ''}`;
+    if (sc[3] === 'ev') {
+      const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort().reverse(), y = years.includes(q.get('y')) ? q.get('y') : '';
+      if (years.length > 1) yearBar = `<div class="chips box-years"><a class="chip${y ? '' : ' on'}" href="${link(t, sub)}">전체</a>${years.map(x => `<a class="chip${x === y ? ' on' : ''}" href="${link(t, sub, x)}">${x} <small>${list.filter(e => e.date.startsWith(x)).length}</small></a>`).join('')}</div>`;
+      if (y) list = list.filter(e => e.date.startsWith(y));
+    }
+    const html = sc[3] === 'ev' ? list.map(evRow).join('') : sc[3] === 'chip' ? chipsOf(list) + (SONG_PICKS.some(([k]) => k === sub) ? '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>' : '') : list.map(sc[3]).join('');
+    const cur = { n: list.length, html };
+    const subBar = g[2].length > 1 ? `<div class="chips box-subs">${g[2].map(x => `<a class="chip${x[0] === sub ? ' on' : ''}" href="${link(t, x[0])}">${x[1]} <small>${x[2].length}</small></a>`).join('')}</div>` : '';
+    // 검색용: 일정·곡·내 글을 한 목록에
     const findAttr = t => `data-n="${esc(norm(t))}" data-c="${esc(chosung(t))}"`;
-    const allEv = [...new Map([...liked, ...wentAll].map(e => [e.castKey || e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
-    const allItems = allEv.map(e => `<a class="box-ev box-hit" ${findAttr(e.title + ' ' + (e.place || ''))} href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${e.castKey || boxHas('w', e.id) ? '🎫 ' : ''}${boxHas('e', e.id) ? '♥ ' : ''}${esc(e.title)}</b></a>`).join('')
-      + (songs.length ? `<div class="chips box-songs">${songs.map(so => `<a class="chip box-hit" ${findAttr(so.name)} href="#/song/${encodeURIComponent(so.key)}">♥ ${esc(so.name)}</a>`).join('')}</div>` : '');
+    const allEv = [...new Map([...liked, ...wentAll, ...seen].map(e => [e.castKey || e.id, e])).values()].sort((a, b) => b.date.localeCompare(a.date));
+    const songMarks = new Map();
+    const mark = (so, m) => { if (so) songMarks.set(so, (songMarks.get(so) || '') + m); };
+    songs.forEach(so => mark(so, '♥')); SONG_PICKS.forEach(([k, l]) => pickList(k).forEach(so => mark(so, l.split(' ')[0])));
+    const hitRow = (h, label, text, find) => `<a class="box-ev box-hit" ${findAttr(find)} href="${h}"><span>${esc(label)}</span><b>${esc(text)}</b></a>`;
+    const allItems = allEv.map(e => `<a class="box-ev box-hit" ${findAttr(e.title + ' ' + (e.place || ''))} href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${e.castKey || boxHas('w', e.id) ? '🎫 ' : ''}${boxHas('v', e.id) ? '📺 ' : ''}${boxHas('e', e.id) ? '♥ ' : ''}${esc(e.title)}</b></a>`).join('')
+      + (songMarks.size ? `<div class="chips box-songs">${[...songMarks].map(([so, m]) => `<a class="chip box-hit" ${findAttr(so.name)} href="#/song/${encodeURIComponent(so.key)}">${m} ${esc(so.name)}</a>`).join('')}</div>` : '')
+      + ly.map(([so, m]) => hitRow('#/song/' + encodeURIComponent(so.key), so.name, '“' + m.t + '”', so.name + ' ' + m.t)).join('')
+      + ch.map(x => hitRow('#/song/' + encodeURIComponent(x.key), data.songs.get(x.key).name, '📣 ' + x.t, data.songs.get(x.key).name + ' ' + x.t)).join('')
+      + tm.map(x => hitRow(tmHref(x.key), tmWhere(x.key), '💡 ' + x.t, tmWhere(x.key) + ' ' + x.t)).join('');
+    const pickN = SONG_PICKS.map(([k, l]) => [l, pickList(k).length]).filter(x => x[1]);
+    const songLine = [...pickN.map(([l, n]) => `${l} ${n}`), songs.length ? `♥ 곡 ${songs.length}` : '', liked.length ? `♥ 일정 ${liked.length}` : ''].filter(Boolean).join(' · ');
     const sync = !boxApi() ? '' : boxUser ? `
-      <section class="box-sync">
-        <b>다른 폰에서도 이어 쓰는 중</b>
+      <details class="box-sync box-sync-on">
+        <summary>☁️ 다른 폰에서도 이어 쓰는 중 · <b>${esc(boxUser.name)}</b></summary>
         <span>이름 <b>${esc(boxUser.name)}</b>${boxUser.at ? ` · 마지막 저장 ${new Date(boxUser.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}</span>
         <button type="button" class="link-btn" id="box-out">이 폰에서 연결 끊기</button>
-      </section>` : `
+      </details>` : `
       <section class="box-sync">
         <b>다른 폰에서도 이어 쓰기</b>
         <span>처음이면 이름과 숫자 4자리를 새로 정하고, 다른 폰에서 쓰던 보관함을 불러오려면 그때 정한 이름·숫자를 똑같이 넣어 주세요. 두 폰의 목록이 합쳐져요.</span>
@@ -1922,8 +1939,9 @@
       <section class="block box-stat">
         <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 시청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
+        ${songLine ? `<p class="sub box-line">${songLine}</p>` : ''}
         <a class="map-entry" href="#/map">👣 숲별 발자국 · 지도로 되돌아보기 <span>›</span></a>
-      </section>` : ''}
+      </section>` : songLine ? `<p class="sub box-line">${songLine}</p>` : ''}
       ${empty ? '' : `
       <form class="searchbox song-search box-search" role="search" onsubmit="return false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -1934,7 +1952,8 @@
         <p class="empty" id="box-none" hidden>찾는 게 없어요.</p>
       </section>
       <div id="box-tabs-wrap">
-      <div class="chips box-tabs">${tabs.map(([k, label, n]) => `<a class="chip${k === t ? ' on' : ''}" href="#/box?t=${k}"${k === t ? ' aria-current="true"' : ''}>${label} ${n}</a>`).join('')}</div>
+      <div class="chips box-tabs">${groups.map(([k, label, subs]) => `<a class="chip${k === t ? ' on' : ''}" href="#/box?t=${k}"${k === t ? ' aria-current="true"' : ''}>${label} ${subs.reduce((n, x) => n + x[2].length, 0)}</a>`).join('')}</div>
+      ${subBar}${yearBar}
       <section class="block box-list${cur.n > LIMIT ? ' short' : ''}">
         ${cur.html || '<p class="empty">아직 없어요.</p>'}
         ${cur.n > LIMIT ? `<button type="button" class="link-btn box-more">${cur.n}개 전체 보기</button>` : ''}
