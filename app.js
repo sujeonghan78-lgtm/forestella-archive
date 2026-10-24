@@ -1120,6 +1120,7 @@
           ${so.events.length > 1 ? `<div class="fact"><b>최근 확인</b><span>${fmtDate(so.last.date, false)} · ${esc(so.last.title)}</span></div>` : ''}` : ''}
           ${songLast(so) ? `<div class="fact"><b>마지막으로 부른 지</b><span>${daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 (${fmtDate(songLast(so), false)})` : '오늘'}</span></div>` : ''}
         </div>` : ''}
+        ${songPickRow(so)}
         ${songMemos(so)}
         ${play ? `<a class="play-all" href="${play}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 7-8 7zM12 5l8 7-8 7z"/></svg>이 곡 무대 이어보기</a>` : ''}
         ${findRow('포레스텔라 ' + so.name)}
@@ -1134,6 +1135,28 @@
       ])}
       ${sameSongBox(so)}`;
   }
+  // 최애곡·소취곡·입덕곡: 숲별 카드에 고른 곡은 그대로 불러오고, 곡 화면에서 고른 곡은 개수 제한 없이 보관함에 따로 저장해요
+  // (보관함 곡 목록 s에 'pf:곡키'처럼 넣어서 다른 폰 이어 쓰기도 같이 따라가요)
+  const SONG_PICKS = [['fav', '💚 최애곡', 'pf:'], ['wish', '🙏 소취곡', 'pw:'], ['debut', '🌱 입덕곡', 'pd:']];
+  const cardPicks = k => k === 'debut' ? [card.debut.trim()].filter(Boolean) : favList(card[k]);
+  const pickSong = n => data.songs.get(window.DATA.songKey(n)) || [...data.songs.values()].find(x => x.name === n);
+  const inCard = (k, so) => cardPicks(k).some(n => window.DATA.songKey(n) === so.key || n === so.name);
+  const pickPre = k => SONG_PICKS.find(x => x[0] === k)[2];
+  const pickHas = (k, so) => inCard(k, so) || box.s.includes(pickPre(k) + so.key);
+  // 카드 곡 + 보관함 곡 (겹치면 한 번만)
+  const pickList = k => { const out = []; [...cardPicks(k).map(pickSong), ...box.s.filter(x => x.startsWith(pickPre(k))).map(x => data.songs.get(x.slice(3)))].forEach(so => { if (so && !out.includes(so)) out.push(so); }); return out; };
+  const songPickRow = so => `<div class="chips song-picks">${SONG_PICKS.map(([k, l]) => `<button type="button" class="chip song-pick${pickHas(k, so) ? ' on' : ''}" data-pk="${k}" data-key="${esc(so.key)}" aria-pressed="${pickHas(k, so)}">${l}</button>`).join('')}</div>`;
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.song-pick');
+    if (!b) return;
+    const so = data.songs.get(b.dataset.key), k = b.dataset.pk, l = SONG_PICKS.find(x => x[0] === k)[1].slice(2);
+    if (!so) return;
+    if (inCard(k, so)) { toast(`숲별 카드에서 고른 ${l}이에요. 빼려면 숲별 카드에서 지워 주세요.`); return; }
+    const had = pickHas(k, so);
+    boxToggle('s', pickPre(k) + so.key);
+    b.closest('.song-picks').outerHTML = songPickRow(so);
+    toast(had ? `${l}에서 뺐어요.` : `${l}에 넣었어요. 보관함 '⭐ 내 곡'에 모여요.`);
+  });
   // 버전 메모: 무대 기록 곡 이름에 붙은 설명(무반주·솔로·with OO 등)과 투어 셋리 메모를 날짜와 함께
   function songMemos(so) {
     const loose = t => t.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
@@ -1459,13 +1482,18 @@
   function boxView() {
     const { wentAll, went, seen, liked, songs, heardList, topRegion, first } = boxStats();
     const row = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`;
-    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length;
+    const empty = !wentAll.length && !seen.length && !liked.length && !songs.length && !SONG_PICKS.some(([k]) => pickList(k).length);
     const LIMIT = 8;
     const songChip = (so, n) => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}${n > 1 ? ` ×${n}` : ''}</a>`;
     const tabs = [
       ['w', '🎫 직관', went.length, went.map(row).join('')],
       ['b', '📺 시청', seen.length, seen.map(row).join('')],
       ['e', '♥ 일정', liked.length, liked.map(row).join('')],
+      ...(() => {
+        const groups = SONG_PICKS.map(([k, l]) => [l, pickList(k)]).filter(g => g[1].length);
+        const n = groups.reduce((a, g) => a + g[1].length, 0);
+        return [['p', '⭐ 내 곡', n, groups.map(([l, list]) => `<p class="src-note">${l} ${list.length}</p><div class="chips box-songs">${list.map(so => songChip(so)).join('')}</div>`).join('') + '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>']];
+      })(),
       ['s', '♥ 곡', songs.length, `<div class="chips box-songs">${songs.map(so => songChip(so)).join('')}</div>`],
       ['h', '들은 곡', heardList.length, `<div class="chips box-songs">${heardList.map(([so, n]) => songChip(so, n)).join('')}</div>`],
     ].filter(x => x[2]);
