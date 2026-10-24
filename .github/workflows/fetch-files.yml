@@ -1,0 +1,33 @@
+# 이 세션에서 직접 못 여는 파일(공지 사진 등)을 받아 tmp-probe 가지의 fetch/ 폴더에 올려요. (직접 눌러서 실행, 사이트엔 안 올라가요)
+name: fetch-files
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: '받을 주소 (띄어쓰기·줄바꿈으로 여러 개)'
+        required: true
+permissions:
+  contents: write
+concurrency: fetch-files
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp-probe
+      - env:
+          URLS: ${{ inputs.urls }}
+        run: |
+          mkdir -p fetch
+          for u in $URLS; do
+            n=$(echo "$u" | sed -E 's#^https?://##; s#[?].*##; s#[^A-Za-z0-9._-]+#_#g' | tail -c 80)
+            curl -sSL -A 'Mozilla/5.0' -o "fetch/$n" "$u" || echo "::warning::못 받음 $u"
+          done
+          ls -la fetch
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fetch
+          git diff --cached --quiet && exit 0
+          git commit -m "파일 받기"
+          git push origin HEAD:tmp-probe
