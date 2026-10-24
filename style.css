@@ -1444,3 +1444,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .tmi-add summary { font-size: 13px; color: var(--green); cursor: pointer; padding: 8px 0; }
 .tmi-src-in { width: 100%; font: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin: 6px 0; box-sizing: border-box; }
 .song-writes { margin-top: 8px; } .song-write { font-size: 13px; }
+.song-showb { font-size: 13px; white-space: nowrap; }
+.show-opts { display: flex; flex-direction: column; gap: 10px; }
+.show-opt { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.show-opt input { width: 18px; height: 18px; margin: 0; }
