@@ -1518,6 +1518,8 @@
   }
   // 못 찍은 일정: 해외와 장소 모름을 나눠서, 장소 모름엔 📍 장소 알려주기를 달아요 (MAP_OFF_PL이 켜져 있을 때)
   const MAP_OFF_PL = true;
+  // 라디오는 장소를 몰라도 '위치 확인이 필요한 일정'에 안 넣어요 (스튜디오라 찾을 필요가 없어요)
+  const needLoc = x => x.e.category !== '라디오';
   function offList(off, rough = []) {
     const abroad = off.filter(x => x.l.region === '해외'), priv = off.filter(x => x.l.region === PLACE_PRIV), none = off.filter(x => x.l.region !== '해외' && x.l.region !== PLACE_PRIV);
     const row = (x, pl, pv) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<span class="map-off-act"><a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a></span>` : ''}</div>`;
@@ -1569,9 +1571,9 @@
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
-      ${ml.off.length || ml.on.some(x => !x.l.exact) ? `<details class="map-off"><summary>위치 확인이 필요한 일정 ${ml.off.filter(x => x.l.region !== PLACE_PRIV).length + ml.on.filter(x => !x.l.exact).length}개</summary>${offList(ml.off, ml.on.filter(x => !x.l.exact))}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
+      ${ml.off.filter(needLoc).length || ml.on.some(x => !x.l.exact && needLoc(x)) ? `<details class="map-off"><summary>위치 확인이 필요한 일정 ${ml.off.filter(x => needLoc(x) && x.l.region !== PLACE_PRIV).length + ml.on.filter(x => !x.l.exact && needLoc(x)).length}개</summary>${offList(ml.off.filter(needLoc), ml.on.filter(x => !x.l.exact && needLoc(x)))}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
-      : ml.off.length ? `<p class="empty">이 기간 일정 ${ml.off.length}개는 장소를 몰라서 지도에 못 찍었어요. 아는 분은 📍 장소 알려주기로 알려 주세요.</p><div class="map-off">${offList(ml.off)}</div>` : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
+      : ml.off.length ? `<p class="empty">이 기간 일정 ${ml.off.length}개는 장소를 몰라서 지도에 못 찍었어요. 아는 분은 📍 장소 알려주기로 알려 주세요.</p><div class="map-off">${offList(ml.off.filter(needLoc))}</div>` : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
     const reset = () => { mapSt.i = -1; mapSt.tour = false; mapSt.uz = 0; mapStop(); bindMap(); };
     root.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mapSt.mode = b.dataset.mode; mapSt.from = mapSt.to = ''; reset(); });
     root.querySelectorAll('[data-mem]').forEach(b => b.onclick = () => { mapSt.mem = b.dataset.mem; reset(); });
@@ -1846,7 +1848,7 @@
     if (cp) cp.onclick = () => { const t = cp.dataset.t, done = () => { cp.textContent = '복사했어요 ✓'; }; navigator.clipboard.writeText(t).then(done, () => { prompt('복사해 주세요', t); }); };
     if (!pfAll) pfAll = await fetch('data/places.json', { cache: 'no-cache' }).then(r => r.json()).catch(() => ({}));
     const pins = data.pins || {}, cnt = new Map();
-    data.events.forEach(e => { const p = placeOf(e); if (p) cnt.set(p, (cnt.get(p) || 0) + 1); });
+    data.events.forEach(e => { const p = placeOf(e); if (p && e.category !== '라디오') cnt.set(p, (cnt.get(p) || 0) + 1); });
     const hint = pfAll.hint || {}, fd = pfAll.found || {}, maybe = Object.entries(fd).filter(([, v]) => v.c !== 'ok').map(([k]) => k);
     // 일정에 쓰인 장소 중 정확한 좌표가 없는 곳 (해외·비공개·팬이 정확한 위치를 이미 알려 준 곳은 빼요)
     // 정확한 위치가 이미 있거나, 일정 화면에서 새 장소(좌표 포함)를 보내 확인을 기다리는 곳은 빼요
