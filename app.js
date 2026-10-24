@@ -2041,15 +2041,16 @@
     return best;
   }
   function mapList(found) {
-    const st = boxStats();
-    const mine = st.wentAll.slice().sort((a, b) => a.date.localeCompare(b.date));
-    if (!mapSt.mode) mapSt.mode = mine.length ? 'w' : 'all';
+    const bs = boxStats();
+    const mine = bs.wentAll.slice().sort((a, b) => a.date.localeCompare(b.date));
+    const st = mapParams();
+    mapSt.mode = st.s || (mine.length ? 'w' : 'all');
     const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !MAP_ONLINE.test(e.title) && !(/팬사인회|팬싸인회|팬싸/.test(e.title) && !placeOf(e))).sort((a, b) => a.date.localeCompare(b.date));
     const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort();
     // 기간 고르기: from/to는 'YYYY-MM'
-    const inRange = e => memOk(mapSt.mem)(e) && (!mapSt.kind || mapKind(e) === mapSt.kind) && (!mapSt.from || e.date.slice(0, 7) >= mapSt.from) && (!mapSt.to || e.date.slice(0, 7) <= mapSt.to);
-    const items = list.filter(inRange).map(e => ({ e, l: locOf(e, found) }));
-    return { all: items, on: items.filter(x => x.l.lat != null), off: items.filter(x => x.l.lat == null), mine: mine.length, years, first: list[0], last: list[list.length - 1] };
+    const inRange = x => (!st.m.length || st.m.some(v => memOk(v)(x.e))) && (!st.k.length || st.k.includes(mapKind(x.e))) && (!st.y.length || st.y.includes(x.e.date.slice(0, 4))) && (!st.r.length || st.r.includes(mapRegion(x.l)));
+    const base = list.map(e => ({ e, l: locOf(e, found) })), items = base.filter(inRange);
+    return { base, st, all: items, on: items.filter(x => x.l.lat != null), off: items.filter(x => x.l.lat == null), mine: mine.length, years, first: list[0], last: list[list.length - 1] };
   }
   // 온라인으로만 본 공연은 갈 수 있는 곳이 아니라서 '모든 일정' 지도에선 빼요
   // 팬사인회는 장소를 당첨자에게만 알려줘서, 장소가 없으면 '모든 일정' 지도에선 빼요 (내 직관 지도엔 남아요)
@@ -2057,10 +2058,26 @@
   // 종류: 콘서트·팬미팅 / 뮤지컬 / 그 밖의 행사
   const MAP_KINDS = [['', '모든 종류'], ['c', '콘서트·팬미팅'], ['ev', '행사·축제'], ['mu', '뮤지컬']];
   const mapKind = e => e.category === '뮤지컬' ? 'mu' : /콘서트|concert|투어|tour|팬미팅|팬콘|단독 공연|리사이틀/i.test(e.title) && !/게스트|축하/.test(e.title) ? 'c' : 'ev';
-  // 멤버·종류: 한 줄에 모아 두고, 다시 누르면 꺼져요
-  function mapFilters() {
-    const b = (attr, v, l, on) => `<button type="button" class="chip${on ? ' on' : ''}" ${attr}="${on ? '' : v}">${l}</button>`;
-    return `<div class="chips map-years">${MEM_CHIPS.slice(2).concat([MEM_CHIPS[1]]).map(([v, l]) => b('data-mem', v, l, v === mapSt.mem)).join('')}<span class="map-sep"></span>${MAP_KINDS.slice(1).map(([v, l]) => b('data-kind', v, l, v === mapSt.kind)).join('')}</div>`;
+  // 필터 2.0: 멤버·종류·지역·연도 여러 개 (주소 #/map?s=w|all&m=&k=&r=&y=). 주소에 아무것도 없으면 이 폰에 기억한 필터로
+  const MAP_F = 'sb-map-f';
+  const mapRegion = l => l.region === '해외' || l.region === PLACE_PRIV ? (l.region === '해외' ? '해외' : '비공개') : l.region || (l.lat != null ? regionNear(l) : '모름');
+  const MAP_REGS = ['서울', '경기·인천', '강원', '충청', '전라', '경상', '제주', '해외'];
+  function mapParams() {
+    const q = location.hash.split('?')[1];
+    let qs = new URLSearchParams(q || '');
+    if (!q) { const sv = boxRead(MAP_F); if (sv) qs = new URLSearchParams(sv); }
+    else boxWrite(MAP_F, q);
+    return { s: qs.get('s') || '', m: multiOf(qs, 'm'), k: multiOf(qs, 'k'), r: multiOf(qs, 'r'), y: multiOf(qs, 'y') };
+  }
+  function mapF(ml) {
+    const memL = Object.fromEntries(MEM_CHIPS), kindL = Object.fromEntries(MAP_KINDS);
+    const all = ml.base;
+    return {
+      base: '#/map', keys: ['m', 'k', 'r', 'y'], noSort: true,
+      F: { m: ['멤버', x => memL[x] || x], k: ['종류', x => kindL[x] || x], r: ['지역', x => x], y: ['연도', x => x] },
+      opts: { m: MEM_CHIPS.slice(1).map(x => x[0]).filter(v => all.some(x => memOk(v)(x.e))), k: MAP_KINDS.slice(1).map(x => x[0]).filter(v => all.some(x => mapKind(x.e) === v)), r: MAP_REGS.filter(v => all.some(x => mapRegion(x.l) === v)), y: [...new Set(all.map(x => x.e.date.slice(0, 4)))].sort().reverse() },
+      cnt: (k, v) => all.filter(x => k === 'm' ? memOk(v)(x.e) : k === 'k' ? mapKind(x.e) === v : k === 'r' ? mapRegion(x.l) === v : x.e.date.startsWith(v)).length,
+    };
   }
   // 못 찍은 일정: 해외와 장소 모름을 나눠서, 장소 모름엔 📍 장소 알려주기를 달아요 (MAP_OFF_PL이 켜져 있을 때)
   const MAP_OFF_PL = true;
@@ -2102,8 +2119,8 @@
     const ml = mapList(found);
     if (mapSt.i < 0 || mapSt.i >= ml.on.length) mapSt.i = ml.on.length - 1;
     root.innerHTML = `
-      <div class="chips map-modes"><button type="button" class="chip${mapSt.mode === 'w' ? ' on' : ''}" data-mode="w">👣 내 발자국 ${ml.mine}</button><button type="button" class="chip${mapSt.mode === 'all' ? ' on' : ''}" data-mode="all">포레스텔라 공연 전체</button></div>
-      ${mapPeriod(ml)}
+      <div class="box-tabs map-modes"><a class="box-tab${mapSt.mode === 'w' ? ' on' : ''}" href="${fLink('#/map', { ...ml.st, s: 'w' })}">👣 내 발자국 ${ml.mine}</a><a class="box-tab${mapSt.mode === 'all' ? ' on' : ''}" href="${fLink('#/map', { ...ml.st, s: 'all' })}">포레스텔라 전체</a></div>
+      ${(() => { const f = mapF(ml), st = { ...ml.st, s: mapSt.mode }, bar = fBar(f, st); return `<div class="map-period">${bar.row}<p class="sub map-count">${ml.all.length.toLocaleString()}개 · 장소 ${new Set(ml.on.map(x => x.l.exact ? x.l.lat.toFixed(4) + ',' + x.l.lng.toFixed(4) : x.l.region)).size}곳 · ${new Set(ml.all.map(x => mapRegion(x.l)).filter(r => r !== '모름' && r !== '비공개')).size}개 지역${bar.clear}</p></div><div class="yf-wrap" id="yf-wrap" hidden></div>`; })()}
       ${ml.on.length ? `
       ${mapSt.tour ? `<button type="button" class="link-btn map-car-t" id="map-car-t">${boxRead(MAP_H + '-car') ? '📷 사진 펼치기 ▾' : '📷 사진 접기 ▴'}</button>` : ''}
       <div class="map-car" id="map-car"${mapSt.tour && !boxRead(MAP_H + '-car') ? '' : ' hidden'}></div>
@@ -2121,13 +2138,7 @@
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
       : ml.off.length ? `<p class="empty">이 기간 일정 ${ml.off.length}개는 장소를 몰라서 지도에 못 찍었어요. 아는 분은 📍 장소 알려주기로 알려 주세요.</p><div class="map-off">${offList(ml.off.filter(needLoc))}</div>` : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
     const reset = () => { mapSt.i = -1; mapSt.tour = false; mapSt.uz = 0; mapStop(); bindMap(); };
-    root.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { mapSt.mode = b.dataset.mode; mapSt.from = mapSt.to = ''; reset(); });
-    root.querySelectorAll('[data-mem]').forEach(b => b.onclick = () => { mapSt.mem = b.dataset.mem; reset(); });
-    root.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { mapSt.kind = b.dataset.kind; reset(); });
-    root.querySelectorAll('[data-year]').forEach(b => b.onclick = () => { const y = b.dataset.year; mapSt.from = y ? y + '-01' : ''; mapSt.to = y ? y + '-12' : ''; reset(); });
-    const pf = document.getElementById('map-from'), pt = document.getElementById('map-to'), rb = document.getElementById('map-range-btn');
-    if (rb) rb.onclick = () => { const r = document.getElementById('map-range'); r.hidden = !r.hidden; };
-    if (pf) pf.onchange = pt.onchange = () => { mapSt.from = pf.value; mapSt.to = pt.value; if (mapSt.from && mapSt.to && mapSt.from > mapSt.to) [mapSt.from, mapSt.to] = [mapSt.to, mapSt.from]; reset(); };
+    bindF(mapF(ml), { ...ml.st, s: mapSt.mode });
     if (!ml.on.length) return;
     const m = lmap = L.map('map', { zoomControl: false, attributionControl: false, minZoom: 5, maxZoom: 18, zoomSnap: 0.25 }).setView([36.3, 127.8], 7);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
@@ -2442,14 +2453,7 @@
   function mapStop() { if (mapPlay) { clearInterval(mapPlay); mapPlay = null; } mapPlayBtn(); }
   function mapPlayBtn() { const b = document.getElementById('map-play'); if (b) b.textContent = mapPlay ? '⏸ 멈춤' : '▶ 재생'; }
   const ym = v => v ? `${v.slice(2, 4)}년 ${+v.slice(5, 7)}월` : '';
-  function mapPeriod(ml) {
-    const y = mapSt.from && mapSt.to && mapSt.from.slice(5) === '01' && mapSt.to.slice(5) === '12' && mapSt.from.slice(0, 4) === mapSt.to.slice(0, 4) ? mapSt.from.slice(0, 4) : '';
-    const custom = (mapSt.from || mapSt.to) && !y;
-    return `<div class="map-period">
-      ${mapFilters()}
-      <div class="chips map-years"><button type="button" class="chip${!mapSt.from && !mapSt.to ? ' on' : ''}" data-year="">전체</button>${ml.years.map(v => `<button type="button" class="chip${y === v ? ' on' : ''}" data-year="${v}">${v}</button>`).join('')}<button type="button" class="chip${custom ? ' on' : ''}" id="map-range-btn">📅 ${custom ? `${ym(mapSt.from) || '처음'}~${ym(mapSt.to) || '지금'}` : '기간'}</button></div>
-      <div class="map-range-in" id="map-range"${custom ? '' : ' hidden'}><input type="month" id="map-from" value="${esc(mapSt.from)}" aria-label="시작 달"><span>~</span><input type="month" id="map-to" value="${esc(mapSt.to)}" aria-label="끝 달"></div></div>`;
-  }
+
 
   // ---------- 숲별 카드 · 입덕일 D+ (이 폰에만 저장) ----------
   const CARD_KEY = 'sb-card', PHOTO_KEY = 'sb-card-photo';
