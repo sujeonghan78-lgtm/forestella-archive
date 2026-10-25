@@ -1542,7 +1542,7 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .tab-box { padding: 4px 0; }
 .song-fix { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
 .song-fix .lang-row { margin-top: 0; }
-.rp-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 26px; padding: 0 8px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink-2); font-size: calc(15px * var(--fs)); font-weight: 700; letter-spacing: 1px; line-height: 1; text-decoration: none; cursor: pointer; }
+.rp-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 26px; min-height: 0; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink-2); font-size: calc(15px * var(--fs)); font-weight: 700; letter-spacing: 1px; line-height: 1; text-decoration: none; cursor: pointer; }
 .ly-line.rp-done { opacity: .45; }
 .tmi-box { margin-top: 14px; }
 .tmi-src { font-size: calc(11px * var(--fs)); color: var(--muted); margin-left: 4px; white-space: nowrap; }
