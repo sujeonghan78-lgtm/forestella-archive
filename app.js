@@ -4416,7 +4416,7 @@
   const WK = '일월화수목금토', wkOf = d => WK[new Date(d + 'T00:00:00').getDay()];
   // 티켓 모양 카드: 왼쪽 떼는 부분에 D-day, 오른쪽에 일정
   const tkCard = (e, body, href) => `<div class="tk"><a class="tk-stub" href="${href || '#/e/' + encodeURIComponent(e.id)}"><b>${ddOf(e)}</b><small>${e.date.slice(5).replace('-', '.')} ${wkOf(e.date)}</small></a><div class="tk-body">${body}</div></div>`;
-  const tkHead = e => `<a class="tk-title" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}</a><small class="tk-meta">${[e.time, e.place].filter(Boolean).map(esc).join(' · ') || fmtDate(e.date)}</small>`;
+  const tkHead = e => `<a class="tk-title" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}</a><small class="tk-meta">${[e.start && e.start !== '종일' ? e.start : '', e.place].filter(Boolean).map(esc).join(' · ') || fmtDate(e.date)}</small>`;
   const rdBar = id => { const n = rdItems(id).length, d = rdDone(id).length; return `<span class="tk-bar"><i style="width:${n ? Math.round(d / n * 100) : 0}%"></i></span>`; };
   const songOfName = n => { const al = data.songAlias || {}, k = window.DATA.songKey(n); return data.songs.get(k) || data.songs.get(al[k]) || null; };
   const spGet = id => { const x = box.s.find(x => x.startsWith('sp:' + id + ':')); return x ? x.slice(4 + id.length).split('|').filter(k => data.songs.has(k)) : []; };
@@ -4441,7 +4441,7 @@
   // 점수 = 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 것) × 100 — 많이 고른다고 점수가 오르지 않아요
   const spScore = (real, keys) => { if (!real.length || !keys.length) return null; const hit = keys.filter(k => real.includes(k)).length; return { hit, score: Math.round(hit / Math.max(real.length, keys.length) * 100) }; };
   // 시작 시각(시간이 없으면 그날 밤 12시)에 예측이 잠기고, 시작 2시간 뒤(시간 없으면 다음 날)부터 '다녀오셨어요?'
-  const startAt = e => { const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/); return m ? Date.parse(`${e.date}T${m[1].padStart(2, '0')}:${m[2]}:00+09:00`) : null; };
+  const startAt = e => { const m = String(e.start || e.time || '').match(/(\d{1,2}):(\d{2})/); return m ? Date.parse(`${e.date}T${m[1].padStart(2, '0')}:${m[2]}:00+09:00`) : null; };
   const dayEnd = e => Date.parse(`${e.date}T00:00:00+09:00`) + 864e5;
   const doneAt = e => startAt(e) != null ? startAt(e) + 2 * 36e5 : dayEnd(e);
   const over = e => Date.now() >= doneAt(e);
