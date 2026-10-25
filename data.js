@@ -331,8 +331,8 @@
         const mg = Object.entries((extra.eventMerge || {})[r.date] || {}).find(([w]) => t0.includes(sp0(w)));
         // 등록할 때 '이 일정에 붙이기'를 골랐으면(합치기: ID) 그 일정에, '새로 등록'을 골랐으면 이름이 비슷해도 새로 만들어요
         const pickTo = line0(r, '합치기'), fresh = line0(r, '새로') === '예';
-        // 뮤지컬 공연 기간 안의 하루를 따로 올린 거면(제목에 작품 이름이 있음) 새 일정 대신 그 뮤지컬의 캐스팅 회차로 붙여요
-        const run = !pickTo && !fresh && events.find(x => x.category === '뮤지컬' && x.endDate && x.date <= r.date && r.date <= x.endDate && (w => w.length >= 2 && t0.includes(w))(sp0(x.title.replace(/^.*?(뮤지컬|연극)\s*/, ''))));
+        // 뮤지컬 공연 기간 안의 하루를 따로 올린 거면(제목에 작품 이름이 있음) 새 일정 대신 그 뮤지컬의 캐스팅 회차로 붙여요 ('새로 등록'을 골랐어도 다른 날 회차라는 뜻이라 똑같이 붙여요)
+        const run = !pickTo && events.find(x => x.category === '뮤지컬' && x.endDate && x.date <= r.date && r.date <= x.endDate && (w => w.length >= 2 && t0.includes(w))(sp0(x.title.replace(/^.*?(뮤지컬|연극)\s*/, ''))));
         if (run) {
           const t = (line0(r, '시간').match(/^\d{1,2}:\d{2}/) || [''])[0].padStart(5, '0').replace(/^0{5}$/, '');
           (run.fanCasts = run.fanCasts || []).push({ d: r.date, t, by: r.by, at: tsMs(r.time) });
