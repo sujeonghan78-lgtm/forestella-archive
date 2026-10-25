@@ -4456,7 +4456,7 @@
   const spFold = () => boxRead('sb-sp-fold') || {};
   // 셋리 예측한 사람들 (나 포함, 곡 고른 사람만)
   const spAll = id => { const me = myUid(), mine = spGet(id); return [...((data.preds || {})[id] || []).filter(p => p.by !== me).map(p => p.keys), mine].filter(k => k.length); };
-  const spCnt = id => SP_ON() ? spAll(id).length : 0;
+  const spCnt = id => SP_ON() && data.byId.get(id) && spable(data.byId.get(id)) ? spAll(id).length : 0;
   // 곡마다 고른 사람 수 (마감 뒤에만 보여요, 따라 고르지 않게)
   const spPickN = id => { const m = new Map(); spAll(id).forEach(ks => new Set(ks).forEach(k => m.set(k, (m.get(k) || 0) + 1))); return m; };
   function spBlock(e) {
@@ -4467,8 +4467,11 @@
   }
   document.addEventListener('toggle', ev => { const d = ev.target; if (!d.matches || !d.matches('details.sp-fold[data-f]')) return; const f = spFold(); f[d.dataset.f] = d.open ? 1 : 0; boxWrite('sb-sp-fold', f); }, true);
   document.addEventListener('click', ev => { if (ev.target.closest('.sp-fold > summary .help, .sp-fold > summary .help-pop')) ev.preventDefault(); }, true);
+  // 노래하는 일정에만 셋리 예측 (뮤지컬·사인회·전시·팝업 같은 건 빼요)
+  const SP_NO = /사인회|팬싸|영통|전시|팝업|시사회|인터뷰|기자간담회|쇼케이스 ?취재|라이브 ?방송|브이앱|V ?LIVE|위버스|굿즈|생일 ?카페/i;
+  const spable = e => goable(e) && !/뮤지컬/.test(e.category || '') && !SP_NO.test(e.title || '');
   function spBlock0(e) {
-    if (!WAIT_ON() || !SP_ON() || !goable(e)) return '';
+    if (!WAIT_ON() || !SP_ON() || !spable(e)) return '';
     const mine = spGet(e.id), real = spReal(e), locked = spLocked(e);
     if (locked && !mine.length) return '';
     const head = `<h2 class="h3 wi-h">${wi('target')}셋리 예측${help('공연에서 부를 것 같은 곡을 골라요. 셋리가 올라오면 맞힌 곡으로 점수가 나와요. 점수는 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 수)예요.')}</h2>`;
@@ -4522,7 +4525,7 @@
     // 평소엔 D-day + 제목 한 줄, 누르면 펼쳐요 (sb-wait-open 기억)
     const openH = boxRead('sb-wait-open') === 1;
     if (!openH) return `<section class="wait-home"><button type="button" class="wh-mini wh-tg" aria-expanded="false"><b>${ddOf(next)}</b><span>${esc(next.title)}</span>${n >= 2 ? `<em class="wh-n" aria-label="숲별 ${n}명이 같이 기다려요"><span class="go-av" aria-hidden="true">${'<i></i>'.repeat(Math.min(n, 3))}</span>${n.toLocaleString()}</em>` : ''}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></section>`;
-    return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot">${SP_ON() ? `<a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a>` : ''}<button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}${spCnt(next.id) >= 2 ? `<p class="tk-spn">${wi('target')}셋리 예측 ${spCnt(next.id).toLocaleString()}명 참여</p>` : ''}`, '#/wait')}</section>`;
+    return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot">${SP_ON() && spable(next) ? `<a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a>` : ''}<button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}${spCnt(next.id) >= 2 ? `<p class="tk-spn">${wi('target')}셋리 예측 ${spCnt(next.id).toLocaleString()}명 참여</p>` : ''}`, '#/wait')}</section>`;
   }
   function waitView() {
     if (!WAIT_ON()) return '<p class="empty">준비 중인 화면이에요. <a href="#/more">더보기로 ›</a></p>';
@@ -4532,7 +4535,7 @@
     const others = data.events.filter(e => e.date >= t && e.date <= until && goable(e) && !goHas(e.id)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 60);
     const past = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && spLocked(e) && spReal(e).length).sort((a, b) => b.date.localeCompare(a.date));
     const card = e => { const n = goN(e.id); return `<article class="wait-card">${tkCard(e, `${tkHead(e)}<button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="true" aria-label="갈 거예요 취소">${wi('check')}</button>
-      ${SP_ON() ? `<a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b>${spCnt(e.id) >= 2 ? `<small class="tk-spn2">${spCnt(e.id).toLocaleString()}명 참여</small>` : ''}<span class="tk-more">›</span></a>` : ''}
+      ${SP_ON() && spable(e) ? `<a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b>${spCnt(e.id) >= 2 ? `<small class="tk-spn2">${spCnt(e.id).toLocaleString()}명 참여</small>` : ''}<span class="tk-more">›</span></a>` : ''}
       <button type="button" class="tk-line rd-open" data-id="${esc(e.id)}">${wi('bag')}준비물 <b>${rdDone(e.id).length}/${rdItems(e.id).length}</b>${rdBar(e.id)}<span class="tk-more">›</span></button>
       ${goTogether(n)}`)}</article>`; };
     let lastM = '';
