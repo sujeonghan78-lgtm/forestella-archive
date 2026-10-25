@@ -585,9 +585,31 @@
       ${body}`;
   }
 
+  // ---------- 숲별 이야기: 숲별들이 남긴 TMI·가사·떼창을 최신순으로 (새 글 수는 이 폰에서 마지막으로 본 뒤로) ----------
+  const STORY_SEEN = 'sb-story-seen';
+  const STORY_KINDS = [['', '전체'], ['TMI', '💡 TMI'], ['가사', '💬 가사'], ['떼창', '📣 떼창']];
+  const storySeen = () => { const v = Number(boxRead(STORY_SEEN)); return v > 0 ? v : Date.now() - 3 * 864e5; };
+  const storyAll = () => (data.lyrics || []).filter(l => noteWhere(l));
+  const storyUnread = () => { const seen = storySeen(), uid = myUid(); return storyAll().filter(l => l.at > seen && l.first !== uid); };
+  function storyView() {
+    const qs = new URLSearchParams(location.hash.split('?')[1] || ''), k = qs.get('k') || '', o = qs.get('o') || '';
+    const fresh = new Set(storyUnread().map(l => l.id));
+    boxWrite(STORY_SEEN, Date.now());
+    const all = storyAll(), list = all.filter(l => !k || l.kind === k).sort((a, b) => o === 'heart' ? b.n - a.n || b.at - a.at : b.at - a.at);
+    const ago = t => { const d = Math.floor((Date.now() - t) / 864e5); return d < 1 ? '오늘' : d < 30 ? `${d}일 전` : fmtDate(new Date(t).toISOString().slice(0, 10), false); };
+    const href = (kk, oo) => '#/story' + ((kk || oo) ? '?' + [kk && 'k=' + encodeURIComponent(kk), oo && 'o=' + oo].filter(Boolean).join('&') : '');
+    const row = l => `<a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${fresh.has(l.id) ? '<b class="news-cnt">NEW</b> ' : ''}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${ago(l.at)}${l.n > 1 ? ` · ♥ ${l.n}` : ''}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>`;
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">숲별 이야기${help('숲별들이 곡·콘서트·일정에 남긴 💡 TMI, 💬 좋아하는 가사, 📣 떼창 구간이 새로 올라온 순서로 모여요. 누르면 그 화면으로 가서 ♥나 🚩를 누를 수 있어요.')}</h1>
+      <div class="box-tabs story-tabs">${STORY_KINDS.map(([v, l]) => `<a class="box-tab${v === k ? ' on' : ''}" href="${href(v, o)}">${l}</a>`).join('')}</div>
+      <div class="view-row"><p class="sub">${list.length.toLocaleString()}개${fresh.size ? ` · 새 글 ${fresh.size}` : ''}</p><span class="story-sort"><a class="${o ? '' : 'on'}" href="${href(k, '')}">최신순</a> · <a class="${o ? 'on' : ''}" href="${href(k, 'heart')}">♥ 많은 순</a></span></div>
+      ${list.length ? moreList(list.map(row), 30) : '<p class="empty">아직 올라온 이야기가 없어요. 곡·콘서트 화면에서 처음으로 남겨 보세요.</p>'}`;
+  }
   function bindHome() {
     const nn = newsUnread().length, nb = document.getElementById('news-home');
-    if (nb && nn) nb.innerHTML = `<a class="op-home news-home" href="#/news">🆕 새 소식 <b>${nn}</b>건 <span>보러가기 ›</span></a>`;
+    const sn = storyUnread().length;
+    if (nb && (nn || sn)) nb.innerHTML = (nn ? `<a class="op-home news-home" href="#/news">🆕 새 소식 <b>${nn}</b>건 <span>보러가기 ›</span></a>` : '') + (sn ? `<a class="op-home news-home" href="#/story">💬 숲별 이야기 새 글 <b>${sn}</b>건 <span>보러가기 ›</span></a>` : '');
     // 관리자 기기에서만: 아직 안 읽은 의견 수
     if (isAdmin()) loadOpinions().then(() => {
       const box = document.getElementById('op-home'), n = opUnread().length;
@@ -3913,6 +3935,7 @@
     };
     const menu = `
         <button type="button" class="lang-row lang-keep" onclick="SB_LANG.open()">🌐 언어 · Language · 言語 <b>${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</b></button>
+        ${item('#/story', '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>', '숲별 이야기', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : 'TMI · 가사 · 떼창')(storyUnread().length))}
         ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : '새로 생긴 기능')(newsUnread().length))}
         ${item('#/fan', '<path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/>', '팬 제보 현황', (n => n ? `확인 필요 ${n}` : '일정 · 셋리 · 날짜')((data.fan || []).filter(l => /^(ev|sl|slfix|dt)$/.test(l.k) && data.byId.get(l.id) && fanState(l, data.byId.get(l.id))[0] === 'wait').map(l => l.id + l.k + (l.to || '')).filter((x, i, a) => a.indexOf(x) === i).length))}
         ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
@@ -4345,6 +4368,7 @@
     add: addView,
     opinion: opinionView,
     news: newsView,
+    story: storyView,
     fan: fanView,
     map: mapView,
     placefind: placeFindView,
