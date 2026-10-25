@@ -594,14 +594,14 @@
   const storyToday = l => new Date(l.at).toDateString() === new Date().toDateString();
   const storyTag = (l, fresh) => storyToday(l) ? '<em class="n-dot" aria-label="오늘 올라온 글">N</em> ' : fresh.has(l.id) ? '<em class="nw-badge">NEW</em> ' : '';
   const storySeen = () => { const v = Number(boxRead(STORY_SEEN)); return v > 0 ? v : Date.now() - 3 * 864e5; };
-  const storyAll = () => (data.lyrics || []).filter(l => noteWhere(l));
+  const storyAll = () => (data.lyrics || []).filter(l => l.kind !== 'TMI답글' && noteWhere(l));
   const storyUnread = () => { const seen = storySeen(), uid = myUid(); return storyAll().filter(l => l.at > seen && l.first !== uid); };
   const storyAgo = t => { const d = Math.floor((Date.now() - t) / 864e5); return d < 1 ? '오늘' : d < 30 ? `${d}일 전` : fmtDate(new Date(t).toISOString().slice(0, 10), false); };
   function storyRow(l, fresh) {
     const uid = myUid(), upLocal = new Set([...(boxRead('sb-ly-up') || []), ...(boxRead(CH_SENT) || []), ...(boxRead(TMI_SENT) || [])].map(x => x.id)), rpd = boxRead(RP_SENT) || [];
     const mine = l.first === uid, on = mine || l.who.includes(uid) || upLocal.has(l.id), n = l.n + (upLocal.has(l.id) && !l.who.includes(uid) ? 1 : 0);
     return `<div class="story-row${rpd.includes(l.id) ? ' rp-done' : ''}"><a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${l.n >= STORY_BEST ? '<em class="nw-badge best-badge">BEST</em> ' : ''}${storyTag(l, fresh)}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${storyAgo(l.at)}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>
-        <span class="story-acts"><button type="button" class="bpill st-up${on ? ' on' : ''}" data-id="${esc(l.id)}"${on ? ' disabled' : ''} aria-label="${l.kind === 'TMI' ? '나도 봤어요' : '좋아요'}">♥ ${n}</button>${mine ? '' : rpBtn(l)}</span></div>`;
+        <span class="story-acts"><button type="button" class="bpill st-up${on ? ' on' : ''}" data-id="${esc(l.id)}"${on ? ' disabled' : ''} aria-label="${l.kind === 'TMI' ? '나도 봤어요' : '좋아요'}">♥ ${n}</button>${l.kind === 'TMI' ? `<a class="st-re" href="${noteHref(l)}">💬 ${treCount(l.id) || '답글'}</a>` : ''}${mine ? '' : rpBtn(l)}</span></div>`;
     }
   function storyView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || ''), k = qs.get('k') || '', o = qs.get('o') || '', pg = Math.max(1, parseInt(qs.get('p'), 10) || 1);
@@ -840,7 +840,7 @@
     const xs = [...xset].filter(x => (!p.member || x.m.includes(p.member)) && (!p.year || x.date.startsWith(p.year)) && (!p.from || x.date >= p.from) && (!p.to || x.date <= p.to)).sort((a, b) => b.date.localeCompare(a.date));
     // 팬들이 공유한 가사·떼창·TMI (글에 검색어가 있거나, 찾은 곡에 달린 것)
     const sk = new Set(songs.map(so => so.key));
-    const notes = (data.lyrics || []).filter(l => hit(l.text) || sk.has(l.key) || (l.kind === 'TMI' && sk.has(l.key.slice(2)))).filter(l => noteWhere(l)).sort((a, b) => (hit(b.text) - hit(a.text)) || b.n - a.n || b.at - a.at);
+    const notes = (data.lyrics || []).filter(l => l.kind !== 'TMI답글').filter(l => hit(l.text) || sk.has(l.key) || (l.kind === 'TMI' && sk.has(l.key.slice(2)))).filter(l => noteWhere(l)).sort((a, b) => (hit(b.text) - hit(a.text)) || b.n - a.n || b.at - a.at);
     return { songs, vids, rels, xs, notes };
   }
   // 가사·떼창·TMI가 달린 곳 (곡 키, TMI는 's:곡키' 'e:일정ID' 't:투어ID')
@@ -1689,6 +1689,50 @@
   // 곡('s:곡키')·일정('e:일정ID')·콘서트('t:투어ID')마다 팬이 TMI를 달아요 (종류: TMI 곡키/출처/누가/내용). ♥ '나도 봤어요'가 많은 순.
   const TMI_SENT = 'sb-tmi-sent';
   const tmiOf = key => (data.lyrics || []).filter(l => l.kind === 'TMI' && l.key === key);
+  // TMI 답글: 답글은 한 단계 더(답글의 답글)까지. 방금 단 답글은 반영 전에도 이 폰엔 보여요
+  const treId = (par, t) => window.DATA.slVer(['TMI답글', par, t.replace(/\s+/g, ' ').toLowerCase()]);
+  const treOf = par => {
+    const uid = myUid(), sent = (boxRead(TMI_SENT) || []).filter(x => x.re && x.parent === par && !x.del);
+    const list = (data.lyrics || []).filter(l => l.kind === 'TMI답글' && l.parent === par);
+    sent.filter(x => !x.up && !list.some(l => l.id === x.id)).forEach(x => list.push({ id: x.id, key: x.key, text: x.t, parent: par, n: 1, who: [uid], first: uid, at: x.at, wait: true }));
+    return list.sort((a, b) => a.at - b.at);
+  };
+  const treCount = par => { const l = treOf(par); return l.length + l.reduce((n, x) => n + treOf(x.id).length, 0); };
+  function treBox(l, key, depth = 0) {
+    const uid = myUid(), sent = boxRead(TMI_SENT) || [], ids = new Set(sent.map(x => x.id)), list = treOf(l.id), rpd = boxRead(RP_SENT) || [];
+    const row = r => {
+      const me = r.first === uid || (ids.has(r.id) && !(sent.find(x => x.id === r.id) || {}).up), on = me || r.who.includes(uid) || ids.has(r.id);
+      return `<div class="tre-row${rpd.includes(r.id) ? ' rp-done' : ''}"><div class="ly-line tre-line"><span class="ch-t">↳ ${esc(r.text)}${r.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill tre-up${on ? ' on' : ''}" data-key="${esc(key)}" data-p="${esc(l.id)}" data-t="${esc(r.text)}"${on ? ' disabled' : ''} aria-label="좋아요">♥ ${r.n + (ids.has(r.id) && !r.who.includes(uid) && !r.wait ? 1 : 0)}</button>${me ? `<button type="button" class="link-btn tre-del" data-p="${esc(l.id)}" data-t="${esc(r.text)}" aria-label="지우기">×</button>` : rpBtn(r)}${isAdmin() && !r.wait ? `<button type="button" class="link-btn ly-hide" data-id="${esc(r.id)}">숨기기</button>` : ''}</span></div>${depth < 1 && !r.wait ? treBox(r, key, depth + 1) : ''}</div>`;
+    };
+    const n = depth ? list.length : treCount(l.id);
+    return `<details class="tre-box${depth ? ' tre-sub' : ''}" data-p="${esc(l.id)}"><summary>💬 답글${n ? ` ${n}` : ' 달기'}</summary>${list.map(row).join('')}
+      <div class="tre-form"><input type="text" class="op-in tre-in" maxlength="200" placeholder="${depth ? '답글에 답글 달기' : '답글 달기'}"><button type="button" class="bpill tre-send" data-key="${esc(key)}" data-p="${esc(l.id)}">달기</button></div></details>`;
+  }
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.tre-send, .tre-up, .tre-del');
+    if (!b) return;
+    const by = myUid(), sent = boxRead(TMI_SENT) || [], par = b.dataset.p;
+    if (b.matches('.tre-del')) {
+      const t = b.dataset.t;
+      formPost(`종류: 가사삭제\n번호: ${window.DATA.slVer([by, 'TMI답글', par, t.replace(/\s+/g, ' ').toLowerCase()])}\n누가: ${by}`).catch(() => {});
+      boxWrite(TMI_SENT, sent.map(x => x.id === treId(par, t) ? { ...x, del: true } : x));
+      toast('지웠어요. 5~10분쯤 뒤 모두에게서 빠져요.');
+      const row = b.closest('.tre-row'); if (row) row.remove();
+      return;
+    }
+    const box = b.closest('.tre-box'), inp = box && box.querySelector(':scope > .tre-form .tre-in');
+    const t = b.matches('.tre-up') ? b.dataset.t : (inp ? inp.value : '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (!t) return;
+    if (banned()) { toast(banMsg()); return; }
+    b.disabled = true;
+    formPost(`종류: TMI답글\n곡키: ${b.dataset.key}\n답글: ${par}\n누가: ${by}\n내용: ${t}`).then(() => {
+      boxWrite(TMI_SENT, [...sent.filter(x => x.id !== treId(par, t)), { id: treId(par, t), key: b.dataset.key, parent: par, re: 1, t, at: Date.now(), ...(b.matches('.tre-up') ? { up: 1 } : {}) }].slice(-300));
+      if (b.matches('.tre-up')) { b.classList.add('on'); b.textContent = '♥ ' + (parseInt(b.textContent.replace(/\D/g, ''), 10) + 1); toast('♥ 눌렀어요.'); return; }
+      toast('답글을 달았어요. 5~10분쯤 뒤 모두에게 보여요.');
+      const d = b.closest('.tre-box'), l = { id: par }, depth = d.classList.contains('tre-sub') ? 1 : 0;
+      const tmp = document.createElement('div'); tmp.innerHTML = treBox(l, b.dataset.key, depth); const nb = tmp.firstElementChild; nb.open = true; d.replaceWith(nb);
+    }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
+  });
   const tmiId = (key, t) => window.DATA.slVer(['TMI', key, t.replace(/\s+/g, ' ').toLowerCase()]);
   function tmiBox(key, title) {
     const uid = myUid(), sent = boxRead(TMI_SENT) || [], ids = new Set(sent.map(x => x.id)), rpd = boxRead(RP_SENT) || [];
@@ -1697,7 +1741,7 @@
     const srcHtml = u => !u ? '' : /^https?:\/\//.test(u) ? `<a class="tmi-src" href="${esc(u)}" target="_blank" rel="noopener">출처 ↗</a>` : `<span class="tmi-src">출처: ${esc(u)}</span>`;
     const row = l => {
       const me = l.who.includes(uid) || ids.has(l.id);
-      return `<div class="ly-line${rpd.includes(l.id) ? ' rp-done' : ''}"><span class="ch-t">${esc(l.text)} ${srcHtml(l.src)}${l.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill tmi-up${me ? ' on' : ''}" data-key="${esc(key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''} aria-label="나도 봤어요">♥ ${l.n + (ids.has(l.id) && !l.who.includes(uid) && !l.wait ? 1 : 0)}</button>${me ? `<button type="button" class="link-btn tmi-del" data-key="${esc(key)}" data-t="${esc(l.text)}" aria-label="지우기">×</button>` : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>`;
+      return `<div class="ly-line${rpd.includes(l.id) ? ' rp-done' : ''}"><span class="ch-t">${esc(l.text)} ${srcHtml(l.src)}${l.wait ? ' <small class="src-note">반영 중</small>' : ''}</span><span class="ly-side"><button type="button" class="bpill tmi-up${me ? ' on' : ''}" data-key="${esc(key)}" data-t="${esc(l.text)}"${me ? ' disabled' : ''} aria-label="나도 봤어요">♥ ${l.n + (ids.has(l.id) && !l.who.includes(uid) && !l.wait ? 1 : 0)}</button>${me ? `<button type="button" class="link-btn tmi-del" data-key="${esc(key)}" data-t="${esc(l.text)}" aria-label="지우기">×</button>` : rpBtn(l)}${isAdmin() ? `<button type="button" class="link-btn ly-hide" data-id="${esc(l.id)}">숨기기</button>` : ''}</span></div>${l.wait ? '' : treBox(l, key)}`;
     };
     return `<section class="tmi-box" data-key="${esc(key)}" data-title="${esc(title)}"><div class="block-head"><h2 class="h3">💡 TMI${list.length ? ` <span class="song-count">${list.length}</span>` : ''}</h2></div>
       ${list.length ? list.map(row).join('') : '<p class="src-note">아직 TMI가 없어요. 알고 있는 뒷이야기를 남겨 주세요.</p>'}
@@ -2159,8 +2203,15 @@
     // 내가 ♥ 누른 남의 글: 시트에서 내 번호가 든 글(첫 글쓴이가 내가 아닌 것) + 이 폰에 남긴 ♥ 기록
     const uid = myUid(), othersUp = new Map((data.lyrics || []).filter(l => l.who.includes(uid) && l.first && l.first !== uid).map(l => [l.id, l]));
     const ch = (boxRead(CH_SENT) || []).filter(x => !x.del && !x.up && !othersUp.has(x.id) && data.songs.get(x.key)).sort((a, b) => b.at - a.at);
-    const tm = (boxRead('sb-tmi-sent') || []).filter(x => !x.del && !x.up && !othersUp.has(x.id)).sort((a, b) => b.at - a.at);
-    const ups = new Map([...othersUp.values()].map(l => [l.id, { kind: l.kind, key: l.key, t: l.text, at: l.at }]));
+    const tmLocal = (boxRead('sb-tmi-sent') || []).filter(x => !x.del && !x.up && !othersUp.has(x.id));
+    // 다른 폰에서 쓴 내 TMI·답글도 (시트에서 첫 글쓴이가 나인 것)
+    const tm = [...tmLocal, ...(data.lyrics || []).filter(l => l.first === uid && /^TMI/.test(l.kind) && !tmLocal.some(x => x.id === l.id)).map(l => ({ id: l.id, key: l.key, t: l.text, at: l.at, re: l.kind === 'TMI답글' }))].sort((a, b) => b.at - a.at);
+    const ups = new Map([...othersUp.values()].map(l => [l.id, { kind: l.kind === 'TMI답글' ? 'TMI' : l.kind, key: l.key, t: l.text, at: l.at }]));
+    // 내 TMI(와 내 답글)에 남이 단 새 답글: 보관함 '내 글'에 빨간 N
+    const myIds = new Set([...tm.map(x => x.id), ...(data.lyrics || []).filter(l => l.first === uid && /^TMI/.test(l.kind)).map(l => l.id)]);
+    const reSeen = Number(boxRead('sb-re-seen')) || 0;
+    const newRe = (data.lyrics || []).filter(l => l.kind === 'TMI답글' && myIds.has(l.parent) && l.first !== uid && l.at > reSeen);
+    const reBy = new Set(newRe.map(l => l.parent));
     (boxRead('sb-ly-up') || []).forEach(x => ups.has(x.id) || ups.set(x.id, { kind: '가사', key: x.key, t: x.t, at: x.at }));
     (boxRead(CH_SENT) || []).filter(x => x.up && !x.del).forEach(x => ups.has(x.id) || ups.set(x.id, { kind: '떼창', key: x.key, t: x.t, at: x.at }));
     (boxRead('sb-tmi-sent') || []).filter(x => x.up && !x.del).forEach(x => ups.has(x.id) || ups.set(x.id, { kind: 'TMI', key: x.key, t: x.t, at: x.at }));
@@ -2169,11 +2220,11 @@
     const upRow = x => { const tmi = x.kind === 'TMI'; return `<a class="box-ev" href="${tmi ? tmHref(x.key) : '#/song/' + encodeURIComponent(x.key)}"><span>${esc(tmi ? tmWhere(x.key) : data.songs.get(x.key).name)}</span><b>${UP_ICON[x.kind] || ''} ${esc(x.t)}</b></a>`; };
     const lyRow = ([so, m]) => `<a class="box-ev" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(so.name)}</span><b>“${esc(m.t)}”</b></a>`;
     const chRow = x => `<a class="box-ev" href="#/song/${encodeURIComponent(x.key)}"><span>${esc(data.songs.get(x.key).name)}</span><b>📣 ${esc(x.t)}</b></a>`;
-    const tmRow = x => `<a class="box-ev" href="${tmHref(x.key)}"><span>${esc(tmWhere(x.key))}</span><b>${esc(x.t)}</b></a>`;
+    const tmRow = x => `<a class="box-ev" href="${tmHref(x.key)}"><span>${reBy.has(x.id) ? '<em class="n-dot" aria-label="새 답글">N</em> ' : ''}${esc(tmWhere(x.key))}</span><b>${x.re ? '↳ ' : ''}${esc(x.t)}</b></a>`;
     const groups = [
       ['ev', '🎫 일정', [['w', '🎫 직관', went, 'ev'], ['b', '📺 시청', seen, 'ev'], ['e', '♥ 좋아요', liked, 'ev']]],
       ['song', '🎵 곡', [['s', '♥ 하트', songs, 'chip'], ...SONG_PICKS.map(([k, l]) => [k, l, pickList(k), 'chip']), ['h', '🎧 들은 곡', heardList, 'chip'], ...folders().map(f => ['f-' + f.id, '📁 ' + f.name, folderSongs(f.id), 'chip', true])]],
-      ['my', '✍️ 내 글', [['l', '💬 가사', ly, lyRow], ['c', '📣 떼창', ch, chRow], ['tmi', '💡 TMI', tm, tmRow], ['up', '♥ 누른 글', upList, upRow]]],
+      ['my', '✍️ 내 글' + (newRe.length ? ' <em class="n-dot">N</em>' : ''), [['l', '💬 가사', ly, lyRow], ['c', '📣 떼창', ch, chRow], ['tmi', '💡 TMI' + (newRe.length ? ' <em class="n-dot">N</em>' : ''), tm, tmRow], ['up', '♥ 누른 글', upList, upRow]]],
     ].map(([k, l, subs]) => [k, l, subs.filter(x => x[2].length || x[4])]).filter(g => g[2].length);
     // 예전 주소(#/box?t=w 등)는 그 칩이 든 탭으로
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -2195,6 +2246,7 @@
     const fdTools = t === 'song' ? `<div class="fd-tools">${fdCur ? `<button type="button" class="link-btn fd-ren" data-id="${esc(fdCur.id)}">이름 바꾸기</button><button type="button" class="link-btn fd-del" data-id="${esc(fdCur.id)}">폴더 지우기</button>` : ''}<button type="button" class="link-btn fd-add">＋ 새 폴더</button></div>` : '';
     const html = fdTools + (fdCur && !list.length ? '<p class="empty">아직 빈 폴더예요. 곡 화면의 📁 버튼으로 곡을 담아 보세요.</p>' : '') + (sc[3] === 'ev' ? list.map(evRow).join('') : sc[3] === 'chip' ? chipsOf(list) + (SONG_PICKS.some(([k]) => k === sub) ? '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>' : '') : list.map(sc[3]).join(''));
     const cur = { n: list.length, html };
+    if (t === 'my' && sub === 'tmi' && newRe.length) boxWrite('sb-re-seen', Math.max(...newRe.map(l => l.at)));
     const subBar = g[2].length > 1 || yearBar ? `<div class="box-subrow"><div class="box-subs">${g[2].length > 1 ? g[2].map(x => `<a class="box-sub${x[0] === sub ? ' on' : ''}" href="${link(t, x[0])}">${x[1]} <small>${x[2].length}</small></a>`).join('') : ''}</div>${yearBar}</div>` : '';
     // 검색용: 일정·곡·내 글을 한 목록에
     const findAttr = t => `data-n="${esc(norm(t))}" data-c="${esc(chosung(t))}"`;

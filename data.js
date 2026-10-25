@@ -208,7 +208,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== '신고' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -576,14 +576,16 @@
       allRep.forEach(r => {
         if (r.type === '가사삭제' && r.by) lyDel.add(line0(r, '번호') + '|' + r.by);
         // 떼창 구간(종류: 떼창)도 같은 방식이에요 (번호 앞에 '떼창'이 붙어요)
-        if ((r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI') || !r.by) return;
+        if ((r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글') || !r.by) return;
+        // TMI 답글(종류: TMI답글 곡키/답글/누가/내용): '답글'은 다는 글의 번호(TMI 또는 답글), 번호는 [TMI답글, 답글 번호, 글]
+        const re = r.type === 'TMI답글', par = re ? line0(r, '답글') : '';
         const ch = r.type !== '가사', key = line0(r, '곡키'), text = (r.message || '').replace(/[ \t]+/g, ' ').trim().slice(0, ch ? 300 : 120);
-        if (!key || !text) return;
-        const low = text.replace(/\s+/g, ' ').toLowerCase(), id = slVer(ch ? [r.type, key, low] : [key, low]);
-        if (!lyr.has(id)) lyr.set(id, { id, key, text, kind: r.type, src: '', by: new Map(), at: tsMs(r.time), first: r.by, times: new Map() });
+        if (!key || !text || (re && !par)) return;
+        const low = text.replace(/\s+/g, ' ').toLowerCase(), base = re ? [r.type, par, low] : ch ? [r.type, key, low] : [key, low], id = slVer(base);
+        if (!lyr.has(id)) lyr.set(id, { id, key, text, kind: r.type, parent: par, src: '', by: new Map(), at: tsMs(r.time), first: r.by, times: new Map() });
         const L = lyr.get(id);
         if (r.type === 'TMI' && !L.src) L.src = line0(r, '출처').slice(0, 200);
-        L.by.set(r.by, slVer(ch ? [r.by, r.type, key, low] : [r.by, key, low])); L.times.set(r.by, tsMs(r.time));
+        L.by.set(r.by, slVer([r.by, ...base])); L.times.set(r.by, tsMs(r.time));
       });
       lyr.forEach(l => { l.by.forEach((mine, by) => { if (lyDel.has(mine + '|' + by)) l.by.delete(by); }); });
       // 곡 언어 고치기 (종류: 언어수정 곡키/언어/누가): 같은 언어를 3명(올린 사람+2명) 보내면 바뀌어요
@@ -622,7 +624,7 @@
       // 막힌 동안 쓴 글은 그 사람 몫을 빼요
       lyr.forEach(l => l.by.forEach((_, u) => { if (bansAll[u] && (l.times.get(u) || 0) < bansAll[u] && (l.times.get(u) || 0) > bansAll[u] - 31 * 864e5 && u !== l.first) l.by.delete(u); }));
       flaggedAll = flagged.sort((a, b) => b.at - a.at);
-      lyricsAll = [...lyr.values()].filter(l => l.by.size && !gone.has('ly' + l.id) && !l.autoHidden && !(bansAll[l.first] && l.at > bansAll[l.first] - 31 * 864e5 && l.at < bansAll[l.first] && strikes.get(l.first) && l.at > strikes.get(l.first).last)).map(l => ({ id: l.id, key: l.key, kind: l.kind, text: l.text, src: l.src, n: l.by.size, who: [...l.by.keys()], first: l.first, at: l.at }));
+      lyricsAll = [...lyr.values()].filter(l => l.by.size && !gone.has('ly' + l.id) && !l.autoHidden && !(bansAll[l.first] && l.at > bansAll[l.first] - 31 * 864e5 && l.at < bansAll[l.first] && strikes.get(l.first) && l.at > strikes.get(l.first).last)).map(l => ({ id: l.id, key: l.key, kind: l.kind, text: l.text, src: l.src, n: l.by.size, who: [...l.by.keys()], first: l.first, parent: l.parent || '', at: l.at }));
       // 날짜만 있는 회차는 같은 날 시간 있는 회차가 들어오면 빼요 (겹쳐 보이지 않게)
       events.forEach(e => { if (e.casts) e.casts = e.casts.filter(c => c.t || !e.casts.some(x => x !== c && x.d === c.d && x.t)); });
       events.forEach(e => e.casts && e.casts.sort((a, b) => (a.d + a.t).localeCompare(b.d + b.t)));

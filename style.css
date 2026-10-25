@@ -1527,3 +1527,13 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .pager b { background: #1F5E46; color: #fff; }
 .pager span { color: var(--muted); padding: 0 2px; }
 .n-dot { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #E5484D; color: #fff; font-size: 10px; font-weight: 800; font-style: normal; vertical-align: 1px; margin-right: 2px; }
+.tre-box { margin: 2px 0 8px 14px; font-size: 13px; }
+.tre-box > summary { cursor: pointer; color: var(--muted); font-size: 12px; list-style: none; padding: 2px 0; }
+.tre-box > summary::-webkit-details-marker { display: none; }
+.tre-line { padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.tre-line .ch-t { font-size: 13px; }
+.tre-sub { margin-left: 18px; }
+.tre-form { display: flex; gap: 6px; margin: 6px 0 2px; }
+.tre-form .tre-in { flex: 1; min-width: 0; height: 34px; padding: 0 10px; font-size: 13px; }
+.tre-form .bpill { height: 34px; }
+.st-re { font-size: 12px; color: var(--muted); text-decoration: none; }
