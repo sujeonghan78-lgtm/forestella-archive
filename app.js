@@ -601,8 +601,28 @@
     const uid = myUid(), upLocal = new Set([...(boxRead('sb-ly-up') || []), ...(boxRead(CH_SENT) || []), ...(boxRead(TMI_SENT) || [])].map(x => x.id)), rpd = boxRead(RP_SENT) || [];
     const mine = l.first === uid, on = mine || l.who.includes(uid) || upLocal.has(l.id), n = l.n + (upLocal.has(l.id) && !l.who.includes(uid) ? 1 : 0);
     return `<div class="story-row${rpd.includes(l.id) ? ' rp-done' : ''}"><a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${l.n >= STORY_BEST ? '<em class="nw-badge best-badge">BEST</em> ' : ''}${storyTag(l, fresh)}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${storyAgo(l.at)}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>
-        <span class="story-acts"><button type="button" class="bpill st-up${on ? ' on' : ''}" data-id="${esc(l.id)}"${on ? ' disabled' : ''} aria-label="${l.kind === 'TMI' ? '나도 봤어요' : '좋아요'}">♥ ${n}</button>${l.kind === 'TMI' ? `<a class="st-re" href="${noteHref(l)}">💬 ${treCount(l.id) || '답글'}</a>` : ''}${mine ? '' : rpBtn(l)}</span></div>`;
+        <span class="story-acts"><button type="button" class="bpill st-up${on ? ' on' : ''}" data-id="${esc(l.id)}"${on ? ' disabled' : ''} aria-label="${l.kind === 'TMI' ? '나도 봤어요' : '좋아요'}">♥ ${n}</button>${l.kind === 'TMI' ? `<a class="st-re" href="${noteHref(l)}">💬 ${treCount(l.id) || '답글'}</a>` : ''}${trBtn(l.text)}${mine ? '' : rpBtn(l)}</span></div>`;
     }
+  // 번역 보기: 사이트 언어가 한국어가 아니거나, 글이 한국어가 아니면 버튼이 보여요. 누르면 그 자리에서 바로 번역돼요.
+  const trTo = () => { const g = (window.SB_LANG && SB_LANG.lang) || 'ko'; return g; };
+  const trNeed = t => { const h = (t.match(/[가-힣]/g) || []).length; return trTo() !== 'ko' ? h > 0 : h < t.replace(/\s/g, '').length * 0.3; };
+  const trBtn = t => trNeed(t) ? `<button type="button" class="st-tr">🌐 번역 보기</button>` : '';
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.st-tr');
+    if (!b) return;
+    const body = b.closest('.story-row')?.querySelector('.x-body');
+    if (!body) return;
+    if (body.dataset.orig != null) { body.textContent = body.dataset.orig; delete body.dataset.orig; b.textContent = '🌐 번역 보기'; return; }
+    const orig = body.textContent;
+    b.textContent = '번역 중…'; b.disabled = true;
+    try {
+      const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&tl=' + trTo() + '&q=' + encodeURIComponent(orig));
+      const j = await r.json(), out = (j[0] || []).map(x => x[0]).join('');
+      if (!out) throw 0;
+      body.dataset.orig = orig; body.textContent = out; b.textContent = '원문 보기';
+    } catch (err) { b.textContent = '번역이 안 돼요 · 다시'; }
+    b.disabled = false;
+  });
   function storyView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || ''), k = qs.get('k') || '', o = qs.get('o') || '', pg = Math.max(1, parseInt(qs.get('p'), 10) || 1);
     // 같은 방문 안에서 다시 그려도(자료 새로 받음·쪽 넘김) NEW가 그대로 보이게, 들어온 때의 기준을 1분 동안 써요

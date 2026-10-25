@@ -54,7 +54,7 @@
     // 보관함
     '좋아요 · 직관 ›': ['Likes · Attended ›', 'いいね・現場 ›'], '번 직관': ['shows attended', '回現場'], '곡 들음': ['songs heard', '曲聴いた'], '많이 간 곳': ['Most visited', 'よく行った所'],
     // 의견
-    '정보 수정': ['Fix info', '情報修正'], '오류 신고': ['Bug report', 'エラー報告'], '기능 요청': ['Feature request', '機能リクエスト'], '자유·응원': ['Chat · Cheers', 'フリー・応援'], '답글': ['Reply', '返信'], '답글 달기': ['Reply', '返信する'],
+    '정보 수정': ['Fix info', '情報修正'], '오류 신고': ['Bug report', 'エラー報告'], '기능 요청': ['Feature request', '機能リクエスト'], '자유·응원': ['Chat · Cheers', 'フリー・応援'], '답글': ['Reply', '返信'], '답글 달기': ['Reply', '返信する'], '🌐 번역 보기': ['🌐 Translate', '🌐 翻訳する'], '원문 보기': ['See original', '原文を見る'], '번역 중…': ['Translating…', '翻訳中…'], '번역이 안 돼요 · 다시': ['Failed · Retry', '失敗・再試行'],
     // 더보기 설명
     '기록은 이렇게 모았어요': ['How we collect records', '記録の集め方'], '일정은 공식 팬카페 캘린더(2021년 7월 이전은 나무위키·방송 영상), 곡은 영상으로 확인된 것만 적었어요. 빠지거나 틀린 게 있으면 알려주세요.': ['Schedules come from the official fan cafe calendar (before July 2021: Namuwiki and broadcast videos). Songs are listed only when confirmed by video. Let us know if anything is missing or wrong.', 'スケジュールは公式ファンカフェのカレンダー（2021年7月以前はナムウィキ・放送映像）から、曲は映像で確認できたものだけを載せています。抜けや間違いがあれば教えてください。'],
     '빠진 일정 알려주기': ['Tell us a missing schedule', '抜けた予定を教える'], '남기기 · 모아보기': ['Write · Browse', '書く・見る'], '좋아요 · 직관': ['Likes · Attended', 'いいね・現場'], '내 기록을 카드로': ['Your records as a card', '記録をカードに'],
