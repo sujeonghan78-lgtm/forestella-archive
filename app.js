@@ -1173,7 +1173,7 @@
     return [top, bot].filter(Boolean).join('<br>');
   };
   function songsView() {
-    const st = songState(), f = songF(), sort = st.s || 'name';
+    const st = songState(), f = songF(), sort = st.s || 'heart';
     songBack = location.hash || '#/songs';
     songHeard = new Set(boxStats().heardList.map(([so]) => so.key));
     const list = [...data.songs.values()].filter(so => songPass(so, st)).sort((a, b) =>
@@ -1222,7 +1222,7 @@
       w.querySelector('.yf-back').onclick = () => { w.hidden = true; };
       w.querySelector('.yf-ok').onclick = () => { boxWrite('sb-song-show', [...w.querySelectorAll('.show-opt input:checked')].map(x => x.value)); w.hidden = true; renderBase('songs'); };
     };
-    if (ss) ss.onchange = () => { location.hash = fLink('#/songs', { ...st, s: ss.value === 'name' ? '' : ss.value }); };
+    if (ss) ss.onchange = () => { location.hash = fLink('#/songs', { ...st, s: ss.value === 'heart' ? '' : ss.value }); };
     // 곡 이름 찾기: 다시 그리지 않고 목록에서 숨기기만 해요 (입력 중 자판이 닫히지 않게)
     const q = document.getElementById('song-q');
     if (q) q.oninput = () => {
@@ -4950,7 +4950,13 @@
   const addNear = date => data.events.filter(e => !e.ytOnly && Math.abs(new Date(e.date) - new Date(date)) <= 864e5).slice(0, 8);
   function addCheck(c) {
     const v = addRead(c), box = c.querySelector('.a-dup');
+    // 뮤지컬 공연 기간 안이면: 새로 만들지 말고 그 뮤지컬 화면의 '캐스팅 회차'에서 추가하라고 알려요
+    const sp0 = x => (x || '').replace(/\[[^\]]*\]|[\s\-–·:：,.()<>'"!~]+/g, '').toLowerCase();
+    const run = v.date && data.events.find(e => e.category === '뮤지컬' && e.endDate && e.date <= v.date && v.date <= e.endDate && (v.cat === '뮤지컬' || (w => w.length >= 2 && sp0(v.title).includes(w))(sp0(e.title.replace(/^.*?(뮤지컬|연극)\s*/, '')))));
+    const runHtml = run ? `<span class="a-run">🎭 <b>이미 있는 뮤지컬이에요</b> · ${esc(run.title)} (${run.date.slice(2).replace(/-/g, '.')}~${run.endDate.slice(2).replace(/-/g, '.')})<br>공연 하루하루는 새 일정 대신 그 뮤지컬 화면의 <b>'캐스팅 회차'</b>에서 추가하거나 맞는지 확인해 주세요.<a class="a-run-go" href="#/e/${esc(run.id)}">캐스팅 회차 보러 가기 ›</a></span>` : '';
     const near = v.date ? addNear(v.date) : [];
+    c.dataset.run = run ? run.id : '';
+    if (run) { if (box.dataset.h !== runHtml) { box.innerHTML = runHtml; box.dataset.h = runHtml; } delete c.dataset.merge; delete c.dataset.pick; c.classList.remove('merging'); return; }
     if (!near.length) { box.innerHTML = ''; box.dataset.h = ''; delete c.dataset.merge; delete c.dataset.pick; c.classList.remove('merging'); return; }
     if (c.dataset.merge && !near.some(e => e.id === c.dataset.merge)) delete c.dataset.merge;
     const m = c.dataset.merge || '', pick = c.dataset.pick || '';
@@ -5035,7 +5041,7 @@
       const merging = v => v.pick === 'merge' && v.merge;
       const bad = items.findIndex(v => !v.date || (!v.title && !merging(v)));
       if (bad >= 0) { msg.textContent = `${bad + 1}번째 칸에 날짜와 일정 이름을 적어 주세요.`; cards[bad].scrollIntoView({ block: 'center' }); return; }
-      const undecided = items.findIndex(v => v.date && addNear(v.date).length && !v.pick);
+      const undecided = items.findIndex((v, i) => v.date && addNear(v.date).length && !v.pick && !(cards[i] && cards[i].dataset.run));
       if (undecided >= 0) { msg.textContent = `${undecided + 1}번째 칸: 이날 이미 있는 일정에 붙일지, 새로 등록할지 골라 주세요.`; cards[undecided].scrollIntoView({ block: 'center' }); return; }
       const f = window.CONFIG.form;
       b.disabled = true;
