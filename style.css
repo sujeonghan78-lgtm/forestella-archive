@@ -1516,3 +1516,6 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .story-row.rp-done { opacity: .5; }
 .nw-badge { display: inline-block; position: static; padding: 1px 6px; margin-right: 4px; border-radius: 6px; background: #FF6B4A; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .3px; vertical-align: 1px; }
 .news-cnt { display: inline-block; padding: 1px 7px; border-radius: 6px; background: #FF6B4A; color: #fff !important; font-size: 11px; font-weight: 800; }
+.story-mini { flex-direction: column; gap: 3px; align-items: flex-start; }
+.story-mini b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nw-badge { font-style: normal; }

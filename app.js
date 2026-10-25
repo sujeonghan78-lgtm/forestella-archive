@@ -601,7 +601,7 @@
     const uid = myUid(), upLocal = new Set([...(boxRead('sb-ly-up') || []), ...(boxRead(CH_SENT) || []), ...(boxRead(TMI_SENT) || [])].map(x => x.id)), rpd = boxRead(RP_SENT) || [];
     const row = l => {
       const mine = l.first === uid, on = mine || l.who.includes(uid) || upLocal.has(l.id), n = l.n + (upLocal.has(l.id) && !l.who.includes(uid) ? 1 : 0);
-      return `<div class="story-row${rpd.includes(l.id) ? ' rp-done' : ''}"><a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${fresh.has(l.id) ? '<b class="nw-badge">NEW</b> ' : ''}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${ago(l.at)}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>
+      return `<div class="story-row${rpd.includes(l.id) ? ' rp-done' : ''}"><a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${fresh.has(l.id) ? '<em class="nw-badge">NEW</em> ' : ''}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${ago(l.at)}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>
         <span class="story-acts"><button type="button" class="bpill st-up${on ? ' on' : ''}" data-id="${esc(l.id)}"${on ? ' disabled' : ''} aria-label="${l.kind === 'TMI' ? '나도 봤어요' : '좋아요'}">♥ ${n}</button>${mine ? '' : rpBtn(l)}</span></div>`;
     };
     return `
@@ -4206,6 +4206,7 @@
     ['pins', '자주 쓰는 메뉴', () => { const g = pinsGot(); return `<section class="block pin-box home-pins"><div class="pin-h"><b>자주 쓰는 메뉴</b><a class="link-btn" href="#/more">${g.length ? '바꾸기' : '고르기'}</a></div>${g.length ? pinTiles(g) : '<p class="src-note">더보기에서 ☆를 눌러 메뉴를 골라 주세요.</p>'}</section>`; }, true],
     ['random', '오늘의 랜덤 무대', () => homeRandom()],
     ['members', '멤버별 활동', () => homeMembers()],
+    ['story', '숲별 이야기', () => homeStory()],
     ['wish', '듣고 싶은 곡 TOP 5', () => homeWish()],
     ['videos', '유튜브 새 영상', () => homeVideos()],
     ['shortcuts', '음반 · 콘서트', () => homeShortcuts()],
@@ -4214,6 +4215,13 @@
     ['month', '이달의 기록', () => homeMonth()],
   ];
   // 소취곡: 3명 이상이 듣고 싶어 하는 곡만, 많은 순 5곡
+  // 숲별 이야기 최신 3개 (홈에서 봐도 '본 것'으로 치지 않아요)
+  function homeStory() {
+    const all = storyAll().sort((a, b) => b.at - a.at), fresh = new Set(storyUnread().map(l => l.id));
+    if (!all.length) return '';
+    return `<section class="block home-story"><div class="block-head"><h2 class="h2">💬 숲별 이야기${fresh.size ? ` <b class="news-cnt">NEW ${fresh.size}</b>` : ''}</h2><a class="more" href="#/story">모두 보기 ›</a></div>
+      ${all.slice(0, 3).map(l => `<a class="box-ev story-mini" href="${noteHref(l)}"><span>${fresh.has(l.id) ? '<em class="nw-badge">NEW</em>' : ''}${NOTE_ICON[l.kind] || ''} · ${esc(noteWhere(l))}</span><b>${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</b></a>`).join('')}</section>`;
+  }
   function homeWish() {
     const top = [...data.songs.values()].map(so => [so, wishN(so.key)]).filter(x => x[1] >= 3).sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name)).slice(0, 5);
     if (!top.length) return '';
@@ -6285,7 +6293,7 @@
 
   // 가로로 넘기는 영상 줄
   function ytStrip(list, isNew) {
-    return `<div class="yt-strip">${list.map(v => `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><i class="yt-thumb"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()">${isNew && isNew(v) ? '<b class="nw-badge">NEW</b>' : ''}</i><span>${esc(ytTitle(v.title))}</span>${v.bc ? `<small class="yt-src">${esc(v.bc)}</small>` : ''}</a>`).join('')}</div>`;
+    return `<div class="yt-strip">${list.map(v => `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><i class="yt-thumb"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()">${isNew && isNew(v) ? '<em class="nw-badge">NEW</em>' : ''}</i><span>${esc(ytTitle(v.title))}</span>${v.bc ? `<small class="yt-src">${esc(v.bc)}</small>` : ''}</a>`).join('')}</div>`;
   }
   function ytSection(list, title, note) {
     if (!list.length) return '';
