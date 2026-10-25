@@ -604,6 +604,30 @@
     return `<div class="story-row${rpd.includes(l.id) ? ' rp-done' : ''}"><a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${l.n >= STORY_BEST ? '<em class="nw-badge best-badge">BEST</em> ' : ''}${storyTag(l, fresh)}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${storyAgo(l.at)}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>
         <span class="story-acts"><button type="button" class="bpill st-up${on ? ' on' : ''}" data-id="${esc(l.id)}"${on ? ' disabled' : ''} aria-label="${l.kind === 'TMI' ? '나도 봤어요' : '좋아요'}">♥ ${n}</button>${l.kind === 'TMI' ? `<a class="st-re" href="${noteHref(l)}">💬 ${treCount(l.id) || '답글'}</a>` : ''}${trBtn(l.text)}${mine ? '' : rpBtn(l)}</span></div>`;
     }
+  // 화면 꾸미기: 테마 색·글씨 크기 (이 폰에만 기억, sb-deco). 처음 그릴 때 깜빡이지 않게 index.html 머리에서도 한 번 넣어요
+  const DECO_T = [['', '숲', '#1C7A5E'], ['night', '밤하늘', '#1F2286'], ['sakura', '벚꽃', '#AB274A'], ['sea', '바다', '#1E5782'], ['sunset', '노을', '#A35425'], ['lavender', '라벤더', '#6C2397']];
+  const DECO_F = [['s', '작게'], ['', '보통'], ['l', '크게']];
+  const decoGet = () => { try { return JSON.parse(localStorage.getItem('sb-deco') || '{}'); } catch (err) { return {}; } };
+  const decoApply = d => { const h = document.documentElement; if (d.t) h.dataset.theme = d.t; else delete h.dataset.theme; if (d.f) h.dataset.fs = d.f; else delete h.dataset.fs; };
+  window.SB_DECO = {
+    label: () => { const d = decoGet(); return (DECO_T.find(x => x[0] === (d.t || '')) || DECO_T[0])[1] + (d.f ? ' · 글씨 ' + DECO_F.find(x => x[0] === d.f)[1] : ''); },
+    open() {
+      const old = document.getElementById('deco-sheet'); if (old) { old.remove(); return; }
+      const w = document.createElement('div'); w.id = 'deco-sheet'; w.className = 'lang-sheet deco-sheet';
+      const draw = () => { const d = decoGet(); w.innerHTML = `<div class="lang-box" role="dialog" aria-label="화면 꾸미기"><b>🎨 화면 꾸미기</b><p>테마 색</p>
+        <div class="deco-colors">${DECO_T.map(([k, l, c]) => `<button type="button" class="deco-c${(d.t || '') === k ? ' on' : ''}" data-t="${k}"><i style="background:${c}"></i>${l}</button>`).join('')}</div>
+        <p>글씨 크기</p><div class="deco-fs">${DECO_F.map(([k, l]) => `<button type="button" class="${(d.f || '') === k ? 'on' : ''}" data-f="${k}">${l}</button>`).join('')}</div>
+        <p>이 폰에만 기억해요.</p><button type="button" class="lang-x">닫기</button></div>`; };
+      draw();
+      w.onclick = ev => {
+        const t = ev.target.closest('[data-t]'), f = ev.target.closest('[data-f]'), d = decoGet();
+        if (t) d.t = t.dataset.t; else if (f) d.f = f.dataset.f;
+        if (t || f) { try { localStorage.setItem('sb-deco', JSON.stringify(d)); } catch (err) { /* 괜찮아요 */ } decoApply(d); draw(); document.querySelectorAll('.lang-row b').forEach(b => { if (b.parentElement.getAttribute('onclick') === 'SB_DECO.open()') b.textContent = SB_DECO.label(); }); return; }
+        if (ev.target === w || ev.target.closest('.lang-x')) w.remove();
+      };
+      document.body.appendChild(w);
+    },
+  };
   // 번역 보기: 사이트 언어가 한국어가 아니거나, 글이 한국어가 아니면 버튼이 보여요. 누르면 그 자리에서 바로 번역돼요.
   const trTo = () => { const g = (window.SB_LANG && SB_LANG.lang) || 'ko'; return g; };
   const trNeed = t => { const h = (t.match(/[가-힣]/g) || []).length; return trTo() !== 'ko' ? h > 0 : h < t.replace(/\s/g, '').length * 0.3; };
@@ -4047,6 +4071,7 @@
     };
     const menu = `
         <button type="button" class="lang-row lang-keep" onclick="SB_LANG.open()">🌐 언어 · Language · 言語 <b>${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</b></button>
+        <button type="button" class="lang-row" onclick="SB_DECO.open()">🎨 화면 꾸미기 <b>${SB_DECO.label()}</b></button>
         ${item('#/story', '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>', '숲별 이야기', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : 'TMI · 가사 · 떼창')(storyUnread().length))}
         ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : '새로 생긴 기능')(newsUnread().length))}
         ${item('#/fan', '<path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/>', '팬 제보 현황', (n => n ? `확인 필요 ${n}` : '일정 · 셋리 · 날짜')((data.fan || []).filter(l => /^(ev|sl|slfix|dt)$/.test(l.k) && data.byId.get(l.id) && fanState(l, data.byId.get(l.id))[0] === 'wait').map(l => l.id + l.k + (l.to || '')).filter((x, i, a) => a.indexOf(x) === i).length))}
