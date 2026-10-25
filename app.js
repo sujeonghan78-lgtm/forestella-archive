@@ -4478,7 +4478,10 @@
     const t = todayIso(), next = goIds().map(id => data.byId.get(id)).filter(e => e && e.date >= t).sort((a, b) => a.date.localeCompare(b.date))[0];
     if (!next) return '';
     const n = goN(next.id);
-    return `<section class="wait-home">${tkCard(next, `${tkHead(next)}<div class="tk-foot"><a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a><button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}`, '#/wait')}</section>`;
+    // 평소엔 D-day + 제목 한 줄, 누르면 펼쳐요 (sb-wait-open 기억)
+    const openH = boxRead('sb-wait-open') === 1;
+    if (!openH) return `<section class="wait-home"><button type="button" class="wh-mini wh-tg" aria-expanded="false"><b>${ddOf(next)}</b><span>${esc(next.title)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></section>`;
+    return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot"><a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a><button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}`, '#/wait')}</section>`;
   }
   function waitView() {
     if (!WAIT_ON()) return '<p class="empty">준비 중인 화면이에요. <a href="#/more">더보기로 ›</a></p>';
@@ -4540,6 +4543,7 @@
       boxWrite(RD_KEY, r); rdRefresh(b); return;
     }
   });
+  document.addEventListener('click', ev => { const b = ev.target.closest('.wh-tg'); if (!b) return; boxWrite('sb-wait-open', b.getAttribute('aria-expanded') === 'true' ? 0 : 1); const w = b.closest('.wait-home'); if (w) w.outerHTML = homeWait(); });
   document.addEventListener('change', ev => {
     const kp = ev.target.closest('.rd-kp'); if (kp) { const r = rd(); r.keep = kp.checked; boxWrite(RD_KEY, r); return; }
     const c = ev.target.closest('[data-rd]'); if (!c) return;
