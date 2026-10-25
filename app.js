@@ -2574,10 +2574,10 @@
         // 지금 걷고 있는 구간 (바로 전 → 지금)
         if (cut > 0) L.polyline([pt(ml.on[cut - 1]), pt(ml.on[cut])], { color: '#F07B2A', weight: 5, opacity: .95, interactive: false }).addTo(layer);
       }
-      // 공연장 이름은 지도에 안 띄워요 (점을 누르면 아래에 나와요, 수정 님). 다시 켤 땐 false → z >= 12
+      // 공연장 이름은 겹치지 않는 것만 (많이 간 곳 먼저). 점을 누르면 아래에 그곳 일정이 나와요
       const shortP = p => { const t = String(p || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim(); return t.length > 14 ? t.slice(0, 13) + '…' : t; };
       const named = new Set();
-      if (false) {
+      if (z >= 12) {
         const boxes = [];
         [...groups.values()].filter(g => g.key.startsWith('p:')).sort((a, b) => b.items.length - a.items.length).forEach(g => {
           const pt0 = m.latLngToContainerPoint([g.items[0].l.lat, g.items[0].l.lng]), w = shortP(g.items[0].l.place).length * 11 + 10;
