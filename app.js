@@ -4405,7 +4405,8 @@
   const goHas = id => box.s.includes('go:' + id);
   const goIds = () => box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3));
   const goToggle = id => { boxSetS(goHas(id) ? box.s.filter(x => x !== 'go:' + id) : ['go:' + id, ...box.s]); heartSync(); };
-  const goN = id => { const H = data.hearts || {}, mine = H.mine; return Math.max(0, ((H.g || {})[id] || 0) - (mine && (mine.g || []).includes(id) ? 1 : 0) + (goHas(id) ? 1 : 0)); };
+  const goN = id => { const H = data.hearts || {}, mine = H.mine, n = Math.max(0, ((H.g || {})[id] || 0) - (mine && (mine.g || []).includes(id) ? 1 : 0) + (goHas(id) ? 1 : 0)); return GO_DEMO && isAdmin() ? Math.max(n, GO_DEMO) : n; };
+  const GO_DEMO = 3;  // 시험용: 관리자 기기에서만 같이 기다리는 숲별을 최소 3명으로 보여 줘요 (0이면 끔)
   const goable = e => !e.ytOnly && !/생일|유튜브|네이버TV/.test(e.category) && !/발매(\s*\([^)]*\))?\s*$/.test(e.title || '');
   const ddOf = e => { const d = Math.round((new Date(e.date) - new Date(todayIso())) / 864e5); return d === 0 ? 'D-DAY' : d > 0 ? 'D-' + d : 'D+' + -d; };
   const goBtn = e => WAIT_ON() && e.date >= todayIso() && goable(e) ? `<button type="button" class="bpill go-btn" data-go="${esc(e.id)}" aria-pressed="${goHas(e.id)}">${goLab(e.id)}</button>` : '';
