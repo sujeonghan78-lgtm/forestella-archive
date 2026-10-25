@@ -176,7 +176,7 @@
   const HEART_SENT = 'sb-heart-sent';
   // 소취곡(숲별 카드 + 곡 화면 🙏)도 같은 줄에 실어 보내서 '듣고 싶어 하는 팬' 수를 세요
   const wishKeys = () => { try { return pickList('wish').map(so => so.key).slice(0, 200); } catch (e) { return []; } };
-  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn|go|sp):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys(), g: box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3)).slice(0, 100) });
+  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn|go|sp|uid):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys(), g: box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3)).slice(0, 100) });
   let heartTimer = null;
   function heartSync() {
     clearTimeout(heartTimer);
@@ -199,14 +199,28 @@
   };
   const wishTag = key => { const n = wishN(key); return n >= 3 ? `<p class="wish-n">🙏 ${n.toLocaleString()}명이 듣고 싶어 해요</p>` : ''; };
   const heartTag = (k, id) => { const n = heartN(k, id); return n >= 3 ? `<span class="heart-n" title="이 ${k === 's' ? '곡' : '일정'}에 하트를 누른 팬">♥ ${n.toLocaleString()}</span>` : ''; };
+  // 이어 쓰기: 처음 연결한 폰의 숲별 번호(sb-uid)를 보관함에 'uid:번호'로 두고, 복구한 폰도 같은 번호를 써요
+  // (숲별 이야기 ♥·내가 쓴 글·셋리 확인이 다른 폰에서도 내 것으로 보여요). 번호가 바뀌면 한 번 새로 불러요
+  function uidSync() {
+    if (!boxUser) return false;
+    const u = box.s.find(x => x.startsWith('uid:'));
+    if (!u) { boxSetS([...box.s, 'uid:' + myUid()]); return false; }
+    const id = u.slice(4);
+    if (!id || id === myUid()) return false;
+    try { localStorage.setItem('sb-uid', id); } catch (err) { return false; }
+    window.SB_UID = id; boxWrite(HEART_SENT, null);
+    setTimeout(() => location.reload(), 300);
+    return true;
+  }
   // 앱을 열 때 서버 쪽이 더 새로우면 받아와요
   function boxPull() {
     if (!boxUser || !boxApi()) return;
     boxCall('load').then(r => {
       if (!r.ok || !r.data) return;
       const srv = boxClean(r.data);
-      if (srv.t > box.t) { box = boxClean(srv); boxWrite(BOX_KEY, box); if (currentRoute() === 'box') renderBase('box'); }
+      if (srv.t > box.t) { box = boxClean(srv); boxWrite(BOX_KEY, box); if (uidSync()) return; if (currentRoute() === 'box') renderBase('box'); }
       else if (box.t > srv.t) boxPush();
+      uidSync();
     }).catch(() => { /* 오프라인이면 폰 저장만 써요 */ });
   }
 
@@ -3854,6 +3868,7 @@
         }
         box = boxClean(r.data); boxWrite(BOX_KEY, box);
         boxUser.at = Date.now(); boxWrite(BOX_USER, boxUser);
+        if (uidSync()) return false;
         renderBase('box');
       } catch (err) { boxUser = null; msg.textContent = '지금은 연결이 안 돼요. 잠시 뒤 다시 해 주세요.'; }
       return false;
