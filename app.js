@@ -4401,7 +4401,7 @@
   };
   const wi = (k, cls = '') => `<svg class="wi ${cls}" viewBox="0 0 24 24" aria-hidden="true">${WI[k]}</svg>`;
   // 같이 기다리는 숲별: 겹친 동그라미 + 한 문장
-  const goTogether = n => n >= 2 ? `<p class="go-tg"><span class="go-av" aria-hidden="true"><i></i><i></i><i></i></span><span>숲별 <b>${n.toLocaleString()}명</b>이 같이 기다려요</span></p>` : '';
+  const goTogether = n => n >= 2 ? `<p class="go-tg"><span class="go-av" aria-hidden="true">${'<i></i>'.repeat(Math.min(n, 3))}</span><span>숲별 <b>${n.toLocaleString()}명</b>이 같이 기다려요</span></p>` : '';
   const goLab = id => goHas(id) ? wi('check') + '갈 거예요' : wi('go') + '갈 거예요';
   const WAIT_ON = () => isAdmin();  // 시험 중: 관리자 기기에만 보여요
   const goHas = id => box.s.includes('go:' + id);
