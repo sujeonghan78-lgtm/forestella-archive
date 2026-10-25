@@ -4314,7 +4314,7 @@
   function homeWish() {
     const top = [...data.songs.values()].map(so => [so, wishN(so.key)]).filter(x => x[1] >= 3).sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name)).slice(0, 5);
     if (!top.length) return '';
-    return `<section class="block home-wish"><div class="block-head"><h2 class="h2">🙏 듣고 싶은 곡 TOP 5${help('곡 화면이나 숲별 카드에서 🙏 소취곡으로 고른 팬 수예요. 3명 이상 모인 곡만 보여요.')}</h2></div>
+    return `<section class="block home-wish"><div class="block-head"><h2 class="h2">🙏 듣고 싶은 곡 TOP 5${help('곡 화면이나 숲별 카드에서 🙏 소취곡으로 고른 팬 수예요. 3명 이상 모인 곡만 보여요.')}</h2><a class="more" href="#/songs?s=wish">더 보기</a></div>
       ${top.map(([so, n], i) => `<a class="box-ev wish-row" href="#/song/${encodeURIComponent(so.key)}"><span class="wish-rank">${i + 1}</span><b>${esc(so.name)}</b><small>🙏 ${n.toLocaleString()}</small></a>`).join('')}</section>`;
   }
   const HOME_HR = new Set(['videos', 'ago']);
