@@ -360,10 +360,11 @@
           if (!same.videoId && vid) same.videoId = vid;
         }
         fanLog.push({ k: same ? 'join' : 'ev', id: same ? same.id : id, at: tsMs(r.time), by: r.by, title: r.title, songs: r.song ? r.song.split(/\s+\/\s+/).filter(Boolean).length : 0 });
-        if (r.song) rows.push({ type: '셋리스트', title: `[ID ${same ? same.id : id}]`, song: r.song, by: r.by, newEv: true });
+        if (r.song) rows.push({ type: '셋리스트', title: `[ID ${same ? same.id : id}]`, song: r.song, by: r.by, time: r.time, newEv: true });
       });
       const latest = new Map();
-      rows.filter(r => r.type === '셋리스트').forEach(r => {
+      // 새 일정과 같이 온 셋리는 맨 뒤에 붙어 있어서, 올린 시각 순서로 다시 놓아요 (안 그러면 나중에 고친 셋리를 덮어써요)
+      rows.filter(r => r.type === '셋리스트').map((r, i) => [r, i]).sort((a, b) => (tsMs(a[0].time) || 0) - (tsMs(b[0].time) || 0) || a[1] - b[1]).map(x => x[0]).forEach(r => {
         const id = idOf(r);
         const songs = (r.song || '').split(/\s+\/\s+/).map(x => x.trim()).filter(Boolean).slice(0, 60);
         if (id && songs.length) {
