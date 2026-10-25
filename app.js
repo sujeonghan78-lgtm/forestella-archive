@@ -4452,7 +4452,17 @@
   const myScore = e => { if (!SP_ON()) return null; return myScore0(e); };
   const myScore0 = e => { const k = spGet(e.id), real = spReal(e); return k.length && real.length ? { ...spScore(real, k), real: real.length } : null; };
   const scoreBox = sc => `<div class="sp-score wt-score"><div class="sp-ring" style="--p:${sc.score}"><b>${sc.score}</b><small>점</small></div><div class="sp-sum"><b>셋리 예측 ${sc.real}곡 중 ${sc.hit}곡 맞혔어요</b></div></div>`;
+  // 셋리 예측 칸 · 최근 부른 곡은 접을 수 있어요 (sb-sp-fold 기억, 기본 펼침)
+  const spFold = () => boxRead('sb-sp-fold') || {};
   function spBlock(e) {
+    const h = spBlock0(e), f = spFold();
+    if (!h) return '';
+    const i = h.indexOf('<h2 class="h3 wi-h">'), j = h.indexOf('</h2>', i) + 5, k = h.lastIndexOf('</section>');
+    return `${h.slice(0, i)}<details class="sp-fold" data-f="box"${f.box === 0 ? '' : ' open'}><summary>${h.slice(i, j)}<svg class="sp-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>${h.slice(j, k)}</details></section>`;
+  }
+  document.addEventListener('toggle', ev => { const d = ev.target; if (!d.matches || !d.matches('details.sp-fold[data-f]')) return; const f = spFold(); f[d.dataset.f] = d.open ? 1 : 0; boxWrite('sb-sp-fold', f); }, true);
+  document.addEventListener('click', ev => { if (ev.target.closest('.sp-fold > summary .help, .sp-fold > summary .help-pop')) ev.preventDefault(); }, true);
+  function spBlock0(e) {
     if (!WAIT_ON() || !SP_ON() || !goable(e)) return '';
     const mine = spGet(e.id), real = spReal(e), locked = spLocked(e);
     if (locked && !mine.length) return '';
@@ -4475,7 +4485,7 @@
       <p class="sub sp-due">${lt} 마감 · 리허설로 셋리가 알려질 수 있어 시작 5시간 전에 닫혀요</p>
       <div class="sp-mine"><p class="sp-l">내 예측 셋리 <b>${mine.length}곡</b></p>
       ${mine.length ? `<ol class="sp-list">${mine.map((k, i) => `<li><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span><button type="button" class="sp-chip sp-x" data-k="${esc(k)}" aria-label="빼기">×</button></li>`).join('')}</ol>` : '<p class="sp-empty">아래에서 곡을 눌러 넣어요</p>'}</div>
-      ${rec.length ? `<p class="sp-l">최근에 부른 곡</p><div class="sp-chips">${rec.map(so => `<button type="button" class="sp-chip sp-add" data-k="${esc(so.key)}">＋ ${esc(so.name)}</button>`).join('')}</div>` : ''}
+      ${rec.length ? `<details class="sp-fold sp-recf" data-f="rec"${spFold().rec === 0 ? '' : ' open'}><summary><span class="sp-l">최근에 부른 곡</span><svg class="sp-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="sp-chips">${rec.map(so => `<button type="button" class="sp-chip sp-add" data-k="${esc(so.key)}">＋ ${esc(so.name)}</button>`).join('')}</div></details>` : ''}
       <label class="sp-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><input type="search" class="sp-q" placeholder="다른 곡 찾아서 넣기" autocomplete="off"></label><div class="sp-chips sp-found"></div></section>`;
   }
   // 🎒 준비물: 기본 목록 + 내가 더한 것, 일정마다 체크
