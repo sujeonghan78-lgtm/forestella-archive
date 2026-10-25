@@ -1491,3 +1491,6 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .lyc-cv { display: block; width: min(100%, 360px); aspect-ratio: 1; height: auto; margin: 6px auto 8px; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.12); }
 .lyc-opts { flex-wrap: wrap; margin-bottom: 6px; }
 .lyc-acts { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+.note-card .x-text { display: flex; flex-direction: column; -webkit-line-clamp: unset; }
+.note-card .x-date { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.note-card .x-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
