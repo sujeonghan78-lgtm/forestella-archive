@@ -1782,3 +1782,4 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .wt-score { justify-content: center; margin: 4px 0; }
 .wt-score .sp-sum { text-align: left; }
 a.wt-yes { display: flex; align-items: center; text-decoration: none; }
+.sp-sw { margin: 0 0 12px; }

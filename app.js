@@ -4446,10 +4446,12 @@
   const doneAt = e => startAt(e) != null ? startAt(e) + 2 * 36e5 : dayEnd(e);
   const over = e => Date.now() >= doneAt(e);
   const spLocked = e => Date.now() >= (startAt(e) != null ? startAt(e) : dayEnd(e)) || spReal(e).length > 0;
-  const myScore = e => { const k = spGet(e.id), real = spReal(e); return k.length && real.length ? { ...spScore(real, k), real: real.length } : null; };
+  const SP_ON = () => !rd().spOff;  // 셋리 예측 끄기 (기다리는 일정 화면에서)
+  const myScore = e => { if (!SP_ON()) return null; return myScore0(e); };
+  const myScore0 = e => { const k = spGet(e.id), real = spReal(e); return k.length && real.length ? { ...spScore(real, k), real: real.length } : null; };
   const scoreBox = sc => `<div class="sp-score wt-score"><div class="sp-ring" style="--p:${sc.score}"><b>${sc.score}</b><small>점</small></div><div class="sp-sum"><b>셋리 예측 ${sc.real}곡 중 ${sc.hit}곡 맞혔어요</b></div></div>`;
   function spBlock(e) {
-    if (!WAIT_ON() || !goable(e)) return '';
+    if (!WAIT_ON() || !SP_ON() || !goable(e)) return '';
     const mine = spGet(e.id), real = spReal(e), locked = spLocked(e);
     if (locked && !mine.length) return '';
     const head = `<h2 class="h3 wi-h">${wi('target')}셋리 예측${help('공연에서 부를 것 같은 곡을 골라요. 셋리가 올라오면 맞힌 곡으로 점수가 나와요. 점수는 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 수)예요.')}</h2>`;
@@ -4487,7 +4489,7 @@
     const done = mine.filter(e => over(e) && Date.now() < dayEnd(e) + 864e5).sort((a, b) => b.date.localeCompare(a.date))[0];
     if (done) {
       const sc = myScore(done), x = `<button type="button" class="wh-x" data-whx="${esc(done.id)}" aria-label="지우기">×</button>`;
-      const body = sc ? `<a class="tk-btn" href="#/e/${encodeURIComponent(done.id)}?sp=1">셋리 예측 <b>${sc.score}점</b></a>` : spGet(done.id).length ? '<span class="tk-n">셋리가 올라오면 점수가 나와요</span>' : '';
+      const body = sc ? `<a class="tk-btn" href="#/e/${encodeURIComponent(done.id)}?sp=1">셋리 예측 <b>${sc.score}점</b></a>` : SP_ON() && spGet(done.id).length ? '<span class="tk-n">셋리가 올라오면 점수가 나와요</span>' : '';
       return `<section class="wait-home open">${x}${tkCard(done, `${tkHead(done)}<div class="tk-foot">${boxHas('w', done.id) ? '<span class="tk-n">직관 기록했어요</span>' : `<button type="button" class="tk-btn" data-box="w" data-id="${esc(done.id)}" data-label="다녀왔어요" data-ic="">다녀왔어요</button>`}${body}</div>`)}</section>`;
     }
     const next = mine.filter(e => e.date >= t && !over(e)).sort((a, b) => a.date.localeCompare(b.date))[0];
@@ -4496,7 +4498,7 @@
     // 평소엔 D-day + 제목 한 줄, 누르면 펼쳐요 (sb-wait-open 기억)
     const openH = boxRead('sb-wait-open') === 1;
     if (!openH) return `<section class="wait-home"><button type="button" class="wh-mini wh-tg" aria-expanded="false"><b>${ddOf(next)}</b><span>${esc(next.title)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></section>`;
-    return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot"><a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a><button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}`, '#/wait')}</section>`;
+    return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot">${SP_ON() ? `<a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a>` : ''}<button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}`, '#/wait')}</section>`;
   }
   function waitView() {
     if (!WAIT_ON()) return '<p class="empty">준비 중인 화면이에요. <a href="#/more">더보기로 ›</a></p>';
@@ -4506,7 +4508,7 @@
     const others = data.events.filter(e => e.date >= t && e.date <= until && goable(e) && !goHas(e.id)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 60);
     const past = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && spLocked(e) && spReal(e).length).sort((a, b) => b.date.localeCompare(a.date));
     const card = e => { const n = goN(e.id); return `<article class="wait-card">${tkCard(e, `${tkHead(e)}<button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="true" aria-label="갈 거예요 취소">${wi('check')}</button>
-      <a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b><span class="tk-more">›</span></a>
+      ${SP_ON() ? `<a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b><span class="tk-more">›</span></a>` : ''}
       <button type="button" class="tk-line rd-open" data-id="${esc(e.id)}">${wi('bag')}준비물 <b>${rdDone(e.id).length}/${rdItems(e.id).length}</b>${rdBar(e.id)}<span class="tk-more">›</span></button>
       ${goTogether(n)}`)}</article>`; };
     let lastM = '';
@@ -4516,10 +4518,11 @@
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">기다리는 일정${help('갈 거예요를 누른 일정이 모여요. 같이 기다리는 숲별 수는 이름 없이 숫자만 세요.')}</h1>
       <div class="wt-demo"><span>알림창 미리보기</span><button type="button" class="bpill" data-popdemo="today">공연 당일</button><button type="button" class="bpill" data-popdemo="past">다녀오셨어요?</button><button type="button" class="bpill" data-popdemo="score">점수 알림</button></div>
+      <label class="rd-keep sp-sw"><input type="checkbox" class="sp-onoff"${SP_ON() ? ' checked' : ''}> 셋리 예측 쓰기</label>
       ${up.length ? up.map(card).join('') : '<p class="empty">아직 기다리는 일정이 없어요. 아래 다가오는 일정에서 갈 거예요를 눌러 보세요.</p>'}
       <hr class="divider"><h2 class="h2">다가오는 일정</h2>
       ${others.length ? others.map(row).join('') : '<p class="empty">120일 안에 등록된 일정이 없어요.</p>'}
-      ${past.length ? `<hr class="divider"><h2 class="h2">지난 셋리 예측</h2>${past.map(e => { const s = spScore(spReal(e), spGet(e.id)); return `<a class="wait-row" href="#/e/${encodeURIComponent(e.id)}"><span class="cal"><small>${e.date.slice(0, 4)}</small><b>${e.date.slice(5).replace('-', '.')}</b></span><span class="wr-t">${esc(e.title)}</span><span class="sp-ring sm" style="--p:${s ? s.score : 0}"><b>${s ? s.score : '-'}</b></span></a>`; }).join('')}` : ''}`;
+      ${SP_ON() && past.length ? `<hr class="divider"><h2 class="h2">지난 셋리 예측</h2>${past.map(e => { const s = spScore(spReal(e), spGet(e.id)); return `<a class="wait-row" href="#/e/${encodeURIComponent(e.id)}"><span class="cal"><small>${e.date.slice(0, 4)}</small><b>${e.date.slice(5).replace('-', '.')}</b></span><span class="wr-t">${esc(e.title)}</span><span class="sp-ring sm" style="--p:${s ? s.score : 0}"><b>${s ? s.score : '-'}</b></span></a>`; }).join('')}` : ''}`;
   }
   // 버튼들 (일정 상세 · 기다리는 일정 · 홈 · 팝업 어디서든)
   document.addEventListener('click', ev => {
@@ -4561,6 +4564,7 @@
   document.addEventListener('click', ev => { const b = ev.target.closest('[data-whx]'); if (!b) return; const r = rd(); r.hid[b.dataset.whx] = 1; boxWrite(RD_KEY, r); const w = b.closest('.wait-home'); if (w) w.outerHTML = homeWait(); });
   document.addEventListener('click', ev => { const b = ev.target.closest('.wh-tg'); if (!b) return; boxWrite('sb-wait-open', b.getAttribute('aria-expanded') === 'true' ? 0 : 1); const w = b.closest('.wait-home'); if (!w) return; const t = document.createElement('div'); t.innerHTML = homeWait(); const n = t.firstElementChild; if (!n) return; n.classList.add('anim'); w.replaceWith(n); });
   document.addEventListener('change', ev => {
+    const so = ev.target.closest('.sp-onoff'); if (so) { const r = rd(); r.spOff = !so.checked; boxWrite(RD_KEY, r); const y = scrollY; renderBase('wait'); scrollTo(0, y); return; }
     const kp = ev.target.closest('.rd-kp'); if (kp) { const r = rd(); r.keep = kp.checked; boxWrite(RD_KEY, r); return; }
     const c = ev.target.closest('[data-rd]'); if (!c) return;
     const id = c.closest('.rd-box').dataset.id, r = rd(), x = c.dataset.rd, d = new Set(r.done[id] || []);
