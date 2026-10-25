@@ -1740,3 +1740,9 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .wt-yes { align-self: stretch; height: 46px; border: 0; background: var(--green-d); color: #fff; font-weight: 700; font-size: calc(15px * var(--fs)); justify-content: center; }
 .wt-row { display: flex; gap: 10px; justify-content: center; align-items: center; color: var(--muted); }
 .wt-row button { border: 0; background: none; color: var(--muted); font-size: calc(13px * var(--fs)); padding: 6px 4px; text-decoration: underline; text-underline-offset: 3px; }
+.wi { width: 1.15em; height: 1.15em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.2em; margin-right: 4px; }
+.tk-line .wi, .tk-foot .wi, .wi-h .wi { color: var(--green-d); }
+.go-mini .wi { margin: 0; width: 16px; height: 16px; }
+.wt-big .wi { width: 46px; height: 46px; margin: 0; color: var(--green-d); stroke-width: 1.5; }
+.sp-sur .wi { color: var(--green-d); }
+.wi-h { display: inline-flex; align-items: center; }
