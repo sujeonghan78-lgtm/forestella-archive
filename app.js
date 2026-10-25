@@ -4445,7 +4445,9 @@
   const dayEnd = e => Date.parse(`${e.date}T00:00:00+09:00`) + 864e5;
   const doneAt = e => startAt(e) != null ? startAt(e) + 2 * 36e5 : dayEnd(e);
   const over = e => Date.now() >= doneAt(e);
-  const spLocked = e => Date.now() >= (startAt(e) != null ? startAt(e) : dayEnd(e)) || spReal(e).length > 0;
+  // 리허설로 셋리가 미리 알려질 수 있어 시작 5시간 전에 마감 (시간 없으면 그날 0시)
+  const spLockAt = e => startAt(e) != null ? startAt(e) - 5 * 36e5 : Date.parse(`${e.date}T00:00:00+09:00`);
+  const spLocked = e => Date.now() >= spLockAt(e) || spReal(e).length > 0;
   const SP_ON = () => !rd().spOff;  // 셋리 예측 끄기 (기다리는 일정 화면에서)
   const myScore = e => { if (!SP_ON()) return null; return myScore0(e); };
   const myScore0 = e => { const k = spGet(e.id), real = spReal(e); return k.length && real.length ? { ...spScore(real, k), real: real.length } : null; };
@@ -4468,7 +4470,9 @@
         ${surprise.length ? `<p class="sp-sur">${wi('star')}아무도 예상 못 한 곡 · ${surprise.map(nm).join(', ')}</p>` : ''}</section>`;
     }
     const rec = recentSongs(e).filter(so => !mine.includes(so.key));
+    const la = new Date(spLockAt(e) + 9 * 36e5), lt = `${la.getUTCMonth() + 1}.${la.getUTCDate()} ${String(la.getUTCHours()).padStart(2, '0')}:${String(la.getUTCMinutes()).padStart(2, '0')}`;
     return `<section class="d-block sp-box" data-id="${esc(e.id)}">${head}
+      <p class="sub sp-due">${lt} 마감 · 리허설로 셋리가 알려질 수 있어 시작 5시간 전에 닫혀요</p>
       <div class="sp-mine"><p class="sp-l">내 예측 셋리 <b>${mine.length}곡</b></p>
       ${mine.length ? `<ol class="sp-list">${mine.map((k, i) => `<li><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span><button type="button" class="sp-chip sp-x" data-k="${esc(k)}" aria-label="빼기">×</button></li>`).join('')}</ol>` : '<p class="sp-empty">아래에서 곡을 눌러 넣어요</p>'}</div>
       ${rec.length ? `<p class="sp-l">최근에 부른 곡</p><div class="sp-chips">${rec.map(so => `<button type="button" class="sp-chip sp-add" data-k="${esc(so.key)}">＋ ${esc(so.name)}</button>`).join('')}</div>` : ''}

@@ -102,6 +102,7 @@
     if ((m0 = k.match(/^(\d+)점$/))) return s.replace(k, lang === 'ja' ? m0[1] + '点' : m0[1] + ' pts');
     if ((m0 = k.match(/^(\d{4})년 (\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}年${m0[2]}月` : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m0[2]-1] + ' ' + m0[1]);
     if ((m0 = k.match(/^(\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? m0[1] + '月' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m0[1] - 1]);
+    if ((m0 = k.match(/^(\d+\.\d+ \d\d:\d\d) 마감 · 리허설로 셋리가 알려질 수 있어 시작 5시간 전에 닫혀요$/))) return s.replace(k, lang === 'ja' ? `${m0[1]} 締切 · リハでセトリが知られることがあるため開始5時間前に締め切ります` : `Closes ${m0[1]} · 5 hours before start, as rehearsals can reveal the setlist`);
     if ((m0 = k.match(/^갈 거예요 (\d+)개$/))) return s.replace(k, lang === 'ja' ? `行く予定 ${m0[1]}件` : `Going to ${m0[1]}`);
     if ((m0 = k.match(/^오늘은 (.+) 가는 날!$/))) return s.replace(k, lang === 'ja' ? `今日は${m0[1]}の日!` : `Today: ${m0[1]}!`);
     if ((m0 = k.match(/^(.+) · 다녀오셨어요\? 직관으로 옮길까요\?$/))) return s.replace(k, lang === 'ja' ? `${m0[1]} · 行きましたか? 現場参加に記録しますか?` : `${m0[1]} · Did you go? Mark as attended?`);
