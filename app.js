@@ -4543,7 +4543,7 @@
       boxWrite(RD_KEY, r); rdRefresh(b); return;
     }
   });
-  document.addEventListener('click', ev => { const b = ev.target.closest('.wh-tg'); if (!b) return; boxWrite('sb-wait-open', b.getAttribute('aria-expanded') === 'true' ? 0 : 1); const w = b.closest('.wait-home'); if (w) w.outerHTML = homeWait(); });
+  document.addEventListener('click', ev => { const b = ev.target.closest('.wh-tg'); if (!b) return; boxWrite('sb-wait-open', b.getAttribute('aria-expanded') === 'true' ? 0 : 1); const w = b.closest('.wait-home'); if (!w) return; const t = document.createElement('div'); t.innerHTML = homeWait(); const n = t.firstElementChild; if (!n) return; n.classList.add('anim'); w.replaceWith(n); });
   document.addEventListener('change', ev => {
     const kp = ev.target.closest('.rd-kp'); if (kp) { const r = rd(); r.keep = kp.checked; boxWrite(RD_KEY, r); return; }
     const c = ev.target.closest('[data-rd]'); if (!c) return;

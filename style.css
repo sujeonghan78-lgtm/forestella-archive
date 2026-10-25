@@ -1773,3 +1773,8 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .wait-home.open { position: relative; }
 .wh-fold { position: absolute; z-index: 1; right: 8px; top: 8px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--soft); display: grid; place-items: center; padding: 0; }
 .wait-home.open .tk-title { padding-right: 34px; }
+.wait-home.anim.open .tk { animation: whOpen .28s cubic-bezier(.2,.8,.3,1); transform-origin: top center; }
+.wait-home.anim .wh-mini { animation: whFold .22s ease-out; }
+@keyframes whOpen { from { opacity: 0; transform: translateY(-6px) scaleY(.6); clip-path: inset(0 0 60% 0 round 18px); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 18px); } }
+@keyframes whFold { from { opacity: .4; transform: scaleY(1.4); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .wait-home.anim .tk, .wait-home.anim .wh-mini { animation: none; } }
