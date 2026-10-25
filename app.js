@@ -2419,9 +2419,29 @@
     if (e.placeLoc) return { ...e.placeLoc, exact: true, place: placeOf(e), region: rk || regionNear(e.placeLoc) };
     const p = placeOf(e), pin = p && (data.pins || {})[p];
     if (pin && pin.ok) return { ...pin.ok, exact: true, place: p, region: rk || regionNear(pin.ok) };
-    if (p && found[p]) return { lat: found[p].lat, lng: found[p].lng, exact: true, place: p, region: rk || regionNear(found[p]) };
+    if (p && found[p]) return { lat: found[p].lat, lng: found[p].lng, exact: true, place: p, addr: found[p].addr || '', region: rk || regionNear(found[p]) };
     if (r && REGION_C[r]) return { lat: REGION_C[r][0], lng: REGION_C[r][1], exact: false, place: p, region: r };
     return { lat: null, lng: null, exact: false, place: p, region: r || '' };
+  }
+  // 조금 확대하면 시·도 17개로 나눠 보여요 (주소 첫 낱말 → 일정 글자 → 큰 지역 안에서 가장 가까운 중심)
+  const SIDO = [['서울', '서울', 37.5665, 126.978, /서울/], ['인천', '경기·인천', 37.4563, 126.7052, /인천|송도|인스파이어|계양|Incheon/i], ['경기', '경기·인천', 37.35, 127.25, /경기|수원|고양|킨텍스|성남|분당|용인|부천|광명|안성|의정부|가평|자라섬|과천|파주|화성|평택|안양|김포|하남|남양주|이천|여주|포천|양평|오산|시흥|군포|구리|양주|Suwon|Goyang/i],
+    ['강원', '강원', 37.75, 128.3, /./], ['대전', '충청', 36.3504, 127.3845, /대전|Daejeon|in DA(?!EGU)/i], ['세종', '충청', 36.48, 127.289, /세종시|세종특별/], ['충북', '충청', 36.8, 127.7, /충북|충청북|청주|충주|제천|Cheongju/i], ['충남', '충청', 36.5, 126.8, /충남|충청남|천안|아산|공주|보령|서산|당진|논산|계룡|예산|부여|홍성|이순신/],
+    ['광주', '전라', 35.1595, 126.8526, /광주|Gwangju|김대중컨벤션|지스트|타이거즈/i], ['전북', '전라', 35.72, 127.15, /전북|전라북|전주|익산|군산|남원|광한루|정읍|고창|원광|Jeonju/i], ['전남', '전라', 34.86, 126.99, /전남|전라남|목포|여수|순천|나주|광양|화순|함평|영광|곡성|장흥|보림사|드래곤즈/],
+    ['부산', '경상', 35.1796, 129.0756, /부산|Busan|벡스코|BNK|영도|in BU/i], ['대구', '경상', 35.8714, 128.6014, /대구|Daegu|엑스코/i], ['울산', '경상', 35.5384, 129.3114, /울산|Ulsan|태화강/i], ['경북', '경상', 36.4, 128.75, /경북|경상북|경주|포항|안동|구미|김천|칠곡|영덕|울진|직지사|예주/], ['경남', '경상', 35.3, 128.3, /경남|경상남|창원|김해|통영|용호도|진주|거제|3\.15|Changwon/i], ['제주', '제주', 33.42, 126.55, /./]];
+  const SIDO_C = Object.fromEntries(SIDO.map(x => [x[0], [x[2], x[3]]]));
+  function sidoOf(x) {
+    const big = x.l.region, cand = SIDO.filter(d => d[1] === big);
+    if (!cand.length) return big;
+    const a = (x.l.addr || '').trim().split(/\s+/)[0] || '';
+    const byAddr = a && SIDO.find(d => a.startsWith(d[0]) || (d[0] === '충북' && a.startsWith('충청북')) || (d[0] === '충남' && a.startsWith('충청남')) || (d[0] === '전북' && a.startsWith('전라북')) || (d[0] === '전남' && a.startsWith('전라남')) || (d[0] === '경북' && a.startsWith('경상북')) || (d[0] === '경남' && a.startsWith('경상남')));
+    if (byAddr) return byAddr[0];
+    if (cand.length === 1) return cand[0][0];
+    const t = `${x.l.place || ''} ${x.e.title || ''}`, hit = cand.find(d => d[4].test(t));
+    if (hit && !(hit[0] === '광주' && /경기 광주/.test(t))) return hit[0];
+    if (x.l.lat == null || !x.l.exact) return big;
+    let best = cand[0][0], d0 = 1e9;
+    cand.forEach(d => { const dd = (d[2] - x.l.lat) ** 2 + (d[3] - x.l.lng) ** 2; if (dd < d0) { d0 = dd; best = d[0]; } });
+    return best;
   }
   // 정확한 좌표도 '큰 지역'에 묶어 멀리서 볼 때 숫자로 보여요 (지역을 모르면 가장 가까운 중심으로)
   function regionNear(l) {
@@ -2541,7 +2561,8 @@
       layer.clearLayers();
       const z = m.getZoom(), groups = new Map();
       ml.on.forEach(x => {
-        const key = z < 9 ? 'r:' + (x.l.region || regionNear(x.l)) : x.l.exact ? 'p:' + x.l.lat.toFixed(4) + ',' + x.l.lng.toFixed(4) : 'r:' + x.l.region;
+        // 멀리: 큰 지역 7개 · 조금 확대: 시·도 17개 · 더 확대: 공연장마다 (많이 확대하면 공연장 이름도)
+        const key = z < 8 ? 'r:' + (x.l.region || regionNear(x.l)) : z < 10 ? 's:' + sidoOf(x) : x.l.exact ? 'p:' + x.l.lat.toFixed(4) + ',' + x.l.lng.toFixed(4) : 'r:' + x.l.region;
         const g = groups.get(key) || groups.set(key, { key, items: [] }).get(key);
         g.items.push(x);
       });
@@ -2553,14 +2574,26 @@
         // 지금 걷고 있는 구간 (바로 전 → 지금)
         if (cut > 0) L.polyline([pt(ml.on[cut - 1]), pt(ml.on[cut])], { color: '#F07B2A', weight: 5, opacity: .95, interactive: false }).addTo(layer);
       }
+      // 공연장 이름은 겹치지 않는 것만 (많이 간 곳 먼저)
+      const shortP = p => { const t = String(p || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim(); return t.length > 14 ? t.slice(0, 13) + '…' : t; };
+      const named = new Set();
+      if (z >= 12) {
+        const boxes = [];
+        [...groups.values()].filter(g => g.key.startsWith('p:')).sort((a, b) => b.items.length - a.items.length).forEach(g => {
+          const pt0 = m.latLngToContainerPoint([g.items[0].l.lat, g.items[0].l.lng]), w = shortP(g.items[0].l.place).length * 11 + 10;
+          const r = { x1: pt0.x - w / 2, x2: pt0.x + w / 2, y1: pt0.y - 16, y2: pt0.y + 32 };
+          if (boxes.some(o => r.x1 < o.x2 && r.x2 > o.x1 && r.y1 < o.y2 && r.y2 > o.y1)) return;
+          boxes.push(r); named.add(g.key);
+        });
+      }
       groups.forEach(g => {
-        const reg = g.key.startsWith('r:'), name = g.key.slice(2), first = g.items[0].l;
-        const at = reg ? (z < 9 ? REGION_V[name] : REGION_C[name]) || [first.lat, first.lng] : [first.lat, first.lng];
+        const sido = g.key.startsWith('s:'), reg = sido || g.key.startsWith('r:'), name = g.key.slice(2), first = g.items[0].l, far = z < 10;
+        const at = reg ? (sido ? SIDO_C[name] || REGION_C[name] : z < 8 ? REGION_V[name] : REGION_C[name]) || [first.lat, first.lng] : [first.lat, first.lng];
         const now = mapSt.tour && g.items.includes(ml.on[mapSt.i]);
-        const mk = L.marker(at, { zIndexOffset: now ? 1000 : 0, icon: bubble(g.items.length, (now ? 'now ' : '') + (reg ? (z < 9 ? (mapSt.tour ? 'big' : 'ov') : 'fuzzy') : 'pin'), reg ? (z < 9 ? name : name + ' 어딘가') : '') }).addTo(layer);
+        const mk = L.marker(at, { zIndexOffset: now ? 1000 : 0, icon: bubble(g.items.length, (now ? 'now ' : '') + (reg ? (far ? (mapSt.tour ? 'big' : 'ov') : 'fuzzy') : 'pin'), reg ? (far ? name : name + ' 어딘가') : named.has(g.key) ? shortP(first.place) : '') }).addTo(layer);
         mk.on('click', () => {
-          if (reg && z < 9 && !mapSt.tour) { showVenue(g.items, name); document.getElementById('map-venue').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
-          if (reg && z < 9) { m.flyTo(at, 10, { duration: 0.8 }); return; }
+          if (reg && far && !mapSt.tour) { showVenue(g.items, name); document.getElementById('map-venue').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
+          if (reg && far) { m.flyTo(at, z < 8 ? 8.5 : 10, { duration: 0.8 }); return; }
           showVenue(g.items, reg ? name + ' 어딘가 (정확한 장소 모름)' : first.place);
         });
       });
