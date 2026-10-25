@@ -1414,6 +1414,8 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .song-hb, .song-more { border: 0; background: none; color: var(--muted); cursor: pointer; width: 34px; min-height: 44px; font-size: 18px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
 .song-hb.on { color: #D0587E; }
 .song-hb small { font-size: 10px; margin-top: 2px; color: var(--muted); }
+.song-wish { width: 30px; font-size: 14px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.song-wish small { font-size: 10px; margin-top: 3px; color: var(--muted); }
 .song-more { font-size: 16px; letter-spacing: 1px; }
 .song-sort { font: inherit; font-size: 13px; color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; background: var(--card, #fff); }
 .yf-sheet .song-picks { margin: 6px 0 12px; }

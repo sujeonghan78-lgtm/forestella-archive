@@ -1066,7 +1066,7 @@
   };
   // 곡 아카이브 필터·정렬은 주소에 들어가요: #/songs?c=분류&m=멤버&y=연도&my=내 곡&s=정렬
   let songBack = '#/songs';
-  const SONG_SORTS = [['name', '가나다순'], ['many', '많이 부른 순'], ['first', '처음 부른 순'], ['recent', '최근 부른 순'], ['heart', '하트 많은 순']];
+  const SONG_SORTS = [['name', '가나다순'], ['many', '많이 부른 순'], ['first', '처음 부른 순'], ['recent', '최근 부른 순'], ['heart', '하트 많은 순'], ['wish', '소취 많은 순']];
   const SONG_CATS = { video: '영상 있음', album: '음반 수록곡', concert: '콘서트에서 부른 곡', title: '타이틀곡', ver: '버전 여러 개', chant: '📣 떼창 구간 있음', nochant: '떼창 구간 없음' };
   const SONG_MY = { heart: '♥ 하트', fav: '💚 최애곡', wish: '🙏 소취곡', debut: '🌱 입덕곡', heard: '🎫 직관에서 들은 곡' };
   // 마지막으로 부른 날: 확인된 무대·콘서트 셋리 중 가장 늦은 날 (오늘 뒤 날짜는 빼요)
@@ -1179,6 +1179,7 @@
     const list = [...data.songs.values()].filter(so => songPass(so, st)).sort((a, b) =>
       sort === 'first' ? (a.since || '9').localeCompare(b.since || '9') || hangulFirst(a.name, b.name)
         : sort === 'heart' ? heartN('s', b.key) - heartN('s', a.key) || hangulFirst(a.name, b.name)
+        : sort === 'wish' ? wishN(b.key) - wishN(a.key) || heartN('s', b.key) - heartN('s', a.key) || hangulFirst(a.name, b.name)
         : sort === 'recent' ? (songLast(a) ? 0 : 1) - (songLast(b) ? 0 : 1) || songLast(b).localeCompare(songLast(a)) || hangulFirst(a.name, b.name)
           : sort === 'many' ? playCount(b) - playCount(a) || hangulFirst(a.name, b.name)
             : hangulFirst(a.name, b.name));
@@ -1203,7 +1204,7 @@
             <span class="song-name"><span class="song-t">${esc(so.name)}${marks(so) ? ` <span class="song-marks">${marks(so)}</span>` : ''}${chantOf(so).length ? ' <span class="solo-tag ch-tag">📣 떼창</span>' : ''}${soloOf(so).map(m => ` <span class="solo-tag">${m}</span>`).join('')}${songPending(so) ? ' <span class="new-tag">확인 필요</span>' : ''}</span><small>${songLine(so)}</small></span>
             ${side(so) ? `<span class="song-first">${side(so)}</span>` : ''}${songStat(so) ? `<span class="song-n song-stat">${songStat(so)}</span>` : ''}
           </a>
-          <span class="song-acts"><button type="button" class="song-hb${boxHas('s', so.key) ? ' on' : ''}" data-key="${esc(so.key)}" aria-label="이 곡 하트" aria-pressed="${boxHas('s', so.key)}">${boxHas('s', so.key) ? '♥' : '♡'}${heartN('s', so.key) >= 3 ? `<small>${heartN('s', so.key)}</small>` : ''}</button><button type="button" class="song-more" data-key="${esc(so.key)}" aria-label="최애곡·소취곡·입덕곡 고르기">⋯</button></span>
+          <span class="song-acts">${wishN(so.key) >= 3 ? `<span class="song-wish" title="듣고 싶어 하는 숲별">🙏<small>${wishN(so.key)}</small></span>` : ''}<button type="button" class="song-hb${boxHas('s', so.key) ? ' on' : ''}" data-key="${esc(so.key)}" aria-label="이 곡 하트" aria-pressed="${boxHas('s', so.key)}">${boxHas('s', so.key) ? '♥' : '♡'}${heartN('s', so.key) >= 3 ? `<small>${heartN('s', so.key)}</small>` : ''}</button><button type="button" class="song-more" data-key="${esc(so.key)}" aria-label="최애곡·소취곡·입덕곡 고르기">⋯</button></span>
         </div>`).join('')}
       </div>
       <div class="yf-wrap" id="yf-wrap" hidden></div>`;
