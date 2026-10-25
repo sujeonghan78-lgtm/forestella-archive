@@ -4440,7 +4440,14 @@
   const spReal = e => { if (e.songSource === '참고') return []; const names = e.songs.length ? e.songs : e.date < todayIso() && e.setlist ? e.setlist.songs.map(x => x.t) : []; return [...new Set(names.map(n => (songOfName(n) || {}).key).filter(Boolean))]; };
   // 점수 = 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 것) × 100 — 많이 고른다고 점수가 오르지 않아요
   const spScore = (real, keys) => { if (!real.length || !keys.length) return null; const hit = keys.filter(k => real.includes(k)).length; return { hit, score: Math.round(hit / Math.max(real.length, keys.length) * 100) }; };
-  const spLocked = e => e.date < todayIso() || spReal(e).length > 0;
+  // 시작 시각(시간이 없으면 그날 밤 12시)에 예측이 잠기고, 시작 2시간 뒤(시간 없으면 다음 날)부터 '다녀오셨어요?'
+  const startAt = e => { const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/); return m ? Date.parse(`${e.date}T${m[1].padStart(2, '0')}:${m[2]}:00+09:00`) : null; };
+  const dayEnd = e => Date.parse(`${e.date}T00:00:00+09:00`) + 864e5;
+  const doneAt = e => startAt(e) != null ? startAt(e) + 2 * 36e5 : dayEnd(e);
+  const over = e => Date.now() >= doneAt(e);
+  const spLocked = e => Date.now() >= (startAt(e) != null ? startAt(e) : dayEnd(e)) || spReal(e).length > 0;
+  const myScore = e => { const k = spGet(e.id), real = spReal(e); return k.length && real.length ? { ...spScore(real, k), real: real.length } : null; };
+  const scoreBox = sc => `<div class="sp-score wt-score"><div class="sp-ring" style="--p:${sc.score}"><b>${sc.score}</b><small>점</small></div><div class="sp-sum"><b>셋리 예측 ${sc.real}곡 중 ${sc.hit}곡 맞혔어요</b></div></div>`;
   function spBlock(e) {
     if (!WAIT_ON() || !goable(e)) return '';
     const mine = spGet(e.id), real = spReal(e), locked = spLocked(e);
@@ -4467,7 +4474,7 @@
   }
   // 🎒 준비물: 기본 목록 + 내가 더한 것, 일정마다 체크
   const RD_KEY = 'sb-ready', RD_BASE = ['티켓 · 예매 내역', '신분증', '응원봉', '보조배터리', '슬로건', '포레 인형'];
-  const rd = () => ({ add: [], off: [], done: {}, shown: {}, ev: {}, keep: true, ...(boxRead(RD_KEY) || {}) });
+  const rd = () => ({ add: [], off: [], done: {}, shown: {}, ev: {}, hid: {}, scored: {}, keep: true, ...(boxRead(RD_KEY) || {}) });
   // '다음 공연에도 쓰기'를 끄고 더하거나 뺀 건 그 일정에만 (r.ev[일정ID] = {add, off})
   const rdItems = id => { const r = rd(), e = (id && r.ev[id]) || { add: [], off: [] }; return [...new Set([...RD_BASE, ...r.add, ...e.add])].filter(x => (RD_BASE.includes(x) ? !r.off.includes(x) : r.add.includes(x) || e.add.includes(x)) && !e.off.includes(x)); };
   const rdDone = id => (rd().done[id] || []).filter(x => rdItems(id).includes(x));
@@ -4475,7 +4482,15 @@
     <div class="rd-new"><input type="text" class="op-in rd-in" maxlength="20" placeholder="＋ 내 준비물 더하기 (예: 담요)"><button type="button" class="bpill rd-add">더하기</button></div><label class="rd-keep"><input type="checkbox" class="rd-kp"${rd().keep ? ' checked' : ''}> 더하거나 뺀 것을 다음 공연에도 쓰기</label></div>`;
   function homeWait() {
     if (!WAIT_ON()) return '';
-    const t = todayIso(), next = goIds().map(id => data.byId.get(id)).filter(e => e && e.date >= t).sort((a, b) => a.date.localeCompare(b.date))[0];
+    const t = todayIso(), r = rd(), mine = goIds().map(id => data.byId.get(id)).filter(e => e && !r.hid[e.id]);
+    // 공연이 끝난 일정은 다음 날 밤까지 남아요 (✕로 지우면 사라져요)
+    const done = mine.filter(e => over(e) && Date.now() < dayEnd(e) + 864e5).sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (done) {
+      const sc = myScore(done), x = `<button type="button" class="wh-x" data-whx="${esc(done.id)}" aria-label="지우기">×</button>`;
+      const body = sc ? `<a class="tk-btn" href="#/e/${encodeURIComponent(done.id)}?sp=1">셋리 예측 <b>${sc.score}점</b></a>` : spGet(done.id).length ? '<span class="tk-n">셋리가 올라오면 점수가 나와요</span>' : '';
+      return `<section class="wait-home open">${x}${tkCard(done, `${tkHead(done)}<div class="tk-foot">${boxHas('w', done.id) ? '<span class="tk-n">직관 기록했어요</span>' : `<button type="button" class="tk-btn" data-box="w" data-id="${esc(done.id)}" data-label="다녀왔어요" data-ic="">다녀왔어요</button>`}${body}</div>`)}</section>`;
+    }
+    const next = mine.filter(e => e.date >= t && !over(e)).sort((a, b) => a.date.localeCompare(b.date))[0];
     if (!next) return '';
     const n = goN(next.id);
     // 평소엔 D-day + 제목 한 줄, 누르면 펼쳐요 (sb-wait-open 기억)
@@ -4543,6 +4558,7 @@
       boxWrite(RD_KEY, r); rdRefresh(b); return;
     }
   });
+  document.addEventListener('click', ev => { const b = ev.target.closest('[data-whx]'); if (!b) return; const r = rd(); r.hid[b.dataset.whx] = 1; boxWrite(RD_KEY, r); const w = b.closest('.wait-home'); if (w) w.outerHTML = homeWait(); });
   document.addEventListener('click', ev => { const b = ev.target.closest('.wh-tg'); if (!b) return; boxWrite('sb-wait-open', b.getAttribute('aria-expanded') === 'true' ? 0 : 1); const w = b.closest('.wait-home'); if (!w) return; const t = document.createElement('div'); t.innerHTML = homeWait(); const n = t.firstElementChild; if (!n) return; n.classList.add('anim'); w.replaceWith(n); });
   document.addEventListener('change', ev => {
     const kp = ev.target.closest('.rd-kp'); if (kp) { const r = rd(); r.keep = kp.checked; boxWrite(RD_KEY, r); return; }
@@ -4570,7 +4586,7 @@
     return w;
   }
   const popTodayHtml = e => `<div class="wt-big">${wi('bag')}</div><b class="wt-t">오늘은 ${esc(e.title)} 가는 날!</b><p class="sub">다 챙기셨나요?${goWith(e.id) ? ' 같이 기다리는 숲별 ' + goN(e.id) + '명이 같이 가요.' : ''}</p>${rdBox(e.id)}<button type="button" class="bpill yf-ok wt-yes wt-ok">다 챙겼어요</button>`;
-  const popPastHtml = e => `<div class="wt-big">${wi('ticket')}</div><b class="wt-t">${esc(e.title)}</b><p class="sub">${fmtDate(e.date)} · 다녀오셨어요? 직관으로 옮길까요?</p>
+  const popPastHtml = e => `<div class="wt-big">${wi('ticket')}</div><b class="wt-t">${esc(e.title)}</b><p class="sub">${fmtDate(e.date)} · 다녀오셨어요? 직관으로 옮길까요?</p>${myScore(e) ? scoreBox(myScore(e)) : ''}
       <button type="button" class="bpill yf-ok wt-yes">다녀왔어요 · 직관으로 옮기기</button><div class="wt-row"><button type="button" class="wt-no">못 갔어요</button><span aria-hidden="true">·</span><button type="button" class="wt-later">나중에</button></div>`;
   // 미리보기: 기록은 안 바꾸고 모양만 보여 줘요
   function waitPopDemo(kind) {
@@ -4586,8 +4602,6 @@
     const t = todayIso(), evs = goIds().map(id => data.byId.get(id)).filter(Boolean), r = rd();
     const open = html => { const x = waitSheet(html); x.querySelector('.wt-sheet').classList.add('wt-pop'); return x; };
     // 시작 시간 2시간 뒤부터 '다녀오셨어요?' (시간이 없으면 다음 날부터)
-    const doneAt = e => { const m = String(e.time || '').match(/(\d{1,2}):(\d{2})/); return m ? Date.parse(`${e.date}T${m[1].padStart(2, '0')}:${m[2]}:00+09:00`) + 2 * 36e5 : Date.parse(`${e.date}T00:00:00+09:00`) + 864e5; };
-    const over = e => Date.now() >= doneAt(e);
     const today = evs.find(e => e.date === t && !over(e) && r.shown[e.id] !== t);
     if (today) {
       const x = open(popTodayHtml(today));
@@ -4596,10 +4610,20 @@
       return;
     }
     const past = evs.filter(e => over(e) && !boxHas('w', e.id) && !waitSkip.has(e.id)).sort((a, b) => b.date.localeCompare(a.date))[0];
-    if (!past) return;
+    if (!past) {
+      // 셋리가 나중에 올라오면 점수 알림 (한 번만, 2주 안 일정)
+      const ids = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))];
+      const sc = ids.map(id => data.byId.get(id)).filter(e => e && !r.scored[e.id] && Date.now() - dayEnd(e) < 14 * 864e5 && myScore(e))[0];
+      if (!sc) return;
+      r.scored[sc.id] = 1; boxWrite(RD_KEY, r);
+      const y = open(`<div class="wt-big">${wi('target')}</div><b class="wt-t">셋리가 올라왔어요!</b><p class="sub">${esc(sc.title)}</p>${scoreBox(myScore(sc))}<a class="bpill yf-ok wt-yes" href="#/e/${encodeURIComponent(sc.id)}?sp=1">맞힌 곡 보기</a><div class="wt-row"><button type="button" class="wt-later">닫기</button></div>`);
+      y.querySelector('.wt-later').onclick = () => { y.hidden = true; };
+      return;
+    }
+    if (myScore(past)) { r.scored[past.id] = 1; boxWrite(RD_KEY, r); }
     const x = open(popPastHtml(past));
     const done = () => { x.hidden = true; const rt = currentRoute(); if (rt === 'wait' || rt === 'home') { const y = scrollY; renderBase(rt); scrollTo(0, y); } setTimeout(waitPop, 400); };
-    x.querySelector('.wt-yes').onclick = () => { if (!boxHas('w', past.id)) boxToggle('w', past.id); boxSetS(box.s.filter(y => y !== 'go:' + past.id)); toast('보관함 직관에 넣었어요'); done(); };
+    x.querySelector('.wt-yes').onclick = () => { if (!boxHas('w', past.id)) boxToggle('w', past.id); toast('보관함 직관에 넣었어요'); done(); };
     x.querySelector('.wt-no').onclick = () => { boxSetS(box.s.filter(y => y !== 'go:' + past.id)); heartSync(); done(); };
     x.querySelector('.wt-later').onclick = () => { waitSkip.add(past.id); x.hidden = true; };
   }
