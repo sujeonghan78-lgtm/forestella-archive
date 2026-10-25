@@ -1752,3 +1752,9 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .news-bar b { margin-left: 4px; color: var(--green-d); }
 .news-bar span { margin-left: auto; color: var(--muted); }
 .news-bar .wi { color: var(--green-d); }
+.tk-btn { display: inline-flex; align-items: center; gap: 2px; height: 30px; padding: 0 11px; border-radius: 15px; border: 1px solid var(--tint-2); background: var(--soft); color: var(--ink-2); font-size: calc(12px * var(--fs)); font-weight: 600; text-decoration: none; }
+.tk-btn b { margin-left: 3px; color: var(--green-d); }
+.tk-foot { gap: 6px; flex-wrap: wrap; }
+.tk-n { display: inline-flex; align-items: center; color: var(--muted); }
+.tk-foot .tk-more { text-decoration: none; padding: 0 2px 0 6px; }
+.rd-keep { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: calc(12.5px * var(--fs)); color: var(--muted); } .rd-keep input { accent-color: var(--green-2); }

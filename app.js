@@ -4414,7 +4414,7 @@
   // 티켓 모양 카드: 왼쪽 떼는 부분에 D-day, 오른쪽에 일정
   const tkCard = (e, body, href) => `<div class="tk"><a class="tk-stub" href="${href || '#/e/' + encodeURIComponent(e.id)}"><b>${ddOf(e)}</b><small>${e.date.slice(5).replace('-', '.')} ${wkOf(e.date)}</small></a><div class="tk-body">${body}</div></div>`;
   const tkHead = e => `<a class="tk-title" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}</a><small class="tk-meta">${[e.time, e.place].filter(Boolean).map(esc).join(' · ') || fmtDate(e.date)}</small>`;
-  const rdBar = id => { const n = rdItems().length, d = rdDone(id).length; return `<span class="tk-bar"><i style="width:${n ? Math.round(d / n * 100) : 0}%"></i></span>`; };
+  const rdBar = id => { const n = rdItems(id).length, d = rdDone(id).length; return `<span class="tk-bar"><i style="width:${n ? Math.round(d / n * 100) : 0}%"></i></span>`; };
   const songOfName = n => { const al = data.songAlias || {}, k = window.DATA.songKey(n); return data.songs.get(k) || data.songs.get(al[k]) || null; };
   const spGet = id => { const x = box.s.find(x => x.startsWith('sp:' + id + ':')); return x ? x.slice(4 + id.length).split('|').filter(k => data.songs.has(k)) : []; };
   const spTimer = {};
@@ -4463,18 +4463,19 @@
       <label class="sp-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><input type="search" class="sp-q" placeholder="다른 곡 찾아서 넣기" autocomplete="off"></label><div class="sp-chips sp-found"></div></section>`;
   }
   // 🎒 준비물: 기본 목록 + 내가 더한 것, 일정마다 체크
-  const RD_KEY = 'sb-ready', RD_BASE = ['티켓 · 예매 내역', '신분증', '응원봉', '보조배터리', '슬로건'];
-  const rd = () => ({ add: [], off: [], done: {}, shown: {}, ...(boxRead(RD_KEY) || {}) });
-  const rdItems = () => { const r = rd(); return [...RD_BASE.filter(x => !r.off.includes(x)), ...r.add]; };
-  const rdDone = id => (rd().done[id] || []).filter(x => rdItems().includes(x));
-  const rdBox = id => `<div class="rd-box" data-id="${esc(id)}">${rdItems().map(x => `<label class="rd-row"><input type="checkbox" data-rd="${esc(x)}"${rdDone(id).includes(x) ? ' checked' : ''}><span>${esc(x)}</span><button type="button" class="rd-x" data-rdx="${esc(x)}" aria-label="${esc(x)} 빼기">×</button></label>`).join('')}
-    <div class="rd-new"><input type="text" class="op-in rd-in" maxlength="20" placeholder="＋ 내 준비물 더하기 (예: 담요)"><button type="button" class="bpill rd-add">더하기</button></div></div>`;
+  const RD_KEY = 'sb-ready', RD_BASE = ['티켓 · 예매 내역', '신분증', '응원봉', '보조배터리', '슬로건', '포레 인형'];
+  const rd = () => ({ add: [], off: [], done: {}, shown: {}, ev: {}, keep: true, ...(boxRead(RD_KEY) || {}) });
+  // '다음 공연에도 쓰기'를 끄고 더하거나 뺀 건 그 일정에만 (r.ev[일정ID] = {add, off})
+  const rdItems = id => { const r = rd(), e = (id && r.ev[id]) || { add: [], off: [] }; return [...new Set([...RD_BASE, ...r.add, ...e.add])].filter(x => (RD_BASE.includes(x) ? !r.off.includes(x) : r.add.includes(x) || e.add.includes(x)) && !e.off.includes(x)); };
+  const rdDone = id => (rd().done[id] || []).filter(x => rdItems(id).includes(x));
+  const rdBox = id => `<div class="rd-box" data-id="${esc(id)}">${rdItems(id).map(x => `<label class="rd-row"><input type="checkbox" data-rd="${esc(x)}"${rdDone(id).includes(x) ? ' checked' : ''}><span>${esc(x)}</span><button type="button" class="rd-x" data-rdx="${esc(x)}" aria-label="${esc(x)} 빼기">×</button></label>`).join('')}
+    <div class="rd-new"><input type="text" class="op-in rd-in" maxlength="20" placeholder="＋ 내 준비물 더하기 (예: 담요)"><button type="button" class="bpill rd-add">더하기</button></div><label class="rd-keep"><input type="checkbox" class="rd-kp"${rd().keep ? ' checked' : ''}> 더하거나 뺀 것을 다음 공연에도 쓰기</label></div>`;
   function homeWait() {
     if (!WAIT_ON()) return '';
     const t = todayIso(), next = goIds().map(id => data.byId.get(id)).filter(e => e && e.date >= t).sort((a, b) => a.date.localeCompare(b.date))[0];
     if (!next) return '';
     const n = goN(next.id);
-    return `<section class="wait-home">${tkCard(next, `${tkHead(next)}<a class="tk-foot" href="#/wait"><span>${wi('target')}${spGet(next.id).length}곡</span><span class="tk-rd">${wi('bag')}${rdDone(next.id).length}/${rdItems().length} ${rdBar(next.id)}</span>${n >= 2 ? `<span>${wi('people')}${n.toLocaleString()}</span>` : ''}<span class="tk-more">›</span></a>`, '#/wait')}</section>`;
+    return `<section class="wait-home">${tkCard(next, `${tkHead(next)}<div class="tk-foot"><a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">${wi('target')}셋리 <b>${spGet(next.id).length}</b></a><button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">${wi('bag')}준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button>${n >= 2 ? `<span class="tk-n">${wi('people')}${n.toLocaleString()}</span>` : ''}<a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>`, '#/wait')}</section>`;
   }
   function waitView() {
     if (!WAIT_ON()) return '<p class="empty">준비 중인 화면이에요. <a href="#/more">더보기로 ›</a></p>';
@@ -4485,7 +4486,7 @@
     const past = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && spLocked(e) && spReal(e).length).sort((a, b) => b.date.localeCompare(a.date));
     const card = e => { const n = goN(e.id); return `<article class="wait-card">${tkCard(e, `${tkHead(e)}<button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="true" aria-label="갈 거예요 취소">${wi('check')}</button>
       <a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b><span class="tk-more">›</span></a>
-      <button type="button" class="tk-line rd-open" data-id="${esc(e.id)}">${wi('bag')}준비물 <b>${rdDone(e.id).length}/${rdItems().length}</b>${rdBar(e.id)}<span class="tk-more">›</span></button>
+      <button type="button" class="tk-line rd-open" data-id="${esc(e.id)}">${wi('bag')}준비물 <b>${rdDone(e.id).length}/${rdItems(e.id).length}</b>${rdBar(e.id)}<span class="tk-more">›</span></button>
       ${n >= 2 ? `<small class="tk-with">${wi('people')}같이 기다리는 숲별 ${n.toLocaleString()}명</small>` : ''}`)}</article>`; };
     let lastM = '';
     const row = e => { const m = e.date.slice(0, 7), h = m !== lastM ? `<h3 class="wm-h">${+m.slice(0, 4)}년 ${+m.slice(5)}월</h3>` : ''; lastM = m; const n = goN(e.id);
@@ -4520,18 +4521,23 @@
     if (ro) { const e = data.byId.get(ro.dataset.id); if (!e) return; const x = waitSheet(`<div class="yf-head"><b class="wi-h">${wi('bag')}준비물</b><span class="sub">${esc(e.title)}</span></div>${rdBox(e.id)}<button type="button" class="bpill yf-ok wt-yes">다 했어요</button>`); x.querySelector('.wt-yes').onclick = () => { x.hidden = true; if (currentRoute() === 'wait' || currentRoute() === 'home') { const y = scrollY; renderBase(currentRoute()); scrollTo(0, y); } }; return; }
     const rx = ev.target.closest('[data-rdx]');
     if (rx) {
-      ev.preventDefault(); const r = rd(), x = rx.dataset.rdx;
-      if (RD_BASE.includes(x)) r.off = [...r.off, x]; else r.add = r.add.filter(y => y !== x);
+      ev.preventDefault(); const r = rd(), x = rx.dataset.rdx, b = rx.closest('.rd-box'), id = b.dataset.id, e = r.ev[id] = r.ev[id] || { add: [], off: [] };
+      if (!r.keep) { e.add = e.add.filter(y => y !== x); if (!e.off.includes(x)) e.off.push(x); }
+      else { if (RD_BASE.includes(x)) r.off = [...r.off, x]; else r.add = r.add.filter(y => y !== x); e.add = e.add.filter(y => y !== x); }
       boxWrite(RD_KEY, r); rdRefresh(rx.closest('.rd-box')); return;
     }
     const ra = ev.target.closest('.rd-add');
     if (ra) {
       const b = ra.closest('.rd-box'), v = b.querySelector('.rd-in').value.trim().slice(0, 20); if (!v) return;
-      const r = rd(); if (RD_BASE.includes(v)) r.off = r.off.filter(y => y !== v); else if (!r.add.includes(v)) r.add = [...r.add, v];
+      const r = rd(), id = b.dataset.id, e = r.ev[id] = r.ev[id] || { add: [], off: [] };
+      e.off = e.off.filter(y => y !== v);
+      if (!r.keep) { if (!RD_BASE.includes(v) && !r.add.includes(v) && !e.add.includes(v)) e.add.push(v); }
+      else if (RD_BASE.includes(v)) r.off = r.off.filter(y => y !== v); else if (!r.add.includes(v)) r.add = [...r.add, v];
       boxWrite(RD_KEY, r); rdRefresh(b); return;
     }
   });
   document.addEventListener('change', ev => {
+    const kp = ev.target.closest('.rd-kp'); if (kp) { const r = rd(); r.keep = kp.checked; boxWrite(RD_KEY, r); return; }
     const c = ev.target.closest('[data-rd]'); if (!c) return;
     const id = c.closest('.rd-box').dataset.id, r = rd(), x = c.dataset.rd, d = new Set(r.done[id] || []);
     c.checked ? d.add(x) : d.delete(x); r.done[id] = [...d]; boxWrite(RD_KEY, r);
