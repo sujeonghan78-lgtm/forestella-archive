@@ -693,7 +693,8 @@
   function bindHome() {
     const nn = newsUnread().length, nb = document.getElementById('news-home');
     const sn = storyUnread().length;
-    if (nb && (nn || sn)) nb.innerHTML = (nn ? `<a class="op-home news-home" href="#/news">🆕 새 소식 <b>${nn}</b>건 <span>보러가기 ›</span></a>` : '') + (sn ? `<a class="op-home news-home" href="#/story">💬 숲별 이야기 새 글 <b>${sn}</b>건 <span>보러가기 ›</span></a>` : '');
+    // 새 소식 · 숲별 이야기 새 글을 한 줄로 (0건인 쪽은 빠져요)
+    if (nb && (nn || sn)) nb.innerHTML = `<div class="news-bar">${nn ? `<a href="#/news">${wi('news')}새 소식 <b>${nn}</b><span>›</span></a>` : ''}${sn ? `<a href="#/story">${wi('chat')}숲별 이야기 <b>${sn}</b><span>›</span></a>` : ''}</div>`;
     // 관리자 기기에서만: 아직 안 읽은 의견 수
     if (isAdmin()) loadOpinions().then(() => {
       const box = document.getElementById('op-home'), n = opUnread().length;
@@ -4149,7 +4150,7 @@
           return parts.length ? parts.join(' · ') : '좋아요 · 직관 · 내 곡'; })(boxStats()))}
         ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국', '내가 간 공연을 지도로 되돌아보기')}
         ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
-        ${item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? '갈 거예요 ' + goIds().length + '개' : '갈 일정 · D-day · 셋리 예측')}
+        ${WAIT_ON() ? item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? '갈 거예요 ' + goIds().length + '개' : '갈 일정 · D-day · 셋리 예측') : ''}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사', '축제 · 기획 공연 · 지역별')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
@@ -4394,17 +4395,20 @@
     go: '<circle cx="10" cy="8" r="3.2"/><path d="M4 20a6 6 0 0 1 10.5-4M18 13v6M15 16h6"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     ticket: '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',
+    news: '<path d="M4 10v4h3l6 4V6L7 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>',
+    chat: '<path d="M4 5h16v11H9l-4 3.5V16H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
     star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',
   };
   const wi = (k, cls = '') => `<svg class="wi ${cls}" viewBox="0 0 24 24" aria-hidden="true">${WI[k]}</svg>`;
   const goLab = id => goHas(id) ? wi('check') + '갈 거예요' : wi('go') + '갈 거예요';
+  const WAIT_ON = () => isAdmin();  // 시험 중: 관리자 기기에만 보여요
   const goHas = id => box.s.includes('go:' + id);
   const goIds = () => box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3));
   const goToggle = id => { boxSetS(goHas(id) ? box.s.filter(x => x !== 'go:' + id) : ['go:' + id, ...box.s]); heartSync(); };
   const goN = id => { const H = data.hearts || {}, mine = H.mine; return Math.max(0, ((H.g || {})[id] || 0) - (mine && (mine.g || []).includes(id) ? 1 : 0) + (goHas(id) ? 1 : 0)); };
   const goable = e => !e.ytOnly && !/생일|유튜브|네이버TV/.test(e.category) && !/발매(\s*\([^)]*\))?\s*$/.test(e.title || '');
   const ddOf = e => { const d = Math.round((new Date(e.date) - new Date(todayIso())) / 864e5); return d === 0 ? 'D-DAY' : d > 0 ? 'D-' + d : 'D+' + -d; };
-  const goBtn = e => e.date >= todayIso() && goable(e) ? `<button type="button" class="bpill go-btn" data-go="${esc(e.id)}" aria-pressed="${goHas(e.id)}">${goLab(e.id)}</button>` : '';
+  const goBtn = e => WAIT_ON() && e.date >= todayIso() && goable(e) ? `<button type="button" class="bpill go-btn" data-go="${esc(e.id)}" aria-pressed="${goHas(e.id)}">${goLab(e.id)}</button>` : '';
   const goWith = id => { const n = goN(id); return n >= 2 ? `${wi('people')}같이 기다리는 숲별 ${n.toLocaleString()}명` : ''; };
   const WK = '일월화수목금토', wkOf = d => WK[new Date(d + 'T00:00:00').getDay()];
   // 티켓 모양 카드: 왼쪽 떼는 부분에 D-day, 오른쪽에 일정
@@ -4435,7 +4439,7 @@
   const spScore = (real, keys) => { if (!real.length || !keys.length) return null; const hit = keys.filter(k => real.includes(k)).length; return { hit, score: Math.round(hit / Math.max(real.length, keys.length) * 100) }; };
   const spLocked = e => e.date < todayIso() || spReal(e).length > 0;
   function spBlock(e) {
-    if (!goable(e)) return '';
+    if (!WAIT_ON() || !goable(e)) return '';
     const mine = spGet(e.id), real = spReal(e), locked = spLocked(e);
     if (locked && !mine.length) return '';
     const head = `<h2 class="h3 wi-h">${wi('target')}셋리 예측${help('공연에서 부를 것 같은 곡을 골라요. 셋리가 올라오면 맞힌 곡으로 점수가 나와요. 점수는 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 수)예요.')}</h2>`;
@@ -4466,12 +4470,14 @@
   const rdBox = id => `<div class="rd-box" data-id="${esc(id)}">${rdItems().map(x => `<label class="rd-row"><input type="checkbox" data-rd="${esc(x)}"${rdDone(id).includes(x) ? ' checked' : ''}><span>${esc(x)}</span><button type="button" class="rd-x" data-rdx="${esc(x)}" aria-label="${esc(x)} 빼기">×</button></label>`).join('')}
     <div class="rd-new"><input type="text" class="op-in rd-in" maxlength="20" placeholder="＋ 내 준비물 더하기 (예: 담요)"><button type="button" class="bpill rd-add">더하기</button></div></div>`;
   function homeWait() {
+    if (!WAIT_ON()) return '';
     const t = todayIso(), next = goIds().map(id => data.byId.get(id)).filter(e => e && e.date >= t).sort((a, b) => a.date.localeCompare(b.date))[0];
     if (!next) return '';
     const n = goN(next.id);
     return `<section class="wait-home">${tkCard(next, `${tkHead(next)}<a class="tk-foot" href="#/wait"><span>${wi('target')}${spGet(next.id).length}곡</span><span class="tk-rd">${wi('bag')}${rdDone(next.id).length}/${rdItems().length} ${rdBar(next.id)}</span>${n >= 2 ? `<span>${wi('people')}${n.toLocaleString()}</span>` : ''}<span class="tk-more">›</span></a>`, '#/wait')}</section>`;
   }
   function waitView() {
+    if (!WAIT_ON()) return '<p class="empty">준비 중인 화면이에요. <a href="#/more">더보기로 ›</a></p>';
     const t = todayIso(), mineAll = goIds().map(id => data.byId.get(id)).filter(Boolean);
     const up = mineAll.filter(e => e.date >= t).sort((a, b) => a.date.localeCompare(b.date));
     const until = new Date(Date.now() + 120 * 864e5).toISOString().slice(0, 10);
@@ -4550,7 +4556,7 @@
     return w;
   }
   function waitPop() {
-    if (!data || !data.byId || document.querySelector('#wt-wrap:not([hidden])')) return;
+    if (!WAIT_ON() || !data || !data.byId || document.querySelector('#wt-wrap:not([hidden])')) return;
     const t = todayIso(), evs = goIds().map(id => data.byId.get(id)).filter(Boolean), r = rd();
     const open = html => { const x = waitSheet(html); x.querySelector('.wt-sheet').classList.add('wt-pop'); return x; };
     const today = evs.find(e => e.date === t && r.shown[e.id] !== t);
@@ -4745,7 +4751,6 @@
     home: () => `
       ${header()}
       ${homeWait()}
-      ${heartNotice()}
       ${driveBox()}
       <div id="op-home"></div>
       <div id="news-home"></div>

@@ -1746,3 +1746,9 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .wt-big .wi { width: 46px; height: 46px; margin: 0; color: var(--green-d); stroke-width: 1.5; }
 .sp-sur .wi { color: var(--green-d); }
 .wi-h { display: inline-flex; align-items: center; }
+.news-bar { display: flex; margin: 4px 0 12px; border-radius: 14px; background: var(--heaf6ee, #eaf6ee); overflow: hidden; }
+.news-bar a { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; padding: 12px 14px; color: var(--h24513a, #24513a); text-decoration: none; font-size: calc(14px * var(--fs)); white-space: nowrap; }
+.news-bar a + a { border-left: 1px solid var(--line); }
+.news-bar b { margin-left: 4px; color: var(--green-d); }
+.news-bar span { margin-left: auto; color: var(--muted); }
+.news-bar .wi { color: var(--green-d); }
