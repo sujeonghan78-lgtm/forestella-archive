@@ -1370,7 +1370,11 @@
       ${lyricLinks(so)}</details>`;
   }
   // ---------- 가사 카드: 고른 가사 한두 줄을 정사각형 이미지로 (폰 안에서 그려서 저장·공유) ----------
-  const LYC_BG = [['album', '앨범'], ['forest', '숲'], ['night', '밤'], ['dawn', '새벽'], ['cream', '크림']];
+  const LYC_BG = [['album', '앨범'], ['photo', '📷 내 사진'], ['forest', '숲'], ['night', '밤'], ['dawn', '새벽'], ['cream', '크림'], ['custom', '🎨 내 색']];
+  // 고른 색이 밝으면 글씨를 어둡게
+  const lycLight = hex => { const n = parseInt((hex || '#1F5E46').slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (r * 299 + g * 587 + b * 114) / 1000 > 150; };
+  const lycShade = (hex, k) => { const n = parseInt(hex.slice(1), 16), f = c => Math.max(0, Math.min(255, Math.round(c + (k > 0 ? (255 - c) * k : c * k)))); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(f).map(c => c.toString(16).padStart(2, '0')).join(''); };
+  let lycPhoto = null;  // 내 사진: 이 화면에서만 써요 (저장 안 해요)
   const LYC_COL = { forest: ['#1F5E46', '#3E8E6A', '#A6D99B'], night: ['#0E1A2E', '#25385E', '#5B6FA8'], dawn: ['#F6C7B4', '#C9B7E8', '#8FB8E8'], cream: ['#FBF6EC', '#F3EAD7', '#E8DCC2'] };
   const LYC_FONT = [['myeong', '명조'], ['dodum', '둥근'], ['pen', '손글씨'], ['plex', '고딕']];
   const LYC_KEY = 'sb-lyc';
@@ -1380,8 +1384,19 @@
   function lycDraw(cv, so, text, o) {
     const S = 1080, ctx = cv.getContext('2d');
     cv.width = cv.height = S;
-    const dark = o.bg !== 'cream' && o.bg !== 'dawn';
-    if (o.bg === 'album' && lycImg && lycImg.complete && lycImg.naturalWidth) {
+    const photoOn = o.bg === 'photo' && lycPhoto && lycPhoto.naturalWidth;
+    const dark = o.bg === 'custom' ? !lycLight(o.color) : o.bg !== 'cream' && o.bg !== 'dawn';
+    if (photoOn) {
+      const iw = lycPhoto.naturalWidth, ih = lycPhoto.naturalHeight, m = Math.min(iw, ih);
+      ctx.drawImage(lycPhoto, (iw - m) / 2, (ih - m) / 2, m, m, 0, 0, S, S);
+      const g = ctx.createLinearGradient(0, 0, 0, S);
+      g.addColorStop(0, `rgba(0,0,0,${o.dim * .6})`); g.addColorStop(.5, `rgba(0,0,0,${o.dim})`); g.addColorStop(1, `rgba(0,0,0,${Math.min(.85, o.dim + .2)})`);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
+    } else if (o.bg === 'custom') {
+      const g = ctx.createLinearGradient(0, 0, S, S);
+      g.addColorStop(0, lycShade(o.color, -.12)); g.addColorStop(.55, o.color); g.addColorStop(1, lycShade(o.color, .25));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
+    } else if (o.bg === 'album' && lycImg && lycImg.complete && lycImg.naturalWidth) {
       // 흐리게: 아주 작게 그렸다가 크게 늘려요 (모든 폰에서 되는 방법)
       const t = document.createElement('canvas'); t.width = t.height = 24;
       const tc = t.getContext('2d'), iw = lycImg.naturalWidth, ih = lycImg.naturalHeight, m = Math.min(iw, ih);
@@ -1398,12 +1413,13 @@
       g.addColorStop(0, col[0]); g.addColorStop(.6, col[1]); g.addColorStop(1, col[2]);
       ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
     }
-    const ink = dark || o.bg === 'album' ? '#FFFFFF' : '#23332B', sub = dark || o.bg === 'album' ? 'rgba(255,255,255,.78)' : 'rgba(35,51,43,.7)';
+    const img = o.bg === 'album' || photoOn;
+    const ink = dark || img ? '#FFFFFF' : '#23332B', sub = dark || img ? 'rgba(255,255,255,.78)' : 'rgba(35,51,43,.7)';
     const F = CARD_FONTS[o.font] || CARD_FONTS.myeong;
     // 큰 따옴표
-    ctx.fillStyle = dark || o.bg === 'album' ? 'rgba(255,255,255,.28)' : 'rgba(35,51,43,.18)';
+    ctx.fillStyle = dark || img ? 'rgba(255,255,255,.28)' : 'rgba(35,51,43,.18)';
     ctx.font = `800 220px ${CARD_FONTS.myeong.f}`; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    if (o.bg !== 'album') ctx.fillText('“', 90, 300);
+    if (!img) ctx.fillText('“', 90, 300);
     // 가사: 글자 크기를 줄여 가며 7줄 안에 맞춰요
     const maxW = S - 220, words = text.replace(/\s+/g, ' ').trim();
     let size = 66, lines = [];
@@ -1426,7 +1442,7 @@
     const lh = Math.round(size * F.k * 1.55), top = o.bg === 'album' ? 330 : 300, room = S - top - 230;
     let y = top + Math.max(0, (room - lh * lines.length) / 2) + lh * .8;
     ctx.fillStyle = ink; ctx.textAlign = 'center';
-    if (o.bg === 'album') { ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 12; }
+    if (img) { ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 14; }
     lines.forEach(l => { ctx.fillText(l, S / 2, y); y += lh; });
     ctx.shadowBlur = 0;
     // 아래: 곡 제목 · 음반 · 사이트 이름
@@ -1440,12 +1456,14 @@
     let w = document.getElementById('lyc-wrap');
     if (!w) { w = document.createElement('div'); w.id = 'lyc-wrap'; w.className = 'yf-wrap'; document.body.appendChild(w); }
     const cover = lycCover(so), saved = boxRead(LYC_KEY) || {};
-    const o = { bg: saved.bg && (saved.bg !== 'album' || cover) ? saved.bg : cover ? 'album' : 'forest', font: saved.font || 'myeong' };
+    const o = { bg: saved.bg && (saved.bg !== 'album' || cover) && (saved.bg !== 'photo' || lycPhoto) ? saved.bg : cover ? 'album' : 'forest', font: saved.font || 'myeong', color: /^#[0-9a-f]{6}$/i.test(saved.color || '') ? saved.color : '#7FB3A0', dim: saved.dim >= 0 && saved.dim <= .8 ? saved.dim : .4 };
     const bgs = LYC_BG.filter(([k]) => k !== 'album' || cover);
     w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet lyc-sheet" role="dialog" aria-label="가사 카드">
       <div class="yf-head"><b>🖼 가사 카드</b><span class="sub">${esc(so.name)}</span></div>
       <canvas class="lyc-cv" width="1080" height="1080"></canvas>
       <p class="src-note">배경</p><div class="chips lyc-opts">${bgs.map(([k, l]) => `<button type="button" class="chip${o.bg === k ? ' on' : ''}" data-bg="${k}">${l}</button>`).join('')}</div>
+      <div class="lyc-extra lyc-custom"${o.bg === 'custom' ? '' : ' hidden'}><label>색 고르기 <input type="color" class="lyc-color" value="${o.color}"></label><span class="lyc-sw">${['#7FB3A0', '#F2B8C6', '#B9A7E0', '#F6D58E', '#8EC5E8', '#E8A07A', '#2D3A4A', '#FFFFFF'].map(c => `<button type="button" class="lyc-dot" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</span></div>
+      <div class="lyc-extra lyc-photo"${o.bg === 'photo' ? '' : ' hidden'}><label class="chip lyc-pick">📷 사진 고르기<input type="file" accept="image/*" class="lyc-file" hidden></label><label class="lyc-dim">어둡게 <input type="range" min="0" max="0.8" step="0.05" value="${o.dim}" class="lyc-dimr"></label><p class="src-note">사진은 이 폰에서만 써요. 사이트에 올라가지 않아요.</p></div>
       <p class="src-note">글씨</p><div class="chips lyc-opts">${LYC_FONT.map(([k, l]) => `<button type="button" class="chip${o.font === k ? ' on' : ''}" data-font="${k}">${l}</button>`).join('')}</div>
       <div class="lyc-acts"><button type="button" class="bpill lyc-save">이미지 저장</button><button type="button" class="chip lyc-share">공유하기</button><button type="button" class="chip lyc-x">X에 올리기</button></div>
       <p class="src-note lyc-msg"></p></section>`;
@@ -1455,8 +1473,20 @@
     const fontsP = cardFontsReady(text).then(() => document.fonts && Promise.all(LYC_FONT.map(([k]) => document.fonts.load(`${CARD_FONTS[k].big} 60px ${CARD_FONTS[k].f}`, text))).catch(() => {}));
     if (cover && lycImgSrc !== cover) { lycImg = new Image(); lycImg.crossOrigin = 'anonymous'; lycImg.onload = redraw; lycImg.onerror = () => { lycImg = null; }; lycImg.src = lycImgSrc = cover; }
     redraw(); fontsP.then(redraw);
+    const file = w.querySelector('.lyc-file');
+    const setBg = k => { o.bg = k; w.querySelectorAll('[data-bg]').forEach(x => x.classList.toggle('on', x.dataset.bg === k)); w.querySelector('.lyc-custom').hidden = k !== 'custom'; w.querySelector('.lyc-photo').hidden = k !== 'photo'; boxWrite(LYC_KEY, o); redraw(); };
+    file.onchange = () => {
+      const f = file.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { const im = new Image(); im.onload = () => { lycPhoto = im; setBg('photo'); }; im.src = r.result; };
+      r.readAsDataURL(f);
+    };
+    w.querySelector('.lyc-color').oninput = e => { o.color = e.target.value; boxWrite(LYC_KEY, o); redraw(); };
+    w.querySelectorAll('.lyc-dot').forEach(d => d.onclick = () => { o.color = d.dataset.c; w.querySelector('.lyc-color').value = o.color; boxWrite(LYC_KEY, o); redraw(); });
+    w.querySelector('.lyc-dimr').oninput = e => { o.dim = +e.target.value; boxWrite(LYC_KEY, o); redraw(); };
     w.querySelectorAll('[data-bg],[data-font]').forEach(b => b.onclick = () => {
-      if (b.dataset.bg) o.bg = b.dataset.bg; else o.font = b.dataset.font;
+      if (b.dataset.bg) { if (b.dataset.bg === 'photo' && !lycPhoto) { setBg('photo'); file.click(); return; } setBg(b.dataset.bg); return; }
+      o.font = b.dataset.font;
       w.querySelectorAll(b.dataset.bg ? '[data-bg]' : '[data-font]').forEach(x => x.classList.toggle('on', x === b));
       boxWrite(LYC_KEY, o); redraw();
     });
