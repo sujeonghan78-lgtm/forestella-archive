@@ -2003,7 +2003,9 @@
     const defOf = t => PROGRAM_DEFS.find(d => d[2].test(t));
     data.events.forEach(e => {
       if (e.ytOnly || e.setlist) return;
-      const d = defOf(e.title);
+      let d = defOf(e.title);
+      // 이름만 '열린음악회'인 지역 행사(KBS 방송 아님)는 프로그램에서 빼요
+      if (d && d[0] === '열린음악회' && e.category !== 'TV' && !/kbs/i.test(e.title)) d = null;
       if (d) get(d[0], d[1]).events.push(e);
       else if (e.category === '라디오') get('라디오', '라디오').events.push(e);
       else if (e.category === 'TV') get(OTHER_PROG, '특집 · 행사').events.push(e);
