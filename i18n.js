@@ -85,6 +85,7 @@
     '＋ 내 준비물 더하기 (예: 담요)': ['＋ Add an item (e.g. blanket)', '＋ 持ち物を追加 (例: ブランケット)'], '더하기': ['Add', '追加'], '더하거나 뺀 것을 다음 공연에도 쓰기': ['Keep these changes for next shows', '変更を次の公演にも使う'],
     '티켓 · 예매 내역': ['Ticket · booking', 'チケット · 予約内容'], '신분증': ['ID card', '身分証'], '응원봉': ['Light stick', 'ペンライト'], '보조배터리': ['Power bank', 'モバイルバッテリー'], '슬로건': ['Slogan', 'スローガン'], '포레 인형': ['Forestella doll', 'フォレ人形'],
     '보관함 직관에 넣었어요': ['Saved as attended', '現場参加に保存しました'], '기다리는 일정에 넣었어요': ['Added to Waiting for', '待ちわびる予定に追加しました'],
+    '숲별이 많이 고른 곡': ['Most picked by fans', 'みんながよく選んだ曲'],
     '120일 안에 등록된 일정이 없어요.': ['No schedules in the next 120 days.', '120日以内の予定はありません。'],
     '아직 기다리는 일정이 없어요. 아래 다가오는 일정에서 갈 거예요를 눌러 보세요.': ['Nothing yet. Tap "I\'m going" on an upcoming schedule below.', 'まだありません。下の予定で「行きます」を押してみてください。'],
     '갈 거예요 취소': ['Cancel going', '行くを取り消す'], '기다리는 일정 전체': ['All waiting', 'すべて見る'], '접기': ['Collapse', '閉じる'], '지우기': ['Remove', '消す'],
@@ -103,6 +104,8 @@
     if ((m0 = k.match(/^(\d{4})년 (\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}年${m0[2]}月` : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m0[2]-1] + ' ' + m0[1]);
     if ((m0 = k.match(/^(\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? m0[1] + '月' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m0[1] - 1]);
     if ((m0 = k.match(/^(\d+\.\d+ \d\d:\d\d) 마감 · 리허설로 셋리가 알려질 수 있어 시작 5시간 전에 닫혀요$/))) return s.replace(k, lang === 'ja' ? `${m0[1]} 締切 · リハでセトリが知られることがあるため開始5時間前に締め切ります` : `Closes ${m0[1]} · 5 hours before start, as rehearsals can reveal the setlist`);
+    if ((m0 = k.match(/^(\d+)명 참여$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}人参加` : `${m0[1]} joined`);
+    if ((m0 = k.match(/^셋리 예측 (\d+)명 참여$/))) return s.replace(k, lang === 'ja' ? `セトリ予想 ${m0[1]}人参加` : `Setlist guess · ${m0[1]} joined`);
     if ((m0 = k.match(/^갈 거예요 (\d+)개$/))) return s.replace(k, lang === 'ja' ? `行く予定 ${m0[1]}件` : `Going to ${m0[1]}`);
     if ((m0 = k.match(/^오늘은 (.+) 가는 날!$/))) return s.replace(k, lang === 'ja' ? `今日は${m0[1]}の日!` : `Today: ${m0[1]}!`);
     if ((m0 = k.match(/^(.+) · 다녀오셨어요\? 직관으로 옮길까요\?$/))) return s.replace(k, lang === 'ja' ? `${m0[1]} · 行きましたか? 現場参加に記録しますか?` : `${m0[1]} · Did you go? Mark as attended?`);

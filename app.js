@@ -4454,11 +4454,16 @@
   const scoreBox = sc => `<div class="sp-score wt-score"><div class="sp-ring" style="--p:${sc.score}"><b>${sc.score}</b><small>점</small></div><div class="sp-sum"><b>셋리 예측 ${sc.real}곡 중 ${sc.hit}곡 맞혔어요</b></div></div>`;
   // 셋리 예측 칸 · 최근 부른 곡은 접을 수 있어요 (sb-sp-fold 기억, 기본 펼침)
   const spFold = () => boxRead('sb-sp-fold') || {};
+  // 셋리 예측한 사람들 (나 포함, 곡 고른 사람만)
+  const spAll = id => { const me = myUid(), mine = spGet(id); return [...((data.preds || {})[id] || []).filter(p => p.by !== me).map(p => p.keys), mine].filter(k => k.length); };
+  const spCnt = id => SP_ON() ? spAll(id).length : 0;
+  // 곡마다 고른 사람 수 (마감 뒤에만 보여요, 따라 고르지 않게)
+  const spPickN = id => { const m = new Map(); spAll(id).forEach(ks => new Set(ks).forEach(k => m.set(k, (m.get(k) || 0) + 1))); return m; };
   function spBlock(e) {
-    const h = spBlock0(e), f = spFold();
+    const h = spBlock0(e), f = spFold(), cn = spCnt(e.id);
     if (!h) return '';
     const i = h.indexOf('<h2 class="h3 wi-h">'), j = h.indexOf('</h2>', i) + 5, k = h.lastIndexOf('</section>');
-    return `${h.slice(0, i)}<details class="sp-fold" data-f="box"${f.box === 0 ? '' : ' open'}><summary>${h.slice(i, j)}<svg class="sp-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>${h.slice(j, k)}</details></section>`;
+    return `${h.slice(0, i)}<details class="sp-fold" data-f="box"${f.box === 0 ? '' : ' open'}><summary>${h.slice(i, j)}${cn ? `<span class="sp-cnt">${cn.toLocaleString()}명 참여</span>` : ''}<svg class="sp-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>${h.slice(j, k)}</details></section>`;
   }
   document.addEventListener('toggle', ev => { const d = ev.target; if (!d.matches || !d.matches('details.sp-fold[data-f]')) return; const f = spFold(); f[d.dataset.f] = d.open ? 1 : 0; boxWrite('sb-sp-fold', f); }, true);
   document.addEventListener('click', ev => { if (ev.target.closest('.sp-fold > summary .help, .sp-fold > summary .help-pop')) ev.preventDefault(); }, true);
@@ -4468,15 +4473,19 @@
     if (locked && !mine.length) return '';
     const head = `<h2 class="h3 wi-h">${wi('target')}셋리 예측${help('공연에서 부를 것 같은 곡을 골라요. 셋리가 올라오면 맞힌 곡으로 점수가 나와요. 점수는 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 수)예요.')}</h2>`;
     const nm = k => esc(data.songs.get(k).name);
+    const pn = locked ? spPickN(e.id) : null, tot = locked ? spAll(e.id).length : 0;
+    const pc = k => tot >= 2 && pn.get(k) ? `<small class="sp-pc">${pn.get(k)}명</small>` : '';
+    // 마감 뒤: 숲별이 많이 고른 곡 5개
+    const topPick = () => { if (tot < 2) return ''; const t = [...pn].filter(([k, c]) => c >= 2 && data.songs.get(k)).sort((a, b) => b[1] - a[1]).slice(0, 5); return t.length ? `<p class="sp-l">숲별이 많이 고른 곡</p><ol class="sp-list sp-top">${t.map(([k, c], i) => `<li><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span><small class="sp-pc">${c}명</small></li>`).join('')}</ol>` : ''; };
     if (locked) {
-      if (!real.length) return `<section class="d-block sp-box">${head}<p class="sub">셋리가 올라오면 점수가 나와요.</p><ol class="sp-list">${mine.map((k, i) => `<li><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span></li>`).join('')}</ol></section>`;
+      if (!real.length) return `<section class="d-block sp-box">${head}<p class="sub">셋리가 올라오면 점수가 나와요.</p><ol class="sp-list">${mine.map((k, i) => `<li><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span>${pc(k)}</li>`).join('')}</ol>${topPick()}</section>`;
       const sc = spScore(real, mine), others = (data.preds || {})[e.id] || [], me = myUid();
       const all = [...others.filter(p => p.by !== me).map(p => p.keys), mine].filter(k => k.length);
       const avg = all.length >= 4 ? Math.round(all.reduce((a, k) => a + spScore(real, k).score, 0) / all.length) : null;
       const picked = new Set(all.flat()), surprise = all.length >= 4 ? real.filter(k => !picked.has(k)) : [];
       return `<section class="d-block sp-box">${head}
         <div class="sp-score"><div class="sp-ring" style="--p:${sc.score}"><b>${sc.score}</b><small>점</small></div><div class="sp-sum"><b>${real.length}곡 중 ${sc.hit}곡 맞혔어요</b>${avg != null ? `<small>숲별 평균 ${avg}점 · ${all.length}명 참여</small>` : ''}<small>고른 곡 ${mine.length}곡</small></div></div>
-        <ol class="sp-list sp-real">${real.map((k, i) => `<li class="${mine.includes(k) ? 'hit' : ''}"><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span>${mine.includes(k) ? '<span class="sp-ok">' + wi('check') + '</span>' : ''}</li>`).join('')}</ol>
+        <ol class="sp-list sp-real">${real.map((k, i) => `<li class="${mine.includes(k) ? 'hit' : ''}"><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span>${pc(k)}${mine.includes(k) ? '<span class="sp-ok">' + wi('check') + '</span>' : ''}</li>`).join('')}</ol>
         ${surprise.length ? `<p class="sp-sur">${wi('star')}아무도 예상 못 한 곡 · ${surprise.map(nm).join(', ')}</p>` : ''}</section>`;
     }
     const rec = recentSongs(e).filter(so => !mine.includes(so.key));
@@ -4513,7 +4522,7 @@
     // 평소엔 D-day + 제목 한 줄, 누르면 펼쳐요 (sb-wait-open 기억)
     const openH = boxRead('sb-wait-open') === 1;
     if (!openH) return `<section class="wait-home"><button type="button" class="wh-mini wh-tg" aria-expanded="false"><b>${ddOf(next)}</b><span>${esc(next.title)}</span>${n >= 2 ? `<em class="wh-n" aria-label="숲별 ${n}명이 같이 기다려요"><span class="go-av" aria-hidden="true">${'<i></i>'.repeat(Math.min(n, 3))}</span>${n.toLocaleString()}</em>` : ''}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></section>`;
-    return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot">${SP_ON() ? `<a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a>` : ''}<button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}`, '#/wait')}</section>`;
+    return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot">${SP_ON() ? `<a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a>` : ''}<button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}${spCnt(next.id) >= 2 ? `<p class="tk-spn">${wi('target')}셋리 예측 ${spCnt(next.id).toLocaleString()}명 참여</p>` : ''}`, '#/wait')}</section>`;
   }
   function waitView() {
     if (!WAIT_ON()) return '<p class="empty">준비 중인 화면이에요. <a href="#/more">더보기로 ›</a></p>';
@@ -4523,7 +4532,7 @@
     const others = data.events.filter(e => e.date >= t && e.date <= until && goable(e) && !goHas(e.id)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 60);
     const past = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && spLocked(e) && spReal(e).length).sort((a, b) => b.date.localeCompare(a.date));
     const card = e => { const n = goN(e.id); return `<article class="wait-card">${tkCard(e, `${tkHead(e)}<button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="true" aria-label="갈 거예요 취소">${wi('check')}</button>
-      ${SP_ON() ? `<a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b><span class="tk-more">›</span></a>` : ''}
+      ${SP_ON() ? `<a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b>${spCnt(e.id) >= 2 ? `<small class="tk-spn2">${spCnt(e.id).toLocaleString()}명 참여</small>` : ''}<span class="tk-more">›</span></a>` : ''}
       <button type="button" class="tk-line rd-open" data-id="${esc(e.id)}">${wi('bag')}준비물 <b>${rdDone(e.id).length}/${rdItems(e.id).length}</b>${rdBar(e.id)}<span class="tk-more">›</span></button>
       ${goTogether(n)}`)}</article>`; };
     let lastM = '';
