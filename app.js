@@ -587,29 +587,44 @@
 
   // ---------- 숲별 이야기: 숲별들이 남긴 TMI·가사·떼창을 최신순으로 (새 글 수는 이 폰에서 마지막으로 본 뒤로) ----------
   const STORY_SEEN = 'sb-story-seen';
-  const STORY_KINDS = [['', '전체'], ['TMI', '💡 TMI'], ['가사', '💬 가사'], ['떼창', '📣 떼창']];
+  const STORY_KINDS = [['', '전체'], ['best', '🏆 BEST'], ['TMI', '💡 TMI'], ['가사', '💬 가사'], ['떼창', '📣 떼창']];
+  const STORY_BEST = 10, STORY_PAGE = 30;
+  let storyBase = null;
+  // 오늘 올라온 글은 빨간 N (오늘이 아니어도 아직 안 본 글은 NEW)
+  const storyToday = l => new Date(l.at).toDateString() === new Date().toDateString();
+  const storyTag = (l, fresh) => storyToday(l) ? '<em class="n-dot" aria-label="오늘 올라온 글">N</em> ' : fresh.has(l.id) ? '<em class="nw-badge">NEW</em> ' : '';
   const storySeen = () => { const v = Number(boxRead(STORY_SEEN)); return v > 0 ? v : Date.now() - 3 * 864e5; };
   const storyAll = () => (data.lyrics || []).filter(l => noteWhere(l));
   const storyUnread = () => { const seen = storySeen(), uid = myUid(); return storyAll().filter(l => l.at > seen && l.first !== uid); };
-  function storyView() {
-    const qs = new URLSearchParams(location.hash.split('?')[1] || ''), k = qs.get('k') || '', o = qs.get('o') || '';
-    const fresh = new Set(storyUnread().map(l => l.id));
-    boxWrite(STORY_SEEN, Date.now());
-    const all = storyAll(), list = all.filter(l => !k || l.kind === k).sort((a, b) => o === 'heart' ? b.n - a.n || b.at - a.at : b.at - a.at);
-    const ago = t => { const d = Math.floor((Date.now() - t) / 864e5); return d < 1 ? '오늘' : d < 30 ? `${d}일 전` : fmtDate(new Date(t).toISOString().slice(0, 10), false); };
-    const href = (kk, oo) => '#/story' + ((kk || oo) ? '?' + [kk && 'k=' + encodeURIComponent(kk), oo && 'o=' + oo].filter(Boolean).join('&') : '');
+  const storyAgo = t => { const d = Math.floor((Date.now() - t) / 864e5); return d < 1 ? '오늘' : d < 30 ? `${d}일 전` : fmtDate(new Date(t).toISOString().slice(0, 10), false); };
+  function storyRow(l, fresh) {
     const uid = myUid(), upLocal = new Set([...(boxRead('sb-ly-up') || []), ...(boxRead(CH_SENT) || []), ...(boxRead(TMI_SENT) || [])].map(x => x.id)), rpd = boxRead(RP_SENT) || [];
-    const row = l => {
-      const mine = l.first === uid, on = mine || l.who.includes(uid) || upLocal.has(l.id), n = l.n + (upLocal.has(l.id) && !l.who.includes(uid) ? 1 : 0);
-      return `<div class="story-row${rpd.includes(l.id) ? ' rp-done' : ''}"><a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${fresh.has(l.id) ? '<em class="nw-badge">NEW</em> ' : ''}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${ago(l.at)}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>
+    const mine = l.first === uid, on = mine || l.who.includes(uid) || upLocal.has(l.id), n = l.n + (upLocal.has(l.id) && !l.who.includes(uid) ? 1 : 0);
+    return `<div class="story-row${rpd.includes(l.id) ? ' rp-done' : ''}"><a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${l.n >= STORY_BEST ? '<em class="nw-badge best-badge">BEST</em> ' : ''}${storyTag(l, fresh)}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${storyAgo(l.at)}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>
         <span class="story-acts"><button type="button" class="bpill st-up${on ? ' on' : ''}" data-id="${esc(l.id)}"${on ? ' disabled' : ''} aria-label="${l.kind === 'TMI' ? '나도 봤어요' : '좋아요'}">♥ ${n}</button>${mine ? '' : rpBtn(l)}</span></div>`;
-    };
+    }
+  function storyView() {
+    const qs = new URLSearchParams(location.hash.split('?')[1] || ''), k = qs.get('k') || '', o = qs.get('o') || '', pg = Math.max(1, parseInt(qs.get('p'), 10) || 1);
+    // 같은 방문 안에서 다시 그려도(자료 새로 받음·쪽 넘김) NEW가 그대로 보이게, 들어온 때의 기준을 1분 동안 써요
+    if (!storyBase || Date.now() - storyBase.at > 60000) storyBase = { seen: storySeen(), at: Date.now() };
+    storyBase.at = Date.now();
+    const uid0 = myUid(), fresh = new Set(storyAll().filter(l => l.at > storyBase.seen && l.first !== uid0).map(l => l.id));
+    const newest = Math.max(0, ...storyAll().map(l => l.at));
+    if (newest > storySeen()) boxWrite(STORY_SEEN, newest);
+    const all = storyAll(), list = all.filter(l => !k || (k === 'best' ? l.n >= STORY_BEST : l.kind === k)).sort((a, b) => o === 'heart' ? b.n - a.n || b.at - a.at : b.at - a.at);
+    const ago = t => { const d = Math.floor((Date.now() - t) / 864e5); return d < 1 ? '오늘' : d < 30 ? `${d}일 전` : fmtDate(new Date(t).toISOString().slice(0, 10), false); };
+    const href = (kk, oo, pp) => '#/story' + ((kk || oo || pp > 1) ? '?' + [kk && 'k=' + encodeURIComponent(kk), oo && 'o=' + oo, pp > 1 && 'p=' + pp].filter(Boolean).join('&') : '');
+    const pages = Math.max(1, Math.ceil(list.length / STORY_PAGE)), cur = Math.min(pg, pages);
+    // 쪽 번호: 처음·끝과 지금 쪽 앞뒤 두 쪽까지
+    const nums = [...new Set([1, pages, ...[-2, -1, 0, 1, 2].map(d => cur + d)])].filter(x => x >= 1 && x <= pages).sort((a, b) => a - b);
+    const pager = pages < 2 ? '' : `<nav class="pager">${cur > 1 ? `<a href="${href(k, o, cur - 1)}" aria-label="이전 쪽">‹</a>` : ''}${nums.map((x, i) => (i && x - nums[i - 1] > 1 ? '<span>…</span>' : '') + (x === cur ? `<b>${x}</b>` : `<a href="${href(k, o, x)}">${x}</a>`)).join('')}${cur < pages ? `<a href="${href(k, o, cur + 1)}" aria-label="다음 쪽">›</a>` : ''}</nav>`;
+    const row = l => storyRow(l, fresh);
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">숲별 이야기${help('숲별들이 곡·콘서트·일정에 남긴 💡 TMI, 💬 좋아하는 가사, 📣 떼창 구간이 새로 올라온 순서로 모여요. 누르면 그 화면으로 가서 ♥나 🚩를 누를 수 있어요.')}</h1>
       <div class="box-tabs story-tabs">${STORY_KINDS.map(([v, l]) => `<a class="box-tab${v === k ? ' on' : ''}" href="${href(v, o)}">${l}</a>`).join('')}</div>
       <div class="view-row"><p class="sub">${list.length.toLocaleString()}개${fresh.size ? ` · 새 글 ${fresh.size}` : ''}</p><span class="story-sort"><a class="${o ? '' : 'on'}" href="${href(k, '')}">최신순</a> · <a class="${o ? 'on' : ''}" href="${href(k, 'heart')}">♥ 많은 순</a></span></div>
-      ${list.length ? moreList(list.map(row), 30) : '<p class="empty">아직 올라온 이야기가 없어요. 곡·콘서트 화면에서 처음으로 남겨 보세요.</p>'}`;
+      ${list.length ? `<div class="stack">${list.slice((cur - 1) * STORY_PAGE, cur * STORY_PAGE).map(row).join('')}</div>${pager}` : `<p class="empty">${k === 'best' ? `아직 ♥ ${STORY_BEST}개 넘은 이야기가 없어요.` : '아직 올라온 이야기가 없어요. 곡·콘서트 화면에서 처음으로 남겨 보세요.'}</p>`}`;
   }
   // 숲별 이야기에서 바로 ♥: 곡 화면에서 누를 때와 같은 줄을 보내요
   document.addEventListener('click', ev => {
@@ -4220,7 +4235,7 @@
     const all = storyAll().sort((a, b) => b.at - a.at), fresh = new Set(storyUnread().map(l => l.id));
     if (!all.length) return '';
     return `<section class="block home-story"><div class="block-head"><h2 class="h2">💬 숲별 이야기${fresh.size ? ` <b class="news-cnt">NEW ${fresh.size}</b>` : ''}</h2><a class="more" href="#/story">모두 보기 ›</a></div>
-      ${all.slice(0, 3).map(l => `<a class="box-ev story-mini" href="${noteHref(l)}"><span>${fresh.has(l.id) ? '<em class="nw-badge">NEW</em>' : ''}${NOTE_ICON[l.kind] || ''} · ${esc(noteWhere(l))}</span><b>${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</b></a>`).join('')}</section>`;
+      <div class="stack home-story-list">${all.slice(0, 3).map(l => storyRow(l, fresh)).join('')}</div></section>`;
   }
   function homeWish() {
     const top = [...data.songs.values()].map(so => [so, wishN(so.key)]).filter(x => x[1] >= 3).sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name)).slice(0, 5);
