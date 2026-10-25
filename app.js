@@ -2594,8 +2594,10 @@
         mk.on('click', () => {
           if (reg && far && !mapSt.tour) { showVenue(g.items, name); document.getElementById('map-venue').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
           if (reg && far) { m.flyTo(at, z < 8 ? 8.5 : 10, { duration: 0.8 }); return; }
-          showVenue(g.items, reg ? name + ' 어딘가 (정확한 장소 모름)' : first.place);
-          document.getElementById('map-venue').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          // 점을 누르면 아래 안내판(날짜·일정·재생 막대)이 그곳 일정으로 넘어가요 (여러 번 간 곳은 가장 최근)
+          const idx = ml.on.indexOf(g.items[g.items.length - 1]);
+          if (mapSt.tour) { mapStop(); go(idx); return; }
+          mapSt.tour = true; mapSt.play = false; mapSt.i = idx; bindMap();
         });
       });
       const cur = ml.on[mapSt.i];
