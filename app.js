@@ -4515,7 +4515,7 @@
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">기다리는 일정${help('갈 거예요를 누른 일정이 모여요. 같이 기다리는 숲별 수는 이름 없이 숫자만 세요.')}</h1>
-      <div class="wt-demo"><span>알림창 미리보기</span><button type="button" class="bpill" data-popdemo="today">공연 당일</button><button type="button" class="bpill" data-popdemo="past">다녀오셨어요?</button></div>
+      <div class="wt-demo"><span>알림창 미리보기</span><button type="button" class="bpill" data-popdemo="today">공연 당일</button><button type="button" class="bpill" data-popdemo="past">다녀오셨어요?</button><button type="button" class="bpill" data-popdemo="score">점수 알림</button></div>
       ${up.length ? up.map(card).join('') : '<p class="empty">아직 기다리는 일정이 없어요. 아래 다가오는 일정에서 갈 거예요를 눌러 보세요.</p>'}
       <hr class="divider"><h2 class="h2">다가오는 일정</h2>
       ${others.length ? others.map(row).join('') : '<p class="empty">120일 안에 등록된 일정이 없어요.</p>'}
@@ -4586,13 +4586,15 @@
     return w;
   }
   const popTodayHtml = e => `<div class="wt-big">${wi('bag')}</div><b class="wt-t">오늘은 ${esc(e.title)} 가는 날!</b><p class="sub">다 챙기셨나요?${goWith(e.id) ? ' 같이 기다리는 숲별 ' + goN(e.id) + '명이 같이 가요.' : ''}</p>${rdBox(e.id)}<button type="button" class="bpill yf-ok wt-yes wt-ok">다 챙겼어요</button>`;
-  const popPastHtml = e => `<div class="wt-big">${wi('ticket')}</div><b class="wt-t">${esc(e.title)}</b><p class="sub">${fmtDate(e.date)} · 다녀오셨어요? 직관으로 옮길까요?</p>${myScore(e) ? scoreBox(myScore(e)) : ''}
+  const popPastHtml = (e, demoSc) => `<div class="wt-big">${wi('ticket')}</div><b class="wt-t">${esc(e.title)}</b><p class="sub">${fmtDate(e.date)} · 다녀오셨어요? 직관으로 옮길까요?</p>${demoSc ? scoreBox(demoSc) : myScore(e) ? scoreBox(myScore(e)) : ''}
       <button type="button" class="bpill yf-ok wt-yes">다녀왔어요 · 직관으로 옮기기</button><div class="wt-row"><button type="button" class="wt-no">못 갔어요</button><span aria-hidden="true">·</span><button type="button" class="wt-later">나중에</button></div>`;
   // 미리보기: 기록은 안 바꾸고 모양만 보여 줘요
   function waitPopDemo(kind) {
     const t = todayIso(), e = goIds().map(id => data.byId.get(id)).filter(x => x && x.date >= t)[0] || data.events.find(x => x.date >= t && goable(x));
     if (!e) return;
-    const x = waitSheet((kind === 'today' ? popTodayHtml : popPastHtml)(e) + '<p class="src-note">미리보기예요. 눌러도 기록은 안 바뀌어요.</p>');
+    const demo = { score: 78, hit: 14, real: 18 };  // 미리보기용 가짜 점수
+    const html = kind === 'today' ? popTodayHtml(e) : kind === 'score' ? `<div class="wt-big">${wi('target')}</div><b class="wt-t">셋리가 올라왔어요!</b><p class="sub">${esc(e.title)}</p>${scoreBox(demo)}<button type="button" class="bpill yf-ok wt-yes">맞힌 곡 보기</button><div class="wt-row"><button type="button" class="wt-later">닫기</button></div>` : popPastHtml(e, demo);
+    const x = waitSheet(html + '<p class="src-note">미리보기예요. 점수는 가짜이고, 눌러도 기록은 안 바뀌어요.</p>');
     x.querySelector('.wt-sheet').classList.add('wt-pop');
     x.querySelectorAll('.wt-yes, .wt-no, .wt-later').forEach(b => { b.onclick = () => { x.hidden = true; }; });
   }
