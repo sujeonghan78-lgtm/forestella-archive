@@ -669,6 +669,8 @@
     });
     events.forEach(e => {
       if (e.category !== '공연') return;
+      // 멤버 개인 일정([우림] 등)은 같은 날 투어가 있어도 투어 셋리를 붙이지 않아요
+      if (/^\s*\[[^\]]*(두훈|형호|민규|우림)[^\]]*\]/.test(e.title || '')) return;
       const t = tours.find(x => x.dates.includes(e.date));
       if (t) { e.setlist = t; t.events.push(e); }
     });
