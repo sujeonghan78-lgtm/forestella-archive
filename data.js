@@ -83,7 +83,7 @@
   // 같은 곡인데 표기가 다른 것 (왼쪽 → 오른쪽 이름으로 합쳐요)
   // '월의 어느 멋진날에(무반주 한소절)'처럼 뒤가 달라도 앞 '10'만 되살려요
   const slFix = x => x.replace(/^월의\s*어느\s*멋진/, '10월의 어느 멋진');
-  const SONG_SAME = { '10월의 어느 멋진날에': '10월의 어느 멋진 날에', "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려', '곤드레만드레': '곤드레 만드레', "dell'amore non si sa": "dell' amore non si sa",
+  const SONG_SAME = { '뮤지컬 데스노트 - 데스노트': 'death note', '(단체곡) 시즌 오브 럽': 'seasons of love', '10월의 어느 멋진날에': '10월의 어느 멋진 날에', "l'immensità": "l'immensita", 'parla più piano': 'parla piu piano', '마마(mama)': 'mama', '화이트 나이트': 'white night', '피아노맨': 'piano man', '세이브 아워 라이브즈': 'save our lives', '샤갈스 드림': "chagall's dream", 'hijo de la luna': '달의 아들', '달의 아들 (hijo de la luna)': '달의 아들', '넬라 판타지아': 'nella fantasia', 'time travel': '시간여행', 'la ultima noche': 'ultima noche', '김경호&강형호 - 정신차려': '정신차려', '곤드레만드레': '곤드레 만드레', "dell'amore non si sa": "dell' amore non si sa",
     // 유튜브 뮤직 영어 제목 → 한국어 제목 (2026-10-18 유튜브 뮤직·음반 정보 수록곡 대조)
     'magic castle': '마법의 성', 'flower vase': '꽃병', nocturne: '야상곡', 'dear moon': '달하 노피곰 도다샤', 'and spring': '그리고 봄', changgwi: '창귀',
     'bird, bird, blue bird': '새야 새야 파랑새야', 'words from the wind': '바람이 건네준 말', together: '함께라는 이유', ties: '연', '연(緣)': '연',
@@ -112,6 +112,8 @@
   const PROD_CH = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티/;
   const LINK_SKIP = new Set([
     'ZSleXc9DR_Q>ev:10166', 'r05dSSCyGjc>ev:120245', 'r05dSSCyGjc>ev:120246',
+    // 다른 해·다른 행사 비하인드
+    'ttKZ0pvOJeM>ev:105007', 'i9jDCz6Bo7A>ev:114388', 'xxkN_i_Tp9M>ev:ubzn7y0', 'xxkN_i_Tp9M>ev:ud27vts',
   ]);
   // '꽃병 (flower vase)'처럼 괄호 안이 같은 곡의 다른 이름이면 바깥 이름으로 합쳐요
   const songKey = name => {
@@ -902,6 +904,7 @@
     const PROG_STOP = new Set(['kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'jtbc', 'mnet', 'mbn', 'tvn', 'ebs', '포레스텔라', 'forestella', '방송', '특집', '출연', '녹화', '본방', '재방']);
     const progWords = t => (String(t).replace(/^\[[^\]]*\]\s*/, '').normalize('NFKC').match(/[0-9A-Za-z가-힣]{2,}/g) || []).map(w => w.toLowerCase()).filter(w => !PROG_STOP.has(w) && !/^\d+$/.test(w));
     const PROG_ALIAS = { 불후의: /immortal songs/i, 명곡: /immortal songs/i, 열린음악회: /open concert/i, 스케치북: /sketchbook/i, 뮤직뱅크: /music ?bank/i, 음악중심: /music ?core|예능연구소/i, 엠카운트다운: /m ?countdown|엠카/i, 가요대축제: /song festival/i, 복면가왕: /king of mask/i, 편스토랑: /fun_?staurant/i };
+    const MAIN_VID = new Map(events.filter(e => e.videoId).map(e => [e.videoId, e]));
     official.forEach(v => {
       const t = v.title, ft = flat(t);
       v.members = MEMBERS.filter(m => t.includes(m) || t.includes(m.slice(1)) || ENG[m].test(t));
@@ -913,6 +916,8 @@
         .sort((a, b) => b.key.length - a.key.length || Math.abs(days(v.date, a.to)) - Math.abs(days(v.date, b.to)));
       v.tour = cs[0] && !/m\/v|teaser|lyric|highlight medley|jacket|album|앨범|coming soon/i.test(t) ? cs[0].id : '';
       v.event = null;
+      // 시트에서 어떤 일정의 대표 영상으로 정해 둔 영상은 그 일정 것이에요 (다른 일정에 자동으로 또 붙이지 않아요: 포레시피 회차가 앞뒤 회차에 붙던 것)
+      if (MAIN_VID.has(v.id)) { v.event = MAIN_VID.get(v.id); return; }
       // 비하인드는 행사 뒤 400일까지, 무대·클립 영상은 60일까지 (쇼츠·M/V·가사·티저는 빼요)
       const behind = v.kind === '비하인드' && !/m\/v|jacket|making|shooting/i.test(t);
       const stage = ['라이브', '클립', '영상', '무대', '직캠'].includes(v.kind) && !/recap|인사|greeting|예고|preview|d-\d|exhibition|메이킹|making/i.test(t);
