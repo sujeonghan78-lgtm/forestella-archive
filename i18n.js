@@ -69,10 +69,44 @@
   // 숫자가 붙는 짧은 말 (무대 3, 영상 2 · 콘서트 1 ›, 출연 35, 8회, 12곡 …)
   const WORD = { 무대: ['Stages', 'ステージ'], 영상: ['Videos', '動画'], 콘서트: ['Concerts', 'コンサート'], 타이틀: ['Title', 'タイトル'], 출연: ['Appearances', '出演'], 일정: ['Schedules', 'スケジュール'], 음반: ['Albums', 'アルバム'], '활동 이력': ['Career', '活動履歴'], 직관: ['Attended', '現場'] };
   const i = lang === 'ja' ? 1 : 0;
+  // 기다리는 일정 (v509)
+  Object.assign(T, {
+    '기다리는 일정': ['Waiting for', '待ちわびる予定'], '갈 거예요': ['I\'m going', '行きます'], '갈 공연을 골라 D-day를 세어 봐요': ['Pick shows you\'ll go to and count down', '行く公演を選んでカウントダウン'],
+    '갈 일정 · D-day · 셋리 예측': ['Going · D-day · Setlist guess', '行く予定 · D-day · セトリ予想'],
+    '셋리': ['Setlist', 'セトリ'], '준비물': ['Checklist', '持ち物'], '셋리 예측': ['Setlist guess', 'セトリ予想'], '셋리 예측 쓰기': ['Use setlist guess', 'セトリ予想を使う'],
+    '이 같이 기다려요': [' waiting together', 'が一緒に待っています'],
+    '다가오는 일정': ['Upcoming', '今後の予定'], '지난 셋리 예측': ['Past setlist guesses', '過去のセトリ予想'], '내 예측 셋리': ['My setlist guess', '私のセトリ予想'],
+    '누르면 빠져요': ['tap to remove', 'タップで外す'], '최근에 부른 곡': ['Recently sung', '最近歌った曲'], '아래에서 곡을 눌러 넣어요': ['Tap songs below to add', '下の曲をタップして追加'],
+    '다른 곡 찾아서 넣기': ['Search other songs', '他の曲を探して追加'], '찾는 곡이 없어요': ['No songs found', '見つかりません'],
+    '셋리가 올라오면 점수가 나와요.': ['Your score appears once the setlist is posted.', 'セトリが上がるとスコアが出ます。'], '셋리가 올라오면 점수가 나와요': ['Score appears once the setlist is posted', 'セトリが上がるとスコアが出ます'],
+    '점': ['pts', '点'], '다녀왔어요': ['I went', '行きました'], '직관 기록했어요': ['Marked as attended', '現場参加を記録済み'], '다녀왔어요 · 직관으로 옮기기': ['I went · Mark as attended', '行きました · 現場参加に記録'],
+    '못 갔어요': ['Couldn\'t go', '行けませんでした'], '나중에': ['Later', 'あとで'], '다 챙겼어요': ['All packed', '準備OK'], '다 챙기셨나요?': ['Got everything?', '持ち物は大丈夫?'],
+    '셋리가 올라왔어요!': ['The setlist is up!', 'セトリが上がりました!'], '맞힌 곡 보기': ['See matched songs', '当たった曲を見る'], '다 했어요': ['Done', '完了'],
+    '＋ 내 준비물 더하기 (예: 담요)': ['＋ Add an item (e.g. blanket)', '＋ 持ち物を追加 (例: ブランケット)'], '더하기': ['Add', '追加'], '더하거나 뺀 것을 다음 공연에도 쓰기': ['Keep these changes for next shows', '変更を次の公演にも使う'],
+    '티켓 · 예매 내역': ['Ticket · booking', 'チケット · 予約内容'], '신분증': ['ID card', '身分証'], '응원봉': ['Light stick', 'ペンライト'], '보조배터리': ['Power bank', 'モバイルバッテリー'], '슬로건': ['Slogan', 'スローガン'], '포레 인형': ['Forestella doll', 'フォレ人形'],
+    '보관함 직관에 넣었어요': ['Saved as attended', '現場参加に保存しました'], '기다리는 일정에 넣었어요': ['Added to Waiting for', '待ちわびる予定に追加しました'],
+    '120일 안에 등록된 일정이 없어요.': ['No schedules in the next 120 days.', '120日以内の予定はありません。'],
+    '아직 기다리는 일정이 없어요. 아래 다가오는 일정에서 갈 거예요를 눌러 보세요.': ['Nothing yet. Tap "I\'m going" on an upcoming schedule below.', 'まだありません。下の予定で「行きます」を押してみてください。'],
+    '갈 거예요 취소': ['Cancel going', '行くを取り消す'], '기다리는 일정 전체': ['All waiting', 'すべて見る'], '접기': ['Collapse', '閉じる'], '지우기': ['Remove', '消す'],
+  });
   function tr(s) {
     const k = s.trim();
+    let m0;
     if (!k || !/[가-힣]/.test(k)) return null;
     if (T[k]) return s.replace(k, T[k][i]);
+    if (k === '숲별') return s.replace(k, lang === 'ja' ? 'スプビョル' : 'Soopbyeol');
+    if ((m0 = k.match(/^(\d+)명$/))) return s.replace(k, lang === 'ja' ? m0[1] + '人' : m0[1] + ' fans');
+    if ((m0 = k.match(/^(\d+)곡 중 (\d+)곡 맞혔어요$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}曲中${m0[2]}曲当たり` : `${m0[2]} of ${m0[1]} songs right`);
+    if ((m0 = k.match(/^셋리 예측 (\d+)곡 중 (\d+)곡 맞혔어요$/))) return s.replace(k, lang === 'ja' ? `セトリ予想 ${m0[1]}曲中${m0[2]}曲当たり` : `Setlist guess: ${m0[2]} of ${m0[1]} right`);
+    if ((m0 = k.match(/^고른 곡 (\d+)곡$/))) return s.replace(k, lang === 'ja' ? `選んだ曲 ${m0[1]}曲` : `${m0[1]} picked`);
+    if ((m0 = k.match(/^(\d+)점$/))) return s.replace(k, lang === 'ja' ? m0[1] + '点' : m0[1] + ' pts');
+    if ((m0 = k.match(/^(\d{4})년 (\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}年${m0[2]}月` : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m0[2]-1] + ' ' + m0[1]);
+    if ((m0 = k.match(/^(\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? m0[1] + '月' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m0[1] - 1]);
+    if ((m0 = k.match(/^갈 거예요 (\d+)개$/))) return s.replace(k, lang === 'ja' ? `行く予定 ${m0[1]}件` : `Going to ${m0[1]}`);
+    if ((m0 = k.match(/^오늘은 (.+) 가는 날!$/))) return s.replace(k, lang === 'ja' ? `今日は${m0[1]}の日!` : `Today: ${m0[1]}!`);
+    if ((m0 = k.match(/^(.+) · 다녀오셨어요\? 직관으로 옮길까요\?$/))) return s.replace(k, lang === 'ja' ? `${m0[1]} · 行きましたか? 現場参加に記録しますか?` : `${m0[1]} · Did you go? Mark as attended?`);
+    if ((m0 = k.match(/^(\d\d\.\d\d) (일|월|화|수|목|금|토)$/)) && DAY[m0[2]]) return s.replace(k, `${m0[1]} ${DAY[m0[2]][i]}`);
+    if (k.length === 1 && DAY[k]) return s.replace(k, DAY[k][i]);
     { const b = k.match(/^(.+?)\s*›$/); if (b && T[b[1]]) return s.replace(k, T[b[1]][i] + ' ›'); }
     let m;
     if ((m = k.match(/^(·\s*)?((무대|영상|콘서트|타이틀|출연|일정|음반|활동 이력|직관)( \d+)?( · )?)+( ›)?$/))) return s.replace(k, k.replace(/무대|영상|콘서트|타이틀|출연|일정|음반|활동 이력|직관/g, w => WORD[w][i]));
