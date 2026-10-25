@@ -209,7 +209,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -544,7 +544,7 @@
     // 관리자가 지우면(서명된 숨김 줄, 번호 'c'+일정·날짜·시간) 빠져요
     let lyricsAll = [], flaggedAll = [];
     const bansAll = {};
-    const heartsAll = { s: {}, e: {}, w: {}, mine: null };
+    const heartsAll = { s: {}, e: {}, w: {}, g: {}, mine: null }, predsAll = {};
     const langVotes = new Map();   // 곡키 → {언어: Set(누가)}
     const songVotes = new Map();   // 곡키|항목|값 → {k, what, val, by: Set, at}
     if (raw.reports) {
@@ -612,9 +612,13 @@
       });
       // 모든 팬의 하트 (종류: 하트 누가/하트곡/하트일정): 사람마다 가장 늦게 보낸 목록만 세요
       const hl = new Map();
-      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type === '하트' && r.by) { const at = tsMs(r.time); if (!hl.has(r.by) || hl.get(r.by).at <= at) hl.set(r.by, { at, s: line0(r, '하트곡'), e: line0(r, '하트일정'), w: line0(r, '소취곡') }); } });
-      hl.forEach((h, by) => ['s', 'e', 'w'].forEach(k => new Set(h[k].split('|').filter(Boolean)).forEach(id => { heartsAll[k][id] = (heartsAll[k][id] || 0) + 1; })));
-      heartsAll.mine = hl.has(window.SB_UID) ? { s: hl.get(window.SB_UID).s.split('|'), e: hl.get(window.SB_UID).e.split('|'), w: hl.get(window.SB_UID).w.split('|') } : null;
+      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type === '하트' && r.by) { const at = tsMs(r.time); if (!hl.has(r.by) || hl.get(r.by).at <= at) hl.set(r.by, { at, s: line0(r, '하트곡'), e: line0(r, '하트일정'), w: line0(r, '소취곡'), g: line0(r, '갈일정') }); } });
+      hl.forEach((h, by) => ['s', 'e', 'w', 'g'].forEach(k => new Set(h[k].split('|').filter(Boolean)).forEach(id => { heartsAll[k][id] = (heartsAll[k][id] || 0) + 1; })));
+      heartsAll.mine = hl.has(window.SB_UID) ? { s: hl.get(window.SB_UID).s.split('|'), e: hl.get(window.SB_UID).e.split('|'), w: hl.get(window.SB_UID).w.split('|'), g: hl.get(window.SB_UID).g.split('|') } : null;
+      // 셋리 예측 (종류: 셋리예측 일정/누가/곡: 곡키|곡키): 사람마다 가장 늦게 보낸 것만
+      const pl = new Map();
+      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '셋리예측' || !r.by) return; const id = line0(r, '일정'), at = tsMs(r.time), k = id + '|' + r.by; if (id && (!pl.has(k) || pl.get(k).at <= at)) pl.set(k, { id, by: r.by, at, keys: line0(r, '곡').split('|').filter(Boolean).slice(0, 60) }); });
+      pl.forEach(p => { (predsAll[p.id] = predsAll[p.id] || []).push({ by: p.by, keys: p.keys }); });
       // 신고 3명 이상 → 자동 숨김 (관리자가 복구한 건 빼고). 숨겨진 글 수로 기기 글쓰기 막기
       const flagged = [];
       lyr.forEach(l => {
@@ -1129,7 +1133,7 @@
     votes.filter(v => !v.ok).forEach(v => { const so = songs.get(songAlias[v.k] || v.k); if (so) (so.fixProps = so.fixProps || []).push(v); });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

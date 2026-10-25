@@ -176,16 +176,16 @@
   const HEART_SENT = 'sb-heart-sent';
   // 소취곡(숲별 카드 + 곡 화면 🙏)도 같은 줄에 실어 보내서 '듣고 싶어 하는 팬' 수를 세요
   const wishKeys = () => { try { return pickList('wish').map(so => so.key).slice(0, 200); } catch (e) { return []; } };
-  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys() });
+  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn|go|sp):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys(), g: box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3)).slice(0, 100) });
   let heartTimer = null;
   function heartSync() {
     clearTimeout(heartTimer);
     heartTimer = setTimeout(() => {
-      const h = heartLists(), sig = window.DATA.slVer([h.s.join('|'), h.e.join('|'), h.w.join('|')]), was = boxRead(HEART_SENT);
+      const h = heartLists(), sig = window.DATA.slVer([h.s.join('|'), h.e.join('|'), h.w.join('|'), h.g.join('|')]), was = boxRead(HEART_SENT);
       if (was && was.sig === sig) return;
-      if (!was && !h.s.length && !h.e.length && !h.w.length) return;
+      if (!was && !h.s.length && !h.e.length && !h.w.length && !h.g.length) return;
       const by = myUid(); window.SB_UID = by;
-      formPost(`종류: 하트\n누가: ${by}\n하트곡: ${h.s.join('|')}\n하트일정: ${h.e.join('|')}\n소취곡: ${h.w.join('|')}`).then(() => boxWrite(HEART_SENT, { sig, s: h.s, e: h.e, w: h.w })).catch(() => { /* 다음에 다시 보내요 */ });
+      formPost(`종류: 하트\n누가: ${by}\n하트곡: ${h.s.join('|')}\n하트일정: ${h.e.join('|')}\n소취곡: ${h.w.join('|')}\n갈일정: ${h.g.join('|')}`).then(() => boxWrite(HEART_SENT, { sig, s: h.s, e: h.e, w: h.w, g: h.g })).catch(() => { /* 다음에 다시 보내요 */ });
     }, 3000);
   }
   // 보여 줄 하트 수: 시트에 모인 수에서 내 예전 하트를 빼고 지금 하트를 더해요 (3개 이상일 때만)
@@ -4149,6 +4149,7 @@
           return parts.length ? parts.join(' · ') : '좋아요 · 직관 · 내 곡'; })(boxStats()))}
         ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국', '내가 간 공연을 지도로 되돌아보기')}
         ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
+        ${item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? '갈 거예요 ' + goIds().length + '개' : '갈 일정 · D-day · 셋리 예측')}
         ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
         ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사', '축제 · 기획 공연 · 지역별')}
         ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
@@ -4383,6 +4384,164 @@
 
   // 홈 화면 편집: 칸 켜기·끄기, 순서 바꾸기 (이 폰에 저장). '자주 쓰는 메뉴'는 처음엔 꺼져 있어요
   const HOME_KEY = 'sb-home';
+  // ---------- ⏳ 기다리는 일정: 🙋 갈 거예요 · D-day · 같이 기다리는 숲별 · 🎯 셋리 예측 · 🎒 준비물 ----------
+  // 갈 거예요는 보관함 곡 칸(box.s)에 'go:일정ID', 셋리 예측은 'sp:일정ID:곡키|곡키'로 넣어서 이어 쓰기로 따라가요
+  const goHas = id => box.s.includes('go:' + id);
+  const goIds = () => box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3));
+  const goToggle = id => { boxSetS(goHas(id) ? box.s.filter(x => x !== 'go:' + id) : ['go:' + id, ...box.s]); heartSync(); };
+  const goN = id => { const H = data.hearts || {}, mine = H.mine; return Math.max(0, ((H.g || {})[id] || 0) - (mine && (mine.g || []).includes(id) ? 1 : 0) + (goHas(id) ? 1 : 0)); };
+  const goable = e => !e.ytOnly && !/생일|유튜브|네이버TV/.test(e.category) && !/발매(\s*\([^)]*\))?\s*$/.test(e.title || '');
+  const ddOf = e => { const d = Math.round((new Date(e.date) - new Date(todayIso())) / 864e5); return d === 0 ? 'D-DAY' : d > 0 ? 'D-' + d : 'D+' + -d; };
+  const goBtn = e => e.date >= todayIso() && goable(e) ? `<button type="button" class="bpill go-btn" data-go="${esc(e.id)}" aria-pressed="${goHas(e.id)}">${goHas(e.id) ? '🙋 갈 거예요 ✓' : '🙋 갈 거예요'}</button>` : '';
+  const goWith = id => { const n = goN(id); return n >= 2 ? `👥 같이 기다리는 숲별 ${n.toLocaleString()}명` : ''; };
+  const songOfName = n => { const al = data.songAlias || {}, k = window.DATA.songKey(n); return data.songs.get(k) || data.songs.get(al[k]) || null; };
+  const spGet = id => { const x = box.s.find(x => x.startsWith('sp:' + id + ':')); return x ? x.slice(4 + id.length).split('|').filter(k => data.songs.has(k)) : []; };
+  const spTimer = {};
+  const spSet = (id, keys) => {
+    boxSetS([...box.s.filter(x => !x.startsWith('sp:' + id + ':')), ...(keys.length ? ['sp:' + id + ':' + keys.join('|')] : [])]);
+    clearTimeout(spTimer[id]);
+    spTimer[id] = setTimeout(() => formPost(`종류: 셋리예측\n일정: ${id}\n누가: ${myUid()}\n곡: ${keys.join('|')}`).catch(() => { /* 다음에 다시 보내요 */ }), 4000);
+  };
+  const soloEv = e => /^\s*\[[^\]]*(두훈|형호|민규|우림)/.test(e.title || '');
+  // 최근에 부른 곡 20개: 이 일정 전 무대들에서 최근 것부터 (멤버 개인 일정이면 개인 일정끼리)
+  function recentSongs(e, n = 20) {
+    const out = [], seen = new Set(), solo = soloEv(e);
+    data.events.filter(x => x.date < e.date && x.songs.length && x.songSource !== '참고' && soloEv(x) === solo).sort((a, b) => b.date.localeCompare(a.date)).some(x => {
+      x.songs.forEach(nm => { const so = songOfName(nm); if (so && !seen.has(so.key) && out.length < n) { seen.add(so.key); out.push(so); } });
+      return out.length >= n;
+    });
+    return out;
+  }
+  // 이날 곡이 없으면 (공연이 끝난 뒤에만) 투어 셋리스트로 매겨요
+  const spReal = e => { if (e.songSource === '참고') return []; const names = e.songs.length ? e.songs : e.date < todayIso() && e.setlist ? e.setlist.songs.map(x => x.t) : []; return [...new Set(names.map(n => (songOfName(n) || {}).key).filter(Boolean))]; };
+  // 점수 = 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 것) × 100 — 많이 고른다고 점수가 오르지 않아요
+  const spScore = (real, keys) => { if (!real.length || !keys.length) return null; const hit = keys.filter(k => real.includes(k)).length; return { hit, score: Math.round(hit / Math.max(real.length, keys.length) * 100) }; };
+  const spLocked = e => e.date < todayIso() || spReal(e).length > 0;
+  function spBlock(e) {
+    if (!goable(e)) return '';
+    const mine = spGet(e.id), real = spReal(e), locked = spLocked(e);
+    if (locked && !mine.length) return '';
+    const chip = (so, on) => `<button type="button" class="chip sp-chip${on ? ' on' : ''}" data-k="${esc(so.key)}" aria-pressed="${on}">${on ? '✓ ' : ''}${esc(so.name)}</button>`;
+    const head = `<h2 class="h3">🎯 셋리 예측${help('공연에서 부를 것 같은 곡을 골라요. 셋리가 올라오면 맞힌 곡으로 점수가 나와요. 점수는 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 수)예요.')}</h2>`;
+    if (locked) {
+      if (!real.length) return `<section class="d-block sp-box">${head}<p class="sub">셋리가 올라오면 점수가 나와요. 고른 곡 ${mine.length}곡: ${mine.map(k => esc(data.songs.get(k).name)).join(' · ')}</p></section>`;
+      const sc = spScore(real, mine), others = (data.preds || {})[e.id] || [], me = myUid();
+      const all = [...others.filter(p => p.by !== me).map(p => p.keys), mine].filter(k => k.length);
+      const avg = all.length >= 4 ? Math.round(all.reduce((a, k) => a + spScore(real, k).score, 0) / all.length) : null;
+      const picked = new Set(all.flat()), surprise = all.length >= 4 ? real.filter(k => !picked.has(k)) : [];
+      return `<section class="d-block sp-box">${head}
+        <div class="sp-score"><b>${sc.score}점</b><span>${real.length}곡 중 ${sc.hit}곡 맞혔어요${avg != null ? ` · 숲별 평균 ${avg}점 (${all.length}명)` : ''}</span></div>
+        <div class="sp-real">${real.map(k => `<span class="sp-r${mine.includes(k) ? ' hit' : ''}">${mine.includes(k) ? '✓ ' : ''}${esc(data.songs.get(k).name)}</span>`).join('')}</div>
+        ${surprise.length ? `<p class="sub">😮 아무도 예상 못 한 곡: ${surprise.map(k => esc(data.songs.get(k).name)).join(' · ')}</p>` : ''}</section>`;
+    }
+    const rec = recentSongs(e).filter(so => !mine.includes(so.key));
+    return `<section class="d-block sp-box" data-id="${esc(e.id)}">${head}
+      ${mine.length ? `<p class="sp-l">고른 곡 ${mine.length}곡 <small>누르면 빠져요</small></p><div class="sp-chips">${mine.map(k => chip(data.songs.get(k), true)).join('')}</div>` : '<p class="sub">아래 최근에 부른 곡에서 고르거나 검색해서 넣어요.</p>'}
+      ${rec.length ? `<p class="sp-l">최근에 부른 곡</p><div class="sp-chips">${rec.map(so => chip(so, false)).join('')}</div>` : ''}
+      <input type="search" class="op-in sp-q" placeholder="🔍 다른 곡 찾아서 넣기" autocomplete="off"><div class="sp-chips sp-found"></div></section>`;
+  }
+  // 🎒 준비물: 기본 목록 + 내가 더한 것, 일정마다 체크
+  const RD_KEY = 'sb-ready', RD_BASE = ['티켓 · 예매 내역', '신분증', '응원봉', '보조배터리', '슬로건'];
+  const rd = () => ({ add: [], off: [], done: {}, shown: {}, ...(boxRead(RD_KEY) || {}) });
+  const rdItems = () => { const r = rd(); return [...RD_BASE.filter(x => !r.off.includes(x)), ...r.add]; };
+  const rdDone = id => (rd().done[id] || []).filter(x => rdItems().includes(x));
+  const rdBox = id => `<div class="rd-box" data-id="${esc(id)}">${rdItems().map(x => `<label class="rd-row"><input type="checkbox" data-rd="${esc(x)}"${rdDone(id).includes(x) ? ' checked' : ''}><span>${esc(x)}</span><button type="button" class="rd-x" data-rdx="${esc(x)}" aria-label="${esc(x)} 빼기">×</button></label>`).join('')}
+    <div class="rd-new"><input type="text" class="op-in rd-in" maxlength="20" placeholder="＋ 내 준비물 더하기 (예: 담요)"><button type="button" class="bpill rd-add">더하기</button></div></div>`;
+  const rdLine = id => `🎒 ${rdDone(id).length}/${rdItems().length}`;
+  function homeWait() {
+    const t = todayIso(), next = goIds().map(id => data.byId.get(id)).filter(e => e && e.date >= t).sort((a, b) => a.date.localeCompare(b.date))[0];
+    if (!next) return '';
+    const sp = spGet(next.id).length, w = goWith(next.id);
+    return `<a class="wait-home" href="#/wait"><span class="wh-d">${ddOf(next)}</span><span class="wh-t"><b>${esc(next.title)}</b><small>${fmtDate(next.date)}${next.time ? ' ' + esc(next.time) : ''}${w ? ' · ' + w : ''}</small><small>🎯 예측 ${sp}곡 · ${rdLine(next.id)}</small></span></a>`;
+  }
+  function waitView() {
+    const t = todayIso(), mineAll = goIds().map(id => data.byId.get(id)).filter(Boolean);
+    const up = mineAll.filter(e => e.date >= t).sort((a, b) => a.date.localeCompare(b.date));
+    const until = new Date(Date.now() + 120 * 864e5).toISOString().slice(0, 10);
+    const others = data.events.filter(e => e.date >= t && e.date <= until && goable(e) && !goHas(e.id)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 60);
+    const past = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && spLocked(e) && spReal(e).length).sort((a, b) => b.date.localeCompare(a.date));
+    const card = e => `<article class="wait-card"><a class="wc-top" href="#/e/${encodeURIComponent(e.id)}"><span class="wh-d">${ddOf(e)}</span><span class="wh-t"><b>${esc(e.title)}</b><small>${fmtDate(e.date)}${e.time ? ' ' + esc(e.time) : ''}${e.place ? ' · ' + esc(e.place) : ''}</small>${goWith(e.id) ? `<small>${goWith(e.id)}</small>` : ''}</span></a>
+      <div class="wc-acts"><a class="bpill" href="#/e/${encodeURIComponent(e.id)}?sp=1">🎯 셋리 예측 ${spGet(e.id).length}곡</a><button type="button" class="bpill rd-open" aria-expanded="false">${rdLine(e.id)} 준비물</button>${goBtn(e)}</div>
+      <div class="rd-wrap" hidden>${rdBox(e.id)}</div></article>`;
+    return `
+      <a class="back" href="#/more">‹ 더보기</a>
+      <h1 class="h1 page-title">⏳ 기다리는 일정${help('🙋 갈 거예요를 누른 일정이 모여요. 같이 기다리는 숲별 수는 이름 없이 숫자만 세요.')}</h1>
+      ${up.length ? up.map(card).join('') : '<p class="empty">아직 기다리는 일정이 없어요. 아래 다가오는 일정에서 🙋 갈 거예요를 눌러 보세요.</p>'}
+      <hr class="divider"><h2 class="h2">다가오는 일정</h2>
+      ${others.length ? others.map(e => `<div class="wait-row"><a href="#/e/${encodeURIComponent(e.id)}"><small>${e.date.slice(5).replace('-', '.')}</small> ${esc(e.title)}${goN(e.id) >= 2 ? ` <small class="wr-n">👥 ${goN(e.id)}</small>` : ''}</a>${goBtn(e)}</div>`).join('') : '<p class="empty">120일 안에 등록된 일정이 없어요.</p>'}
+      ${past.length ? `<hr class="divider"><h2 class="h2">지난 셋리 예측</h2>${past.map(e => { const s = spScore(spReal(e), spGet(e.id)); return `<a class="wait-row" href="#/e/${encodeURIComponent(e.id)}"><span><small>${e.date.slice(2).replace(/-/g, '.')}</small> ${esc(e.title)}</span><b class="wr-sc">${s ? s.score + '점' : '-'}</b></a>`; }).join('')}` : ''}`;
+  }
+  // 버튼들 (일정 상세 · 기다리는 일정 · 홈 · 팝업 어디서든)
+  document.addEventListener('click', ev => {
+    const g = ev.target.closest('[data-go]');
+    if (g) {
+      ev.preventDefault(); const id = g.dataset.go; goToggle(id);
+      document.querySelectorAll(`[data-go="${CSS.escape(id)}"]`).forEach(b => { b.setAttribute('aria-pressed', goHas(id)); b.textContent = goHas(id) ? '🙋 갈 거예요 ✓' : '🙋 갈 거예요'; });
+      const gw = document.querySelector(`.go-with[data-id="${CSS.escape(id)}"]`); if (gw) gw.textContent = goWith(id);
+      if (goHas(id)) toast('⏳ 기다리는 일정에 넣었어요');
+      if (currentRoute() === 'wait') { const y = scrollY; renderBase('wait'); scrollTo(0, y); }
+      return;
+    }
+    const sc = ev.target.closest('.sp-chip');
+    if (sc) {
+      const boxEl = sc.closest('.sp-box'), id = boxEl.dataset.id, k = sc.dataset.k, mine = spGet(id);
+      spSet(id, mine.includes(k) ? mine.filter(x => x !== k) : [...mine, k]);
+      const e = data.byId.get(id); boxEl.outerHTML = spBlock(e);
+      return;
+    }
+    const ro = ev.target.closest('.rd-open');
+    if (ro) { const w = ro.closest('.wait-card').querySelector('.rd-wrap'); w.hidden = !w.hidden; ro.setAttribute('aria-expanded', !w.hidden); return; }
+    const rx = ev.target.closest('[data-rdx]');
+    if (rx) {
+      ev.preventDefault(); const r = rd(), x = rx.dataset.rdx;
+      if (RD_BASE.includes(x)) r.off = [...r.off, x]; else r.add = r.add.filter(y => y !== x);
+      boxWrite(RD_KEY, r); rdRefresh(rx.closest('.rd-box')); return;
+    }
+    const ra = ev.target.closest('.rd-add');
+    if (ra) {
+      const b = ra.closest('.rd-box'), v = b.querySelector('.rd-in').value.trim().slice(0, 20); if (!v) return;
+      const r = rd(); if (RD_BASE.includes(v)) r.off = r.off.filter(y => y !== v); else if (!r.add.includes(v)) r.add = [...r.add, v];
+      boxWrite(RD_KEY, r); rdRefresh(b); return;
+    }
+  });
+  document.addEventListener('change', ev => {
+    const c = ev.target.closest('[data-rd]'); if (!c) return;
+    const id = c.closest('.rd-box').dataset.id, r = rd(), x = c.dataset.rd, d = new Set(r.done[id] || []);
+    c.checked ? d.add(x) : d.delete(x); r.done[id] = [...d]; boxWrite(RD_KEY, r);
+    document.querySelectorAll('.rd-open').forEach(b => { const card = b.closest('.wait-card'); if (card && card.querySelector(`.rd-box[data-id="${CSS.escape(id)}"]`)) b.textContent = rdLine(id) + ' 준비물'; });
+  });
+  document.addEventListener('input', ev => {
+    const q = ev.target.closest('.sp-q'); if (!q) return;
+    const boxEl = q.closest('.sp-box'), mine = spGet(boxEl.dataset.id), v = q.value.trim().toLowerCase().replace(/\s+/g, '');
+    const out = boxEl.querySelector('.sp-found');
+    if (!v) { out.innerHTML = ''; return; }
+    const hits = [...data.songs.values()].filter(so => !mine.includes(so.key) && (so.name.toLowerCase().replace(/\s+/g, '').includes(v) || so.key.replace(/\s+/g, '').includes(v) || koOf(so.name).replace(/\s+/g, '').includes(v))).slice(0, 10);
+    out.innerHTML = hits.length ? hits.map(so => `<button type="button" class="chip sp-chip" data-k="${esc(so.key)}">＋ ${esc(so.name)}</button>`).join('') : '<span class="sub">찾는 곡이 없어요</span>';
+  });
+  const rdRefresh = b => { if (!b) return; const id = b.dataset.id; b.outerHTML = rdBox(id); };
+  // 팝업: 공연 당일 '다 챙기셨나요?', 지난 일정 '다녀오셨어요?'
+  const waitSkip = new Set();
+  function waitPop() {
+    if (!data || !data.byId || document.querySelector('#wt-wrap:not([hidden])')) return;
+    const t = todayIso(), evs = goIds().map(id => data.byId.get(id)).filter(Boolean), r = rd();
+    let w = document.getElementById('wt-wrap');
+    const open = html => { if (!w) { w = document.createElement('div'); w.id = 'wt-wrap'; w.className = 'yf-wrap'; document.body.appendChild(w); } w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet wt-sheet" role="dialog">${html}</section>`; w.hidden = false; w.querySelector('.yf-back').onclick = () => { w.hidden = true; }; return w; };
+    const today = evs.find(e => e.date === t && r.shown[e.id] !== t);
+    if (today) {
+      const x = open(`<div class="wt-big">🎒</div><b class="wt-t">오늘은 ${esc(today.title)} 가는 날!</b><p class="sub">다 챙기셨나요?${goWith(today.id) ? ' ' + goWith(today.id).replace('👥 ', '') + '이 같이 가요.' : ''}</p>${rdBox(today.id)}<button type="button" class="bpill yf-ok wt-ok">다 챙겼어요 💚</button>`);
+      r.shown[today.id] = t; boxWrite(RD_KEY, r);
+      x.querySelector('.wt-ok').onclick = () => { x.hidden = true; };
+      return;
+    }
+    const past = evs.filter(e => e.date < t && !boxHas('w', e.id) && !waitSkip.has(e.id)).sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (!past) return;
+    const x = open(`<div class="wt-big">🎫</div><b class="wt-t">${esc(past.title)}</b><p class="sub">${fmtDate(past.date)} · 다녀오셨어요? 직관으로 옮길까요?</p>
+      <button type="button" class="bpill yf-ok wt-yes">🎫 다녀왔어요 · 직관으로 옮기기</button><div class="wt-row"><button type="button" class="bpill wt-no">못 갔어요</button><button type="button" class="bpill wt-later">나중에</button></div>`);
+    const done = () => { x.hidden = true; const rt = currentRoute(); if (rt === 'wait' || rt === 'home') { const y = scrollY; renderBase(rt); scrollTo(0, y); } setTimeout(waitPop, 400); };
+    x.querySelector('.wt-yes').onclick = () => { if (!boxHas('w', past.id)) boxToggle('w', past.id); boxSetS(box.s.filter(y => y !== 'go:' + past.id)); toast('보관함 직관에 넣었어요 🎫'); done(); };
+    x.querySelector('.wt-no').onclick = () => { boxSetS(box.s.filter(y => y !== 'go:' + past.id)); heartSync(); done(); };
+    x.querySelector('.wt-later').onclick = () => { waitSkip.add(past.id); x.hidden = true; };
+  }
   const HOME_SECS = [
     ['pins', '자주 쓰는 메뉴', () => { const g = pinsGot(); return `<section class="block pin-box home-pins"><div class="pin-h"><b>자주 쓰는 메뉴</b><a class="link-btn" href="#/more">${g.length ? '바꾸기' : '고르기'}</a></div>${g.length ? pinTiles(g) : '<p class="src-note">더보기에서 ☆를 눌러 메뉴를 골라 주세요.</p>'}</section>`; }, true],
     ['random', '오늘의 랜덤 무대', () => homeRandom()],
@@ -4558,6 +4717,7 @@
   const routes = {
     home: () => `
       ${header()}
+      ${homeWait()}
       ${heartNotice()}
       ${driveBox()}
       <div id="op-home"></div>
@@ -4569,7 +4729,7 @@
     program: programView,
     local: localView,
     box: boxView,
-    card: cardView,
+    card: cardView, wait: waitView,
     songs: songsView,
     song: songView,
     timeline: timelineView,
@@ -6593,7 +6753,9 @@
         ${plState(e)}
         ${nmState(e)}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
-        <div class="box-row">${boxBtn('e', e.id, 'bpill')}${heartTag('e', e.id)}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}${e.ytOnly ? '' : `<button type="button" class="bpill tmi-jump" data-key="${esc('e:' + e.id)}">💡 TMI${tmiOf('e:' + e.id).length ? ' ' + tmiOf('e:' + e.id).length : ''}</button>`}</div>
+        <div class="box-row">${goBtn(e)}${boxBtn('e', e.id, 'bpill')}${heartTag('e', e.id)}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}${e.ytOnly ? '' : `<button type="button" class="bpill tmi-jump" data-key="${esc('e:' + e.id)}">💡 TMI${tmiOf('e:' + e.id).length ? ' ' + tmiOf('e:' + e.id).length : ''}</button>`}</div>
+        ${goBtn(e) ? `<p class="sub go-with" data-id="${esc(e.id)}">${goWith(e.id)}</p>` : ''}
+        ${spBlock(e)}
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
         <div class="share-row">
@@ -6647,6 +6809,8 @@
     box.scrollTop = 0;
     const plo = box.querySelector('#pl-open');
     if (plo) setTimeout(() => plo.scrollIntoView({ block: 'start' }), 50);
+    const spo = /[?&]sp=1/.test(location.hash) && box.querySelector('.sp-box');
+    if (spo) setTimeout(() => spo.scrollIntoView({ block: 'start' }), 50);
     const c = document.getElementById('sheet-close');
     if (c) c.onclick = closeSheet;
     box.focus({ preventScroll: true });
@@ -6662,7 +6826,7 @@
   }
 
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -6710,6 +6874,7 @@
     if (name === 'program') bindPrograms();
     if (name === 'box') bindBox();
     if (name === 'card') bindCard();
+    setTimeout(waitPop, 800);
     if (name === 'map') bindMap();
     if (name === 'more') bindMore();
     if (name === 'placefind') bindPlaceFind();
