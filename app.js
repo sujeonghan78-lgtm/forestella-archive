@@ -1718,19 +1718,49 @@
   // ---------- 🚩 신고 · 글쓰기 막기 ----------
   // 다른 사람 글(떼창·공유 가사·TMI)에 신고(종류: 신고 번호/누가). 3명이면 자동으로 숨겨지고 관리자 화면에만 떠요.
   const RP_SENT = 'sb-rp-sent';
-  const rpBtn = l => l.wait ? '' : `<button type="button" class="link-btn rp-btn" data-id="${esc(l.id)}" aria-label="신고하기" title="신고하기">🚩</button>`;
+  const rpBtn = l => l.wait ? '' : `<button type="button" class="link-btn rp-btn" data-id="${esc(l.id)}" aria-label="숨김 요청 · 신고" title="숨김 요청 · 신고">⋯</button>`;
   const banned = () => (data.bans || {})[myUid()] > Date.now();
   const banMsg = () => { const d = new Date((data.bans || {})[myUid()]); return `신고가 쌓여 ${d.getMonth() + 1}월 ${d.getDate()}일까지 이 기기에선 글을 올릴 수 없어요.`; };
+  // ⋯ → 🙈 숨김 요청(관리자에게 의견과 함께, 이 폰에선 바로 안 보여요) · 🚩 신고(사유 필수, 세 분이면 자동 숨김)
+  const HQ_SENT = 'sb-hq-sent';
+  const myHide = d => { const h = new Set(boxRead(HQ_SENT) || []); if (h.size && d && d.lyrics) d.lyrics = d.lyrics.filter(l => !h.has(l.id)); return d; };
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.rp-btn');
     if (!b) return;
-    if ((boxRead(RP_SENT) || []).includes(b.dataset.id)) { toast('이미 신고했어요.'); return; }
-    if (!confirm('이 글을 신고할까요? 세 분이 신고하면 숨겨지고 관리자가 확인해요.')) return;
-    formPost(`종류: 신고\n번호: ${b.dataset.id}\n누가: ${myUid()}`).then(() => {
-      boxWrite(RP_SENT, [...(boxRead(RP_SENT) || []), b.dataset.id].slice(-300));
-      const row = b.closest('.ly-line, .story-row'); if (row) row.classList.add('rp-done');
-      toast('신고했어요. 고마워요!');
-    }).catch(() => toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'));
+    const id = b.dataset.id, row = b.closest('.ly-line, .story-row, .tre-row');
+    const w = document.createElement('div'); w.className = 'lang-sheet rp-sheet';
+    const pick = () => { w.innerHTML = `<div class="lang-box" role="dialog" aria-label="숨김 요청 · 신고"><b>이 글을</b>
+      <button type="button" class="lang-opt" data-k="hq">🙈 숨김 요청 <small>신고할 정도는 아니지만 안 보였으면 해요 · 관리자가 확인해요</small></button>
+      <button type="button" class="lang-opt" data-k="rp">🚩 신고 <small>규칙에 어긋나는 글이에요 · 세 분이 신고하면 숨겨져요</small></button>
+      <button type="button" class="lang-x">닫기</button></div>`; };
+    const form = k => { w.innerHTML = `<div class="lang-box" role="dialog"><b>${k === 'hq' ? '🙈 숨김 요청' : '🚩 신고'}</b>
+      <p>${k === 'hq' ? '왜 숨겼으면 하는지 관리자에게 남겨 주세요. 이 폰에선 바로 안 보여요.' : '신고 사유를 적어 주세요.'}</p>
+      <textarea class="rp-why" rows="3" maxlength="300" placeholder="${k === 'hq' ? '예: 스포일러 같아요 / 사실과 달라요' : '예: 욕설 / 광고 / 다른 사람을 공격해요'}"></textarea>
+      <button type="button" class="bpill add-send rp-go" data-k="${k}">보내기</button><button type="button" class="lang-x">닫기</button></div>`; w.querySelector('.rp-why').focus(); };
+    if ((boxRead(RP_SENT) || []).includes(id) && (boxRead(HQ_SENT) || []).includes(id)) { toast('이미 보냈어요.'); return; }
+    pick();
+    w.onclick = e2 => {
+      const o = e2.target.closest('[data-k]');
+      if (o && o.classList.contains('lang-opt')) {
+        if ((boxRead(o.dataset.k === 'hq' ? HQ_SENT : RP_SENT) || []).includes(id)) { toast(o.dataset.k === 'hq' ? '이미 숨김 요청했어요.' : '이미 신고했어요.'); return; }
+        form(o.dataset.k); return;
+      }
+      const g = e2.target.closest('.rp-go');
+      if (g) {
+        const t = w.querySelector('.rp-why').value.trim(), k = g.dataset.k;
+        if (t.length < 2) { toast(k === 'hq' ? '숨김 요청 의견을 적어 주세요.' : '신고 사유를 적어 주세요.'); return; }
+        g.disabled = true;
+        formPost(`종류: ${k === 'hq' ? '숨김요청' : '신고'}\n번호: ${id}\n누가: ${myUid()}\n내용: ${t}`).then(() => {
+          const key = k === 'hq' ? HQ_SENT : RP_SENT;
+          boxWrite(key, [...(boxRead(key) || []), id].slice(-300));
+          if (k === 'hq') { myHide(data); if (row) row.remove(); } else if (row) row.classList.add('rp-done');
+          w.remove(); toast(k === 'hq' ? '숨김 요청을 보냈어요. 이 폰에선 안 보여요.' : '신고했어요. 고마워요!');
+        }).catch(() => { g.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
+        return;
+      }
+      if (e2.target === w || e2.target.closest('.lang-x')) w.remove();
+    };
+    document.body.appendChild(w);
   });
   // ---------- 💡 TMI ----------
   // 곡('s:곡키')·일정('e:일정ID')·콘서트('t:투어ID')마다 팬이 TMI를 달아요 (종류: TMI 곡키/출처/누가/내용). ♥ '나도 봤어요'가 많은 순.
@@ -5740,7 +5770,7 @@
     try { localStorage.setItem(DT_MARK + '-ok', JSON.stringify(dt)); } catch (err) { /* 괜찮아요 */ }
     try { localStorage.setItem(EV_HIDE, JSON.stringify([...set])); localStorage.setItem(EV_HIDE + '-to', JSON.stringify(merge)); } catch (err) { /* 괜찮아요 */ }
     const next = window.DATA.rebuild();
-    if (next) { data = next; searchIndex = null; baseHash = null; render(); }
+    if (next) { data = myHide(next); searchIndex = null; baseHash = null; render(); }
   }
   // 반영한 팬 제보 숨기기(관리자): 일정 숨김과 같은 서명 줄로 보내요 (번호가 r로 시작해서 시트 일정 탭은 안 건드려요)
   document.addEventListener('click', async ev => {
@@ -5836,7 +5866,7 @@
     const fl = (data.flagged || []).filter(f => !f.restored && !(f.kept && !f.reports));
     const where = k => k.startsWith('e:') ? ((data.byId.get(k.slice(2)) || {}).title || '일정') : k.startsWith('t:') ? '콘서트 ' + k.slice(2) : k.startsWith('s:') ? ((data.songs.get(k.slice(2)) || {}).name || '곡') : ((data.songs.get(k) || {}).name || k);
     const bans = Object.entries(data.bans || {}).filter(([, t]) => t > Date.now());
-    return (fl.length ? fl.map(f => `<div class="op-item${f.hidden ? '' : ' rep-ok'}"><div class="op-head"><span class="op-who">${esc(f.kind)} · ${esc(where(f.key))}</span><span class="op-when">신고 ${f.reports} · ${f.kept ? '숨김 유지' : f.hidden ? '자동 숨김' : '보이는 중'}</span></div><p class="op-text">${esc(f.text)}</p><div class="op-foot">${f.kept ? '' : `<button type="button" class="link-btn fl-keep" data-id="${esc(f.id)}">숨김 유지</button>`}<button type="button" class="link-btn fl-ok" data-id="${esc(f.id)}">복구 (문제없음)</button><small class="src-note">기기 ${esc(f.author || '')}</small></div></div>`).join('') : '<p class="src-note">신고된 글이 없어요.</p>')
+    return (fl.length ? fl.map(f => `<div class="op-item${f.hidden ? '' : ' rep-ok'}"><div class="op-head"><span class="op-who">${esc(f.kind)} · ${esc(where(f.key))}</span><span class="op-when">${f.reports ? `신고 ${f.reports} · ` : ''}${(f.hideReqs || []).length ? `숨김 요청 ${f.hideReqs.length} · ` : ''}${f.kept ? '숨김 유지' : f.hidden ? '자동 숨김' : '보이는 중'}</span></div><p class="op-text">${esc(f.text)}</p>${(f.why || []).map(t => `<p class="src-note">🚩 ${esc(t)}</p>`).join('')}${(f.hideReqs || []).filter(Boolean).map(t => `<p class="src-note">🙈 ${esc(t)}</p>`).join('')}<div class="op-foot">${f.kept ? '' : `<button type="button" class="link-btn fl-keep" data-id="${esc(f.id)}">${f.hidden ? '숨김 유지' : '숨기기'}</button>`}<button type="button" class="link-btn fl-ok" data-id="${esc(f.id)}">복구 (문제없음)</button><small class="src-note">기기 ${esc(f.author || '')}</small></div></div>`).join('') : '<p class="src-note">신고된 글이 없어요.</p>')
       + (bans.length ? `<p class="src-note">글쓰기 막힌 기기: ${bans.map(([u, t]) => `${esc(u)} (${new Date(t).getMonth() + 1}/${new Date(t).getDate()}까지)`).join(', ')}</p>` : '');
   }
   document.addEventListener('click', ev => {
@@ -5856,7 +5886,7 @@
       : isAdmin() ? `<p class="sub">이 기기는 관리자 기기예요. <a href="#/opinion">의견 탭</a>에서 처리 표시를, 일정 화면에서 숨기기를 할 수 있어요.</p>
         <h2 class="h3 list-title">삭제 요청</h2>
         ${(q => q.length ? [...new Set(q.map(x => x.id))].map(id => `<div class="del-box">${q.filter(x => x.id === id).map(x => delReqHtml(x, true)).join('')}${delActs(id)}</div>`).join('') : '<p class="src-note">새 삭제 요청이 없어요.</p>')(delPending())}
-        <h2 class="h3 list-title">🚩 신고된 글</h2>
+        <h2 class="h3 list-title">🚩 신고 · 🙈 숨김 요청된 글</h2>
         ${flagHtml()}
         <a class="map-entry" href="#/placefind">📍 지도 장소 한꺼번에 찾기 <span>›</span></a>
         <h2 class="h3 list-title">숨긴 일정</h2>
@@ -6697,7 +6727,7 @@
   async function start() {
     showLoading();
     try {
-      data = await window.DATA.load(next => { data = next; searchIndex = null; if (currentRoute() !== 'e') baseHash = null; render(); syncHides(); });
+      data = myHide(await window.DATA.load(next => { data = myHide(next); searchIndex = null; if (currentRoute() !== 'e') baseHash = null; render(); syncHides(); }));
       render();
       syncHides();
       boxPull();

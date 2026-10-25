@@ -1664,3 +1664,6 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .deco-fs { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
 .deco-fs button { flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 0; font: inherit; color: var(--ink); cursor: pointer; }
 .deco-fs button.on { border-color: var(--green); color: var(--green); font-weight: 700; }
+
+.rp-sheet .lang-opt small { display: block; margin-top: 3px; font-size: calc(12px * var(--fs)); font-weight: 400; color: var(--muted); }
+.rp-why { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 12px; padding: 10px; font: inherit; resize: vertical; }

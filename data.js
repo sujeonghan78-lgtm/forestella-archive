@@ -210,7 +210,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -576,6 +576,9 @@
       const lyr = new Map(), lyDel = new Set(), rep = new Map();
       const allRep = buildReports(toObjects(raw.reports), true);
       allRep.forEach(r => { if (r.type === '신고' && r.by) { const id = line0(r, '번호'); if (!rep.has(id)) rep.set(id, new Map()); if (!rep.get(id).has(r.by)) rep.get(id).set(r.by, tsMs(r.time)); } });
+      // 신고 사유(내용)와 숨김 요청(종류: 숨김요청 번호/누가/내용): 숨김 요청은 자동으로 숨기지 않고 관리자 화면에만 떠요
+      const why = new Map(), hreq = new Map();
+      allRep.forEach(r => { if ((r.type === '신고' || r.type === '숨김요청') && r.by) { const id = line0(r, '번호'), t = (r.message || '').trim().slice(0, 300), m = r.type === '신고' ? why : hreq; if (!m.has(id)) m.set(id, new Map()); m.get(id).set(r.by, t); } });
       allRep.forEach(r => {
         if (r.type === '가사삭제' && r.by) lyDel.add(line0(r, '번호') + '|' + r.by);
         // 떼창 구간(종류: 떼창)도 같은 방식이에요 (번호 앞에 '떼창'이 붙어요)
@@ -618,7 +621,8 @@
       lyr.forEach(l => {
         const rs = rep.get(l.id), who = rs ? [...rs.keys()].filter(u => !l.by.has(u)) : [];
         const auto = who.length >= 3 && !gone.has('ok' + l.id), man = gone.has('ly' + l.id);
-        if (who.length || man) flagged.push({ id: l.id, key: l.key, kind: l.kind, text: l.text, src: l.src, author: l.first, reports: who.length, hidden: auto || man, kept: man, restored: gone.has('ok' + l.id), at: who.length >= 3 ? [...rs.values()].sort((a, b) => a - b)[2] : l.at });
+        const hq = [...(hreq.get(l.id) || new Map())].filter(([u]) => !l.by.has(u)).map(([, t]) => t), ws = who.map(u => (why.get(l.id) || new Map()).get(u) || '').filter(Boolean);
+        if (who.length || man || hq.length) flagged.push({ id: l.id, key: l.key, kind: l.kind, text: l.text, src: l.src, author: l.first, reports: who.length, why: ws, hideReqs: hq, hidden: auto || man, kept: man, restored: gone.has('ok' + l.id), at: who.length >= 3 ? [...rs.values()].sort((a, b) => a - b)[2] : l.at });
         l.autoHidden = auto;
       });
       const strikes = new Map();
