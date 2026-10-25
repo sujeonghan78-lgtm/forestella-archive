@@ -2239,10 +2239,10 @@
     (boxRead('sb-tmi-sent') || []).filter(x => x.up && !x.del).forEach(x => ups.has(x.id) || ups.set(x.id, { kind: 'TMI', key: x.key, t: x.t, at: x.at }));
     const upList = [...ups.values()].filter(x => x.kind === 'TMI' || data.songs.get(x.key)).sort((a, b) => b.at - a.at);
     const UP_ICON = { '가사': '💬', '떼창': '📣', 'TMI': '💡' };
-    const upRow = x => { const tmi = x.kind === 'TMI'; return `<a class="box-ev" href="${tmi ? tmHref(x.key) : '#/song/' + encodeURIComponent(x.key)}"><span>${esc(tmi ? tmWhere(x.key) : data.songs.get(x.key).name)}</span><b>${UP_ICON[x.kind] || ''} ${esc(x.t)}</b></a>`; };
-    const lyRow = ([so, m]) => `<a class="box-ev" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(so.name)}</span><b>“${esc(m.t)}”</b></a>`;
-    const chRow = x => `<a class="box-ev" href="#/song/${encodeURIComponent(x.key)}"><span>${esc(data.songs.get(x.key).name)}</span><b>📣 ${esc(x.t)}</b></a>`;
-    const tmRow = x => `<a class="box-ev" href="${tmHref(x.key)}"><span>${reBy.has(x.id) ? '<em class="n-dot" aria-label="새 답글">N</em> ' : ''}${esc(tmWhere(x.key))}</span><b>${x.re ? '↳ ' : ''}${esc(x.t)}</b></a>`;
+    const upRow = x => { const tmi = x.kind === 'TMI'; return `<a class="box-ev box-note" href="${tmi ? tmHref(x.key) : '#/song/' + encodeURIComponent(x.key)}"><span>${esc(tmi ? tmWhere(x.key) : data.songs.get(x.key).name)}</span><b>${UP_ICON[x.kind] || ''} ${esc(x.t)}</b></a>`; };
+    const lyRow = ([so, m]) => `<a class="box-ev box-note" href="#/song/${encodeURIComponent(so.key)}"><span>${esc(so.name)}</span><b>“${esc(m.t)}”</b></a>`;
+    const chRow = x => `<a class="box-ev box-note" href="#/song/${encodeURIComponent(x.key)}"><span>${esc(data.songs.get(x.key).name)}</span><b>📣 ${esc(x.t)}</b></a>`;
+    const tmRow = x => `<a class="box-ev box-note" href="${tmHref(x.key)}"><span>${reBy.has(x.id) ? '<em class="n-dot" aria-label="새 답글">N</em> ' : ''}${esc(tmWhere(x.key))}</span><b>${x.re ? '↳ ' : ''}${esc(x.t)}</b></a>`;
     const groups = [
       ['ev', '🎫 일정', [['w', '🎫 직관', went, 'ev'], ['b', '📺 시청', seen, 'ev'], ['e', '♥ 좋아요', liked, 'ev']]],
       ['song', '🎵 곡', [['s', '♥ 하트', songs, 'chip'], ...SONG_PICKS.map(([k, l]) => [k, l, pickList(k), 'chip']), ['h', '🎧 들은 곡', heardList, 'chip'], ...folders().map(f => ['f-' + f.id, '📁 ' + f.name, folderSongs(f.id), 'chip', true])]],
