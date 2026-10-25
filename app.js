@@ -4498,7 +4498,7 @@
     const n = goN(next.id);
     // 평소엔 D-day + 제목 한 줄, 누르면 펼쳐요 (sb-wait-open 기억)
     const openH = boxRead('sb-wait-open') === 1;
-    if (!openH) return `<section class="wait-home"><button type="button" class="wh-mini wh-tg" aria-expanded="false"><b>${ddOf(next)}</b><span>${esc(next.title)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></section>`;
+    if (!openH) return `<section class="wait-home"><button type="button" class="wh-mini wh-tg" aria-expanded="false"><b>${ddOf(next)}</b><span>${esc(next.title)}</span>${n >= 2 ? `<em class="wh-n" aria-label="숲별 ${n}명이 같이 기다려요"><span class="go-av" aria-hidden="true">${'<i></i>'.repeat(Math.min(n, 3))}</span>${n.toLocaleString()}</em>` : ''}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></section>`;
     return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot">${SP_ON() ? `<a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a>` : ''}<button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}`, '#/wait')}</section>`;
   }
   function waitView() {
