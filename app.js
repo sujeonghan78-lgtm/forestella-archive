@@ -598,7 +598,12 @@
     const all = storyAll(), list = all.filter(l => !k || l.kind === k).sort((a, b) => o === 'heart' ? b.n - a.n || b.at - a.at : b.at - a.at);
     const ago = t => { const d = Math.floor((Date.now() - t) / 864e5); return d < 1 ? '오늘' : d < 30 ? `${d}일 전` : fmtDate(new Date(t).toISOString().slice(0, 10), false); };
     const href = (kk, oo) => '#/story' + ((kk || oo) ? '?' + [kk && 'k=' + encodeURIComponent(kk), oo && 'o=' + oo].filter(Boolean).join('&') : '');
-    const row = l => `<a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${fresh.has(l.id) ? '<b class="news-cnt">NEW</b> ' : ''}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${ago(l.at)}${l.n > 1 ? ` · ♥ ${l.n}` : ''}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>`;
+    const uid = myUid(), upLocal = new Set([...(boxRead('sb-ly-up') || []), ...(boxRead(CH_SENT) || []), ...(boxRead(TMI_SENT) || [])].map(x => x.id)), rpd = boxRead(RP_SENT) || [];
+    const row = l => {
+      const mine = l.first === uid, on = mine || l.who.includes(uid) || upLocal.has(l.id), n = l.n + (upLocal.has(l.id) && !l.who.includes(uid) ? 1 : 0);
+      return `<div class="story-row${rpd.includes(l.id) ? ' rp-done' : ''}"><a class="x-card no-img note-card story-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${fresh.has(l.id) ? '<b class="nw-badge">NEW</b> ' : ''}${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))} · ${ago(l.at)}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span>${l.src ? `<span class="story-src">출처: ${esc(l.src)}</span>` : ''}</span></a>
+        <span class="story-acts"><button type="button" class="bpill st-up${on ? ' on' : ''}" data-id="${esc(l.id)}"${on ? ' disabled' : ''} aria-label="${l.kind === 'TMI' ? '나도 봤어요' : '좋아요'}">♥ ${n}</button>${mine ? '' : rpBtn(l)}</span></div>`;
+    };
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">숲별 이야기${help('숲별들이 곡·콘서트·일정에 남긴 💡 TMI, 💬 좋아하는 가사, 📣 떼창 구간이 새로 올라온 순서로 모여요. 누르면 그 화면으로 가서 ♥나 🚩를 누를 수 있어요.')}</h1>
@@ -606,6 +611,24 @@
       <div class="view-row"><p class="sub">${list.length.toLocaleString()}개${fresh.size ? ` · 새 글 ${fresh.size}` : ''}</p><span class="story-sort"><a class="${o ? '' : 'on'}" href="${href(k, '')}">최신순</a> · <a class="${o ? 'on' : ''}" href="${href(k, 'heart')}">♥ 많은 순</a></span></div>
       ${list.length ? moreList(list.map(row), 30) : '<p class="empty">아직 올라온 이야기가 없어요. 곡·콘서트 화면에서 처음으로 남겨 보세요.</p>'}`;
   }
+  // 숲별 이야기에서 바로 ♥: 곡 화면에서 누를 때와 같은 줄을 보내요
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.st-up');
+    if (!b || b.disabled) return;
+    const l = (data.lyrics || []).find(x => x.id === b.dataset.id); if (!l) return;
+    const by = myUid(), at = Date.now();
+    const so = l.kind === 'TMI' ? null : data.songs.get(l.key);
+    const text = l.kind === 'TMI' ? `종류: TMI\n곡: ${noteWhere(l)}\n곡키: ${l.key}\n출처: \n누가: ${by}\n내용: ${l.text}` : l.kind === '떼창' ? `종류: 떼창\n곡: ${so ? so.name : ''}\n곡키: ${l.key}\n누가: ${by}\n내용: ${l.text}` : `종류: 가사\n곡: ${so ? so.name : ''}\n곡키: ${l.key}\n누가: ${by}\n내용: ${l.text}`;
+    b.disabled = true;
+    formPost(text).then(() => {
+      const item = { id: l.id, key: l.key, t: l.text, at, up: 1 };
+      if (l.kind === 'TMI') boxWrite(TMI_SENT, [...(boxRead(TMI_SENT) || []).filter(x => x.id !== l.id), item].slice(-200));
+      else if (l.kind === '떼창') boxWrite(CH_SENT, [...(boxRead(CH_SENT) || []).filter(x => x.id !== l.id), item].slice(-200));
+      else { boxWrite('sb-ly-sent', [...(boxRead('sb-ly-sent') || []), l.id].slice(-300)); boxWrite('sb-ly-up', [...(boxRead('sb-ly-up') || []).filter(x => x.id !== l.id), item].slice(-300)); }
+      b.classList.add('on'); b.textContent = '♥ ' + (l.n + 1);
+      toast('♥ 눌렀어요. 보관함 \'♥ 누른 글\'에도 모여요.');
+    }).catch(() => { b.disabled = false; toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); });
+  });
   function bindHome() {
     const nn = newsUnread().length, nb = document.getElementById('news-home');
     const sn = storyUnread().length;
@@ -1643,7 +1666,7 @@
     if (!confirm('이 글을 신고할까요? 세 분이 신고하면 숨겨지고 관리자가 확인해요.')) return;
     formPost(`종류: 신고\n번호: ${b.dataset.id}\n누가: ${myUid()}`).then(() => {
       boxWrite(RP_SENT, [...(boxRead(RP_SENT) || []), b.dataset.id].slice(-300));
-      const row = b.closest('.ly-line'); if (row) row.classList.add('rp-done');
+      const row = b.closest('.ly-line, .story-row'); if (row) row.classList.add('rp-done');
       toast('신고했어요. 고마워요!');
     }).catch(() => toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'));
   });
@@ -6262,7 +6285,7 @@
 
   // 가로로 넘기는 영상 줄
   function ytStrip(list, isNew) {
-    return `<div class="yt-strip">${list.map(v => `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><i class="yt-thumb"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()">${isNew && isNew(v) ? '<b class="new-badge">NEW</b>' : ''}</i><span>${esc(ytTitle(v.title))}</span>${v.bc ? `<small class="yt-src">${esc(v.bc)}</small>` : ''}</a>`).join('')}</div>`;
+    return `<div class="yt-strip">${list.map(v => `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><i class="yt-thumb"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()">${isNew && isNew(v) ? '<b class="nw-badge">NEW</b>' : ''}</i><span>${esc(ytTitle(v.title))}</span>${v.bc ? `<small class="yt-src">${esc(v.bc)}</small>` : ''}</a>`).join('')}</div>`;
   }
   function ytSection(list, title, note) {
     if (!list.length) return '';
