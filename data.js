@@ -896,7 +896,8 @@
     const evWords = events.filter(e => !e.auto || e.title).map(e => ({ e, w: new Set(words(e.title)) }));
     const concertKeys = [...tours.map(t => ({ id: t.id, key: flat(t.name.replace(/^[\d-]+\s*/, '')), from: t.dates[0], to: t.dates[t.dates.length - 1] })),
       ...concerts.filter(c => !tours.some(t => t.id === c.id) && c.from).map(c => ({ id: c.id, key: flat(c.name.replace(/\(.*\)|[\d-]{4,}|포레스텔라|전국투어|콘서트|forestella|concert|show|\+\s*encore/gi, '')), from: c.from, to: c.to || c.from }))];
-    const days = (a, b) => (new Date(a) - new Date(b)) / 864e5;
+    const DMS = new Map(), dms = x => { let v = DMS.get(x); if (v === undefined) { v = new Date(x).getTime(); DMS.set(x, v); } return v; };
+    const days = (a, b) => (dms(a) - dms(b)) / 864e5;
     // 방송 프로그램 이름 낱말 (일정명에서 [KBS2]·[멤버] 같은 머리말과 방송사 이름은 빼요) + 영어 제목 별칭
     const PROG_STOP = new Set(['kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'jtbc', 'mnet', 'mbn', 'tvn', 'ebs', '포레스텔라', 'forestella', '방송', '특집', '출연', '녹화', '본방', '재방']);
     const progWords = t => (String(t).replace(/^\[[^\]]*\]\s*/, '').normalize('NFKC').match(/[0-9A-Za-z가-힣]{2,}/g) || []).map(w => w.toLowerCase()).filter(w => !PROG_STOP.has(w) && !/^\d+$/.test(w));
@@ -927,7 +928,7 @@
           if (gap < -1 || gap > (behind ? 400 : 14)) return;
           // 제작사·소속사 채널은 방송사가 아니라서 그날(하루 차이까지) 일정에만 붙여요
           if (PROD_CH.test(v.bc) && Math.abs(gap) > 1) return;
-          const sc = progWords(e.title).filter(w => fv.includes(w)).reduce((n, w) => n + w.length, 0);
+          const sc = (e._pw || (e._pw = progWords(e.title))).filter(w => fv.includes(w)).reduce((n, w) => n + w.length, 0);
           if (sc >= 2) cand.push({ sc, gap: Math.abs(gap) });
           if (sc >= 2 && (sc > score || (sc === score && Math.abs(gap) < bgap))) { best = e; score = sc; bgap = Math.abs(gap); }
         });
@@ -1131,7 +1132,9 @@
     const tooOld = cached && Date.now() - cached.savedAt > 24 * 3600e3;
     if (cached && !tooOld) {
       if (!fresh) {
-        const again = (n) => fetchAll().then(raw => { writeCache(raw); onUpdate(build(raw)); }).catch(() => { if (n) setTimeout(() => again(n - 1), 5000); });
+        // 새로 받은 자료가 저장본과 똑같으면 다시 계산하지 않아요 (폰에서 몇 초씩 걸려요)
+        const same = raw => Object.keys(raw).every(k => k === 'savedAt' || raw[k] === cached[k]);
+        const again = (n) => fetchAll().then(raw => { writeCache(raw); if (!same(raw)) onUpdate(build(raw)); }).catch(() => { if (n) setTimeout(() => again(n - 1), 5000); });
         again(2);
       }
       return build(cached);
