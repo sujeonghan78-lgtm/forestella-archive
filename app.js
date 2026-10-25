@@ -141,7 +141,40 @@
   // ---------- 보관함 (♡ 좋아요 · 🎫 직관): 이 폰에 저장, 이름+숫자 4자리로 다른 폰에서 이어 쓰기 ----------
   const BOX_KEY = 'sb-box', BOX_USER = 'sb-box-user';
   const boxRead = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (err) { return null; } };
-  const boxWrite = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (err) { /* 저장 못 해도 괜찮아요 */ } };
+  const boxWrite = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (err) { /* 저장 못 해도 괜찮아요 */ } if (KV_KEYS.includes(k)) kvTouch(); };
+  // 이어 쓰기에 같이 싣는 이 폰 설정: 숲별 카드·카드 슬롯·나만 저장한 가사·준비물·비밀글 열쇠 (사진·스티커는 빼요)
+  // 보관함 곡 칸(box.s)에 'kv:키:JSON'으로 넣어서 Apps Script를 안 바꾸고 따라가요
+  const KV_KEYS = ['sb-card', 'sb-card-slots', 'sb-lyrics', 'sb-ready', 'sb-sec-key'];
+  const kvStrip = (k, v) => k === 'sb-card-slots' && Array.isArray(v) ? v.map(x => x && { ...x, photo: null, stk: [] }) : v;
+  let kvTimer = null;
+  function kvTouch() {
+    clearTimeout(kvTimer);
+    kvTimer = setTimeout(() => {
+      if (!boxUser) return;
+      const kv = KV_KEYS.map(k => { const v = boxRead(k); if (v == null) return null; const j = JSON.stringify(kvStrip(k, v)); return j.length > 20000 ? null : `kv:${k}:${j}`; }).filter(Boolean);
+      const was = box.s.filter(x => x.startsWith('kv:'));
+      if (was.join('\n') === kv.join('\n')) return;
+      box.s = [...box.s.filter(x => !x.startsWith('kv:')), ...kv]; box.t = Date.now();
+      try { localStorage.setItem(BOX_KEY, JSON.stringify(box)); } catch (err) { /* 괜찮아요 */ }
+      boxPush();
+    }, 1200);
+  }
+  // 받아온 보관함의 설정을 이 폰에 넣어요. 바뀐 게 있으면 한 번 새로 불러요 (카드 슬롯 사진은 이 폰 것을 그대로 둬요)
+  function kvApply() {
+    const kv = box.s.filter(x => x.startsWith('kv:'));
+    if (!kv.length) { kvTouch(); return false; }
+    let changed = false;
+    kv.forEach(x => {
+      const i = x.indexOf(':', 3), k = x.slice(3, i);
+      if (!KV_KEYS.includes(k)) return;
+      let v; try { v = JSON.parse(x.slice(i + 1)); } catch (err) { return; }
+      if (k === 'sb-card-slots' && Array.isArray(v)) { const loc = boxRead(k) || []; v = v.map((s0, n) => s0 && loc[n] && loc[n].at === s0.at ? { ...s0, photo: loc[n].photo, stk: loc[n].stk } : s0); }
+      const now = localStorage.getItem(k), nv = JSON.stringify(v);
+      if (now !== nv && JSON.stringify(kvStrip(k, boxRead(k))) !== JSON.stringify(kvStrip(k, v))) { try { localStorage.setItem(k, nv); changed = true; } catch (err) { /* 괜찮아요 */ } }
+    });
+    if (changed) { setTimeout(() => location.reload(), 300); return true; }
+    return false;
+  }
   const boxClean = b => ({ e: (b && b.e) || [], s: (b && b.s) || [], w: (b && b.w) || [], v: (b && b.v) || [], t: (b && b.t) || 0 });
   let box = boxClean(boxRead(BOX_KEY));
   let boxUser = boxRead(BOX_USER);  // { name, pin, at }
@@ -176,7 +209,7 @@
   const HEART_SENT = 'sb-heart-sent';
   // 소취곡(숲별 카드 + 곡 화면 🙏)도 같은 줄에 실어 보내서 '듣고 싶어 하는 팬' 수를 세요
   const wishKeys = () => { try { return pickList('wish').map(so => so.key).slice(0, 200); } catch (e) { return []; } };
-  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn|go|sp|uid):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys(), g: box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3)).slice(0, 100) });
+  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn|go|sp|uid|kv):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys(), g: box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3)).slice(0, 100) });
   let heartTimer = null;
   function heartSync() {
     clearTimeout(heartTimer);
@@ -218,9 +251,9 @@
     boxCall('load').then(r => {
       if (!r.ok || !r.data) return;
       const srv = boxClean(r.data);
-      if (srv.t > box.t) { box = boxClean(srv); boxWrite(BOX_KEY, box); if (uidSync()) return; if (currentRoute() === 'box') renderBase('box'); }
+      if (srv.t > box.t) { box = boxClean(srv); boxWrite(BOX_KEY, box); if (uidSync() | kvApply()) return; if (currentRoute() === 'box') renderBase('box'); }
       else if (box.t > srv.t) boxPush();
-      uidSync();
+      if (!uidSync()) kvTouch();
     }).catch(() => { /* 오프라인이면 폰 저장만 써요 */ });
   }
 
@@ -3491,7 +3524,7 @@
         const t = todayParts(), now = new Date();
         const { since, hideAsk, ...rest } = card;
         sl[slotPick] = { card: rest, photo: cardPhoto || null, stk: cardStk, at: `${t.m}.${t.d} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` };
-        try { localStorage.setItem(SLOT_KEY, JSON.stringify(sl)); toast(`${slotPick + 1}번 슬롯에 저장했어요.`); }
+        try { localStorage.setItem(SLOT_KEY, JSON.stringify(sl)); kvTouch(); toast(`${slotPick + 1}번 슬롯에 저장했어요.`); }
         catch (err) { toast('폰 저장 공간이 모자라요. 사진이나 스티커를 줄이거나 다른 슬롯을 비워 주세요.'); return; }
       } else if (act === 'load' && sl[slotPick]) {
         const x = sl[slotPick];
@@ -3868,7 +3901,7 @@
         }
         box = boxClean(r.data); boxWrite(BOX_KEY, box);
         boxUser.at = Date.now(); boxWrite(BOX_USER, boxUser);
-        if (uidSync()) return false;
+        if (uidSync() | kvApply()) return false;
         renderBase('box');
       } catch (err) { boxUser = null; msg.textContent = '지금은 연결이 안 돼요. 잠시 뒤 다시 해 주세요.'; }
       return false;
