@@ -4400,6 +4400,8 @@
     star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',
   };
   const wi = (k, cls = '') => `<svg class="wi ${cls}" viewBox="0 0 24 24" aria-hidden="true">${WI[k]}</svg>`;
+  // 같이 기다리는 숲별: 겹친 동그라미 + 한 문장
+  const goTogether = n => n >= 2 ? `<p class="go-tg"><span class="go-av" aria-hidden="true"><i></i><i></i><i></i></span><span>숲별 <b>${n.toLocaleString()}명</b>이 같이 기다려요</span></p>` : '';
   const goLab = id => goHas(id) ? wi('check') + '갈 거예요' : wi('go') + '갈 거예요';
   const WAIT_ON = () => isAdmin();  // 시험 중: 관리자 기기에만 보여요
   const goHas = id => box.s.includes('go:' + id);
@@ -4476,7 +4478,7 @@
     const t = todayIso(), next = goIds().map(id => data.byId.get(id)).filter(e => e && e.date >= t).sort((a, b) => a.date.localeCompare(b.date))[0];
     if (!next) return '';
     const n = goN(next.id);
-    return `<section class="wait-home">${tkCard(next, `${tkHead(next)}<div class="tk-foot"><a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">${wi('target')}셋리 <b>${spGet(next.id).length}</b></a><button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">${wi('bag')}준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button>${n >= 2 ? `<span class="tk-n">${wi('people')}${n.toLocaleString()}</span>` : ''}<a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>`, '#/wait')}</section>`;
+    return `<section class="wait-home">${tkCard(next, `${tkHead(next)}<div class="tk-foot"><a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a><button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}`, '#/wait')}</section>`;
   }
   function waitView() {
     if (!WAIT_ON()) return '<p class="empty">준비 중인 화면이에요. <a href="#/more">더보기로 ›</a></p>';
@@ -4488,7 +4490,7 @@
     const card = e => { const n = goN(e.id); return `<article class="wait-card">${tkCard(e, `${tkHead(e)}<button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="true" aria-label="갈 거예요 취소">${wi('check')}</button>
       <a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b><span class="tk-more">›</span></a>
       <button type="button" class="tk-line rd-open" data-id="${esc(e.id)}">${wi('bag')}준비물 <b>${rdDone(e.id).length}/${rdItems(e.id).length}</b>${rdBar(e.id)}<span class="tk-more">›</span></button>
-      ${n >= 2 ? `<small class="tk-with">${wi('people')}같이 기다리는 숲별 ${n.toLocaleString()}명</small>` : ''}`)}</article>`; };
+      ${goTogether(n)}`)}</article>`; };
     let lastM = '';
     const row = e => { const m = e.date.slice(0, 7), h = m !== lastM ? `<h3 class="wm-h">${+m.slice(0, 4)}년 ${+m.slice(5)}월</h3>` : ''; lastM = m; const n = goN(e.id);
       return `${h}<div class="wait-row"><span class="cal"><small>${+e.date.slice(5, 7)}월</small><b>${e.date.slice(8)}</b><small>${wkOf(e.date)}</small></span><a class="wr-t" href="#/e/${encodeURIComponent(e.id)}">${esc(e.title)}<small>${esc(e.place || '')}${n >= 2 ? ` · ${wi('people')}${n}` : ''}</small></a><button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="false" aria-label="갈 거예요">${wi('go')}</button></div>`; };
