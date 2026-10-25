@@ -1783,3 +1783,7 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .wt-score .sp-sum { text-align: left; }
 a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .sp-sw { margin: 0 0 12px; }
+.wh-intro { padding-right: 4px; }
+.wh-intro a { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+.wh-intro span { font-weight: 500; font-size: calc(13px * var(--fs)); }
+.wh-ix { flex: none; width: 32px; height: 32px; border: 0; background: none; color: var(--muted); font-size: 18px; padding: 0; }

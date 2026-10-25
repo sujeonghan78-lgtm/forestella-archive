@@ -4403,7 +4403,7 @@
   // 같이 기다리는 숲별: 겹친 동그라미 + 한 문장
   const goTogether = n => n >= 2 ? `<p class="go-tg"><span class="go-av" aria-hidden="true">${'<i></i>'.repeat(Math.min(n, 3))}</span><span>숲별 <b>${n.toLocaleString()}명</b>이 같이 기다려요</span></p>` : '';
   const goLab = id => goHas(id) ? wi('check') + '갈 거예요' : wi('go') + '갈 거예요';
-  const WAIT_ON = () => isAdmin();  // 시험 중: 관리자 기기에만 보여요
+  const WAIT_ON = () => true;  // 시험할 땐 () => isAdmin()으로 관리자 기기에만
   const goHas = id => box.s.includes('go:' + id);
   const goIds = () => box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3));
   const goToggle = id => { boxSetS(goHas(id) ? box.s.filter(x => x !== 'go:' + id) : ['go:' + id, ...box.s]); heartSync(); };
@@ -4493,7 +4493,8 @@
       return `<section class="wait-home open">${x}${tkCard(done, `${tkHead(done)}<div class="tk-foot">${boxHas('w', done.id) ? '<span class="tk-n">직관 기록했어요</span>' : `<button type="button" class="tk-btn" data-box="w" data-id="${esc(done.id)}" data-label="다녀왔어요" data-ic="">다녀왔어요</button>`}${body}</div>`)}</section>`;
     }
     const next = mine.filter(e => e.date >= t && !over(e)).sort((a, b) => a.date.localeCompare(b.date))[0];
-    if (!next) return '';
+    // 처음 한 번: 기다리는 일정 안내 한 줄 (누르거나 ✕하면 다시 안 떠요)
+    if (!next) return goIds().length || boxRead('sb-wait-intro') ? '' : `<section class="wait-home"><div class="wh-mini wh-intro"><a href="#/wait" data-wintro="1"><b>NEW</b><span>갈 공연을 골라 D-day를 세어 봐요</span></a><button type="button" class="wh-ix" data-wintro="1" aria-label="닫기">×</button></div></section>`;
     const n = goN(next.id);
     // 평소엔 D-day + 제목 한 줄, 누르면 펼쳐요 (sb-wait-open 기억)
     const openH = boxRead('sb-wait-open') === 1;
@@ -4517,7 +4518,7 @@
     return `
       <a class="back" href="#/more">‹ 더보기</a>
       <h1 class="h1 page-title">기다리는 일정${help('갈 거예요를 누른 일정이 모여요. 같이 기다리는 숲별 수는 이름 없이 숫자만 세요.')}</h1>
-      <div class="wt-demo"><span>알림창 미리보기</span><button type="button" class="bpill" data-popdemo="today">공연 당일</button><button type="button" class="bpill" data-popdemo="past">다녀오셨어요?</button><button type="button" class="bpill" data-popdemo="score">점수 알림</button></div>
+      ${isAdmin() ? `<div class="wt-demo"><span>알림창 미리보기</span><button type="button" class="bpill" data-popdemo="today">공연 당일</button><button type="button" class="bpill" data-popdemo="past">다녀오셨어요?</button><button type="button" class="bpill" data-popdemo="score">점수 알림</button></div>` : ''}
       <label class="rd-keep sp-sw"><input type="checkbox" class="sp-onoff"${SP_ON() ? ' checked' : ''}> 셋리 예측 쓰기</label>
       ${up.length ? up.map(card).join('') : '<p class="empty">아직 기다리는 일정이 없어요. 아래 다가오는 일정에서 갈 거예요를 눌러 보세요.</p>'}
       <hr class="divider"><h2 class="h2">다가오는 일정</h2>
@@ -4561,6 +4562,7 @@
       boxWrite(RD_KEY, r); rdRefresh(b); return;
     }
   });
+  document.addEventListener('click', ev => { const b = ev.target.closest('[data-wintro]'); if (!b) return; boxWrite('sb-wait-intro', 1); if (b.tagName === 'BUTTON') { const w = b.closest('.wait-home'); if (w) w.remove(); } });
   document.addEventListener('click', ev => { const b = ev.target.closest('[data-whx]'); if (!b) return; const r = rd(); r.hid[b.dataset.whx] = 1; boxWrite(RD_KEY, r); const w = b.closest('.wait-home'); if (w) w.outerHTML = homeWait(); });
   document.addEventListener('click', ev => { const b = ev.target.closest('.wh-tg'); if (!b) return; boxWrite('sb-wait-open', b.getAttribute('aria-expanded') === 'true' ? 0 : 1); const w = b.closest('.wait-home'); if (!w) return; const t = document.createElement('div'); t.innerHTML = homeWait(); const n = t.firstElementChild; if (!n) return; n.classList.add('anim'); w.replaceWith(n); });
   document.addEventListener('change', ev => {
