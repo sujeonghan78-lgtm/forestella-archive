@@ -42,6 +42,15 @@ try {
       page = d.nextPageToken;
     } while (page);
   }
+  // 채널 안 검색은 유튜브 쪽 한계로 빠지는 영상이 많아요 (2026-10-26 확인: 열린음악회 바람의 노래 544만 등).
+  // 처음·일요일·--wide 땐 전체 검색(조회수 순)으로 한 번 더 찾아서, 위 채널이나 아래 방송사 공식 채널 영상만 받아요
+  const WIDE = new Date(Date.now() + 9 * 3600e3).getUTCDay() === 0 || full || process.argv.includes('--wide');
+  const WIDE_CH = { 'Mhz 므흐즈: MBC RADIO': 'MBC 라디오', 'KBS 해피투게더': 'KBS 해피투게더', '엠뚜루마뚜루 : MBC 공식 종합 채널': 'MBC 엠뚜루마뚜루', '유 퀴즈 온 더 튜브': 'tvN 유퀴즈', '스브스 예능맛집': 'SBS 예능', '울산MBC_뮤직': 'MBC울산', '에헤라 티비 : KBS LIFE': 'KBS LIFE', 'KBS창원': 'KBS창원', 'THE K-POP2': 'SBS THE K-POP', 'MBN Entertainment': 'MBN', 'KBS 한국방송': 'KBS', 'JTBC Entertainment': 'JTBC' };
+  const byId = Object.fromEntries(found.map(f => [f.id, f.name]));
+  if (WIDE && !only.length) for (const q of ['포레스텔라', 'Forestella', '포레스텔라 무대', '포레스텔라 예능', '고우림', '강형호', '배두훈']) {
+    const d = await api('search', { part: 'snippet', type: 'video', q, maxResults: 50, order: 'viewCount', regionCode: 'KR' });
+    d.items.forEach(i => { const name = byId[i.snippet.channelId] || WIDE_CH[i.snippet.channelTitle]; if (name) chOf[i.id.videoId] ||= name; });
+  }
 } catch (e) { stopped = e.message; }  // 하루 사용량이 다 되면 받은 데까지만 저장해요
 const sec = s => { const m = (s || '').match(/(\d+)H|(\d+)M|(\d+)S/g) || []; return m.reduce((t, x) => t + parseInt(x) * (x.endsWith('H') ? 3600 : x.endsWith('M') ? 60 : 1), 0); };
 const kst = iso => new Date(new Date(iso).getTime() + 9 * 3600e3).toISOString().slice(0, 10);
@@ -58,7 +67,7 @@ for (let i = 0; i < ids.length && !stopped; i += 50) {
   const d = await api('videos', { part: 'snippet,contentDetails,statistics', id: ids.slice(i, i + 50).join(',') });
   for (const v of d.items) {
     const views = Number(v.statistics.viewCount || 0), t = v.snippet.title;
-    if (!NAME.test(t) || views < minOf[chOf[v.id]]) continue;
+    if (!NAME.test(t) || views < (minOf[chOf[v.id]] ?? MIN_VIEWS)) continue;
     const up = kst(v.snippet.publishedAt), air = aired(t, up);
     add.push({ id: v.id, date: air || up, ...(air && air !== up && { up }), title: t, sec: sec(v.contentDetails.duration), views, bc: chOf[v.id] });
   }

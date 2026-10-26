@@ -110,6 +110,8 @@
   // 자동 연결 점검에서 '틀려요'로 고른 연결 (영상ID>ev:일정ID · 영상ID>song:곡키 · x:글ID>song:곡키)
   const PROD_CH = /아트앤아티스트|블루스테이지|비트인터렉티브|스프링이엔티/;
   const LINK_SKIP = new Set([
+    // 2026-10-26: 전참시 클립이 같은 주 '포레 5주년'에, 팬텀싱어2 풀버전 재업로드가 스페셜 콘서트에 붙던 것
+    'Ln7ioaIz3Ws>ev:119619', 'Ln7ioaIz3Ws>ev:118233', 'Pi7uBBt0u4M>ev:119619', 'tMzK3peM8wg>ev:10132', 'PoSIrLRmIzw>ev:10132',
     'ZSleXc9DR_Q>ev:10166', 'r05dSSCyGjc>ev:120245', 'r05dSSCyGjc>ev:120246',
     // 다른 해·다른 행사 비하인드
     'ttKZ0pvOJeM>ev:105007', 'i9jDCz6Bo7A>ev:114388', 'xxkN_i_Tp9M>ev:ubzn7y0', 'xxkN_i_Tp9M>ev:ud27vts',
