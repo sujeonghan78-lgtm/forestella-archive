@@ -4055,7 +4055,10 @@
     const v = p.videos.find(x => ['무대', '라이브'].includes(x.kind)) || p.videos[0];
     if (v) return v.id;
     const e = p.events.find(x => x.videoId || x.ytMain);
-    return e ? (e.videoId || e.ytMain.id) : '';
+    if (e) return e.videoId || e.ytMain.id;
+    // 유튜브 예능처럼 일정에 따로 붙인 영상(extra videos)만 있는 프로그램
+    const r = p.events.map(x => (x.related || []).find(v => v.videoId)).find(Boolean);
+    return r ? r.videoId : '';
   }
   // 활동 기간: "2018~2026" (한 해면 "2026")
   function progSpan(p) {
