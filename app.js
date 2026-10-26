@@ -3862,6 +3862,7 @@
     return near.map(x => { const on = boxHas('w', x.id), lab = x.date.slice(5).replace('-', '.') + ' 직관'; return `<button type="button" class="bpill box-btn" data-box="w" data-id="${esc(x.id)}" data-label="${lab}" aria-pressed="${on}">${on ? '✓ ' : '🎫 '}${lab}</button>`; }).join('');
   };
   function bindBox() {
+    if (/[?&]sync=1/.test(location.hash)) { const d = document.querySelector('.box-sync'); if (d) { d.open = true; setTimeout(() => d.scrollIntoView({ block: 'center' }), 100); } }
     const fa = document.querySelector('.fd-add');
     if (fa) fa.onclick = () => { const n = fdName(prompt('새 폴더 이름', '') || ''); if (!n) return; const id = fdNew(n); location.hash = '#/box?t=song&s=f-' + id; };
     const fr = document.querySelector('.fd-ren');
@@ -4185,34 +4186,43 @@
   const pinsGot = () => { if (!moreAll.length) moreView(); return pinsGet().map(h => moreAll.find(x => x.href === h)).filter(Boolean); };
   function moreView() {
     const pins = pinsGet(), all = [];
-    const item = (href, icon, label, side, ext) => {
+    // 메뉴는 네 묶음(내 기록·아카이브·숲별 소통·설정), 한 줄에 3칸 아이콘. NEW·확인 필요 수는 아이콘 위 작은 뱃지
+    const item = (href, icon, label, badge, ext) => {
       all.push({ href, icon, label, ext });
       const on = pins.includes(href);
-      return `<a class="mi" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''} data-pin="${esc(href)}">${menuIcon(icon)}<span class="mi-l">${label}</span><span class="mi-side">${side ? side + ' ' : ''}›</span><span class="mi-pin${on ? ' on' : ''}" aria-label="${on ? '고정 풀기' : '위에 고정'}">${on ? '★' : '☆'}</span></a>`;
+      return `<a class="mi mt" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ''} data-pin="${esc(href)}">${menuIcon(icon)}${badge ? `<b class="mt-b">${badge}</b>` : ''}<span class="mt-l">${label}</span><span class="mi-pin${on ? ' on' : ''}" aria-label="${on ? '고정 풀기' : '위에 고정'}">${on ? '★' : '☆'}</span></a>`;
     };
+    const grp = (t, html) => `<section class="mg"><h2 class="mg-h">${t}</h2><div class="mt-grid">${html}</div></section>`;
+    const nNew = n => n ? (n > 99 ? '99+' : String(n)) : '';
+    const fanN = (data.fan || []).filter(l => /^(ev|sl|slfix|dt)$/.test(l.k) && data.byId.get(l.id) && fanState(l, data.byId.get(l.id))[0] === 'wait').map(l => l.id + l.k + (l.to || '')).filter((x, i, a) => a.indexOf(x) === i).length;
     const menu = `
-        <button type="button" class="lang-row lang-keep" onclick="SB_LANG.open()">🌐 언어 · Language · 言語 <b>${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</b></button>
-        <button type="button" class="lang-row" onclick="SB_DECO.open()">🎨 화면 꾸미기 <b>${SB_DECO.label()}</b></button>
-        ${item('#/story', '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>', '숲별 이야기', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : 'TMI · 가사 · 떼창')(storyUnread().length))}
-        ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', (n => n ? `<b class="news-cnt">NEW ${n}</b>` : '새로 생긴 기능')(newsUnread().length))}
-        ${item('#/fan', '<path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/>', '팬 제보 현황', (n => n ? `확인 필요 ${n}` : '일정 · 셋리 · 날짜')((data.fan || []).filter(l => /^(ev|sl|slfix|dt)$/.test(l.k) && data.byId.get(l.id) && fanState(l, data.byId.get(l.id))[0] === 'wait').map(l => l.id + l.k + (l.to || '')).filter((x, i, a) => a.indexOf(x) === i).length))}
-        ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록', '빠진 일정 알려주기')}
-        ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견', '남기기 · 모아보기')}
-        ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함', (st => { const pk = SONG_PICKS.reduce((n, [k]) => n + pickList(k).length, 0), my = Object.values(lyMine()).reduce((n, l) => n + l.length, 0) + (boxRead(CH_SENT) || []).filter(x => !x.del && !x.up).length + (boxRead('sb-tmi-sent') || []).filter(x => !x.del && !x.up).length;
-          const parts = [st.liked.length + st.songs.length && `♥ ${st.liked.length + st.songs.length}`, st.went.length && `🎫 ${st.went.length}`, st.seen.length && `📺 ${st.seen.length}`, st.heardList.length && `🎧 ${st.heardList.length}곡`, pk && `⭐ ${pk}`, my && `✍️ ${my}`].filter(Boolean);
-          return parts.length ? parts.join(' · ') : '좋아요 · 직관 · 내 곡'; })(boxStats()))}
-        ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국', '내가 간 공연을 지도로 되돌아보기')}
-        ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드', card.since ? '숲별 ' + ddayText() : '내 기록을 카드로')}
-        ${WAIT_ON() ? item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? '갈 거예요 ' + goIds().length + '개' : '갈 일정 · D-day · 셋리 예측') : ''}
-        ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별 모아보기', '')}
-        ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사', '축제 · 기획 공연 · 지역별')}
-        ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트', ((data.concerts || []).length || data.tours.length) + '개')}
-        ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표', '연도·월별 기록')}
-        ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기', '앨범 · 싱글별 공식 X')}
-        ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동', '')}
-        ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일', '생일 · 데뷔일')}
-        ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기', '')}
-        ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해', '')}`;
+        ${grp('내 기록', `
+          ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함')}
+          ${WAIT_ON() ? item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? String(goIds().length) : '') : ''}
+          ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드')}
+          ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국')}`)}
+        ${grp('아카이브', `
+          ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트')}
+          ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사')}
+          ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별')}
+          ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표')}
+          ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기')}
+          ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동')}
+          ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일')}`)}
+        ${grp('숲별 소통', `
+          ${item('#/story', '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>', '숲별 이야기', nNew(storyUnread().length) && 'NEW ' + nNew(storyUnread().length))}
+          ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', nNew(newsUnread().length) && 'NEW ' + nNew(newsUnread().length))}
+          ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견')}
+          ${item('#/add', '<path d="M12 5v14M5 12h14"/>', '일정 등록')}
+          ${item('#/fan', '<path d="M4 19h16M7 16V9M12 16V5M17 16v-4"/>', '팬 제보 현황', nNew(fanN))}`)}
+        <section class="mg mg-set"><h2 class="mg-h">설정</h2><div class="more-set">
+          <button type="button" class="bpill lang-keep" onclick="SB_LANG.open()">🌐 ${window.SB_LANG ? window.SB_LANG.label() : '한국어'}</button>
+          <button type="button" class="bpill" onclick="SB_DECO.open()">🎨 ${SB_DECO.label()}</button>
+          <a class="bpill" href="#/box?sync=1">☁️ 이어 쓰기 · 복구</a>
+          <button type="button" class="bpill" data-act="homeedit">✎ 홈 화면 편집</button>
+          ${item('#/install', '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 8v6M9 11l3 3 3-3"/>', '앱처럼 쓰기').replace('mi mt', 'mi mt mt-s')}
+          ${item('#/about', '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>', '이 사이트에 대해').replace('mi mt', 'mi mt mt-s')}
+        </div></section>`;
     moreAll = all;
     const got = pins.map(h => all.find(x => x.href === h)).filter(Boolean);
     return `
@@ -4230,6 +4240,8 @@
   }
 
   function bindMore() {
+    const he = document.querySelector('[data-act="homeedit"]');
+    if (he) he.onclick = () => { homeEdit = true; location.hash = '#/'; setTimeout(() => { const x = document.querySelector('.home-edit'); if (x) x.scrollIntoView({ block: 'start' }); }, 400); };
     const eb = document.getElementById('more-edit');
     if (eb) eb.onclick = () => { moreEdit = !moreEdit; renderBase('more'); };
     const nav = document.querySelector('nav.more-edit');
@@ -6996,6 +7008,27 @@
     return path === 'e' || routes[path] ? path : 'home';
   }
 
+  // 하단 바 공식 X·유튜브 NEW 숫자: 마지막으로 그 탭을 본 뒤 새로 올라온 글·영상 수 (처음엔 지금까지를 본 걸로 쳐요)
+  const TAB_SEEN = { xfeed: ['sb-x-seen', () => data.xFeed || []], yt: ['sb-yt-seen', () => data.official || []] };
+  const seenMark = (key, list) => { const d = list.reduce((m, x) => x.date > m ? x.date : m, ''); boxWrite(key, { d, ids: list.filter(x => x.date === d).map(x => x.id) }); };
+  const tabNew = tab => {
+    const [key, get] = TAB_SEEN[tab], list = get(), sn = boxRead(key);
+    if (!list.length) return 0;
+    if (!sn || !sn.d) { seenMark(key, list); return 0; }
+    return list.filter(x => x.date > sn.d || (x.date === sn.d && !(sn.ids || []).includes(x.id))).length;
+  };
+  function tabBadges(cur) {
+    if (!data) return;
+    Object.keys(TAB_SEEN).forEach(tab => {
+      if (tab === cur) seenMark(TAB_SEEN[tab][0], TAB_SEEN[tab][1]());
+      const a = document.querySelector(`.tab[data-tab="${tab}"]`); if (!a) return;
+      const n = tab === cur ? 0 : tabNew(tab);
+      let b = a.querySelector('.tab-b');
+      if (!n) { if (b) b.remove(); return; }
+      if (!b) { b = document.createElement('b'); b.className = 'tab-b'; a.appendChild(b); }
+      b.textContent = n > 99 ? '99+' : String(n);
+    });
+  }
   function setTabs(name) {
     const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
@@ -7003,6 +7036,7 @@
       t.classList.toggle('on', on);
       if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
+    tabBadges(name);
   }
 
   // 탭 맨 아래 작은 "마지막 업데이트" (자동으로 가져오는 작업이 마지막으로 성공한 시각)
