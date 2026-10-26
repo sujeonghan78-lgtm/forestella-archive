@@ -2326,12 +2326,17 @@
     const evRow = e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}${e.category ? `<small>${esc(e.category)}</small>` : ''}</b></a>`;
     // 곡은 칩 말고 곡 아카이브처럼 사진 + 이름 + 음반 줄로 (위 칩 필터와 헷갈리지 않게)
     const songRowB = (so, n) => `<a class="song-item box-song" href="#/song/${encodeURIComponent(so.key)}">${songPic(so) ? `<img class="song-thumb" src="${esc(songPic(so))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'song-thumb'}))">` : '<span class="song-thumb"></span>'}<span class="song-name"><span class="song-t">${esc(so.name)}</span><small>${so.albums[0] ? esc(so.albums[0].name) : ''}</small></span>${n > 1 ? `<span class="song-n"><b>${n}번</b></span>` : ''}</a>`;
+    // 보관함 일정은 연표처럼 달별로 (같은 공연 여러 날은 한 줄로 묶여요)
+    const boxTl = list => { const ms = new Map(); [...list].sort((a, b) => b.date.localeCompare(a.date)).forEach(e => { const k = e.date.slice(0, 7); if (!ms.has(k)) ms.set(k, []); ms.get(k).push(e); }); return `<div class="tl box-tl">${tlMonths(ms)}</div>`; };
     const chipsOf = list => `<div class="song-list box-songlist">${list.map(x => Array.isArray(x) ? songRowB(x[0], x[1]) : songRowB(x)).join('')}</div>`;
     const tmHref = k => k.startsWith('e:') ? '#/e/' + encodeURIComponent(k.slice(2)) : k.startsWith('t:') ? '#/tour/' + encodeURIComponent(k.slice(2)) : '#/song/' + encodeURIComponent(k.slice(2));
     const tmWhere = k => k.startsWith('e:') ? ((data.byId.get(k.slice(2)) || {}).title || '일정') : k.startsWith('t:') ? (((data.tours || []).find(t => t.id === k.slice(2)) || (data.concerts || []).find(c => c.id === k.slice(2)) || {}).name || '콘서트') : ((data.songs.get(k.slice(2)) || {}).name || '곡');
-    const ly = Object.entries(lyMine()).flatMap(([k, list]) => list.map(m => [data.songs.get(k), m])).filter(x => x[0]).sort((a, b) => b[1].at - a[1].at);
     // 내가 ♥ 누른 남의 글: 시트에서 내 번호가 든 글(첫 글쓴이가 내가 아닌 것) + 이 폰에 남긴 ♥ 기록
     const uid = myUid(), othersUp = new Map((data.lyrics || []).filter(l => l.who.includes(uid) && l.first && l.first !== uid).map(l => [l.id, l]));
+    // 💬 가사는 내가 쓴(저장한) 것만: 남의 가사에 ♥ 누른 건 '♥ 누른 글'로 따로
+    const lyUpIds = new Set([...othersUp.keys(), ...(boxRead('sb-ly-up') || []).map(x => x.id)]);
+    const lyFirst = new Map((data.lyrics || []).map(l => [l.id, l.first]));
+    const ly = Object.entries(lyMine()).flatMap(([k, list]) => list.map(m => [data.songs.get(k), m])).filter(x => x[0] && !(lyUpIds.has(lyId(x[0].key, x[1].t)) && lyFirst.get(lyId(x[0].key, x[1].t)) !== uid)).sort((a, b) => b[1].at - a[1].at);
     const ch = (boxRead(CH_SENT) || []).filter(x => !x.del && !x.up && !othersUp.has(x.id) && data.songs.get(x.key)).sort((a, b) => b.at - a.at);
     const tmLocal = (boxRead('sb-tmi-sent') || []).filter(x => !x.del && !x.up && !othersUp.has(x.id));
     // 다른 폰에서 쓴 내 TMI·답글도 (시트에서 첫 글쓴이가 나인 것)
@@ -2354,11 +2359,13 @@
     const groups = [
       ['ev', '🎫 일정', [['w', '🎫 직관', went, 'ev'], ['b', '📺 시청', seen, 'ev'], ['e', '♥ 좋아요', liked, 'ev']]],
       ['song', '🎵 곡', [['s', '♥ 하트', songs, 'chip'], ...SONG_PICKS.map(([k, l]) => [k, l, pickList(k), 'chip']), ['h', '🎧 들은 곡', heardList, 'chip'], ...folders().map(f => ['f-' + f.id, '📁 ' + f.name, folderSongs(f.id), 'chip', true])]],
-      ['my', '✍️ 내 글' + (newRe.length ? ' <em class="n-dot">N</em>' : ''), [['l', '💬 가사', ly, lyRow], ['c', '📣 떼창', ch, chRow], ['tmi', '💡 TMI' + (newRe.length ? ' <em class="n-dot">N</em>' : ''), tm, tmRow], ['up', '♥ 누른 글', upList, upRow]]],
+      ['my', '✍️ 내 글' + (newRe.length ? ' <em class="n-dot">N</em>' : ''), [['l', '💬 가사', ly, lyRow, !ch.length && !tm.length], ['c', '📣 떼창', ch, chRow], ['tmi', '💡 TMI' + (newRe.length ? ' <em class="n-dot">N</em>' : ''), tm, tmRow]]],
+      ['up', '♥ 누른 글', [['all', '전체', upList, upRow, true], ['l', '💬 가사', upList.filter(x => x.kind === '가사'), upRow], ['c', '📣 떼창', upList.filter(x => x.kind === '떼창'), upRow], ['tmi', '💡 TMI', upList.filter(x => x.kind === 'TMI'), upRow]]],
     ].map(([k, l, subs]) => [k, l, subs.filter(x => x[2].length || x[4])]).filter(g => g[2].length);
     // 예전 주소(#/box?t=w 등)는 그 칩이 든 탭으로
     const q = new URLSearchParams(location.hash.split('?')[1] || '');
     let t = q.get('t') || '', sub = q.get('s') || '';
+    if (t === 'my' && sub === 'up') { t = 'up'; sub = ''; }
     const old = groups.find(g => g[2].some(x => x[0] === t || (t === 'p' && SONG_PICKS.some(([k]) => k === x[0]))));
     if (old && !groups.some(g => g[0] === t)) { sub = t === 'p' ? '' : t; t = old[0]; }
     const g = groups.find(x => x[0] === t) || groups[0] || ['', '', []];
@@ -2374,8 +2381,10 @@
     }
     const fdCur = sub.startsWith('f-') ? folders().find(f => 'f-' + f.id === sub) : null;
     const fdTools = t === 'song' ? `<div class="fd-tools">${fdCur ? `<button type="button" class="link-btn fd-ren" data-id="${esc(fdCur.id)}">이름 바꾸기</button><button type="button" class="link-btn fd-del" data-id="${esc(fdCur.id)}">폴더 지우기</button>` : ''}<button type="button" class="link-btn fd-add">＋ 새 폴더</button></div>` : '';
-    const html = fdTools + (fdCur && !list.length ? '<p class="empty">아직 빈 폴더예요. 곡 화면의 📁 버튼으로 곡을 담아 보세요.</p>' : '') + (sc[3] === 'ev' ? list.map(evRow).join('') : sc[3] === 'chip' ? chipsOf(list) + (SONG_PICKS.some(([k]) => k === sub) ? '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>' : '') : list.map(sc[3]).join(''));
-    const cur = { n: list.length, html };
+    const html = fdTools + (fdCur && !list.length ? '<p class="empty">아직 빈 폴더예요. 곡 화면의 📁 버튼으로 곡을 담아 보세요.</p>' : '') + (sc[3] === 'ev' ? boxTl(list) : sc[3] === 'chip' ? chipsOf(list) + (SONG_PICKS.some(([k]) => k === sub) ? '<p class="src-note">곡 화면에서 몇 곡이든 고를 수 있어요. 숲별 카드에 넣은 곡도 같이 보여요.</p>' : '') : list.map(sc[3]).join(''));
+    // 비어 있는 탭(아직 쓴 글·♥ 누른 글이 없을 때) 안내
+    const emptyMsg = !list.length && t === 'my' ? '<p class="empty">아직 쓴 글이 없어요. 곡 화면에서 좋아하는 가사 · 떼창 구간 · TMI를 남겨 보세요.</p>' : !list.length && t === 'up' ? '<p class="empty">아직 ♥ 누른 글이 없어요. 숲별 이야기에서 마음에 드는 글에 ♥를 눌러 보세요.</p>' : '';
+    const cur = { n: list.length, html: html + emptyMsg };
     if (t === 'my' && sub === 'tmi' && newRe.length) boxWrite('sb-re-seen', Math.max(...newRe.map(l => l.at)));
     const subBar = g[2].length > 1 || yearBar ? `<div class="box-subrow"><div class="box-subs">${g[2].length > 1 ? g[2].map(x => `<a class="box-sub${x[0] === sub ? ' on' : ''}" href="${link(t, x[0])}">${x[1]} <small>${x[2].length}</small></a>`).join('') : ''}</div>${yearBar}</div>` : '';
     // 검색용: 일정·곡·내 글을 한 목록에
@@ -2414,7 +2423,7 @@
       ${empty ? `<p class="empty">아직 비어 있어요. 일정이나 곡 화면에서 ♡ 좋아요, 🎫 직관했어요를 눌러 보세요.</p>` : ''}
       ${wentAll.length || seen.length ? `
       <section class="block box-stat">
-        <div class="box-nums">${went.length ? `<span><b>${went.length}</b>번 직관</span>` : ''}${seen.length ? `<span><b>${seen.length}</b>번 시청</span>` : ''}<span><b>${heardList.length}</b>곡 들음</span>${topRegion ? `<span><b>${esc(topRegion[0])}</b>많이 간 곳</span>` : ''}</div>
+        <div class="box-nums"><span><b>${went.length}</b>번 직관</span><span><b>${seen.length}</b>번 시청</span><span><b>${heardList.length}</b>곡 들음</span></div>
         ${first ? `<p class="sub">첫 직관 · ${fmtDate(first.date, false)} ${esc(first.title)}</p>` : ''}
         ${songLine ? `<p class="sub box-line">${songLine}</p>` : ''}
         <a class="map-entry" href="#/map">👣 숲별 발자국 · 지도로 되돌아보기 <span>›</span></a>
