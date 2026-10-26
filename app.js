@@ -5924,6 +5924,16 @@
   // 지운 의견: 쓴 사람이 보낸 '의견삭제'만 인정하고, 처리했어요가 붙은 의견은 못 지워요
   const OP_DEL = 'sb-op-del';
   const opDelMine = () => { try { return JSON.parse(localStorage.getItem(OP_DEL) || '[]'); } catch (err) { return []; } };
+  // 관리자: 의견 글을 일정 이름·번호와 같이 복사 (Claude에게 붙여 넣어 고치게). 목록이 나중에 그려져서 문서에서 받아요
+  const copyPlain = x => { const done = () => toast('글을 복사했어요'); const old = () => { const ta = document.createElement('textarea'); ta.value = x; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (err) { /* 아래로 */ } ta.remove(); ok ? done() : window.prompt('이 글을 복사해 주세요', x); }; navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(x).then(done, old) : old(); };
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.op-copy'); if (!b) return;
+    const c = b.closest('.op-item'); if (!c) return;
+    const t = c.querySelector('.op-text'), e = c.querySelector('.op-ev'), cat = c.querySelector('.op-head .new-t, .op-head .op-cat');
+    const id = e ? decodeURIComponent((e.getAttribute('href') || '').replace('#/e/', '')) : '';
+    const lines = [cat ? '분류: ' + cat.innerText.trim() : '', e ? `일정: [ID ${id}] ${e.innerText.replace(/^📅\s*/, '').trim()}` : '', '내용: ' + (t ? t.innerText.trim() : '')].filter(Boolean);
+    copyPlain(lines.join('\n'));
+  });
   function opGone() {
     const gone = new Set(opDelMine()), by = new Map(opData.ops.map(o => [o.id, o.by]));
     (opData.dels || []).forEach(d => { if (by.get(d.id) === d.by) gone.add(d.id); });
@@ -6060,8 +6070,6 @@
       if (mapMode()) b.textContent = '목록 보내기';
     }
     // 관리자: 처리 전 '지도 링크' 의견(비밀글은 푼 글)을 한 번에 복사 → Claude에게 붙여 주면 한꺼번에 넣어요
-    // 관리자: 의견 글 내용만 복사 (Claude에게 붙여 넣어 고치게)
-    view.querySelectorAll('.op-copy').forEach(btn => btn.onclick = () => { const c = btn.closest('.op-foot').parentElement, t = c && c.querySelector('.op-text'); if (!t) return; const x = t.innerText.trim(); navigator.clipboard.writeText(x).then(() => toast('글을 복사했어요'), () => window.prompt('이 글을 복사해 주세요', x)); });
     const ml = view.querySelector('.op-maplinks');
     if (ml) ml.onclick = async () => {
       await loadOpinions();
