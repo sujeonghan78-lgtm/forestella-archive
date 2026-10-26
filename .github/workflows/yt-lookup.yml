@@ -1,0 +1,53 @@
+# 유튜브 영상 정보 확인·검색 (직접 눌러서 실행). 결과는 tmp-probe 가지 fetch/yt_lookup.json (사이트엔 안 올라가요)
+name: yt-lookup
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: '영상 ID (쉼표로 여러 개)'
+        required: false
+      q:
+        description: '검색어 (| 로 여러 개, 검색어마다 최대 50개)'
+        required: false
+permissions:
+  contents: write
+concurrency: fetch-files
+jobs:
+  lookup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp-probe
+      - env:
+          KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          IDS: ${{ inputs.ids }}
+          Q: ${{ inputs.q }}
+        run: |
+          mkdir -p fetch
+          node -e '
+          const key = process.env.KEY, out = { videos: [], search: {} };
+          const get = u => fetch(u).then(r => r.json());
+          (async () => {
+            const ids = (process.env.IDS || "").split(",").map(s => s.trim()).filter(Boolean);
+            for (let i = 0; i < ids.length; i += 50) {
+              const j = await get(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${ids.slice(i, i + 50).join(",")}&key=${key}`);
+              (j.items || []).forEach(v => out.videos.push({ id: v.id, date: v.snippet.publishedAt, title: v.snippet.title, ch: v.snippet.channelTitle, views: v.statistics.viewCount, dur: v.contentDetails.duration }));
+            }
+            for (const q of (process.env.Q || "").split("|").map(s => s.trim()).filter(Boolean)) {
+              const list = []; let tok = "";
+              for (let p = 0; p < 2; p++) {
+                const j = await get(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=50&regionCode=KR&relevanceLanguage=ko&q=${encodeURIComponent(q)}${tok ? "&pageToken=" + tok : ""}&key=${key}`);
+                (j.items || []).forEach(v => list.push({ id: v.id.videoId, date: v.snippet.publishedAt, title: v.snippet.title, ch: v.snippet.channelTitle }));
+                if (!j.nextPageToken) break; tok = j.nextPageToken;
+              }
+              out.search[q] = list;
+            }
+            require("fs").writeFileSync("fetch/yt_lookup.json", JSON.stringify(out, null, 1));
+          })();'
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fetch
+          git diff --cached --quiet && exit 0
+          git commit -m "유튜브 확인"
+          git push origin HEAD:tmp-probe
