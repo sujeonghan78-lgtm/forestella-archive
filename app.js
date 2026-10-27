@@ -2457,6 +2457,7 @@
   const MAP_SPEEDS = [['느리게', 5000], ['보통', 3000], ['빠르게', 1200], ['쉬시식', 350]];
   const MAP_SP = 'sb-map-sp', mapSp = () => { const v = boxRead(MAP_SP); return Number.isInteger(v) && v >= 0 && v < MAP_SPEEDS.length ? v : 1; };
   const MAP_H = 'sb-map-h';
+  const MAP_AHEAD = 'sb-map-ahead'; // true면 앞으로 갈 초록 점선을 숨겨요
   const MAP_Z = 'sb-map-z', mapZ = () => { const z = boxRead(MAP_Z); return z >= 10 && z <= 17 ? z : 11; };
   let leafletP = null, placesP = null, mapSt = { mode: '', i: -1, pin: null, from: '', to: '', tour: false, play: false, mem: '', kind: '', uz: 0 }, lmap = null, mapPlay = null;
   function loadLeaflet() {
@@ -2603,7 +2604,7 @@
         <div class="map-grip" id="map-grip" role="separator" aria-label="지도 높이 조절"><span></span></div>
       </div>
       <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
-      ${mapSt.tour ? `<div class="map-playbar"><button type="button" class="chip on" id="map-play">▶ 재생</button><span class="map-sp-l">속도</span>${MAP_SPEEDS.map(([l], k) => `<button type="button" class="chip${k === mapSp() ? ' on' : ''}" data-sp="${k}">${l}</button>`).join('')}</div>` : ''}
+      ${mapSt.tour ? `<div class="map-playbar"><button type="button" class="chip on" id="map-play">▶ 재생</button><span class="map-sp-l">속도</span>${MAP_SPEEDS.map(([l], k) => `<button type="button" class="chip${k === mapSp() ? ' on' : ''}" data-sp="${k}">${l}</button>`).join('')}<button type="button" class="chip${boxRead(MAP_AHEAD) ? '' : ' on'}" id="map-ahead" aria-pressed="${boxRead(MAP_AHEAD) ? 'false' : 'true'}">┄ 갈 길</button></div>` : ''}
       <div class="map-pinbar" id="map-pinbar" hidden></div>
       <div class="map-fixbox" id="map-fix"></div>
       <div id="map-venue"></div>
@@ -2631,7 +2632,7 @@
       // 다녀간 순서대로 잇는 길: 지나온 길은 진하게, 남은 길은 점선
       const pt = x => [x.l.lat, x.l.lng], cut = Math.max(0, mapSt.i);
       if (mapSt.tour && ml.on.length > 1) {
-        L.polyline(ml.on.slice(cut).map(pt), { color: '#2E8B57', weight: 2, opacity: .45, dashArray: '4 6', interactive: false }).addTo(layer);
+        if (!boxRead(MAP_AHEAD)) L.polyline(ml.on.slice(cut).map(pt), { color: '#2E8B57', weight: 2, opacity: .45, dashArray: '4 6', interactive: false }).addTo(layer);
         if (cut > 0) L.polyline(ml.on.slice(0, cut + 1).map(pt), { color: '#2E8B57', weight: 3, opacity: .8, interactive: false }).addTo(layer);
         // 지금 걷고 있는 구간 (바로 전 → 지금)
         if (cut > 0) L.polyline([pt(ml.on[cut - 1]), pt(ml.on[cut])], { color: '#F07B2A', weight: 5, opacity: .95, interactive: false }).addTo(layer);
@@ -2799,6 +2800,8 @@
     };
     const pb = document.getElementById('map-play');
     if (pb) pb.onclick = () => { if (mapPlay) mapStop(); else play(); };
+    const ab = document.getElementById('map-ahead');
+    if (ab) ab.onclick = () => { const off = !boxRead(MAP_AHEAD); boxWrite(MAP_AHEAD, off || null); ab.classList.toggle('on', !off); ab.setAttribute('aria-pressed', String(!off)); draw(); };
     root.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
       boxWrite(MAP_SP, +b.dataset.sp);
       root.querySelectorAll('[data-sp]').forEach(o => o.classList.toggle('on', o === b));
