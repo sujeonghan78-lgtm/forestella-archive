@@ -146,33 +146,69 @@
   // 보관함 곡 칸(box.s)에 'kv:키:JSON'으로 넣어서 Apps Script를 안 바꾸고 따라가요
   const KV_KEYS = ['sb-card', 'sb-card-slots', 'sb-lyrics', 'sb-ready', 'sb-sec-key'];
   const kvStrip = (k, v) => k === 'sb-card-slots' && Array.isArray(v) ? v.map(x => x && { ...x, photo: null, stk: [] }) : v;
+  // 시트(보관함)에는 이름+숫자로 잠가서 'kvx:암호문' 한 줄로 올려요 (시트를 열어도 내용이 안 보여요). 예전 'kv:' 줄도 읽어요
+  const kvB64 = u8 => { let t = ''; for (let i = 0; i < u8.length; i += 8192) t += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return btoa(t); };
+  const kvUnB64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+  let kvKeyP = null, kvKeyFor = '';
+  const kvKey = () => {
+    const who = boxUser.name + '|' + boxUser.pin;
+    if (kvKeyP && kvKeyFor === who) return kvKeyP;
+    kvKeyFor = who;
+    const enc = new TextEncoder();
+    return (kvKeyP = crypto.subtle.importKey('raw', enc.encode(who), 'PBKDF2', false, ['deriveKey'])
+      .then(base => crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode('soopbyeol-kv|' + boxUser.name), iterations: 200000 }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])));
+  };
+  async function kvLock(obj) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await kvKey(), new TextEncoder().encode(JSON.stringify(obj))));
+    const all = new Uint8Array(12 + ct.length); all.set(iv); all.set(ct, 12);
+    return 'kvx:' + kvB64(all);
+  }
+  async function kvOpen(line) {
+    const all = kvUnB64(line.slice(4));
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: all.slice(0, 12) }, await kvKey(), all.slice(12));
+    return JSON.parse(new TextDecoder().decode(pt));
+  }
+  const kvNow = () => { const o = {}; KV_KEYS.forEach(k => { const v = boxRead(k); if (v == null) return; const j = JSON.stringify(kvStrip(k, v)); if (j.length <= 20000) o[k] = JSON.parse(j); }); return o; };
+  const KV_SIG = 'sb-kv-sig';
   let kvTimer = null;
   function kvTouch() {
     clearTimeout(kvTimer);
-    kvTimer = setTimeout(() => {
-      if (!boxUser) return;
-      const kv = KV_KEYS.map(k => { const v = boxRead(k); if (v == null) return null; const j = JSON.stringify(kvStrip(k, v)); return j.length > 20000 ? null : `kv:${k}:${j}`; }).filter(Boolean);
-      const was = box.s.filter(x => x.startsWith('kv:'));
-      if (was.join('\n') === kv.join('\n')) return;
-      box.s = [...box.s.filter(x => !x.startsWith('kv:')), ...kv]; box.t = Date.now();
+    kvTimer = setTimeout(async () => {
+      if (!boxUser || !crypto.subtle) return;
+      const o = kvNow(), sig = window.DATA.slVer([boxUser.name, JSON.stringify(o)]);
+      const has = box.s.some(x => x.startsWith('kvx:')), old = box.s.some(x => x.startsWith('kv:'));
+      if (has && !old && boxRead(KV_SIG) === sig) return;
+      let line; try { line = Object.keys(o).length ? await kvLock(o) : ''; } catch (err) { return; }
+      box.s = [...box.s.filter(x => !x.startsWith('kv:') && !x.startsWith('kvx:')), ...(line ? [line] : [])]; box.t = Date.now();
       try { localStorage.setItem(BOX_KEY, JSON.stringify(box)); } catch (err) { /* 괜찮아요 */ }
+      boxWrite(KV_SIG, sig);
       boxPush();
     }, 1200);
   }
   // 받아온 보관함의 설정을 이 폰에 넣어요. 바뀐 게 있으면 한 번 새로 불러요 (카드 슬롯 사진은 이 폰 것을 그대로 둬요)
-  function kvApply() {
-    const kv = box.s.filter(x => x.startsWith('kv:'));
-    if (!kv.length) { kvTouch(); return false; }
+  // 잠긴 줄은 푸는 데 시간이 걸려서 뒤에서 넣고, 바뀌었으면 그때 새로 불러요
+  function kvPut(pairs) {
     let changed = false;
-    kv.forEach(x => {
-      const i = x.indexOf(':', 3), k = x.slice(3, i);
+    pairs.forEach(([k, v]) => {
       if (!KV_KEYS.includes(k)) return;
-      let v; try { v = JSON.parse(x.slice(i + 1)); } catch (err) { return; }
       if (k === 'sb-card-slots' && Array.isArray(v)) { const loc = boxRead(k) || []; v = v.map((s0, n) => s0 && loc[n] && loc[n].at === s0.at ? { ...s0, photo: loc[n].photo, stk: loc[n].stk } : s0); }
       const now = localStorage.getItem(k), nv = JSON.stringify(v);
       if (now !== nv && JSON.stringify(kvStrip(k, boxRead(k))) !== JSON.stringify(kvStrip(k, v))) { try { localStorage.setItem(k, nv); changed = true; } catch (err) { /* 괜찮아요 */ } }
     });
-    if (changed) { setTimeout(() => location.reload(), 300); return true; }
+    return changed;
+  }
+  function kvApply() {
+    const enc = box.s.find(x => x.startsWith('kvx:'));
+    if (enc && boxUser && crypto.subtle) {
+      kvOpen(enc).then(o => { if (kvPut(Object.entries(o))) setTimeout(() => location.reload(), 300); else kvTouch(); }).catch(() => { /* 못 풀면 이 폰 것을 그대로 둬요 */ });
+      return false;
+    }
+    const kv = box.s.filter(x => x.startsWith('kv:'));
+    if (!kv.length) { kvTouch(); return false; }
+    const pairs = kv.map(x => { const i = x.indexOf(':', 3); try { return [x.slice(3, i), JSON.parse(x.slice(i + 1))]; } catch (err) { return null; } }).filter(Boolean);
+    if (kvPut(pairs)) { setTimeout(() => location.reload(), 300); return true; }
+    kvTouch();
     return false;
   }
   const boxClean = b => ({ e: (b && b.e) || [], s: (b && b.s) || [], w: (b && b.w) || [], v: (b && b.v) || [], t: (b && b.t) || 0 });
@@ -209,7 +245,7 @@
   const HEART_SENT = 'sb-heart-sent';
   // 소취곡(숲별 카드 + 곡 화면 🙏)도 같은 줄에 실어 보내서 '듣고 싶어 하는 팬' 수를 세요
   const wishKeys = () => { try { return pickList('wish').map(so => so.key).slice(0, 200); } catch (e) { return []; } };
-  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn|go|sp|uid|kv):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys(), g: box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3)).slice(0, 100) });
+  const heartLists = () => ({ s: box.s.filter(x => !/^(p[fwd]|fd|fn|go|sp|uid|kv|kvx):/.test(x)).slice(0, 400), e: box.e.slice(0, 400), w: wishKeys(), g: box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3)).slice(0, 100) });
   let heartTimer = null;
   function heartSync() {
     clearTimeout(heartTimer);
