@@ -935,17 +935,20 @@
     // 팬들이 공유한 가사·떼창·TMI (글에 검색어가 있거나, 찾은 곡에 달린 것)
     const sk = new Set(songs.map(so => so.key));
     const notes = (data.lyrics || []).filter(l => l.kind !== 'TMI답글').filter(l => hit(l.text) || sk.has(l.key) || (l.kind === 'TMI' && sk.has(l.key.slice(2)))).filter(l => noteWhere(l)).sort((a, b) => (hit(b.text) - hit(a.text)) || b.n - a.n || b.at - a.at);
-    return { songs, vids, rels, xs, notes };
+    // 📝 준비물 창 메모 (이 폰에만 있는 것)
+    const rr = rd(), memos = !m ? [] : [...Object.entries(rr.evMemo || {}).filter(([id, t]) => t && hit(t) && data.byId.get(id)).map(([id, t]) => ({ id, t, e: data.byId.get(id) })).sort((a, b) => b.e.date.localeCompare(a.e.date)), ...(rr.memo && hit(rr.memo) ? [{ id: '', t: rr.memo }] : [])];
+    return { songs, vids, rels, xs, notes, memos };
   }
   // 가사·떼창·TMI가 달린 곳 (곡 키, TMI는 's:곡키' 'e:일정ID' 't:투어ID')
   const noteHref = l => { const k = l.kind === 'TMI' ? l.key : 's:' + l.key; return k.startsWith('e:') ? '#/e/' + encodeURIComponent(k.slice(2)) : k.startsWith('t:') ? '#/tour/' + encodeURIComponent(k.slice(2)) : '#/song/' + encodeURIComponent(k.slice(2)); };
   const noteWhere = l => { const k = l.kind === 'TMI' ? l.key : 's:' + l.key, id = k.slice(2); return k.startsWith('e:') ? (data.byId.get(id) || {}).title : k.startsWith('t:') ? (((data.tours || []).find(t => t.id === id) || (data.concerts || []).find(c => c.id === id) || {}).name) : (data.songs.get(id) || {}).name; };
+  const memoCard = x => `<a class="x-card no-img note-card"${x.e ? ` href="#/e/${encodeURIComponent(x.id)}"` : ' href="#/wait"'}><span class="x-text"><span class="x-date">📝 내 메모 · ${x.e ? `${esc(fmtDate(x.e.date, false))} ${esc(x.e.title)}` : '다음 공연에도 쓰는 메모'}</span><span class="x-body">${esc(x.t)}</span></span></a>`;
   const NOTE_ICON = { '가사': '💬 가사', '떼창': '📣 떼창', 'TMI': '💡 TMI' };
   const noteCard = l => `<a class="x-card no-img note-card" href="${noteHref(l)}"><span class="x-text"><span class="x-date">${NOTE_ICON[l.kind] || l.kind} · ${esc(noteWhere(l))}${l.n > 1 ? ` · ♥ ${l.n}` : ''}</span><span class="x-body">${l.kind === '가사' ? '“' + esc(l.text) + '”' : esc(l.text)}</span></span></a>`;
   const xMini = x => `<a class="x-card${x.img ? '' : ' no-img'}" href="${esc(x.url)}" target="_blank" rel="noopener">${x.img ? `<img src="${esc(x.img)}?name=thumb" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="x-text"><span class="x-date">${esc(x.date.replace(/-/g, '.'))} · ${esc(x.cat)}</span>${esc(x.text || '(글 없음)')}</span></a>`;
   function searchTabs(p, evN) {
     const h = searchHits(p);
-    const tabs = [['', '전체'], ['ev', '일정', evN], ['song', '곡', h.songs.length], ['yt', '유튜브', h.vids.length], ['rel', '음반·콘서트', h.rels.length], ['x', '공식 X', h.xs.length], ['note', '가사·TMI', h.notes.length]];
+    const tabs = [['', '전체'], ['ev', '일정', evN], ['song', '곡', h.songs.length], ['yt', '유튜브', h.vids.length], ['rel', '음반·콘서트', h.rels.length], ['x', '공식 X', h.xs.length], ['note', '가사·TMI', h.notes.length], ['memo', '내 메모', h.memos.length]];
     return `<div class="chips s-tabs">${tabs.filter(([t, , n]) => n !== 0 || (p.t || '') === t).map(([t, l, n]) => `<a class="chip${(p.t || '') === t ? ' on' : ''}" href="#" data-t="${t}">${l}${n != null ? ` <b>${n.toLocaleString()}</b>` : ''}</a>`).join('')}</div>`;
   }
   const relCard = x => `<a class="x-card${x.img ? '' : ' no-img'}" href="${x.href}">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="x-text"><span class="x-date">${esc(x.kind)}${x.sub ? ' · ' + esc(x.sub) : ''}</span><b>${esc(x.name)}</b></span></a>`;
@@ -956,13 +959,14 @@
     const h = searchHits(p);
     const { list, fuzzy } = runSearch(p);
     // 비슷한 결과(정확히 맞는 게 없을 때)는 다른 종류가 있으면 빼요
-    const others = h.songs.length + h.vids.length + h.rels.length + h.xs.length + h.notes.length;
+    const others = h.songs.length + h.vids.length + h.rels.length + h.xs.length + h.notes.length + h.memos.length;
     const evs = fuzzy && others ? [] : list;
     const head = searchTabs(p, evs.length);
     const more = (t, n, unit) => n ? `<a class="more s-more" href="#" data-t="${t}">${n.toLocaleString()}${unit} 모두 보기 ›</a>` : '';
     if (p.t === 'song') return head + (h.songs.length ? moreList(h.songs.map(songCard), 20) : '<p class="empty">찾는 곡이 없어요.</p>');
     if (p.t === 'yt') return head + (h.vids.length ? `<div class="view-row"><p class="sub">${h.vids.length.toLocaleString()}개</p>${albumBtn()}</div>${ytList(h.vids)}` : '<p class="empty">찾는 영상이 없어요.</p>');
     if (p.t === 'x') return head + (h.xs.length ? moreList(h.xs.map(xMini), 20) : '<p class="empty">찾는 공식 X 글이 없어요.</p>');
+    if (p.t === 'memo') return head + (h.memos.length ? `<div class="stack x-list">${h.memos.map(memoCard).join('')}</div>` : '<p class="empty">찾는 메모가 없어요.</p>');
     if (p.t === 'note') return head + (h.notes.length ? moreList(h.notes.map(noteCard), 20) : '<p class="empty">찾는 가사·TMI가 없어요.</p>');
     if (p.t === 'rel') return head + (h.rels.length ? `<div class="stack x-list">${h.rels.map(relCard).join('')}</div>` : '<p class="empty">찾는 음반·콘서트가 없어요.</p>');
     const sec = (title, n, body, t, unit) => n ? `<section class="s-sec"><div class="block-head"><h2 class="h3">${title} <span class="song-count">${n.toLocaleString()}</span></h2>${more(t, n, unit)}</div>${body}</section>` : '';
@@ -973,6 +977,7 @@
       sec('공식 유튜브', h.vids.length, ytStrip(h.vids.slice(0, 8)), 'yt', '개'),
       sec('음반·콘서트', h.rels.length, `<div class="stack x-list s-group">${h.rels.slice(0, 3).map(relCard).join('')}</div>`, 'rel', '개'),
       sec('공식 X', h.xs.length, `<div class="stack x-list s-group">${h.xs.slice(0, 3).map(xMini).join('')}</div>`, 'x', '개'),
+      sec('📝 내 메모', h.memos.length, `<div class="stack x-list s-group">${h.memos.slice(0, 3).map(memoCard).join('')}</div>`, 'memo', '개'),
       sec('가사·떼창·TMI', h.notes.length, `<div class="stack x-list s-group">${h.notes.slice(0, 3).map(noteCard).join('')}</div>`, 'note', '개'),
     ].join('') : `<p class="empty">찾는 기록이 없어요. 혹시 빠진 일정이라면 <a href="#/add">일정 등록</a>으로 알려주세요.</p>`);
   }
