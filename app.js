@@ -4599,7 +4599,22 @@
   const rdItems = id => { const r = rd(), e = (id && r.ev[id]) || { add: [], off: [] }; return [...new Set([...RD_BASE, ...r.add, ...e.add])].filter(x => (RD_BASE.includes(x) ? !r.off.includes(x) : r.add.includes(x) || e.add.includes(x)) && !e.off.includes(x)); };
   const rdDone = id => (rd().done[id] || []).filter(x => rdItems(id).includes(x));
   const rdBox = id => `<div class="rd-box" data-id="${esc(id)}">${rdItems(id).map(x => `<label class="rd-row"><input type="checkbox" data-rd="${esc(x)}"${rdDone(id).includes(x) ? ' checked' : ''}><span>${esc(x)}</span><button type="button" class="rd-x" data-rdx="${esc(x)}" aria-label="${esc(x)} 빼기">×</button></label>`).join('')}
-    <div class="rd-new"><input type="text" class="op-in rd-in" maxlength="20" placeholder="＋ 내 준비물 더하기 (예: 담요)"><button type="button" class="bpill rd-add">더하기</button></div><label class="rd-keep"><input type="checkbox" class="rd-kp"${rd().keep ? ' checked' : ''}> 더하거나 뺀 것을 다음 공연에도 쓰기</label></div>`;
+    <div class="rd-new"><input type="text" class="op-in rd-in" maxlength="20" placeholder="＋ 내 준비물 더하기 (예: 담요)"><button type="button" class="bpill rd-add">더하기</button></div><label class="rd-keep"><input type="checkbox" class="rd-kp"${rd().keep ? ' checked' : ''}> 더하거나 뺀 것을 다음 공연에도 쓰기</label>${rdMemo(id)}</div>`;
+  // 📝 메모: 이 일정에만(r.evMemo[일정ID]) 또는 '다음 공연에도 쓰기'(r.memo). 이 폰(+복구 코드)에만 저장돼요
+  const rdMemoOf = id => { const r = rd(), m = r.evMemo || {}; return id in m ? { t: m[id], keep: false } : { t: r.memo || '', keep: !!r.memo }; };
+  const rdMemo = id => {
+    const r = rd();
+    if (r.memoOff) return `<button type="button" class="link-btn rd-mon">📝 메모 칸 켜기</button>`;
+    const m = rdMemoOf(id);
+    return `<details class="rd-memo"${r.memoOpen === 0 ? '' : ' open'}><summary>📝 메모${m.t ? ' <small>●</small>' : ''}</summary>
+      <textarea class="op-in rd-mt" maxlength="500" rows="3" placeholder="좌석, 굿즈 예약 번호, 만날 사람, 막차 시간…">${esc(m.t)}</textarea>
+      <div class="rd-mf"><label class="rd-keep"><input type="checkbox" class="rd-mk"${m.keep ? ' checked' : ''}> 다음 공연에도 이 메모 쓰기</label><button type="button" class="link-btn rd-moff">메모 칸 끄기</button></div></details>`;
+  };
+  const rdMemoSave = (b, keep) => {
+    const r = rd(), id = b.dataset.id, t = b.querySelector('.rd-mt').value.slice(0, 500), em = r.evMemo = r.evMemo || {};
+    if (keep) { r.memo = t; delete em[id]; } else em[id] = t;
+    boxWrite(RD_KEY, r);
+  };
   function homeWait() {
     if (!WAIT_ON()) return '';
     const t = todayIso(), r = rd(), mine = goIds().map(id => data.byId.get(id)).filter(e => e && !r.hid[e.id]);
@@ -4663,6 +4678,8 @@
     }
     const ro = ev.target.closest('.rd-open');
     if (ro) { const e = data.byId.get(ro.dataset.id); if (!e) return; const x = waitSheet(`<div class="yf-head"><b class="wi-h">${wi('bag')}준비물</b><span class="sub">${esc(e.title)}</span></div>${rdBox(e.id)}<button type="button" class="bpill yf-ok wt-yes">다 했어요</button>`); x.querySelector('.wt-yes').onclick = () => { x.hidden = true; if (currentRoute() === 'wait' || currentRoute() === 'home') { const y = scrollY; renderBase(currentRoute()); scrollTo(0, y); } }; return; }
+    const mo = ev.target.closest('.rd-moff, .rd-mon');
+    if (mo) { const r = rd(), b = mo.closest('.rd-box'); r.memoOff = mo.classList.contains('rd-moff'); if (!r.memoOff) r.memoOpen = 1; boxWrite(RD_KEY, r); rdRefresh(b); return; }
     const rx = ev.target.closest('[data-rdx]');
     if (rx) {
       ev.preventDefault(); const r = rd(), x = rx.dataset.rdx, b = rx.closest('.rd-box'), id = b.dataset.id, e = r.ev[id] = r.ev[id] || { add: [], off: [] };
@@ -4686,11 +4703,13 @@
   document.addEventListener('change', ev => {
     const so = ev.target.closest('.sp-onoff'); if (so) { const r = rd(); r.spOff = !so.checked; boxWrite(RD_KEY, r); const y = scrollY; renderBase('wait'); scrollTo(0, y); return; }
     const kp = ev.target.closest('.rd-kp'); if (kp) { const r = rd(); r.keep = kp.checked; boxWrite(RD_KEY, r); return; }
+    const mk = ev.target.closest('.rd-mk'); if (mk) { rdMemoSave(mk.closest('.rd-box'), mk.checked); return; }
     const c = ev.target.closest('[data-rd]'); if (!c) return;
     const id = c.closest('.rd-box').dataset.id, r = rd(), x = c.dataset.rd, d = new Set(r.done[id] || []);
     c.checked ? d.add(x) : d.delete(x); r.done[id] = [...d]; boxWrite(RD_KEY, r);
   });
   document.addEventListener('input', ev => {
+    const mt = ev.target.closest('.rd-mt'); if (mt) { const b = mt.closest('.rd-box'); rdMemoSave(b, b.querySelector('.rd-mk').checked); return; }
     const q = ev.target.closest('.sp-q'); if (!q) return;
     const boxEl = q.closest('.sp-box'), mine = spGet(boxEl.dataset.id), v = q.value.trim().toLowerCase().replace(/\s+/g, '');
     const out = boxEl.querySelector('.sp-found');
@@ -4698,6 +4717,7 @@
     const hits = [...data.songs.values()].filter(so => !mine.includes(so.key) && (so.name.toLowerCase().replace(/\s+/g, '').includes(v) || so.key.replace(/\s+/g, '').includes(v) || koOf(so.name).replace(/\s+/g, '').includes(v))).slice(0, 10);
     out.innerHTML = hits.length ? hits.map(so => `<button type="button" class="sp-chip sp-add" data-k="${esc(so.key)}">＋ ${esc(so.name)}</button>`).join('') : '<span class="sub">찾는 곡이 없어요</span>';
   });
+  document.addEventListener('toggle', ev => { const d = ev.target; if (!d.classList || !d.classList.contains('rd-memo')) return; const r = rd(); r.memoOpen = d.open ? 1 : 0; boxWrite(RD_KEY, r); }, true);
   const rdRefresh = b => { if (!b) return; const id = b.dataset.id; b.outerHTML = rdBox(id); };
   // 팝업: 공연 당일 '다 챙기셨나요?', 지난 일정 '다녀오셨어요?'
   const waitSkip = new Set();

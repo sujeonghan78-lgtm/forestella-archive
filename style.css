@@ -1733,6 +1733,12 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .rd-x { margin-left: auto; border: 0; background: none; color: var(--muted); font-size: 18px; padding: 0 6px; }
 .rd-new { display: flex; gap: 6px; margin-top: 8px; }
 .rd-in { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: calc(14px * var(--fs)); color: var(--ink); }
+.rd-memo { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.rd-memo summary { cursor: pointer; font-size: calc(13.5px * var(--fs)); font-weight: 700; color: var(--green-d); padding: 4px 2px; }
+.rd-memo summary small { color: var(--green-2); font-size: 9px; vertical-align: 2px; }
+.rd-mt { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #FFFDF5; font: inherit; font-size: calc(14px * var(--fs)); line-height: 1.5; color: var(--ink); resize: vertical; }
+.rd-mf { display: flex; align-items: center; justify-content: space-between; gap: 8px; } .rd-mf .rd-keep { margin-top: 6px; }
+.rd-moff { font-size: calc(12px * var(--fs)); color: var(--muted); margin-top: 6px; } .rd-mon { margin-top: 10px; font-size: calc(12.5px * var(--fs)); text-align: left; }
 .wt-pop { text-align: center; align-items: center; }
 .wt-big { font-size: 44px; line-height: 1; margin-top: 4px; }
 .wt-t { font-size: calc(17px * var(--fs)); }
