@@ -5633,7 +5633,9 @@
     formPost(`종류: ${send ? '날짜수정' : '날짜확인'}\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.date}\n후: ${to}\n누가: ${myUid()}`)
       .then(() => {
         slOkAdd(`dt:${e.id}:${to}`);
-        if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.dt-msg').textContent = `보냈어요: ${md2(e.date)} → ${md2(to)}. 5~10분쯤 뒤 일정에 같이 떠요.`; }
+        // 관리자 기기에서 보낸 날짜는 바로 확정해요 (장소 알려주기와 같아요)
+        if (send && isAdmin()) { b.textContent = '확정하는 중…'; dtAdminMark(e.id, '확정', to).then(() => { b.textContent = '확정했어요 ✓'; box.querySelector('.dt-msg').textContent = `관리자 확정: ${md2(e.date)} → ${md2(to)}. 5~10분쯤 뒤 모두에게 바뀌어요.`; }).catch(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.dt-msg').textContent = "보냈지만 확정은 못 했어요. 일정 위 '바로 확정'을 눌러 주세요."; }); }
+        else if (send) { b.textContent = '보냈어요 ✓'; box.querySelector('.dt-msg').textContent = `보냈어요: ${md2(e.date)} → ${md2(to)}. 5~10분쯤 뒤 일정에 같이 떠요.`; }
         else b.closest('.dt-state').outerHTML = dtState({ ...e, dateWas: '', dateProps: (e.dateProps || []).filter(p => p.to === to) });
       })
       .catch(() => { b.disabled = false; b.textContent = send ? '다시 보내기' : '다시 누르기'; if (send) box.querySelector('.dt-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하거나, 광고 차단·보안 기능을 잠깐 끄고 다시 보내 주세요.'; });
@@ -5804,16 +5806,17 @@
     const b = ev.target.closest('.dt-adm');
     if (!b || !isAdmin()) return;
     b.disabled = true; b.textContent = '보내는 중…';
-    try {
-      const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
-      const m = { id: b.dataset.id, state: b.dataset.state, n: String(Date.now()), to: b.dataset.to };
-      m.sig = b64u(await crypto.subtle.sign(SIGN, key, dtMsg(m)));
-      const check = await sheetCheck({ id: 'dt:' + m.id, state: m.state, n: m.n, to: m.to });
-      await formPost(`종류: 날짜확정\n대상: ${m.id}\n후: ${m.to}\n상태: ${m.state}\n번호: ${m.n}\n서명: ${m.sig}\n확인: ${check}`);
-      try { localStorage.setItem(DT_MARK, JSON.stringify(dtMarkLocal().concat(m).slice(-100))); } catch (err) { /* 괜찮아요 */ }
-      await syncHides();
-    } catch (err) { b.disabled = false; b.textContent = '다시 누르기'; }
+    try { await dtAdminMark(b.dataset.id, b.dataset.state, b.dataset.to); } catch (err) { b.disabled = false; b.textContent = '다시 누르기'; }
   });
+  async function dtAdminMark(id, state, to) {
+    const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
+    const m = { id, state, n: String(Date.now()), to };
+    m.sig = b64u(await crypto.subtle.sign(SIGN, key, dtMsg(m)));
+    const check = await sheetCheck({ id: 'dt:' + m.id, state: m.state, n: m.n, to: m.to });
+    await formPost(`종류: 날짜확정\n대상: ${m.id}\n후: ${m.to}\n상태: ${m.state}\n번호: ${m.n}\n서명: ${m.sig}\n확인: ${check}`);
+    try { localStorage.setItem(DT_MARK, JSON.stringify(dtMarkLocal().concat(m).slice(-100))); } catch (err) { /* 괜찮아요 */ }
+    await syncHides();
+  }
   // 연표 같은 곳에서 화면을 안 옮기고 바로 적는 칸
   const addQuick = () => `<details class="add-quick"><summary class="bpill">＋ 일정 등록</summary>
       <div class="add-list">${addCard({}, true)}</div>
