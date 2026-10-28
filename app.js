@@ -2641,7 +2641,7 @@
       <div class="map-car" id="map-car"${mapSt.tour && !boxRead(MAP_H + '-car') ? '' : ' hidden'}></div>
       <div class="map-stage${mapSt.tour ? '' : ' map-ov'}">
         <div id="map"${(() => { const h = boxRead(mapSt.tour ? MAP_H : MAP_H + '-ov'); return h >= 160 && h <= 900 ? ` style="height:${h}px"` : ''; })()}></div>
-        <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 따라걷기<small>가만히 두면 저절로 넘어가요</small></button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
+        <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 따라걷기<small>가만히 두면 저절로 넘어가요</small></button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button><button type="button" class="map-tool" id="map-me" aria-label="내 위치">📍</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
         <div class="map-grip" id="map-grip" role="separator" aria-label="지도 높이 조절"><span></span></div>
       </div>
       <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
@@ -2831,6 +2831,18 @@
     const zoomBy = d => { const z = Math.min(17, Math.max(5, (mapSt.tour && mapSt.uz || m.getZoom()) + d)); if (mapSt.tour) mapSt.uz = z; m.setZoom(z); if (z >= 10) boxWrite(MAP_Z, z); };
     document.getElementById('map-zin').onclick = () => zoomBy(1);
     document.getElementById('map-zout').onclick = () => zoomBy(-1);
+    // 📍 내 위치: 누를 때만 폰에 물어보고 이 화면에만 파란 점으로 (어디에도 안 보내요)
+    let meDot = null;
+    document.getElementById('map-me').onclick = () => {
+      if (!navigator.geolocation) { toast('이 브라우저는 위치를 못 알려 줘요'); return; }
+      mapStop();
+      navigator.geolocation.getCurrentPosition(p => {
+        const at = [p.coords.latitude, p.coords.longitude];
+        if (meDot) meDot.remove();
+        meDot = L.circleMarker(at, { radius: 8, color: '#fff', weight: 3, fillColor: '#2D7FF9', fillOpacity: 1, interactive: false }).addTo(m);
+        moveAuto(() => m.flyTo(at, Math.max(m.getZoom(), 13), { duration: 0.8 }));
+      }, () => toast('위치를 못 가져왔어요. 위치 권한을 확인해 주세요'), { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    };
     const all = () => m.fitBounds(L.latLngBounds(ml.on.map(x => [x.l.lat, x.l.lng])).pad(0.25), { maxZoom: 11, animate: false });
     const play = () => {
       mapStop();
