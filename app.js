@@ -5649,12 +5649,21 @@
     const was = e.dateWas ? okMini('날짜 고침', `확인을 받아 날짜를 고쳤어요. (원래 ${esc(md2(e.dateWas))})`) : '';
     return was + (e.dateProps || []).map(p => {
       const mine = p.by === myUid(), done = slOked(`dt:${e.id}:${p.to}`);
-      const btn = !mine && !done ? `<button type="button" class="bpill dt-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>` : '';
+      const btn = !mine && !done ? `<button type="button" class="bpill dt-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button><button type="button" class="bpill dt-no" data-id="${esc(e.id)}" data-to="${esc(p.to)}">아니에요</button>` : '';
       const adm = isAdmin() ? `<button type="button" class="link-btn dt-adm" data-id="${esc(e.id)}" data-to="${esc(p.to)}" data-state="확정">바로 확정 (관리자)</button><button type="button" class="link-btn dt-adm" data-id="${esc(e.id)}" data-to="${esc(p.to)}" data-state="거절">거절 (관리자)</button>` : '';
-      const msg = mine ? '내가 보낸 날짜예요. 다른 두 분이 맞다고 하면 바뀌어요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "새 날짜가 맞으면 '맞아요'를 눌러 주세요.";
+      const msg = mine ? '내가 보낸 날짜예요. 다른 두 분이 맞다고 하면 바뀌어요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "새 날짜가 맞으면 '맞아요', 원래 날짜가 맞으면 '아니에요'를 눌러 주세요. 두 분이 아니라고 하면 이 제안은 사라져요.";
       return `<div class="sl-state dt-state"><span class="src-badge">날짜 확인 · ${p.n}/2</span><span class="sl-state-msg"><b class="dt-chg">${esc(md2(e.date))} → ${esc(md2(p.to))}</b>${p.to.slice(0, 4) !== e.date.slice(0, 4) ? ` (${esc(p.to.slice(0, 4))}년)` : ''} 날짜가 바뀔 수도 있어요. ${msg}</span>${btn}${adm}</div>`;
     }).join('');
   }
+  // '아니에요': 원래 날짜가 맞다고 알려요 (종류: 날짜아님)
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.dt-no'); if (!b) return;
+    const e = data.events.find(x => x.id === b.dataset.id); if (!e) return;
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: 날짜아님\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n후: ${b.dataset.to}\n누가: ${myUid()}`)
+      .then(() => { slOkAdd(`dt:${e.id}:${b.dataset.to}`); const st = b.closest('.dt-state'); st.querySelectorAll('.dt-ok, .dt-no').forEach(x => x.remove()); st.querySelector('.sl-state-msg').insertAdjacentHTML('beforeend', ' <b>알려 줘서 고마워요!</b>'); })
+      .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
+  });
   const dtForm = e => e.ytOnly ? '' : `<details class="fix-box"><summary>📅 날짜가 달라요</summary><div class="op-form">
       <label class="add-f"><span>지금 날짜</span><input type="date" value="${esc(e.date)}" disabled></label>
       <label class="add-f"><span>맞는 날짜</span><input type="date" class="dt-in" value="${esc(e.date)}"></label>

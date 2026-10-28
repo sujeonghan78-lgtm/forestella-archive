@@ -211,7 +211,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -424,6 +424,13 @@
     // (같은 날짜로 고치자고 한 사람도 셈) 관리자가 확정하면 날짜가 바뀌어요. 확정 전에는 원래 날짜 그대로 두고 상세에 같이 보여줘요
     if (raw.reports) {
       const fx = {}, isD = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
+      // '아니에요'(종류: 날짜아님 후): 올린 사람 말고 두 명이 아니라고 하면 그 제안은 빠져요
+      const no = {};
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if (r.type !== '날짜아님' || !r.by) return;
+        const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = normDate(line0(r, '후'));
+        if (id && to) (no[id + '>' + to] = no[id + '>' + to] || new Set()).add(r.by);
+      });
       buildReports(toObjects(raw.reports), true).forEach(r => {
         if ((r.type !== '날짜수정' && r.type !== '날짜확인') || !r.by) return;
         const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = normDate(line0(r, '후'));
@@ -437,6 +444,7 @@
         const a = adm[e.id], cur = e.date;
         const ps = Object.values(fx[e.id] || {}).filter(p => p.by && p.to !== cur && (!p.from || p.from === cur) && !(a && a.state === '거절' && a.to === p.to));
         ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); });
+        for (let i = ps.length - 1; i >= 0; i--) { const nset = no[e.id + '>' + ps[i].to]; if (nset && [...nset].filter(u => u !== ps[i].by).length >= 2) ps.splice(i, 1); }
         const done = a && a.state === '확정' && a.to !== cur ? a.to : ((ps.filter(p => p.who.size >= 2).sort((x, y) => y.who.size - x.who.size)[0]) || {}).to;
         if (done) {
           if (e.endDate) e.endDate = new Date(new Date(e.endDate).getTime() + (new Date(done) - new Date(cur))).toISOString().slice(0, 10);
