@@ -2560,7 +2560,7 @@
     const mine = bs.wentAll.slice().sort((a, b) => a.date.localeCompare(b.date));
     const st = mapParams();
     mapSt.mode = st.s || (mine.length ? 'w' : 'all');
-    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !MAP_ONLINE.test(e.title) && !(/팬사인회|팬싸인회|팬싸/.test(e.title) && !placeOf(e))).sort((a, b) => a.date.localeCompare(b.date));
+    const list = mapSt.mode === 'w' ? mine : data.events.filter(e => isLocalEvent(e) && !MAP_ONLINE.test(e.title) && !MAP_ONLINE.test(placeOf(e)) && !(/팬사인회|팬싸인회|팬싸/.test(e.title) && !placeOf(e))).sort((a, b) => a.date.localeCompare(b.date));
     const years = [...new Set(list.map(e => e.date.slice(0, 4)))].sort();
     // 기간 고르기: from/to는 'YYYY-MM'
     const inRange = x => (!st.m.length || st.m.some(v => memOk(v)(x.e))) && (!st.k.length || st.k.includes(mapKind(x.e))) && (!st.y.length || st.y.includes(x.e.date.slice(0, 4))) && (!st.r.length || st.r.includes(mapRegion(x.l)));
@@ -2597,7 +2597,7 @@
   // 못 찍은 일정: 해외와 장소 모름을 나눠서, 장소 모름엔 📍 장소 알려주기를 달아요 (MAP_OFF_PL이 켜져 있을 때)
   const MAP_OFF_PL = true;
   // 라디오는 장소를 몰라도 '위치 확인이 필요한 일정'에 안 넣어요 (스튜디오라 찾을 필요가 없어요)
-  const needLoc = x => x.e.category !== '라디오';
+  const needLoc = x => x.e.category !== '라디오' && !MAP_ONLINE.test(placeOf(x.e));
   function offList(off, rough = []) {
     const abroad = off.filter(x => x.l.region === '해외'), priv = off.filter(x => x.l.region === PLACE_PRIV), none = off.filter(x => x.l.region !== '해외' && x.l.region !== PLACE_PRIV);
     const row = (x, pl, pv) => `<div class="map-off-row"><a class="box-ev" href="#/e/${encodeURIComponent(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></a>${pl ? `<span class="map-off-act"><a class="chip map-off-pl" href="#/e/${encodeURIComponent(x.e.id)}?pl=1">📍 장소 알려주기</a></span>` : ''}</div>`;
@@ -5790,14 +5790,14 @@
     }).join('');
   }
   const plForm = e => e.ytOnly ? '' : `<details class="fix-box"${new URLSearchParams(location.hash.split('?')[1] || '').get('pl') ? ' open id="pl-open"' : ''}><summary>📍 ${e.place ? '장소가 달라요' : '장소 알려주기'}</summary><div class="op-form">
-      ${e.place === PLACE_PRIV ? '' : `<div class="pl-kind"><button type="button" class="chip on" data-k="pub">📍 장소 공개됨</button><button type="button" class="chip" data-k="priv">🔒 장소 비공개</button></div>`}
+      ${e.place === PLACE_PRIV ? '' : `<div class="pl-kind"><button type="button" class="chip on" data-k="pub">📍 장소 공개됨</button><button type="button" class="chip" data-k="priv">🔒 장소 비공개</button><button type="button" class="chip" data-k="online">💻 온라인</button></div>`}
       ${e.place ? `<label class="add-f"><span>지금 장소</span><input type="text" value="${esc(e.place)}" disabled></label>` : ''}
       <form class="pl-find" hidden><input type="hidden" class="pl-in" value="${esc(e.place && e.place !== PLACE_PRIV ? e.place : '')}"></form>
       <div class="pin-res pl-res"></div>
       <label class="add-f pl-nv"><span>또는 네이버 지도 링크</span><input type="url" class="pl-link" inputmode="url" placeholder="네이버 지도 앱 → 장소 → 공유 → 링크 복사" autocomplete="off"></label>
       <div class="pl-ns"><a class="map-act pl-nsearch" href="https://search.naver.com/search.naver?query=${encodeURIComponent(['포레스텔라', e.title.replace(/^\[[^\]]*\]\s*/, ''), e.date.slice(0, 4) + '.' + +e.date.slice(5, 7) + '.' + +e.date.slice(8), e.place && e.place !== PLACE_PRIV ? e.place : ''].filter(Boolean).join(' '))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>이 일정 검색</a><a class="map-act pl-nsearch" href="https://map.naver.com/p/search/${encodeURIComponent((e.place && e.place !== PLACE_PRIV ? e.place : e.title.replace(/^\[[^\]]*\]\s*/, '')).replace(/\s*\([^)]*\)\s*/g, ' ').trim())}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>네이버 지도에서 찾기</a></div>
       <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}" disabled>보내기</button>
-      ${e.place === PLACE_PRIV ? '' : `<div class="pl-privbox" hidden><p class="src-note">팬사인회처럼 장소를 당첨자에게만 알려 준 일정이에요. 보내면 지도에서 '🔒 장소 비공개'로 따로 묶여요.</p><button type="button" class="bpill add-send pl-priv" data-id="${esc(e.id)}">🔒 비공개로 보내기</button></div>`}
+      ${e.place === PLACE_PRIV ? '' : `<div class="pl-privbox" hidden><p class="src-note">팬사인회처럼 장소를 당첨자에게만 알려 준 일정이에요. 보내면 지도에서 '🔒 장소 비공개'로 따로 묶여요.</p><button type="button" class="bpill add-send pl-priv" data-id="${esc(e.id)}">🔒 비공개로 보내기</button></div><div class="pl-privbox pl-onbox" hidden><p class="src-note">유튜브·온라인 생중계처럼 장소 없이 진행한 일정이에요. 보내면 지도에서 빠지고 위치 확인 목록에도 안 나와요.</p><button type="button" class="bpill add-send pl-priv" data-to="온라인" data-id="${esc(e.id)}">💻 온라인으로 보내기</button></div>`}
       <p class="src-note pl-msg">위치 후보 중 맞는 곳을 누르면 바로 보내져요. 없으면 네이버 지도에서 그 장소를 공유한 링크를 붙여 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '정확한 위치가 없던 곳은 바로 들어가고, 이미 위치가 있는 곳은 다른 두 분이 맞다고 하면 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
   const privText = e => `종류: 장소수정\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${PLACE_PRIV}\n누가: ${myUid()}`;
   // 장소 알려주기를 펼치면 네이버 후보를 바로 띄워요
@@ -5882,10 +5882,10 @@
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.pl-kind .chip');
     if (!b) return;
-    const f = b.closest('.op-form'), priv = b.dataset.k === 'priv';
+    const f = b.closest('.op-form'), k = b.dataset.k;
     b.parentNode.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === b));
-    f.querySelectorAll(':scope > :not(.pl-kind):not(.pl-privbox)').forEach(el => { el.style.display = priv ? 'none' : ''; });
-    f.querySelector('.pl-privbox').hidden = !priv;
+    f.querySelectorAll(':scope > :not(.pl-kind):not(.pl-privbox)').forEach(el => { el.style.display = k !== 'pub' ? 'none' : ''; });
+    f.querySelectorAll('.pl-privbox').forEach(x => { x.hidden = x.classList.contains('pl-onbox') ? k !== 'online' : k !== 'priv'; });
   });
   // 장소 비공개(팬사인회처럼 당첨자에게만 알려 준 곳): 장소를 '비공개'로 보내요. 다른 두 분이 맞다고 하면 확정이에요
   document.addEventListener('click', ev => {
@@ -5893,8 +5893,11 @@
     if (!b) return;
     const e = data.events.find(x => x.id === b.dataset.id);
     if (!e) return;
+    const to = b.dataset.to || PLACE_PRIV;
     b.disabled = true; b.textContent = '보내는 중…';
-    formPost(privText(e)).then(() => { slOkAdd(`pl:${e.id}:${PLACE_PRIV}`); b.textContent = '보냈어요 ✓ 장소 비공개로 알렸어요'; }).catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
+    formPost(privText(e).replace(`\n후: ${PLACE_PRIV}\n`, `\n후: ${to}\n`))
+      .then(() => isAdmin() ? sendEvMark('pl' + window.DATA.slVer([e.id, to]), '숨김').catch(() => {}) : null)
+      .then(() => { slOkAdd(`pl:${e.id}:${to}`); b.textContent = to === PLACE_PRIV ? '보냈어요 ✓ 장소 비공개로 알렸어요' : '보냈어요 ✓ 온라인으로 알렸어요'; }).catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
   });
   document.addEventListener('click', async ev => {
     const b = ev.target.closest('.pl-adm');
