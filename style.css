@@ -1840,3 +1840,4 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .map-act{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--card, #fff);color:var(--green-d);font:inherit;font-size: calc(12px * var(--fs));font-weight:700;text-decoration:none;white-space:nowrap}
 .map-act svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .pl-nsearch{display:inline-flex;margin:2px 0 8px;font-size: calc(13px * var(--fs))}
+.pl-ns{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px}.pl-ns .pl-nsearch{margin:0}
