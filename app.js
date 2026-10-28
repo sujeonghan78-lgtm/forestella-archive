@@ -2641,7 +2641,7 @@
       <div class="map-car" id="map-car"${mapSt.tour && !boxRead(MAP_H + '-car') ? '' : ' hidden'}></div>
       <div class="map-stage${mapSt.tour ? '' : ' map-ov'}">
         <div id="map"${(() => { const h = boxRead(mapSt.tour ? MAP_H : MAP_H + '-ov'); return h >= 160 && h <= 900 ? ` style="height:${h}px"` : ''; })()}></div>
-        <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 따라걷기<small>가만히 두면 저절로 넘어가요</small></button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button><button type="button" class="map-tool" id="map-me" aria-label="내 위치">📍</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
+        <div class="map-tools">${mapSt.tour ? '<button type="button" class="map-trip" id="map-ov">🗺 전체 지도</button>' : '<button type="button" class="map-trip" id="map-trip">👣 숲길 따라걷기<small>가만히 두면 저절로 넘어가요</small></button>'}<button type="button" class="map-tool" id="map-zin" aria-label="확대">＋</button><button type="button" class="map-tool" id="map-zout" aria-label="축소">－</button><button type="button" class="map-tool" id="map-me" aria-label="내 위치 (이 폰 화면에만 써요)" title="내 위치 (이 폰 화면에만 써요)">📍</button>${mapSt.tour ? '<button type="button" class="map-tool" id="map-all" aria-label="전체 보기">⤢</button><button type="button" class="map-tool" id="map-here" aria-label="지금 일정으로">◎</button>' : ''}</div>
         <div class="map-grip" id="map-grip" role="separator" aria-label="지도 높이 조절"><span></span></div>
       </div>
       <div class="map-panel${mapSt.tour ? '' : ' map-sum'}" id="map-nav"></div>
@@ -2836,6 +2836,7 @@
     document.getElementById('map-me').onclick = () => {
       if (!navigator.geolocation) { toast('이 브라우저는 위치를 못 알려 줘요'); return; }
       mapStop();
+      toast('내 위치는 이 폰 화면에만 쓰고 어디에도 보내지 않아요');
       navigator.geolocation.getCurrentPosition(p => {
         const at = [p.coords.latitude, p.coords.longitude];
         if (meDot) meDot.remove();
