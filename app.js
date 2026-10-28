@@ -2083,13 +2083,35 @@
 
   // 같은 공연이 이틀 연속 열리면 연표에서 한 줄로 묶어요
   const samePlace = (a, b) => (a || '').replace(/\s+/g, '') === (b || '').replace(/\s+/g, '');
+  // 콘서트 기간 안이라도 그 콘서트 공연 날(shows·투어 날짜)이거나 이름이 같은 일정만 콘서트로 봐요
+  const cDays = new Map();
+  function concertDays(c) {
+    if (cDays.has(c)) return cDays.get(c);
+    const o = new Set((c.tour && c.tour.dates) || []);
+    (c.shows || []).forEach(x => {
+      const m = String(x).match(/(\d{4})-(\d\d)-(\d\d)(?:~(?:(\d\d)-)?(\d\d))?/);
+      if (!m) return;
+      const a = Date.UTC(+m[1], m[2] - 1, +m[3]), b = m[5] ? Date.UTC(+m[1], (m[4] || m[2]) - 1, +m[5]) : a;
+      for (let d = a; d <= b; d += 864e5) o.add(new Date(d).toISOString().slice(0, 10));
+    });
+    cDays.set(c, o);
+    return o;
+  }
+  const nsp = t => (t || '').replace(/\s+/g, '').toLowerCase();
+  function inConcert(c, e) {
+    if (!c.from || e.date < c.from || e.date > (c.to || c.from)) return false;
+    const ds = concertDays(c);
+    if (!ds.size || ds.has(e.date)) return true;
+    const core = nsp(c.name.replace(/\s*\(.*$/, ''));
+    return core.length > 3 && nsp(e.title).includes(core);
+  }
   // 연표 썸네일: 콘서트 포스터 → 무대·공식 영상 → 공식 X 후기 사진 (확실히 이어진 것만)
   function evPic(run) {
     const e = run[0];
     if (e.category === '공연') {
       const solo = /^\[/.test(e.title) ? soloInfos().find(c => c.evs.includes(e)) : null;
       if (solo && solo.img) return solo.img;
-      const c = !/^\[/.test(e.title) && (data.concerts || []).find(c => c.from && e.date >= c.from && e.date <= (c.to || c.from));
+      const c = !/^\[/.test(e.title) && (data.concerts || []).find(c => inConcert(c, e));
       if (c && c.img) return imgSize(c.img, 'small');
     }
     for (const x of run) {
@@ -6831,7 +6853,7 @@
     return rows.slice(0, 5).join('') + `<details class="tour-more"><summary>전체 일정 보기 (${rows.length}곳)</summary>${rows.slice(5).join('')}</details>`;
   };
   // 콘서트 기간 안의 포레스텔라 공연 일정 ([멤버] 표시 일정은 빼요)
-  const concertEvents = c => c.from ? data.events.filter(e => e.category === '공연' && e.date >= c.from && e.date <= (c.to || c.from) && !/^\[/.test(e.title)) : [];
+  const concertEvents = c => c.from ? data.events.filter(e => e.category === '공연' && !/^\[/.test(e.title) && inConcert(c, e)) : [];
   function infoShows(info, events) {
     const rows = new Map();  // 같은 장소는 한 줄로
     info.shows.forEach(x => {
