@@ -5791,13 +5791,15 @@
   const plForm = e => e.ytOnly ? '' : `<details class="fix-box"${new URLSearchParams(location.hash.split('?')[1] || '').get('pl') ? ' open id="pl-open"' : ''}><summary>📍 ${e.place ? '장소가 달라요' : '장소 알려주기'}</summary><div class="op-form">
       ${e.place === PLACE_PRIV ? '' : `<div class="pl-kind"><button type="button" class="chip on" data-k="pub">📍 장소 공개됨</button><button type="button" class="chip" data-k="priv">🔒 장소 비공개</button></div>`}
       ${e.place ? `<label class="add-f"><span>지금 장소</span><input type="text" value="${esc(e.place)}" disabled></label>` : ''}
-      <form class="pin-find pl-find"><input type="search" class="pl-in" maxlength="80" placeholder="공연장 이름이나 주소로 찾기" enterkeyhint="search"><button type="submit" class="chip">찾기</button></form>
+      <form class="pin-find pl-find"><input type="search" class="pl-in" maxlength="80" placeholder="공연장 이름이나 주소로 찾기" enterkeyhint="search" value="${esc(e.place && e.place !== PLACE_PRIV ? e.place : '')}"><button type="submit" class="chip">찾기</button></form>
       <div class="pin-res pl-res"></div>
       <label class="add-f pl-nv"><span>또는 네이버 지도 링크</span><input type="url" class="pl-link" inputmode="url" placeholder="네이버 지도 앱 → 장소 → 공유 → 링크 복사" autocomplete="off"></label>
       <button type="button" class="bpill add-send pl-send" data-id="${esc(e.id)}" disabled>보내기</button>
       ${e.place === PLACE_PRIV ? '' : `<div class="pl-privbox" hidden><p class="src-note">팬사인회처럼 장소를 당첨자에게만 알려 준 일정이에요. 보내면 지도에서 '🔒 장소 비공개'로 따로 묶여요.</p><button type="button" class="bpill add-send pl-priv" data-id="${esc(e.id)}">🔒 비공개로 보내기</button></div>`}
-      <p class="src-note pl-msg">찾은 곳 중에 맞는 곳을 고르거나, 네이버 지도에서 그 장소를 공유한 링크를 붙여 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '정확한 위치가 없던 곳은 바로 들어가고, 이미 위치가 있는 곳은 다른 두 분이 맞다고 하면 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
+      <p class="src-note pl-msg">찾은 곳 중 맞는 곳을 누르면 바로 보내져요. 없으면 네이버 지도에서 그 장소를 공유한 링크를 붙여 주세요. 지도에도 그 자리로 찍혀요. ${e.place ? '정확한 위치가 없던 곳은 바로 들어가고, 이미 위치가 있는 곳은 다른 두 분이 맞다고 하면 바뀌어요.' : '보내면 바로 장소에 들어가고, 다른 두 분이 맞다고 하면 확정돼요.'}</p></div></details>`;
   const privText = e => `종류: 장소수정\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n전: ${e.place || ''}\n후: ${PLACE_PRIV}\n누가: ${myUid()}`;
+  let plFullP = null;
+  const plFull = () => plFullP = plFullP || fetch('data/places.json', { cache: 'no-cache' }).then(x => x.json()).catch(() => ({}));
   // 장소 찾기: OpenStreetMap 검색 결과 중 하나를 고르면 이름·좌표를 같이 보내요
   document.addEventListener('submit', async ev => {
     const f = ev.target.closest('.pl-find');
@@ -5808,14 +5810,30 @@
     sb.disabled = true; delete sb.dataset.to;
     res.innerHTML = '<span class="src-note">찾는 중…</span>';
     try {
-      const r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 10, 'accept-language': 'ko' }))).json();
+      let r = [];
+      try { r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 10, 'accept-language': 'ko' }))).json(); } catch (err) { /* 네이버 후보만이라도 보여요 */ }
+      // 깃허브가 네이버에서 미리 찾아 둔 이 장소 후보를 맨 위에 (data/places.json naverCand)
+      const ev0 = data.byId.get(sb.dataset.id), nc = ((await plFull()).naverCand || {})[ev0 ? placeOf(ev0) : ''] || [];
+      r = [...nc.map(x => ({ name: '네이버 · ' + x.name, display_name: x.name + ',' + x.addr, lat: x.lat, lon: x.lng, nvc: 1 })), ...r];
       res.innerHTML = r.length ? r.map((h, i) => `<button type="button" class="pin-hit" data-i="${i}"><b>${esc(h.name || h.display_name.split(',')[0])}</b><small>${esc(h.display_name.split(',').slice(1, 5).join(','))}</small></button>`).join('') : '<span class="src-note">못 찾았어요. 건물 이름이나 도로명 주소로 다시 찾아 주세요.</span>';
       res.querySelectorAll('.pin-hit').forEach(b => b.onclick = () => {
         const h = r[+b.dataset.i];
         res.querySelectorAll('.pin-hit').forEach(o => o.classList.toggle('on', o === b));
+        // 네이버 후보: 장소 이름은 그대로 두고 그 장소의 좌표로 보내요 (같은 장소 일정 모두에 찍혀요, 처음이면 바로 확정)
+        const pl0 = ev0 && placeOf(ev0);
+        if (h.nvc && pl0) {
+          const c = (+h.lat).toFixed(5) + ',' + (+h.lon).toFixed(5), msg = box.querySelector('.pl-msg');
+          res.querySelectorAll('.pin-hit').forEach(o => { o.disabled = true; });
+          formPost(`종류: 장소좌표\n장소: ${pl0}\n좌표: ${c}\n누가: ${myUid()}`)
+            .then(() => isAdmin() ? sendEvMark('g' + window.DATA.slVer([pl0, c]), '숨김').catch(() => {}) : null)
+            .then(() => { msg.textContent = `보냈어요: 📍 ${pl0} 위치. 5~10분쯤 뒤 지도에 찍혀요.`; })
+            .catch(() => { res.querySelectorAll('.pin-hit').forEach(o => { o.disabled = false; }); msg.textContent = '보내지 못했어요. 잠시 뒤 다시 눌러 주세요.'; });
+          return;
+        }
         sb.dataset.to = (h.name || h.display_name.split(',')[0]).trim().slice(0, 80);
         sb.dataset.c = (+h.lat).toFixed(5) + ',' + (+h.lon).toFixed(5);
         sb.disabled = false;
+        sb.click();  // 고르면 바로 보내요
       });
     } catch (err) { res.innerHTML = '<span class="src-note">지금은 찾기가 안 돼요. 잠시 뒤 다시 찾아 주세요.</span>'; }
   });
