@@ -427,7 +427,7 @@
       buildReports(toObjects(raw.reports), true).forEach(r => {
         if ((r.type !== '날짜수정' && r.type !== '날짜확인') || !r.by) return;
         const id = (r.title.match(/\[ID ([\w-]+)\]/) || [])[1], to = normDate(line0(r, '후'));
-        if (!id || !isD(to)) return;
+        if (!id || !isD(to) || (extra.dtNo || []).includes(id + '>' + to)) return;  // dtNo: 잘못 온 날짜 제안 빼기 ['일정ID>날짜']
         const o = fx[id] = fx[id] || {}, p = o[to] = o[to] || { to, from: '', by: '', who: new Set() };
         if (r.type === '날짜수정' && !p.by) { p.by = r.by; p.from = normDate(line0(r, '전')); } else p.who.add(r.by);
         fanLog.push({ k: r.type === '날짜수정' ? 'dt' : 'dtok', id, at: tsMs(r.time), by: r.by, to, from: r.type === '날짜수정' ? normDate(line0(r, '전')) : '' });
