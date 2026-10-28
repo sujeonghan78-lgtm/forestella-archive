@@ -2789,7 +2789,7 @@
         <div class="map-info">
           <span class="map-meta">${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}</span>
           <a href="#/e/${encodeURIComponent(x.e.id)}" class="map-now-t">${esc(x.e.title)}</a>
-          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}${x.l.nid ? ` <a class="map-naver" href="https://map.naver.com/p/entry/place/${encodeURIComponent(x.l.nid)}" target="_blank" rel="noopener">🗺 네이버 지도</a>` : ''}</span>
+          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}${x.l.exact && x.l.lat ? ` <button type="button" class="map-route" data-lat="${x.l.lat}" data-lng="${x.l.lng}" data-name="${esc((x.l.place || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim())}">🚇 길찾기</button>` : ''}${x.l.nid ? ` <a class="map-naver" href="https://map.naver.com/p/entry/place/${encodeURIComponent(x.l.nid)}" target="_blank" rel="noopener">🗺 네이버 지도</a>` : ''}</span>
           <span class="map-dur" id="map-dur"></span>
           ${dots()}
         </div>
@@ -2831,7 +2831,16 @@
     const zoomBy = d => { const z = Math.min(17, Math.max(5, (mapSt.tour && mapSt.uz || m.getZoom()) + d)); if (mapSt.tour) mapSt.uz = z; m.setZoom(z); if (z >= 10) boxWrite(MAP_Z, z); };
     document.getElementById('map-zin').onclick = () => zoomBy(1);
     document.getElementById('map-zout').onclick = () => zoomBy(-1);
-    // 📍 내 위치: 누를 때만 폰에 물어보고 이 화면에만 파란 점으로 (어디에도 안 보내요)
+    // 🚇 길찾기: 내 위치 → 공연장 좌표로 카카오맵(웹·앱) 또는 네이버 지도 앱을 열어요
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.map-route'); if (!b) return;
+    const { lat, lng, name } = b.dataset, nm = name || '공연장';
+    waitSheet(`<div class="yf-head"><b>🚇 길찾기</b><span class="sub">${esc(nm)}</span></div>
+      <a class="bpill route-go" href="https://map.kakao.com/link/to/${encodeURIComponent(nm)},${lat},${lng}" target="_blank" rel="noopener">카카오맵으로 길찾기</a>
+      <a class="bpill route-go" href="nmap://route/public?dlat=${lat}&dlng=${lng}&dname=${encodeURIComponent(nm)}&appname=${encodeURIComponent(location.hostname)}">네이버 지도 앱으로 길찾기</a>
+      <p class="src-note">출발지는 지금 내 위치예요. 네이버는 폰에 네이버 지도 앱이 있어야 열려요.</p>`);
+  });
+  // 📍 내 위치: 누를 때만 폰에 물어보고 이 화면에만 파란 점으로 (어디에도 안 보내요)
     let meDot = null;
     document.getElementById('map-me').onclick = () => {
       if (!navigator.geolocation) { toast('이 브라우저는 위치를 못 알려 줘요'); return; }
