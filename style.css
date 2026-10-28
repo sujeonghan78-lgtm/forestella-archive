@@ -1834,3 +1834,5 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mi.mt.mt-s .mt-l { font-size: calc(13px * var(--fs)); font-weight: 400; }
 .tab { position: relative; }
 .tab-b { position: absolute; top: 4px; left: 50%; margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: #FF7A45; color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; border: 1.5px solid #fff; }
+
+.map-naver { display: inline-flex; margin: 2px 0 8px; font-size: calc(13px * var(--fs)); }

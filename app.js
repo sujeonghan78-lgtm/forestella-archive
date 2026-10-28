@@ -2727,7 +2727,7 @@
     m.on('zoomend', () => { if (!auto && mapSt.tour) mapSt.uz = m.getZoom(); });
     const showVenue = (items, name) => {
       const box = document.getElementById('map-venue');
-      box.innerHTML = `<section class="map-venue"><div class="map-venue-h"><b>${esc(name || '장소')}</b><span>${items.length}번 <button type="button" class="link-btn map-venue-x">접기 ✕</button></span></div>${items.slice().reverse().map(x => `<button type="button" class="box-ev map-go" data-id="${esc(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></button>`).join('')}</section>`;
+      box.innerHTML = `<section class="map-venue"><div class="map-venue-h"><b>${esc(name || '장소')}</b><span>${items.length}번 <button type="button" class="link-btn map-venue-x">접기 ✕</button></span></div>${items[0].l.exact && items[0].l.place ? `<a class="bpill map-naver" href="https://map.naver.com/p/search/${encodeURIComponent(items[0].l.place.replace(/\s*\([^)]*\)\s*/g, ' ').trim())}" target="_blank" rel="noopener">🗺 네이버 지도에서 보기</a>` : ''}${items.slice().reverse().map(x => `<button type="button" class="box-ev map-go" data-id="${esc(x.e.id)}"><span>${fmtDate(x.e.date, false)}</span><b>${esc(x.e.title)}</b></button>`).join('')}</section>`;
       box.querySelector('.map-venue-x').onclick = () => { box.innerHTML = ''; };
       box.querySelectorAll('.map-go').forEach(b => b.onclick = () => { go(ml.on.findIndex(x => x.e.id === b.dataset.id)); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     };
