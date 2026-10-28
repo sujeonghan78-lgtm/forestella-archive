@@ -2789,7 +2789,8 @@
         <div class="map-info">
           <span class="map-meta">${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}</span>
           <a href="#/e/${encodeURIComponent(x.e.id)}" class="map-now-t">${esc(x.e.title)}</a>
-          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}${x.l.exact && x.l.lat ? ` <button type="button" class="map-route" data-lat="${x.l.lat}" data-lng="${x.l.lng}" data-name="${esc((x.l.place || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim())}">🚇 길찾기</button>` : ''}${x.l.nid ? ` <a class="map-naver" href="https://map.naver.com/p/entry/place/${encodeURIComponent(x.l.nid)}" target="_blank" rel="noopener">🗺 네이버 지도</a>` : ''}</span>
+          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}</span>
+          ${x.l.exact && x.l.lat ? `<span class="map-acts"><button type="button" class="map-act map-route" data-lat="${x.l.lat}" data-lng="${x.l.lng}" data-name="${esc((x.l.place || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim())}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>길찾기</button>${x.l.nid ? `<a class="map-act map-naver" href="https://map.naver.com/p/entry/place/${encodeURIComponent(x.l.nid)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>네이버 지도</a>` : ''}</span>` : ''}
           <span class="map-dur" id="map-dur"></span>
           ${dots()}
         </div>

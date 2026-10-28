@@ -1456,9 +1456,9 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .map-off-row .box-ev{flex:1;min-width:0}
 .map-off-pl{flex:none;font-size: calc(12px * var(--fs));padding:4px 9px;white-space:nowrap}
 .map-off-n{font-size: calc(12px * var(--fs));color:var(--muted);margin:0 0 4px}
-.map-off>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font-size: calc(14px * var(--fs));font-weight:700}
+.map-off>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 2px;color:var(--muted);font-size: calc(12px * var(--fs));font-weight:500;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
 .map-off>summary::-webkit-details-marker{display:none}
-.map-off>summary::before{content:'📍'}
+.map-off>summary::after{content:'▾';text-decoration:none}.map-off[open]>summary::after{content:'▴'}
 .map-off>summary::after{content:'펼치기 ▾';margin-left:auto;font-size: calc(12px * var(--fs));font-weight:400;color:var(--green)}
 .map-off[open]>summary::after{content:'접기 ▴'}
 .map-off-how{margin:12px 0 4px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size: calc(12.5px * var(--fs));color:var(--ink)}
@@ -1835,6 +1835,7 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .tab { position: relative; }
 .tab-b { position: absolute; top: 4px; left: 50%; margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: #FF7A45; color: #fff; font-size: 10px; font-weight: 800; line-height: 16px; text-align: center; border: 1.5px solid #fff; }
 
-.map-naver { margin-left: 6px; font-size: calc(12px * var(--fs)); color: var(--green-d); font-weight: 700; white-space: nowrap; }
-.map-route { margin-left: 6px; border: 0; background: none; padding: 0; font: inherit; font-size: calc(12px * var(--fs)); color: var(--green-d); font-weight: 700; white-space: nowrap; }
 .route-go { display: flex; justify-content: center; height: 44px; align-items: center; margin-top: 8px; }
+.map-acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.map-act{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--card, #fff);color:var(--green-d);font:inherit;font-size: calc(12px * var(--fs));font-weight:700;text-decoration:none;white-space:nowrap}
+.map-act svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
