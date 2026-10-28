@@ -33,9 +33,9 @@ async function search(q) {
 }
 const wait = () => new Promise(ok => setTimeout(ok, 900));
 
-// 이름이 얼마나 겹치나 (띄어쓰기·괄호 빼고 두 글자씩)
+// 이름이 얼마나 비슷하나 (띄어쓰기·괄호 빼고 두 글자씩)
 const bi = t => { const c = String(t).toLowerCase().replace(/\([^)]*\)|[^0-9a-z가-힣]/g, ''); const o = new Set(); for (let i = 0; i < c.length - 1; i++) o.add(c.slice(i, i + 2)); return o; };
-const sim = (a, b) => { const A = bi(a), B = bi(b); if (!A.size || !B.size) return 0; let n = 0; A.forEach(x => B.has(x) && n++); return n / Math.min(A.size, B.size); };
+const sim = (a, b) => { const A = bi(a), B = bi(b); if (!A.size || !B.size) return 0; let n = 0; A.forEach(x => B.has(x) && n++); return 2 * n / (A.size + B.size); };  // 다이스 점수: 가게처럼 이름이 길게 딸린 곳은 낮게
 if (ALL) Object.values(found).forEach(v => { delete v.nid; delete v.nname; });
 let fix = 0, fromFolder = 0, cands = 0, n = 0;
 for (const [k, v] of Object.entries(found)) {
