@@ -33,16 +33,25 @@ async function search(q) {
 }
 const wait = () => new Promise(ok => setTimeout(ok, 900));
 
+// 이름이 얼마나 겹치나 (띄어쓰기·괄호 빼고 두 글자씩)
+const bi = t => { const c = String(t).toLowerCase().replace(/\([^)]*\)|[^0-9a-z가-힣]/g, ''); const o = new Set(); for (let i = 0; i < c.length - 1; i++) o.add(c.slice(i, i + 2)); return o; };
+const sim = (a, b) => { const A = bi(a), B = bi(b); if (!A.size || !B.size) return 0; let n = 0; A.forEach(x => B.has(x) && n++); return n / Math.min(A.size, B.size); };
+if (ALL) Object.values(found).forEach(v => { delete v.nid; delete v.nname; });
 let fix = 0, fromFolder = 0, cands = 0, n = 0;
 for (const [k, v] of Object.entries(found)) {
   if (v.nid || (!ALL && tried[k])) continue;
   const near = known.map(x => ({ ...x, d: dist(v, x) })).filter(x => x.d <= 150).sort((a, b) => a.d - b.d)[0];
-  if (near) { v.nid = near.id; fromFolder++; continue; }
-  const q = (v.name || k).replace(/\s*\([^)]*\)\s*/g, ' ').trim();
-  let hits = [];
-  try { hits = await search(q); n++; } catch (err) { console.log('검색 실패', k, err.message); }
-  const best = hits.map(x => ({ ...x, d: dist(v, x) })).filter(x => x.d <= 300).sort((a, b) => a.d - b.d)[0];
-  if (best) { v.nid = best.id; fix++; }
+  if (near && sim(near.name, k) >= 0.5) { v.nid = near.id; v.nname = near.name; fromFolder++; continue; }
+  // 일정에 적힌 장소 이름으로 먼저, 없으면 지도 이름으로. 300m 안에서 이름이 가장 비슷한 곳 (반 이상 겹쳐야)
+  let best = null;
+  for (const q of [...new Set([k.replace(/\s*\([^)]*\)\s*/g, ' ').trim(), (hint[k] || ''), (v.name || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim()].filter(Boolean))]) {
+    let hits = [];
+    try { hits = await search(q); n++; } catch (err) { console.log('검색 실패', k, err.message); }
+    best = hits.map(x => ({ ...x, d: dist(v, x), s: sim(x.name, k) })).filter(x => x.d <= 300 && x.s >= 0.5).sort((a, b) => b.s - a.s || a.d - b.d)[0];
+    await wait();
+    if (best) break;
+  }
+  if (best) { v.nid = best.id; v.nname = best.name; fix++; }
   tried[k] = today;
   await wait();
 }
