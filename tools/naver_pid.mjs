@@ -5,7 +5,7 @@ import fs from 'node:fs';
 
 const F = 'data/places.json';
 const d = JSON.parse(fs.readFileSync(F, 'utf8'));
-const found = d.found || {}, miss = d.miss || [], hint = d.hint || {};
+const found = d.found || {}, miss = d.miss || [], hint = d.hint || {}, nh = d.naverHint || {};  // naverHint: 네이버에서 쓰는 이름(이름이 바뀐 곳·큰 시설 안 무대)
 const cand = d.naverCand = d.naverCand || {};
 const tried = d.naverTried = d.naverTried || {};
 const UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36', 'Accept-Language': 'ko', Referer: 'https://map.naver.com/' };
@@ -44,7 +44,14 @@ for (const [k, v] of Object.entries(found)) {
   if (near && sim(near.name, k) >= 0.5) { v.nid = near.id; v.nname = near.name; fromFolder++; continue; }
   // 일정에 적힌 장소 이름으로 먼저, 없으면 지도 이름으로. 300m 안에서 이름이 가장 비슷한 곳 (반 이상 겹쳐야)
   let best = null;
-  for (const q of [...new Set([k.replace(/\s*\([^)]*\)\s*/g, ' ').trim(), (hint[k] || ''), (v.name || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim()].filter(Boolean))]) {
+  // 검색어를 붙여 둔 곳은 그 이름으로 찾고, 넓은 곳이라 1.5km·그 이름과 비슷하면 OK
+  if (nh[k]) {
+    let hits = [];
+    try { hits = await search(nh[k]); n++; } catch (err) { console.log('검색 실패', k, err.message); }
+    best = hits.map(x => ({ ...x, d: dist(v, x), s: sim(x.name, nh[k]) })).filter(x => x.d <= 1500 && x.s >= 0.5).sort((a, b) => b.s - a.s || a.d - b.d)[0];
+    await wait();
+  }
+  if (!best) for (const q of [...new Set([k.replace(/\s*\([^)]*\)\s*/g, ' ').trim(), (hint[k] || ''), (v.name || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim()].filter(Boolean))]) {
     let hits = [];
     try { hits = await search(q); n++; } catch (err) { console.log('검색 실패', k, err.message); }
     best = hits.map(x => ({ ...x, d: dist(v, x), s: sim(x.name, k) })).filter(x => x.d <= 300 && x.s >= 0.5).sort((a, b) => b.s - a.s || a.d - b.d)[0];
