@@ -39,7 +39,7 @@ const sim = (a, b) => { const A = bi(a), B = bi(b); if (!A.size || !B.size) retu
 if (ALL) Object.values(found).forEach(v => { delete v.nid; delete v.nname; });
 let fix = 0, fromFolder = 0, cands = 0, n = 0;
 for (const [k, v] of Object.entries(found)) {
-  if (v.nid || (!ALL && tried[k])) continue;
+  if (v.nid || (!ALL && tried[k]) || (d.naverNo || []).includes(k)) continue;  // naverNo: 손으로 뺀 곳(가게·역이 잡히던 곳)
   const near = known.map(x => ({ ...x, d: dist(v, x) })).filter(x => x.d <= 150).sort((a, b) => a.d - b.d)[0];
   if (near && sim(near.name, k) >= 0.5) { v.nid = near.id; v.nname = near.name; fromFolder++; continue; }
   // 일정에 적힌 장소 이름으로 먼저, 없으면 지도 이름으로. 300m 안에서 이름이 가장 비슷한 곳 (반 이상 겹쳐야)
