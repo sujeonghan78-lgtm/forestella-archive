@@ -2522,8 +2522,8 @@
     const r = regionOf(e), rk = REGION_C[r] ? r : '';
     if (e.placeLoc) return { ...e.placeLoc, exact: true, place: placeOf(e), region: rk || regionNear(e.placeLoc) };
     const p = placeOf(e), pin = p && (data.pins || {})[p];
-    if (pin && pin.ok) return { ...pin.ok, exact: true, place: p, region: rk || regionNear(pin.ok) };
-    if (p && found[p]) return { lat: found[p].lat, lng: found[p].lng, exact: true, place: p, addr: found[p].addr || '', region: rk || regionNear(found[p]) };
+    if (pin && pin.ok) return { ...pin.ok, exact: true, place: p, region: rk || regionNear(pin.ok), nid: found[p] && found[p].nid };
+    if (p && found[p]) return { lat: found[p].lat, lng: found[p].lng, exact: true, place: p, addr: found[p].addr || '', region: rk || regionNear(found[p]), nid: found[p].nid };
     if (r && REGION_C[r]) return { lat: REGION_C[r][0], lng: REGION_C[r][1], exact: false, place: p, region: r };
     return { lat: null, lng: null, exact: false, place: p, region: r || '' };
   }
@@ -2789,7 +2789,7 @@
         <div class="map-info">
           <span class="map-meta">${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}</span>
           <a href="#/e/${encodeURIComponent(x.e.id)}" class="map-now-t">${esc(x.e.title)}</a>
-          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}</span>
+          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}${x.l.nid ? ` <a class="map-naver" href="https://map.naver.com/p/entry/place/${encodeURIComponent(x.l.nid)}" target="_blank" rel="noopener">🗺 네이버 지도</a>` : ''}</span>
           <span class="map-dur" id="map-dur"></span>
           ${dots()}
         </div>
@@ -2957,6 +2957,8 @@
       res.innerHTML = '<span class="src-note">찾는 중…</span>';
       let r = [];
       try { r = await (await fetch('https://nominatim.openstreetmap.org/search?' + new URLSearchParams({ q, format: 'jsonv2', countrycodes: 'kr', limit: 8, 'accept-language': 'ko' }))).json(); } catch (err) { res.innerHTML = '<span class="src-note">검색이 안 됐어요. 찾기를 다시 눌러 주세요.</span>'; return; }
+      // 깃허브가 네이버에서 미리 찾아 둔 후보를 맨 위에 (data/places.json naverCand)
+      r = [...((pfAll.naverCand || {})[p] || []).map(x => ({ name: '네이버 · ' + x.name, display_name: x.name + ',' + x.addr, lat: x.lat, lon: x.lng })), ...r];
       res.innerHTML = r.length ? r.map((h, j) => `<button type="button" class="pin-hit" data-j="${j}"><b>${esc(h.name || h.display_name.split(',')[0])}</b><small>${esc(h.display_name.split(',').slice(1, 5).join(','))}</small></button>`).join('') + `<a class="link-btn" href="https://www.openstreetmap.org/search?query=${encodeURIComponent(q)}" target="_blank" rel="noopener">지도에서 보기</a>`
         : '<span class="src-note">못 찾았어요. 건물 이름이나 도로명 주소로 고쳐서 다시 찾아 주세요.</span>';
       res.querySelectorAll('.pin-hit').forEach(b => b.onclick = async () => {

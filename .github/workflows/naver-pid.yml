@@ -1,0 +1,33 @@
+# 공연장 네이버 장소 번호 찾기: 매일 새벽 새 장소만 (손으로 돌릴 때 all=1이면 다시 전부)
+name: naver-pid
+on:
+  schedule:
+    - cron: '40 18 * * *'
+  workflow_dispatch:
+    inputs:
+      all:
+        description: '1이면 이미 찾아본 곳도 다시'
+        required: false
+permissions:
+  contents: write
+concurrency: places-json
+jobs:
+  pid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/naver_pid.mjs
+        env:
+          ALL: ${{ github.event.inputs.all }}
+      - run: |
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/places.json
+          git diff --cached --quiet && exit 0
+          git commit -m "공연장 네이버 장소 번호 찾기"
+          git pull --rebase -q origin main
+          git push
