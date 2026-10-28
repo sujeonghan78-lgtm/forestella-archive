@@ -2789,7 +2789,7 @@
         <div class="map-info">
           <span class="map-meta">${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}</span>
           <a href="#/e/${encodeURIComponent(x.e.id)}" class="map-now-t">${esc(x.e.title)}</a>
-          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}${x.l.exact && x.l.place ? ` <a class="map-naver" href="https://map.naver.com/p/search/${encodeURIComponent(x.l.place.replace(/\s*\([^)]*\)\s*/g, ' ').trim())}" target="_blank" rel="noopener">🗺 네이버 지도</a>` : ''}</span>
+          <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}${x.l.exact && x.l.place ? ` <a class="map-naver" href="https://map.naver.com/p/search/${encodeURIComponent((x.l.name || x.l.place).replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+\d+관$|\s*(소극장|대극장|중극장)$/, '').trim())}?c=${x.l.lng},${x.l.lat},16,0,0,0,dh" target="_blank" rel="noopener">🗺 네이버 지도</a>` : ''}</span>
           <span class="map-dur" id="map-dur"></span>
           ${dots()}
         </div>
