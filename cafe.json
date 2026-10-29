@@ -3672,6 +3672,36 @@
 "place": "예산상설시장 일원"
 },
 {
+"id": "202179",
+"date": "2026-10-30",
+"endDate": "",
+"start": "종일",
+"end": "종일",
+"category": "공연",
+"title": "루미나리에 축제 개막식",
+"place": "석촌호수 동호수변무대"
+},
+{
+"id": "202180",
+"date": "2026-11-01",
+"endDate": "",
+"start": "18:00",
+"end": "19:00",
+"category": "TV",
+"title": "KBS1 열린음악회 (10/13 녹화분)",
+"place": ""
+},
+{
+"id": "202181",
+"date": "2026-11-07",
+"endDate": "",
+"start": "종일",
+"end": "종일",
+"category": "공연",
+"title": "2026 효행구 권역별 콘서트 가을 음악산책",
+"place": "봉담2생태체육공원 야외무대"
+},
+{
 "id": "200734",
 "date": "2026-11-08",
 "endDate": "",
@@ -3690,6 +3720,46 @@
 "category": "생일",
 "title": "🎂 민규 생일",
 "place": ""
+},
+{
+"id": "202182",
+"date": "2027-01-09",
+"endDate": "",
+"start": "종일",
+"end": "종일",
+"category": "공연",
+"title": "NORTH AMERICA TOUR 2027 [BEYOND : ACROSS THE HORIZON]📍 LOS ANGELES",
+"place": "YAAMAVA’ THEATER"
+},
+{
+"id": "202183",
+"date": "2027-01-16",
+"endDate": "",
+"start": "종일",
+"end": "종일",
+"category": "공연",
+"title": "NORTH AMERICA TOUR 2027 [BEYOND : ACROSS THE HORIZON]📍DALLAS",
+"place": "SMU MCFARLIN MEMORIAL AUDITORIUM"
+},
+{
+"id": "202184",
+"date": "2027-01-23",
+"endDate": "",
+"start": "종일",
+"end": "종일",
+"category": "공연",
+"title": "NORTH AMERICA TOUR 2027 [BEYOND : ACROSS THE HORIZON]📍SEATTLE",
+"place": "BENAROYA HALL"
+},
+{
+"id": "202185",
+"date": "2027-01-30",
+"endDate": "",
+"start": "종일",
+"end": "종일",
+"category": "공연",
+"title": "NORTH AMERICA TOUR 2027 [BEYOND : ACROSS THE HORIZON]📍NEW YORK",
+"place": "CARNEGIE HALL"
 }
 ]
 }
