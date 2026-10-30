@@ -4731,7 +4731,8 @@
     const t = todayIso(), mineAll = goIds().map(id => data.byId.get(id)).filter(Boolean);
     const up = mineAll.filter(e => e.date >= t).sort((a, b) => a.date.localeCompare(b.date));
     const until = new Date(Date.now() + 120 * 864e5).toISOString().slice(0, 10);
-    const others = data.events.filter(e => e.date >= t && e.date <= until && goable(e) && !goHas(e.id)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 60);
+    const ended = e => e.date === t && ((window.CONFIG.slOpen || []).includes(e.id) || (slEndAt(e) != null && Date.now() > slEndAt(e)));   // 오늘 끝난 일정은 빼요
+    const others = data.events.filter(e => e.date >= t && e.date <= until && goable(e) && !goHas(e.id) && !ended(e)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 60);
     const past = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && spLocked(e) && spReal(e).length).sort((a, b) => b.date.localeCompare(a.date));
     const card = e => { const n = goN(e.id); return `<article class="wait-card">${tkCard(e, `${tkHead(e)}<button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="true" aria-label="갈 거예요 취소">${wi('check')}</button>
       ${SP_ON() && spable(e) ? `<a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b>${spCnt(e.id) >= 2 ? `<small class="tk-spn2">${spCnt(e.id).toLocaleString()}명 참여</small>` : ''}<span class="tk-more">›</span></a>` : ''}
