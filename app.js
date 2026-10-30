@@ -7165,7 +7165,9 @@
 
     // 확정 배지·하트 수는 제목 위 한 줄에 작게
     const sts = [evState(e), dtState(e), plState(e), nmState(e)], isMini = x => x.trim().startsWith('<details class="ok-mini"') && !/<div|<section|<form/.test(x);
-    const minis = sts.filter(isMini).join(''), rest = sts.filter(x => !isMini(x)).join('\n');
+    // 확정·고침 배지가 여러 개면 하나로 묶어요 (누르면 설명이 다 보여요)
+    const miniList = sts.filter(isMini), rest = sts.filter(x => !isMini(x)).join('\n');
+    const minis = miniList.length < 2 ? miniList.join('') : (() => { const lab = miniList.map(x => (x.match(/<summary>✓ ([^<]*)<\/summary>/) || [])[1]).filter(Boolean), msg = miniList.map(x => (x.match(/<span>([\s\S]*)<\/span><\/details>/) || [])[1]).filter(Boolean); return okMini(lab.includes('확정') ? '확정' : lab[0], msg.join('<br>')); })();
     return `
       <div class="sheet-grab" aria-hidden="true"><span></span></div>
       <button type="button" class="sheet-close" id="sheet-close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -7183,12 +7185,12 @@
         ${e.ytOnly ? '' : tmiBox('e:' + e.id, e.title)}
         ${editBox(e)}
         <div class="ev-tools">
-        <div class="share-row">
-          <button type="button" class="act act-wide" data-share data-text="${esc(eventShareText(e))}" data-url="${esc(link('#/e/' + encodeURIComponent(e.id)))}">${shareIcon}공유하기</button>
-          <a class="act" href="${xUrl(eventShareText(e), link('#/e/' + encodeURIComponent(e.id)))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>X</a>
+          <button type="button" class="act" data-share data-text="${esc(eventShareText(e))}" data-url="${esc(link('#/e/' + encodeURIComponent(e.id)))}">${shareIcon}공유</button>
+          <a class="act" href="${xUrl(eventShareText(e), link('#/e/' + encodeURIComponent(e.id)))}" target="_blank" rel="noopener" aria-label="X에 올리기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>X</a>
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
-        </div>
-        ${findRow(findQuery(e.title))}
+          <span class="ev-tools-sep" aria-hidden="true"></span>
+          <a class="act" href="https://www.youtube.com/results?search_query=${encodeURIComponent(findQuery(e.title))}" target="_blank" rel="noopener" aria-label="유튜브에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>유튜브</a>
+          <a class="act" href="https://x.com/search?q=${encodeURIComponent(findQuery(e.title))}" target="_blank" rel="noopener" aria-label="X에서 검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>X</a>
         </div>
         ${hideBtn(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
