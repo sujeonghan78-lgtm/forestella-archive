@@ -4592,7 +4592,9 @@
   const GO_DEMO = 0;  // 시험용: 관리자 기기에서만 같이 기다리는 숲별을 최소 3명으로 보여 줘요 (0이면 끔)
   const goable = e => !e.ytOnly && !/생일|유튜브|네이버TV/.test(e.category) && !/발매(\s*\([^)]*\))?\s*$/.test(e.title || '');
   const ddOf = e => { const d = Math.round((new Date(e.date) - new Date(todayIso())) / 864e5); return d === 0 ? 'D-DAY' : d > 0 ? 'D-' + d : 'D+' + -d; };
-  const goBtn = e => WAIT_ON() && e.date >= todayIso() && goable(e) ? `<button type="button" class="bpill go-btn" data-go="${esc(e.id)}" aria-pressed="${goHas(e.id)}">${goLab(e.id)}</button>` : '';
+  // 오늘 일정도 끝나는 시간이 지나면(또는 config.slOpen으로 일찍 끝났다고 연 일정) 끝난 걸로 봐요
+  const evEnded = e => e.date < todayIso() || (e.date === todayIso() && ((window.CONFIG.slOpen || []).includes(e.id) || (slEndAt(e) != null && Date.now() > slEndAt(e))));
+  const goBtn = e => WAIT_ON() && e.date >= todayIso() && goable(e) && !evEnded(e) ? `<button type="button" class="bpill go-btn" data-go="${esc(e.id)}" aria-pressed="${goHas(e.id)}">${goLab(e.id)}</button>` : '';
   const goWith = id => { const n = goN(id); return n >= 2 ? `${wi('people')}같이 기다리는 숲별 ${n.toLocaleString()}명` : ''; };
   const WK = '일월화수목금토', wkOf = d => WK[new Date(d + 'T00:00:00').getDay()];
   // 티켓 모양 카드: 왼쪽 떼는 부분에 D-day, 오른쪽에 일정
@@ -4717,6 +4719,13 @@
       const body = sc ? `<a class="tk-btn" href="#/e/${encodeURIComponent(done.id)}?sp=1">셋리 예측 <b>${sc.score}점</b></a>` : SP_ON() && spGet(done.id).length ? '<span class="tk-n">셋리가 올라오면 점수가 나와요</span>' : '';
       return `<section class="wait-home open">${x}${tkCard(done, `${tkHead(done)}<div class="tk-foot">${boxHas('w', done.id) ? '<span class="tk-n">직관 기록했어요</span>' : `<button type="button" class="tk-btn" data-box="w" data-id="${esc(done.id)}" data-label="다녀왔어요" data-ic="">다녀왔어요</button>`}${body}</div>`)}</section>`;
     }
+    // 갈 거예요가 아니어도(못 갔어요 포함) 셋리 예측을 한 공연은 끝나고 다음 날 밤까지 점수 카드로 남아요
+    const spDone = SP_ON() ? [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && !r.hid[e.id] && (over(e) || evEnded(e)) && Date.now() < dayEnd(e) + 864e5 && spGet(e.id).length).sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+    if (spDone) {
+      const sc = myScore(spDone), x = `<button type="button" class="wh-x" data-whx="${esc(spDone.id)}" aria-label="지우기">×</button>`;
+      const body = sc ? `<a class="tk-btn" href="#/e/${encodeURIComponent(spDone.id)}?sp=1">셋리 예측 <b>${sc.score}점</b></a>` : '<span class="tk-n">셋리가 올라오면 점수가 나와요</span>';
+      return `<section class="wait-home open">${x}${tkCard(spDone, `${tkHead(spDone)}<div class="tk-foot">${body}</div>`)}</section>`;
+    }
     const next = mine.filter(e => e.date >= t && !over(e)).sort((a, b) => a.date.localeCompare(b.date))[0];
     // 처음 한 번: 기다리는 일정 안내 한 줄 (누르거나 ✕하면 다시 안 떠요)
     if (!next) return goIds().length || boxRead('sb-wait-intro') ? '' : `<section class="wait-home"><div class="wh-mini wh-intro"><a href="#/wait" data-wintro="1"><b>NEW</b><span>갈 공연을 골라 D-day를 세어 봐요</span></a><button type="button" class="wh-ix" data-wintro="1" aria-label="닫기">×</button></div></section>`;
@@ -4731,8 +4740,7 @@
     const t = todayIso(), mineAll = goIds().map(id => data.byId.get(id)).filter(Boolean);
     const up = mineAll.filter(e => e.date >= t).sort((a, b) => a.date.localeCompare(b.date));
     const until = new Date(Date.now() + 120 * 864e5).toISOString().slice(0, 10);
-    const ended = e => e.date === t && ((window.CONFIG.slOpen || []).includes(e.id) || (slEndAt(e) != null && Date.now() > slEndAt(e)));   // 오늘 끝난 일정은 빼요
-    const others = data.events.filter(e => e.date >= t && e.date <= until && goable(e) && !goHas(e.id) && !ended(e)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 60);
+        const others = data.events.filter(e => e.date >= t && e.date <= until && goable(e) && !goHas(e.id) && !evEnded(e)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 60);
     const past = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && spLocked(e) && spReal(e).length).sort((a, b) => b.date.localeCompare(a.date));
     const card = e => { const n = goN(e.id); return `<article class="wait-card">${tkCard(e, `${tkHead(e)}<button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="true" aria-label="갈 거예요 취소">${wi('check')}</button>
       ${SP_ON() && spable(e) ? `<a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b>${spCnt(e.id) >= 2 ? `<small class="tk-spn2">${spCnt(e.id).toLocaleString()}명 참여</small>` : ''}<span class="tk-more">›</span></a>` : ''}
