@@ -1721,11 +1721,21 @@ html[data-theme="lavender"] { --ink-2: #5A4E64; --muted: #5B6B63; --green: #6C23
 .sp-sum { display: grid; gap: 3px; }
 .sp-sum b { font-size: calc(15px * var(--fs)); color: var(--ink); }
 .sp-sum small { color: var(--muted); font-size: calc(12px * var(--fs)); }
+.sp-avg { margin: 2px 0 8px; }
+.sp-avg > summary { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; list-style: none; font-size: calc(12.5px * var(--fs)); font-weight: 600; color: var(--green-d); padding: 4px 0; }
+.sp-avg > summary::-webkit-details-marker { display: none; }
+.sp-avg-ar { font-size: 11px; display: inline-block; transition: transform .15s; }
+.sp-avg[open] .sp-avg-ar { transform: rotate(180deg); }
+.sp-avg-in { margin: 6px 0 0; display: inline-flex; align-items: baseline; gap: 6px; padding: 7px 14px; border-radius: 999px; background: var(--soft); font-size: calc(13px * var(--fs)); color: var(--ink-2); }
+.sp-avg-in b { color: var(--green-d); font-size: calc(14.5px * var(--fs)); }
+.sp-avg-in span { color: var(--muted); }
+.sp-sum .sp-best { color: var(--green); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; }
+.sp-sum .sp-best svg { width: 13px; height: 13px; }
 .sp-real li { color: var(--muted); }
 .sp-real li .sp-nm { color: var(--muted); }
 .sp-real li.hit .sp-nm { color: var(--ink); font-weight: 600; }
 .sp-ok { color: var(--green-2); font-weight: 800; }
-.sp-sur { margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; background: var(--soft); font-size: calc(13px * var(--fs)); color: var(--ink-2); }
+.sp-sur { margin: 10px 0 6px; padding: 8px 12px; border-radius: 12px; background: var(--soft); font-size: calc(13px * var(--fs)); color: var(--ink-2); }
 .rd-box { display: grid; gap: 2px; text-align: left; }
 .rd-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); font-size: calc(14px * var(--fs)); }
 .rd-row input { width: 20px; height: 20px; accent-color: var(--green-2); }

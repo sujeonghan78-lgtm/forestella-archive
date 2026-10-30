@@ -4665,12 +4665,15 @@
       if (!real.length) return `<section class="d-block sp-box">${head}<p class="sub">셋리가 올라오면 점수가 나와요.</p><ol class="sp-list">${mine.map((k, i) => `<li><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span>${pc(k)}</li>`).join('')}</ol>${topPick()}</section>`;
       const sc = spScore(real, mine), others = (data.preds || {})[e.id] || [], me = myUid();
       const all = [...others.filter(p => p.by !== me).map(p => p.keys), mine].filter(k => k.length);
-      const avg = all.length >= 4 ? Math.round(all.reduce((a, k) => a + spScore(real, k).score, 0) / all.length) : null;
+      // 10명 넘으면 '숲별 점수 보기'를 눌러야 평균 점수가 보여요 (최고 점수·순위는 안 보여요)
+      const scs = all.map(k => spScore(real, k).score), avg = all.length >= 10 ? Math.round(scs.reduce((a, x) => a + x, 0) / scs.length) : null;
+      const best = avg != null && sc.score > 0 && sc.score >= Math.max(...scs);   // 1등한테만 살짝 알려요
       const picked = new Set(all.flat()), surprise = all.length >= 4 ? real.filter(k => !picked.has(k)) : [];
       return `<section class="d-block sp-box">${head}
-        <div class="sp-score"><div class="sp-ring" style="--p:${sc.score}"><b>${sc.score}</b><small>점</small></div><div class="sp-sum"><b>${real.length}곡 중 ${sc.hit}곡 맞혔어요</b>${avg != null ? `<small>숲별 평균 ${avg}점 · ${all.length}명 참여</small>` : ''}<small>고른 곡 ${mine.length}곡</small></div></div>
-        <ol class="sp-list sp-real">${real.map((k, i) => `<li class="${mine.includes(k) ? 'hit' : ''}"><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span>${pc(k)}${mine.includes(k) ? '<span class="sp-ok">' + wi('check') + '</span>' : ''}</li>`).join('')}</ol>
-        ${surprise.length ? `<p class="sp-sur">${wi('star')}아무도 예상 못 한 곡 · ${surprise.map(nm).join(', ')}</p>` : ''}</section>`;
+        <div class="sp-score"><div class="sp-ring" style="--p:${sc.score}"><b>${sc.score}</b><small>점</small></div><div class="sp-sum"><b>${real.length}곡 중 ${sc.hit}곡 맞혔어요</b><small>고른 곡 ${mine.length}곡</small>${best ? `<small class="sp-best">${wi('star')}이번 예측 최고 점수예요</small>` : ''}</div></div>
+        ${avg != null ? `<details class="sp-avg"><summary>다른 숲별 점수 보기 <span class="sp-avg-ar" aria-hidden="true">▾</span></summary><p class="sp-avg-in">숲별 평균 <b>${avg}점</b><span aria-hidden="true">·</span><b>${all.length}명</b> 참여</p></details>` : ''}
+        ${surprise.length ? `<p class="sp-sur">${wi('star')}아무도 예상 못 한 곡 · ${surprise.map(nm).join(', ')}</p>` : ''}
+        <ol class="sp-list sp-real">${real.map((k, i) => `<li class="${mine.includes(k) ? 'hit' : ''}"><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span>${pc(k)}${mine.includes(k) ? '<span class="sp-ok">' + wi('check') + '</span>' : ''}</li>`).join('')}</ol></section>`;
     }
     const rec = recentSongs(e).filter(so => !mine.includes(so.key));
     const la = new Date(spLockAt(e) + 9 * 36e5), lt = `${la.getUTCMonth() + 1}.${la.getUTCDate()} ${String(la.getUTCHours()).padStart(2, '0')}:${String(la.getUTCMinutes()).padStart(2, '0')}`;
