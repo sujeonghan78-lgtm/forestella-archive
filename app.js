@@ -5351,10 +5351,10 @@
   }
   // 하루 두 번 공연은 제목 끝 (낮공)·(밤공)으로 나눠 둬요
   const showTag = e => { const m = e.title.match(/\((낮공|밤공)\)$/); return m ? ' ' + m[1] : ''; };
-  // 공연 날 셋리: 시작하면 적을 수 있고(이 폰에 임시저장), 끝나고 2시간 뒤부터 등록돼요
+  // 공연 날 셋리: 시작하면 적을 수 있고(이 폰에 임시저장), 끝나고 2시간 뒤부터 등록돼요. config.slOpen에 넣은 일정은 바로 등록돼요(일찍 끝난 날)
   const SL_DRAFT = 'sb-sl-draft';
   const slEndAt = e => { const st = startAt(e); if (st == null) return null; const m = String(e.end || '').match(/(\d{1,2}):(\d{2})/); let en = m ? Date.parse(`${e.date}T${m[1].padStart(2, '0')}:${m[2]}:00+09:00`) : st + 3 * 36e5; if (en < st) en += 864e5; return en; };
-  const slGate = e => { const st = startAt(e), en = slEndAt(e), now = Date.now(); if (st == null || now >= en + 2 * 36e5) return 'open'; return now < st ? 'before' : 'draft'; };
+  const slGate = e => { if ((window.CONFIG.slOpen || []).includes(e.id)) return 'open'; const st = startAt(e), en = slEndAt(e), now = Date.now(); if (st == null || now >= en + 2 * 36e5) return 'open'; return now < st ? 'before' : 'draft'; };
   const slOpenAt = e => { const d = new Date(slEndAt(e) + 2 * 36e5 + 9 * 36e5); return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`; };
   const slDrafts = () => { try { return JSON.parse(localStorage.getItem(SL_DRAFT) || '{}'); } catch (err) { return {}; } };
   const slDraftSet = (id, t) => { try { const d = slDrafts(); if (t) d[id] = t; else delete d[id]; localStorage.setItem(SL_DRAFT, JSON.stringify(d)); } catch (err) { /* 저장 못 해도 괜찮아요 */ } };
