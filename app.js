@@ -4726,14 +4726,19 @@
       const body = sc ? `<a class="tk-btn" href="#/e/${encodeURIComponent(spDone.id)}?sp=1">셋리 예측 <b>${sc.score}점</b></a>` : '<span class="tk-n">셋리가 올라오면 점수가 나와요</span>';
       return `<section class="wait-home open">${x}${tkCard(spDone, `${tkHead(spDone)}<div class="tk-foot">${body}</div>`)}</section>`;
     }
+    // 누구에게나: 방금 끝난 공연 하나를 다음 날 밤까지 한 줄로 (셋리 보기·알려주기)
+    const rec = data.events.filter(e => e.date <= t && goable(e) && spable(e) && !r.hid[e.id] && (over(e) || evEnded(e)) && Date.now() < dayEnd(e) + 864e5).sort((a, b) => b.date.localeCompare(a.date) || (startAt(b) || 0) - (startAt(a) || 0))[0];
+    const recRow = rec ? `<div class="wh-mini wh-recent"><a href="#/e/${encodeURIComponent(rec.id)}"><b>${rec.date === t ? '오늘' : '어제'}</b><span>${esc(rec.title)}</span><em>${rec.songs.length ? `셋리 ${rec.songs.length}곡` : '셋리 알려주기'} ›</em></a><button type="button" class="wh-ix" data-whx="${esc(rec.id)}" aria-label="닫기">×</button></div>` : '';
+    const withRec = html => recRow ? html.replace(/^<section class="wait-home( open)?">/, m => m + recRow) : html;
     const next = mine.filter(e => e.date >= t && !over(e)).sort((a, b) => a.date.localeCompare(b.date))[0];
+    if (!next && recRow) return `<section class="wait-home">${recRow}</section>`;
     // 처음 한 번: 기다리는 일정 안내 한 줄 (누르거나 ✕하면 다시 안 떠요)
     if (!next) return goIds().length || boxRead('sb-wait-intro') ? '' : `<section class="wait-home"><div class="wh-mini wh-intro"><a href="#/wait" data-wintro="1"><b>NEW</b><span>갈 공연을 골라 D-day를 세어 봐요</span></a><button type="button" class="wh-ix" data-wintro="1" aria-label="닫기">×</button></div></section>`;
     const n = goN(next.id);
     // 평소엔 D-day + 제목 한 줄, 누르면 펼쳐요 (sb-wait-open 기억)
     const openH = boxRead('sb-wait-open') === 1;
-    if (!openH) return `<section class="wait-home"><button type="button" class="wh-mini wh-tg" aria-expanded="false"><b>${ddOf(next)}</b><span>${esc(next.title)}</span>${n >= 2 ? `<em class="wh-n" aria-label="숲별 ${n}명이 같이 기다려요"><span class="go-av" aria-hidden="true">${'<i></i>'.repeat(Math.min(n, 3))}</span>${n.toLocaleString()}</em>` : ''}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></section>`;
-    return `<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot">${SP_ON() && spable(next) ? `<a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a>` : ''}<button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}${spCnt(next.id) >= 2 ? `<p class="tk-spn">${wi('target')}셋리 예측 ${spCnt(next.id).toLocaleString()}명 참여</p>` : ''}`, '#/wait')}</section>`;
+    if (!openH) return withRec(`<section class="wait-home"><button type="button" class="wh-mini wh-tg" aria-expanded="false"><b>${ddOf(next)}</b><span>${esc(next.title)}</span>${n >= 2 ? `<em class="wh-n" aria-label="숲별 ${n}명이 같이 기다려요"><span class="go-av" aria-hidden="true">${'<i></i>'.repeat(Math.min(n, 3))}</span>${n.toLocaleString()}</em>` : ''}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></section>`);
+    return withRec(`<section class="wait-home open"><button type="button" class="wh-tg wh-fold" aria-expanded="true" aria-label="접기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>${tkCard(next, `${tkHead(next)}<div class="tk-foot">${SP_ON() && spable(next) ? `<a class="tk-btn" href="#/e/${encodeURIComponent(next.id)}?sp=1">셋리 <b>${spGet(next.id).length}</b></a>` : ''}<button type="button" class="tk-btn rd-open" data-id="${esc(next.id)}">준비물 <b>${rdDone(next.id).length}/${rdItems(next.id).length}</b></button><a class="tk-more" href="#/wait" aria-label="기다리는 일정 전체">›</a></div>${goTogether(n)}${spCnt(next.id) >= 2 ? `<p class="tk-spn">${wi('target')}셋리 예측 ${spCnt(next.id).toLocaleString()}명 참여</p>` : ''}`, '#/wait')}</section>`);
   }
   function waitView() {
     if (!WAIT_ON()) return '<p class="empty">준비 중인 화면이에요. <a href="#/more">더보기로 ›</a></p>';
