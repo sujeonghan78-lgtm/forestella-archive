@@ -211,7 +211,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -320,6 +320,10 @@
     // 팬 제보 현황 화면(#/fan)에 쓸 기록: 언제 · 무엇을 · 어느 일정에
     const fanLog = [];
     const tourFan = new Map();
+    // '아니에요'(종류: 아니에요 / 대상: sl|ev|pl|nm|gc / 키 / 값 / 누가): 확정 전 제안에 올린 사람 말고 두 명이 아니라고 하면 그 제안은 빠져요
+    const NO = {};
+    if (raw.reports) buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type === '아니에요' && r.by) { const k = [line0(r, '대상'), line0(r, '키'), line0(r, '값')].join('|'); (NO[k] = NO[k] || new Set()).add(r.by); } });
+    const noN = (kind, key, val, by) => { const w = NO[[kind, key, val].join('|')]; return w ? [...w].filter(x => x !== by).length : 0; };
     if (raw.reports) {
       const rows = buildReports(toObjects(raw.reports), true);
       const idOf = r => (r.title.match(/\[ID ([\w-]+)\]/) || [])[1];
@@ -344,6 +348,8 @@
         }
         const same = (pickTo && events.find(x => x.id === pickTo)) || (mg && events.find(x => x.id === mg[1])) || (!fresh && events.find(x => x.date === r.date && (sp0(x.title) === t0 || (t0.length >= 4 && (sp0(x.title).includes(t0) || t0.includes(sp0(x.title)))))));
         if (!same) {
+          const yes = rows.filter(x => x.type === '일정확인' && idOf(x) === id && x.by && x.by !== r.by).length;
+          if (yes < 2 && noN('ev', id, '', r.by) >= 2) return;
           const mem = String(line0(r, '누구')).split(/[,/·\s]+/).map(x => SHORT[x] || (MEMBERS.includes(x) ? x : '')).filter(Boolean);
           const solo = mem.length && mem.length < 4 ? `[${mem.map(m => m.slice(1)).join('/')}] ` : '';
           const vid = ((r.link || '').match(/(?:youtu\.be\/|v=|shorts\/|live\/)([\w-]{11})/) || [])[1] || '';
@@ -385,6 +391,7 @@
         if (id.startsWith('T-')) {
           const ver = slVer(f.songs);
           const who = new Set(rows.filter(r => r.type === '셋리확인' && idOf(r) === id && r.ver === ver && r.by && r.by !== f.by).map(r => r.by));
+          if (who.size < 2 && noN('sl', id, ver, f.by) >= 2) return;
           tourFan.set(id.slice(2), { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits, src: id });
           return;
         }
@@ -401,9 +408,12 @@
         const alts = [];
         [...(vers.get(id) || new Map()).values()].forEach(fv => { const v = slVer(fv.songs); const a = alts.find(x => x.ver === v); if (a) alts.splice(alts.indexOf(a), 1); alts.push({ ...fv, ver: v, also: [...((a && a.also) || []), ...(a ? [a.by] : [])] }); });
         alts.forEach(a => { a.n = okWho(a, a.ver).size; });
+        // '아니에요' 두 명 받은 판(아직 확정 전)은 빼요. 다 빠지면 원래 곡 목록 그대로예요
+        for (let i = alts.length - 1; i >= 0; i--) if (alts[i].n < 2 && noN('sl', id, alts[i].ver, alts[i].by) >= 2) alts.splice(i, 1);
+        if (!alts.length) return;
         const best = alts.filter(a => a.n >= 2).sort((a, b) => b.n - a.n || alts.indexOf(b) - alts.indexOf(a))[0];
         if (best) f = { ...f, songs: best.songs, by: best.by, fromEv: best.fromEv, also: best.also };
-        else if (alts.length) f = { ...f, also: alts[alts.length - 1].also };
+        else f = { ...f, songs: alts[alts.length - 1].songs, by: alts[alts.length - 1].by, fromEv: alts[alts.length - 1].fromEv, also: alts[alts.length - 1].also };
         const ver = slVer(f.songs);
         const who = okWho(f, ver);
         // 원래 곡 목록이 있어도 최근 판으로 통째로 바꿔요 (틀린 곡을 고칠 수 있게). 원래 목록은 시트 제보 줄을 지우면 돌아와요
@@ -488,7 +498,7 @@
         (k.raw = k.raw || new Set()).add(m[1] + ',' + m[2]);
       });
       Object.entries(pins).forEach(([place, o]) => {
-        const cs = Object.values(o.cands).filter(k => k.by);
+        const cs = Object.values(o.cands).filter(k => k.by && !(k.who.size - (k.who.has(k.by) ? 1 : 0) < 2 && noN('gc', place, k.c, k.by) >= 2));
         // 정확한 좌표가 없던 장소는 처음 보낸 위치를 바로 써요. 이미 있는 위치를 바꿀 땐 두 명 확인이에요
         const first = placeOk.has(place) ? null : cs.slice().sort((a, b) => a.at - b.at)[0];
         cs.forEach(k => { k.who.delete(k.by); k.n = Math.min(k.who.size, 2); k.id = 'g' + slVer([place, k.c]); k.done = k === first || k.who.size >= 2 || okMark.has(k.id) || [...(k.raw || [])].some(x => okMark.has('g' + slVer([place, x]))); });
@@ -516,7 +526,7 @@
         } else p.who.add(r.by);
       });
       events.forEach(e => {
-        const ps = Object.values(px[e.id] || {}).filter(p => p.by && p.to !== e.place);
+        const ps = Object.values(px[e.id] || {}).filter(p => p.by && p.to !== e.place && !([...p.who].filter(x => x !== p.by).length < 2 && noN('pl', e.id, p.to, p.by) >= 2));
         if (!ps.length) return;
         ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); p.id = 'pl' + slVer([e.id, p.to]); p.done = p.who.size >= 2 || okMark.has(p.id); });
         // 정확한 위치가 없던 일정은 처음 보낸 위치(좌표 있는 것)를 바로 써요
@@ -540,7 +550,7 @@
         if (r.type === '이름수정' && !p.by) { p.by = r.by; p.at = tsMs(r.time); } else p.who.add(r.by);
       });
       events.forEach(e => {
-        const ps = Object.values(nx[e.id] || {}).filter(p => p.by && p.to !== e.title);
+        const ps = Object.values(nx[e.id] || {}).filter(p => p.by && p.to !== e.title && !([...p.who].filter(x => x !== p.by).length < 2 && noN('nm', e.id, p.to, p.by) >= 2));
         if (!ps.length) return;
         ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); p.id = 'nm' + slVer([e.id, p.to]); p.done = p.who.size >= 2 || okMark.has(p.id); });
         const done = ps.filter(p => p.done).sort((a, b) => b.at - a.at)[0];

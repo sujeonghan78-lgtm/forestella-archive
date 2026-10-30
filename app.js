@@ -2785,7 +2785,7 @@
     const fixHtml = x => {
       const p = x.l.place, pin = p && (data.pins || {})[p], me = myUid();
       if (!p) return '';
-      const pend = ((pin && pin.pend) || []).map(k => `<div class="map-pend"><span>📍 팬이 고친 위치 · 확인 ${k.n}/2</span><button type="button" class="link-btn map-see" data-c="${k.c}">보기</button>${k.by !== me && !slOked('gp:' + p + ':' + k.c) ? `<button type="button" class="chip map-ok" data-c="${k.c}">맞아요</button>` : ''}${isAdmin() ? `<button type="button" class="link-btn map-adm" data-id="${k.id}">바로 확정 (관리자)</button>` : ''}</div>`).join('');
+      const pend = ((pin && pin.pend) || []).map(k => `<div class="map-pend"><span>📍 팬이 고친 위치 · 확인 ${k.n}/2</span><button type="button" class="link-btn map-see" data-c="${k.c}">보기</button>${k.by !== me && !slOked('gp:' + p + ':' + k.c) ? `<button type="button" class="chip map-ok" data-c="${k.c}">맞아요</button>${noBtn('gc', p, k.c, 'chip')}` : ''}${isAdmin() ? `<button type="button" class="link-btn map-adm" data-id="${k.id}">바로 확정 (관리자)</button>` : ''}</div>`).join('');
       return `${pend}<button type="button" class="link-btn map-fix">📍 ${x.l.exact ? '위치가 달라요' : '정확한 위치 알려주기'}</button>`;
     };
     const dots = () => {
@@ -5371,7 +5371,7 @@
     const f = e.fanSet;
     if (!f) return '';
     const mine = f.by && f.by === myUid(), done = slOked((f.src || e.id) + ':' + f.ver);
-    const btn = !f.ok && !mine && !done && (window.CONFIG.form || {}).fields ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(f.ver)}">맞아요</button>` : '';
+    const btn = !f.ok && !mine && !done && (window.CONFIG.form || {}).fields ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(f.ver)}">맞아요</button>${noBtn('sl', f.src || e.id, f.ver)}` : '';
     const msg = f.ok ? `팬 ${f.n}명이 확인한 셋리예요.`
       : mine ? '내가 올린 셋리예요. 다른 두 분이 맞다고 하면 확정돼요.'
       : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.'
@@ -5379,7 +5379,7 @@
     if (f.ok) return okMini('확정', msg);
     // 사람마다 다르게 올린 판: 지금 보이는 판 말고 다른 판도 펼쳐 보고 '맞아요'를 눌러요
     const others = (f.alts || []).filter(a => a.ver !== f.ver);
-    const altBtn = a => (window.CONFIG.form || {}).fields && a.by !== myUid() && !slOked((f.src || e.id) + ':' + a.ver) ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(a.ver)}">이 판이 맞아요</button>` : '';
+    const altBtn = a => (window.CONFIG.form || {}).fields && a.by !== myUid() && !slOked((f.src || e.id) + ':' + a.ver) ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(a.ver)}">이 판이 맞아요</button>${noBtn('sl', f.src || e.id, a.ver)}` : '';
     const alt = others.length ? `<details class="sl-alts"><summary>다르게 올라온 판 ${others.length}개 더 있어요</summary>${others.map((a, i) => `<div class="sl-alt"><p class="sl-alt-h">판 ${i + 2} · ${a.songs.length}곡 · 확인 ${a.n}/2${a.by === myUid() ? ' · 내가 올린 판' : ''}</p><ol>${a.songs.map(t => `<li>${esc(t)}</li>`).join('')}</ol>${altBtn(a)}</div>`).join('')}</details>` : '';
     return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}${others.length ? ' 지금 보이는 건 판 1이에요.' : ''}</span>${btn}${alt}</div>`;
   }
@@ -5692,18 +5692,27 @@
   // 팬이 등록한 일정: 확인 필요 · n/2 와 '맞아요'
   // 확정된 건 작은 배지만, 누르면 설명이 보여요
   const okMini = (label, msg) => `<details class="ok-mini"><summary>✓ ${label}</summary><span>${msg}</span></details>`;
+  // '아니에요': 확정 전 제안에 아니라고 하기 (종류: 아니에요, 대상 sl·ev·pl·nm·gc). 올린 사람 말고 두 명이면 그 제안은 빠져요
+  const NO_KEY = 'sb-no-sent';
+  const noSent = k => { try { return JSON.parse(localStorage.getItem(NO_KEY) || '[]').includes(k); } catch (err) { return false; } };
+  const noBtn = (kind, key, val, cls = 'bpill') => (window.CONFIG.form || {}).fields && !noSent([kind, key, val].join('|')) ? `<button type="button" class="${cls} no-btn" data-nk="${esc(kind)}" data-key="${esc(key)}" data-val="${esc(val)}">아니에요</button>` : '';
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.no-btn');
+    if (!b) return;
+    const k = [b.dataset.nk, b.dataset.key, b.dataset.val].join('|');
+    b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: 아니에요\n대상: ${b.dataset.nk}\n키: ${b.dataset.key}\n값: ${b.dataset.val}\n누가: ${myUid()}`)
+      .then(() => { try { const a = JSON.parse(localStorage.getItem(NO_KEY) || '[]'); a.push(k); localStorage.setItem(NO_KEY, JSON.stringify(a.slice(-300))); } catch (err) { /* 괜찮아요 */ } b.textContent = '보냈어요 ✓'; toast('고마워요! 두 분이 아니라고 하면 이 제안은 빠져요'); })
+      .catch(() => { b.disabled = false; b.textContent = '다시 누르기'; });
+  });
   function evState(e) {
     const f = e.fanEvent;
     if (!f) return '';
     const mine = f.by && f.by === myUid(), done = slOked('ev:' + e.id);
-    const btn = !f.ok && !mine && !done ? `<button type="button" class="bpill ev-ok" data-id="${esc(e.id)}">맞아요</button>` : '';
+    const btn = !f.ok && !mine && !done ? `<button type="button" class="bpill ev-ok" data-id="${esc(e.id)}">맞아요</button>${noBtn('ev', e.id, '')}` : '';
     const msg = f.ok ? `팬 ${f.n}명이 확인한 일정이에요.` : mine ? '내가 등록한 일정이에요. 다른 두 분이 맞다고 하면 확정돼요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "팬이 등록한 일정이에요. 맞으면 '맞아요'를 눌러 주세요.";
     if (f.ok) return okMini('확정', msg);
-    // 사람마다 다르게 올린 판: 지금 보이는 판 말고 다른 판도 펼쳐 보고 '맞아요'를 눌러요
-    const others = (f.alts || []).filter(a => a.ver !== f.ver);
-    const altBtn = a => (window.CONFIG.form || {}).fields && a.by !== myUid() && !slOked((f.src || e.id) + ':' + a.ver) ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(a.ver)}">이 판이 맞아요</button>` : '';
-    const alt = others.length ? `<details class="sl-alts"><summary>다르게 올라온 판 ${others.length}개 더 있어요</summary>${others.map((a, i) => `<div class="sl-alt"><p class="sl-alt-h">판 ${i + 2} · ${a.songs.length}곡 · 확인 ${a.n}/2${a.by === myUid() ? ' · 내가 올린 판' : ''}</p><ol>${a.songs.map(t => `<li>${esc(t)}</li>`).join('')}</ol>${altBtn(a)}</div>`).join('')}</details>` : '';
-    return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}${others.length ? ' 지금 보이는 건 판 1이에요.' : ''}</span>${btn}${alt}</div>`;
+    return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
   }
   const evPending = e => e.fanEvent && !e.fanEvent.ok ? ' <span class="new-tag">확인 필요</span>' : '';
   document.addEventListener('click', ev => {
@@ -5827,7 +5836,7 @@
     const was = e.titleWas ? okMini('이름 고침', `확인을 받아 이름을 고쳤어요. (원래 ${esc(e.titleWas)})`) : '';
     return was + (e.nameProps || []).map(p => {
       const mine = p.by === myUid(), done = slOked(`nm:${e.id}:${p.to}`);
-      const btn = !mine && !done ? `<button type="button" class="bpill nm-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>` : '';
+      const btn = !mine && !done ? `<button type="button" class="bpill nm-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>${noBtn('nm', e.id, p.to)}` : '';
       const adm = isAdmin() ? `<button type="button" class="link-btn pl-adm" data-mid="${esc(p.id)}">바로 확정 (관리자)</button>` : '';
       const msg = mine ? '내가 보낸 이름이에요. 다른 두 분이 맞다고 하면 바뀌어요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "이 이름이 맞으면 '맞아요'를 눌러 주세요.";
       return `<div class="sl-state nm-state"><span class="src-badge">이름 확인 · ${p.n}/2</span><span class="sl-state-msg"><b class="dt-chg">🏷 ${esc(p.to)}</b> ${msg}</span>${btn}${adm}</div>`;
@@ -5873,7 +5882,7 @@
     const was = e.placeWas != null ? okMini('장소 고침', e.placeWas ? `확인을 받아 장소를 고쳤어요. (원래 ${esc(e.placeWas)})` : '팬분이 알려 주시고 확인을 받은 장소예요.') : '';
     return was + (e.placeProps || []).map(p => {
       const mine = p.by === myUid(), done = slOked(`pl:${e.id}:${p.to}`);
-      const btn = !mine && !done ? `<button type="button" class="bpill pl-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>` : '';
+      const btn = !mine && !done ? `<button type="button" class="bpill pl-ok" data-id="${esc(e.id)}" data-to="${esc(p.to)}">맞아요</button>${noBtn('pl', e.id, p.to)}` : '';
       const adm = isAdmin() ? `<button type="button" class="link-btn pl-adm" data-mid="${esc(p.id)}">바로 확정 (관리자)</button>` : '';
       const msg = mine ? '내가 보낸 장소예요. 다른 두 분이 맞다고 하면 확정돼요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "이 장소가 맞으면 '맞아요'를 눌러 주세요.";
       return `<div class="sl-state pl-state"><span class="src-badge">장소 확인 · ${p.n}/2</span><span class="sl-state-msg"><b class="dt-chg">📍 ${p.now ? esc(p.to) : `${esc(e.place)} → ${esc(p.to)}`}</b> ${msg}</span>${btn}${adm}</div>`;
