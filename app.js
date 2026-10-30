@@ -989,7 +989,7 @@
   }
   const relCard = x => `<a class="x-card${x.img ? '' : ' no-img'}" href="${x.href}">${x.img ? `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<span class="x-text"><span class="x-date">${esc(x.kind)}${x.sub ? ' · ' + esc(x.sub) : ''}</span><b>${esc(x.name)}</b></span></a>`;
   // 곡 요약 (곡 목록·검색 결과 공통)
-  const songMeta = (so, plain) => [so.events.length ? (plain ? `무대 ${so.events.length}` : `<b>무대 ${so.events.length}</b>`) : '', (so.official || []).length ? `영상 ${so.official.length}` : '', so.tours.length ? `콘서트 ${so.tours.length}` : '', so.titleOf.length ? '타이틀' : ''].filter(Boolean).join(' · ');
+  const songMeta = (so, plain) => [stageN(so) ? (plain ? `무대 ${stageN(so)}` : `<b>무대 ${stageN(so)}</b>`) : '', (so.official || []).length ? `영상 ${so.official.length}` : '', so.tours.length ? `콘서트 ${so.tours.length}` : '', so.titleOf.length ? '타이틀' : ''].filter(Boolean).join(' · ');
   const songCard = so => relCard({ href: '#/song/' + encodeURIComponent(so.key), kind: '곡', sub: songMeta(so, true), name: so.name, img: songPic(so) });
   function searchAll(p) {
     const h = searchHits(p);
@@ -1036,7 +1036,7 @@
   }
   function searchHome() {
     const recent = recentQueries();
-    const top = [...data.songs.values()].filter(so => so.events.length).sort((a, b) => b.events.length - a.events.length).slice(0, 10);
+    const top = [...data.songs.values()].filter(so => stageN(so)).sort((a, b) => stageN(b) - stageN(a)).slice(0, 10);
     return `
       ${recent.length ? `<h2 class="h3 list-title">최근 검색어 <button type="button" class="link-btn" id="clear-recent">지우기</button></h2>
       <div class="chips wrap">${recent.map(q => `<button type="button" class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>` : ''}
@@ -1184,10 +1184,22 @@
   const SONG_CATS = { video: '영상 있음', album: '음반 수록곡', concert: '콘서트에서 부른 곡', title: '타이틀곡', ver: '버전 여러 개', chant: '📣 떼창 구간 있음', nochant: '떼창 구간 없음' };
   const SONG_MY = { heart: '♥ 하트', fav: '💚 최애곡', wish: '🙏 소취곡', debut: '🌱 입덕곡', heard: '🎫 직관에서 들은 곡' };
   // 마지막으로 부른 날: 확인된 무대·콘서트 셋리 중 가장 늦은 날 (오늘 뒤 날짜는 빼요)
+  // 콘서트 셋리로 부른 날: 투어 날짜 + 그 콘서트 공연 일정 날짜 (곡이 따로 적힌 일정 날은 빼요, 오늘 뒤 날짜도 빼요)
+  const tourDays = so => {
+    if (so._tdAt === data) return so._td;
+    const today = todayIso(), own = new Set(so.events.map(e => e.date)), ds = new Set();
+    so.tours.forEach(t => {
+      (t.dates || []).forEach(d => ds.add(d));
+      (data.concerts || []).filter(c => c.tour === t).forEach(c => concertEvents(c).forEach(e => { if (!e.songs.length) ds.add(e.date); }));
+    });
+    so._tdAt = data; return (so._td = [...ds].filter(d => d <= today && !own.has(d)).sort());
+  };
+  // 무대 수 = 확인된 무대 + 콘서트에서 부른 날
+  const stageN = so => so.events.length + tourDays(so).length;
   const songLast = so => {
     if (so._lastAt === data) return so._last;
-    const today = new Date().toISOString().slice(0, 10);
-    const ds = [so.last && so.last.date, ...so.tours.map(t => t.dates[t.dates.length - 1])].filter(d => d && d <= today).sort();
+    const today = todayIso();
+    const ds = [so.last && so.last.date, ...tourDays(so)].filter(d => d && d <= today).sort();
     so._lastAt = data; return (so._last = ds[ds.length - 1] || '');
   };
   const daysAgo = d => Math.max(0, Math.round((new Date(new Date().toISOString().slice(0, 10)) - new Date(d)) / 864e5));
@@ -1204,7 +1216,7 @@
     so.events.forEach(e => { const m = evMember(e); if (m) ms.add(m); else group = true; });
     return (so._solo = !group && ms.size ? ['두훈', '형호', '민규', '우림'].filter(m => ms.has(m)) : []);
   };
-  const playCount = so => so.events.length + so.tours.length;
+  const playCount = so => stageN(so);
 
   // 곡 이름이 나온 공식 X 글 (짧은 이름은 엉뚱한 글이 섞여서 한글 2자·영문 4자 이상만)
   function songX(so) {
@@ -1282,7 +1294,7 @@
   const songLine = so => songShow().includes('album') && so.albums[0] ? esc(so.albums[0].name) : '';
   const songStat = so => {
     const on = songShow(), n = (k, v, t) => on.includes(k) && v ? t : '';
-    const top = [n('num', so.events.length, `<b>🎤${so.events.length}</b>`), n('num', (so.official || []).length, `▶${(so.official || []).length}`), n('num', so.tours.length, `🎫${so.tours.length}`), n('tmi', tmiOf('s:' + so.key).length, `💡${tmiOf('s:' + so.key).length}`), n('chant', chantOf(so).length, `📣${chantOf(so).length}`), n('ver', on.includes('ver') && songMemoN(so), `버전 ${songMemoN(so)}`)].filter(Boolean).join(' ');
+    const top = [n('num', stageN(so), `<b>🎤${stageN(so)}</b>`), n('num', (so.official || []).length, `▶${(so.official || []).length}`), n('num', so.tours.length, `🎫${so.tours.length}`), n('tmi', tmiOf('s:' + so.key).length, `💡${tmiOf('s:' + so.key).length}`), n('chant', chantOf(so).length, `📣${chantOf(so).length}`), n('ver', on.includes('ver') && songMemoN(so), `버전 ${songMemoN(so)}`)].filter(Boolean).join(' ');
     const bot = [n('title', so.titleOf.length, '타이틀'), n('lang', (so.langs || []).length, esc((so.langs || []).join('·'))), n('last', songLast(so), daysAgo(songLast(so)) ? `${daysAgo(songLast(so)).toLocaleString()}일 전` : '오늘')].filter(Boolean).join(' · ');
     return [top, bot].filter(Boolean).join('<br>');
   };
@@ -1408,7 +1420,7 @@
       <a class="back" href="${esc(songBack)}">‹ 곡 아카이브</a>
       <section class="song-hero">
         <div class="block-head"><h1 class="song-title">${esc(so.name)}</h1><span class="head-side">${heartTag('s', so.key)}${boxBtn('s', so.key, 'heart-btn')}<button type="button" class="share-round fd-btn${folders().some(f => inFolder(f.id, so.key)) ? ' on' : ''}" data-key="${esc(so.key)}" aria-label="폴더에 담기">📁</button>${shareBtn('이 곡 공유하기', `포레스텔라 「${so.name}」 무대 모아보기 🏆\n${so.first ? `처음 확인된 무대 ${fmtDate(so.first.date, false)} ${so.first.title}부터\n` : ''}\n${TAGS}`, link('#/song/' + encodeURIComponent(so.key)))}</span></div>${wishTag(so.key)}
-        <div class="song-pills"><span class="count-pill">${so.events.length ? `확인된 무대 ${so.events.length}개` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>${so.langs ? `<span class="count-pill lang-pill">🌐 ${esc(so.langs.join(' · '))}</span>` : ''}</div>
+        <div class="song-pills"><span class="count-pill">${stageN(so) ? `<span>무대 ${stageN(so)}번${tourDays(so).length ? ` (콘서트 ${tourDays(so).length})` : ''}</span>` : '무대 영상 준비 중'}${so.titleOf.length ? ' · 타이틀곡' : ''}</span>${so.langs ? `<span class="count-pill lang-pill">🌐 ${esc(so.langs.join(' · '))}</span>` : ''}</div>
         ${songPending(so) ? '<p class="src-note">팬이 올린 셋리에서 새로 들어온 곡이에요. 셋리가 확정되면 이 표시도 사라져요.</p>' : ''}
         ${albumRow}
         ${so.first || songLast(so) ? `<div class="facts">
@@ -2675,6 +2687,10 @@
       ${ml.off.filter(needLoc).length || ml.on.some(x => !x.l.exact && needLoc(x)) ? `<details class="map-off"><summary>위치 확인이 필요한 일정 ${ml.off.filter(x => needLoc(x) && x.l.region !== PLACE_PRIV).length + ml.on.filter(x => !x.l.exact && needLoc(x)).length}개</summary>${offList(ml.off.filter(needLoc), ml.on.filter(x => !x.l.exact && needLoc(x)))}<button type="button" class="link-btn map-off-x" onclick="this.closest('details').open=false">접기 ▴</button></details>` : ''}
       <p class="src-note map-src">지도 © OpenStreetMap 기여자 · 공연장 위치는 자동으로 찾은 거라 틀릴 수 있어요.</p>`
       : ml.off.length ? `<p class="empty">이 기간 일정 ${ml.off.length}개는 장소를 몰라서 지도에 못 찍었어요. 아는 분은 📍 장소 알려주기로 알려 주세요.</p><div class="map-off">${offList(ml.off.filter(needLoc))}</div>` : `<p class="empty">${mapSt.mode === 'w' ? '아직 발자국이 없어요. 일정에서 🎫 직관했어요를 누르면 여기에 찍혀요.' : '지도에 찍을 일정이 없어요.'}</p>`}`;
+    // 다녀간 순서대로 이은 거리(직선, km): cum[i] = 처음부터 i번째까지
+    const rad = d => d * Math.PI / 180, hav = (a, b) => { const x = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
+    const cum = ml.on.reduce((a, x, i) => (a.push(i ? a[i - 1] + hav(ml.on[i - 1].l, x.l) : 0), a), []);
+    const km = v => `${Math.round(v).toLocaleString()}km`;
     const reset = () => { mapSt.i = -1; mapSt.tour = false; mapSt.uz = 0; mapStop(); bindMap(); };
     bindF(mapF(ml), { ...ml.st, s: mapSt.mode });
     if (!ml.on.length) return;
@@ -2784,7 +2800,7 @@
       ml.on.forEach(x => { const r = x.l.region || regionNear(x.l); cnt.set(r, (cnt.get(r) || 0) + 1); });
       const top = [...cnt].sort((a, b) => b[1] - a[1])[0];
       const venues = new Set(ml.on.map(x => x.l.exact ? x.l.lat.toFixed(3) + x.l.lng.toFixed(3) : x.l.region)).size;
-      document.getElementById('map-nav').innerHTML = `<div class="map-info"><span class="map-meta">${mapSt.mode === 'w' ? '👣 내 발자국' : '포레스텔라 공연'} ${ml.on.length}개 · 장소 ${venues}곳 · ${cnt.size}개 지역</span><span class="map-now-t">${top ? `제일 많이 간 곳은 ${esc(top[0])} ${top[1]}번` : ''}</span><span class="map-place">지역 숫자를 누르면 다녀간 일정이 보여요</span></div>`;
+      document.getElementById('map-nav').innerHTML = `<div class="map-info"><span class="map-meta">${mapSt.mode === 'w' ? '👣 내 발자국' : '포레스텔라 공연'} ${ml.on.length}개 · 장소 ${venues}곳 · ${cnt.size}개 지역${cum.length > 1 ? ` · 이으면 ${km(cum[cum.length - 1])}` : ''}</span><span class="map-now-t">${top ? `제일 많이 간 곳은 ${esc(top[0])} ${top[1]}번` : ''}</span><span class="map-place">지역 숫자를 누르면 다녀간 일정이 보여요</span></div>`;
     };
     // 처음부터 끝까지 걸리는 시간 (지금 속도 기준)
     const dur = () => {
@@ -2798,7 +2814,7 @@
       const x = ml.on[mapSt.i], navEl = document.getElementById('map-nav');
       // 진행 줄을 끄는 중엔 글자만 바꿔요 (줄을 다시 그리면 손가락이 놓쳐요)
       if (seeking && navEl.querySelector('.map-seek')) {
-        navEl.querySelector('.map-meta').textContent = `${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}`;
+        navEl.querySelector('.map-meta').textContent = `${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length} · ${km(cum[mapSt.i])} 걸었어요`;
         navEl.querySelector('.map-now-t').textContent = x.e.title;
         navEl.querySelector('.map-place').textContent = x.l.place || (x.l.region ? x.l.region + ' 어딘가' : '');
         navEl.querySelector('.map-seek').style.setProperty('--p', Math.round(mapSt.i / (ml.on.length - 1) * 100) + '%');
@@ -2810,7 +2826,7 @@
       document.getElementById('map-nav').innerHTML = `
         <button type="button" class="map-arrow" id="map-prev"${prev ? '' : ' disabled'} aria-label="이전 발자국">‹</button>
         <div class="map-info">
-          <span class="map-meta">${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length}</span>
+          <span class="map-meta">${fmtDate(x.e.date, false)} · ${mapSt.i + 1}/${ml.on.length} · ${km(cum[mapSt.i])} 걸었어요</span>
           <a href="#/e/${encodeURIComponent(x.e.id)}" class="map-now-t">${esc(x.e.title)}</a>
           <span class="map-place">${x.l.place ? esc(x.l.place) : ''}${x.l.exact ? '' : `${x.l.place ? ' · ' : ''}<em>${esc(x.l.region)} 어딘가</em>`}</span>
           ${x.l.exact && x.l.lat ? `<span class="map-acts"><button type="button" class="map-act map-route" data-lat="${x.l.lat}" data-lng="${x.l.lng}" data-name="${esc((x.l.place || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim())}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>길찾기</button>${x.l.nid ? `<a class="map-act map-naver" href="https://map.naver.com/p/entry/place/${encodeURIComponent(x.l.nid)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>네이버 지도</a>` : ''}</span>` : ''}

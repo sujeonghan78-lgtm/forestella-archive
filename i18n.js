@@ -88,6 +88,15 @@
     '숲별이 많이 고른 곡': ['Most picked by fans', 'みんながよく選んだ曲'],
     '120일 안에 등록된 일정이 없어요.': ['No schedules in the next 120 days.', '120日以内の予定はありません。'],
     '아직 기다리는 일정이 없어요. 아래 다가오는 일정에서 갈 거예요를 눌러 보세요.': ['Nothing yet. Tap "I\'m going" on an upcoming schedule below.', 'まだありません。下の予定で「行きます」を押してみてください。'],
+    // 10-30 추가: 셋리 예측 평균·셋리 등록·판·준비물 메모·지도 버튼·장소 알려주기·날짜 아니에요
+    '다른 숲별 점수 보기': ['See other fans\' scores', 'みんなの点数を見る'], '숲별 평균': ['Fan average', 'みんなの平均'], '참여': ['joined', '参加'],
+    '이번 예측 최고 점수예요': ['Top score this time!', '今回の最高点です'], '예측한 숲별이 10명 이상이면 평균 점수도 볼 수 있어요': ['With 10+ guesses, you can see the average score', '予想が10人以上集まると平均点が見られます'],
+    '아무도 예상 못 한 곡': ['Nobody guessed', '誰も予想しなかった曲'],
+    '셋리 등록': ['Post setlist', 'セトリを登録'], '이 판이 맞아요': ['This version is right', 'この版が正しい'], '셋리 알려주기': ['Share the setlist', 'セトリを教える'], '📝 셋리 알려주기': ['📝 Share the setlist', '📝 セトリを教える'], '✏️ 셋리 고치기': ['✏️ Fix setlist', '✏️ セトリを直す'],
+    '📝 메모': ['📝 Memo', '📝 メモ'], '📝 메모 칸 켜기': ['📝 Show memo', '📝 メモを表示'], '메모 칸 끄기': ['Hide memo', 'メモを隠す'], '다음 공연에도 이 메모 쓰기': ['Use this memo for next shows', 'このメモを次の公演にも使う'], '내 메모': ['My memos', 'マイメモ'],
+    '길찾기': ['Directions', '道案内'], '네이버 지도': ['Naver Map', 'NAVERマップ'], '네이버 지도에서 찾기': ['Find on Naver Map', 'NAVERマップで探す'], '이 일정 검색': ['Search this', 'この予定を検索'], '┄ 갈 길': ['┄ Path ahead', '┄ この先'],
+    '📍 장소 공개됨': ['📍 Public venue', '📍 公開会場'], '🔒 장소 비공개': ['🔒 Venue undisclosed', '🔒 会場非公開'], '💻 온라인': ['💻 Online', '💻 オンライン'],
+    '아니에요': ['Not right', '違います'], '셋리 알려주기 ›': ['Share the setlist ›', 'セトリを教える ›'], '오늘': ['Today', '今日'], '어제': ['Yesterday', '昨日'],
     '갈 거예요 취소': ['Cancel going', '行くを取り消す'], '기다리는 일정 전체': ['All waiting', 'すべて見る'], '접기': ['Collapse', '閉じる'], '지우기': ['Remove', '消す'],
   });
   function tr(s) {
@@ -104,6 +113,10 @@
     if ((m0 = k.match(/^(\d{4})년 (\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}年${m0[2]}月` : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m0[2]-1] + ' ' + m0[1]);
     if ((m0 = k.match(/^(\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? m0[1] + '月' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m0[1] - 1]);
     if ((m0 = k.match(/^(\d+\.\d+ \d\d:\d\d) 마감 · 리허설로 셋리가 알려질 수 있어 시작 5시간 전에 닫혀요$/))) return s.replace(k, lang === 'ja' ? `${m0[1]} 締切 · リハでセトリが知られることがあるため開始5時間前に締め切ります` : `Closes ${m0[1]} · 5 hours before start, as rehearsals can reveal the setlist`);
+    if ((m0 = k.match(/^셋리 (\d+)곡 ›$/))) return s.replace(k, lang === 'ja' ? `セトリ ${m0[1]}曲 ›` : `Setlist ${m0[1]} songs ›`);
+    if ((m0 = k.match(/^(\d+)부터 등록돼요$/)) || (m0 = k.match(/^(\d\d:\d\d)부터 등록돼요$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}から登録できます` : `Opens at ${m0[1]}`);
+    if ((m0 = k.match(/^다르게 올라온 판 (\d+)개 더 있어요$/))) return s.replace(k, lang === 'ja' ? `別の版が${m0[1]}件あります` : `${m0[1]} other version(s)`);
+    if ((m0 = k.match(/^무대 (\d+)번(?: \(콘서트 (\d+)\))?$/))) return s.replace(k, lang === 'ja' ? `ステージ${m0[1]}回${m0[2] ? `(コンサート${m0[2]})` : ''}` : `${m0[1]} stages${m0[2] ? ` (${m0[2]} concerts)` : ''}`);
     if ((m0 = k.match(/^(\d+)명 참여$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}人参加` : `${m0[1]} joined`);
     if ((m0 = k.match(/^셋리 예측 (\d+)명 참여$/))) return s.replace(k, lang === 'ja' ? `セトリ予想 ${m0[1]}人参加` : `Setlist guess · ${m0[1]} joined`);
     if ((m0 = k.match(/^갈 거예요 (\d+)개$/))) return s.replace(k, lang === 'ja' ? `行く予定 ${m0[1]}件` : `Going to ${m0[1]}`);
