@@ -1868,3 +1868,13 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .map-act svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .pl-nsearch{display:inline-flex;margin:2px 0 8px;font-size: calc(13px * var(--fs))}
 .pl-ns{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px}.pl-ns .pl-nsearch{margin:0}
+/* 일정 상세: 버튼 한 줄 · 공유·검색은 아래 작은 줄 (v569) */
+.ev-acts { flex-wrap: nowrap; gap: 6px; align-items: center; }
+.ev-acts .bpill { height: 36px; padding: 0 12px; font-size: calc(13px * var(--fs)); white-space: nowrap; flex: none; }
+.ev-acts .go-btn { flex: 0 1 auto; }
+.ev-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 4px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ev-tools .share-row, .ev-tools .find-row { display: contents; }
+.ev-tools .act, .ev-tools .find-btn { flex: none; height: 32px; padding: 0 10px; border-radius: 16px; font-size: calc(12px * var(--fs)); gap: 5px; background: var(--soft); border: 1px solid var(--line); }
+.ev-tools .act svg, .ev-tools .find-btn svg { width: 15px; height: 15px; }
+.sheet-body .meta { flex-wrap: wrap; row-gap: 4px; padding-right: 34px; }
+.sheet-body .meta > span, .meta .ok-mini summary, .meta .heart-n { white-space: nowrap; }

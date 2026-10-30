@@ -7174,20 +7174,22 @@
         <h1 class="d-title">${esc(e.title)}</h1>
         ${rest}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
-        <div class="box-row">${goBtn(e)}${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}${e.ytOnly ? '' : `<button type="button" class="bpill tmi-jump" data-key="${esc('e:' + e.id)}">💡 TMI${tmiOf('e:' + e.id).length ? ' ' + tmiOf('e:' + e.id).length : ''}</button>`}</div>
+        <div class="box-row ev-acts">${goBtn(e)}${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
         ${goBtn(e) ? `<p class="sub go-with" data-id="${esc(e.id)}">${goWith(e.id)}</p>` : ''}
         ${spBlock(e)}
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
+        ${castBlock(e)}
+        ${e.ytOnly ? '' : tmiBox('e:' + e.id, e.title)}
+        ${editBox(e)}
+        <div class="ev-tools">
         <div class="share-row">
           <button type="button" class="act act-wide" data-share data-text="${esc(eventShareText(e))}" data-url="${esc(link('#/e/' + encodeURIComponent(e.id)))}">${shareIcon}공유하기</button>
           <a class="act" href="${xUrl(eventShareText(e), link('#/e/' + encodeURIComponent(e.id)))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>X</a>
           <button type="button" class="act" data-copy="${esc(link('#/e/' + encodeURIComponent(e.id)))}" aria-label="링크 복사"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>복사</button>
         </div>
         ${findRow(findQuery(e.title))}
-        ${castBlock(e)}
-        ${e.ytOnly ? '' : tmiBox('e:' + e.id, e.title)}
-        ${editBox(e)}
+        </div>
         ${hideBtn(e)}
         ${(e.ytBehind || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">공식 유튜브 비하인드${help('공식 유튜브 비하인드 영상 중 제목의 행사 이름과 날짜로 이 일정을 고른 거예요. 가끔 다른 행사일 수 있어요.')}</h2></div>${ytStrip(e.ytBehind)}</section>` : ''}
         ${(e.ytStage || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">방송 영상 <span class="song-count">${e.ytStage.length}</span>${help('방송사 공식 유튜브 영상 중 제목의 프로그램 이름과 방송 날짜로 이 일정에 붙인 거예요. 가끔 다른 회차일 수 있어요.')}</h2></div>${ytStrip(e.ytStage)}</section>` : ''}
