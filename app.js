@@ -4655,7 +4655,7 @@
     if (!WAIT_ON() || !SP_ON() || !spable(e)) return '';
     const mine = spGet(e.id), real = spReal(e), locked = spLocked(e);
     if (locked && !mine.length) return '';
-    const head = `<h2 class="h3 wi-h">${wi('target')}셋리 예측${help('공연에서 부를 것 같은 곡을 골라요. 셋리가 올라오면 맞힌 곡으로 점수가 나와요. 점수는 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 수)예요.')}</h2>`;
+    const head = `<h2 class="h3 wi-h">${wi('target')}셋리 예측${help('공연에서 부를 것 같은 곡을 골라요. 셋리가 올라오면 맞힌 곡으로 점수가 나와요. 점수는 맞힌 곡 ÷ (실제 곡 수와 고른 곡 수 중 큰 수)예요. 예측한 숲별이 10명 이상이면 다른 숲별 평균 점수도 볼 수 있어요.')}</h2>`;
     const nm = k => esc(data.songs.get(k).name);
     const pn = locked ? spPickN(e.id) : null, tot = locked ? spAll(e.id).length : 0;
     const pc = k => tot >= 2 && pn.get(k) ? `<small class="sp-pc">${pn.get(k)}명</small>` : '';
@@ -4671,7 +4671,7 @@
       const picked = new Set(all.flat()), surprise = all.length >= 4 ? real.filter(k => !picked.has(k)) : [];
       return `<section class="d-block sp-box">${head}
         <div class="sp-score"><div class="sp-ring" style="--p:${sc.score}"><b>${sc.score}</b><small>점</small></div><div class="sp-sum"><b>${real.length}곡 중 ${sc.hit}곡 맞혔어요</b><small>고른 곡 ${mine.length}곡</small>${best ? `<small class="sp-best">${wi('star')}이번 예측 최고 점수예요</small>` : ''}</div></div>
-        ${avg != null ? `<details class="sp-avg"><summary>다른 숲별 점수 보기 <span class="sp-avg-ar" aria-hidden="true">▾</span></summary><p class="sp-avg-in">숲별 평균 <b>${avg}점</b><span aria-hidden="true">·</span><b>${all.length}명</b> 참여</p></details>` : ''}
+        ${avg == null ? '<p class="sp-avg-nt">예측한 숲별이 10명 이상이면 평균 점수도 볼 수 있어요</p>' : ''}${avg != null ? `<details class="sp-avg"><summary>다른 숲별 점수 보기 <span class="sp-avg-ar" aria-hidden="true">▾</span></summary><p class="sp-avg-in">숲별 평균 <b>${avg}점</b><span aria-hidden="true">·</span><b>${all.length}명</b> 참여</p></details>` : ''}
         ${surprise.length ? `<p class="sp-sur">${wi('star')}아무도 예상 못 한 곡 · ${surprise.map(nm).join(', ')}</p>` : ''}
         <ol class="sp-list sp-real">${real.map((k, i) => `<li class="${mine.includes(k) ? 'hit' : ''}"><span class="sp-n">${i + 1}</span><span class="sp-nm">${nm(k)}</span>${pc(k)}${mine.includes(k) ? '<span class="sp-ok">' + wi('check') + '</span>' : ''}</li>`).join('')}</ol></section>`;
     }
