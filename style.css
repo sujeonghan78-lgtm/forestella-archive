@@ -1291,6 +1291,11 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .ok-mini summary::-webkit-details-marker { display: none; }
 .ok-mini[open] { display: block; }
 .ok-mini span { display: block; margin-top: 4px; color: var(--ink-2); }
+.meta .ok-mini { margin: 0; font-size: calc(11.5px * var(--fs)); vertical-align: middle; }
+.meta .ok-mini summary { padding: 1px 8px; }
+.meta .ok-mini[open] { display: inline-block; }
+.meta .ok-mini[open] span { position: absolute; z-index: 3; max-width: 260px; margin-top: 6px; padding: 8px 10px; border-radius: 10px; background: var(--card, #fff); box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.meta .heart-n { margin-left: 2px; }
 /* 지도 위치 찾기 */
 .pin-find{display:flex;gap:6px;flex-basis:100%}
 .pin-find input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--hcfe0d6);border-radius:10px;font:inherit;background:#fff;color:var(--h16241c)}

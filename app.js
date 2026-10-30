@@ -7159,18 +7159,20 @@
         <div class="yt-strip">${rels.map(v => `<a href="${ytWatch(v.videoId)}" target="_blank" rel="noopener"><img src="${ytThumbUrl(v.videoId)}" alt="" loading="lazy" onerror="this.remove()"><span>${esc(v.title)}</span><small class="yt-src">${esc([v.source || '영상', v.note].filter(Boolean).join(' · '))}</small></a>`).join('')}</div>
       </section>` : '';
 
+    // 확정 배지·하트 수는 제목 위 한 줄에 작게
+    const evSt = evState(e), evOk = evSt.startsWith('<details class="ok-mini"');
     return `
       <div class="sheet-grab" aria-hidden="true"><span></span></div>
       <button type="button" class="sheet-close" id="sheet-close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       <div class="sheet-body">
-        <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span>${upcoming(e)}</div>
+        <div class="meta">${tag(e.category)}<span>${fmtDate(e.date)}${period}${time}</span>${upcoming(e)}${evOk ? evSt : ''}${heartTag('e', e.id)}</div>
         <h1 class="d-title">${esc(e.title)}</h1>
-        ${evState(e)}
+        ${evOk ? '' : evSt}
         ${dtState(e)}
         ${plState(e)}
         ${nmState(e)}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
-        <div class="box-row">${goBtn(e)}${boxBtn('e', e.id, 'bpill')}${heartTag('e', e.id)}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}${e.ytOnly ? '' : `<button type="button" class="bpill tmi-jump" data-key="${esc('e:' + e.id)}">💡 TMI${tmiOf('e:' + e.id).length ? ' ' + tmiOf('e:' + e.id).length : ''}</button>`}</div>
+        <div class="box-row">${goBtn(e)}${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}${e.ytOnly ? '' : `<button type="button" class="bpill tmi-jump" data-key="${esc('e:' + e.id)}">💡 TMI${tmiOf('e:' + e.id).length ? ' ' + tmiOf('e:' + e.id).length : ''}</button>`}</div>
         ${goBtn(e) ? `<p class="sub go-with" data-id="${esc(e.id)}">${goWith(e.id)}</p>` : ''}
         ${spBlock(e)}
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
