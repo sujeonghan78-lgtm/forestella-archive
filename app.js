@@ -3972,7 +3972,8 @@
     const tk = t => (t || '').replace(/[\s'"‘’“”<>《》「」()]/g, '').toLowerCase();
     const near = data.events.filter(x => tk(x.title) === tk(e.title) && samePlace(x.place, e.place) && Math.abs(new Date(x.date) - new Date(e.date)) <= 7 * 864e5);
     // 방송은 현장에서 본 '직관'과 방송으로 본 '시청'을 따로 눌러요
-    if (/TV|라디오/.test(e.category)) return boxBtn('w', e.id, 'bpill') + boxBtn('v', e.id, 'bpill');
+    if (isWatch(e)) return boxBtn('v', e.id, 'bpill');
+    if (/TV|라디오/.test(e.category)) return boxBtn('w', e.id, 'bpill');
     // 기간 공연(뮤지컬)은 아래 '캐스팅 회차'에서 본 회차를 골라요
     if (isRun(e)) return '';
     if (near.length < 2) return boxBtn('w', e.id, 'bpill');
@@ -4599,7 +4600,10 @@
   const wi = (k, cls = '') => `<svg class="wi ${cls}" viewBox="0 0 24 24" aria-hidden="true">${WI[k]}</svg>`;
   // 같이 기다리는 숲별: 겹친 동그라미 + 한 문장
   const goTogether = n => n >= 2 ? `<p class="go-tg"><span class="go-av" aria-hidden="true">${'<i></i>'.repeat(Math.min(n, 3))}</span><span>숲별 <b>${n.toLocaleString()}명</b>이 같이 기다려요</span></p>` : '';
-  const goLab = id => goHas(id) ? wi('check') + '갈 거예요' : wi('go') + '갈 거예요';
+  // 가는 일정 / 보는 일정: TV·라디오 방송일(녹화분 포함)과 온라인 공연은 '볼 거예요'·시청, 녹화·방청·공개방송은 가는 일정
+  const isWatch = e => !!e && (/녹화분/.test(e.title || '') || (/TV|라디오/.test(e.category || '') && !/녹화|방청|공개\s*방송|사녹/.test(e.title || '')) || /온라인|온택트|랜선|생중계/.test(e.title || ''));
+  const goWord = id => isWatch(data.byId.get(id)) ? '볼 거예요' : '갈 거예요';
+  const goLab = id => (goHas(id) ? wi('check') : wi('go')) + goWord(id);
   const WAIT_ON = () => true;  // 시험할 땐 () => isAdmin()으로 관리자 기기에만
   const goHas = id => box.s.includes('go:' + id);
   const goIds = () => box.s.filter(x => x.startsWith('go:')).map(x => x.slice(3));
@@ -4668,7 +4672,7 @@
   document.addEventListener('click', ev => { if (ev.target.closest('.sp-fold > summary .help, .sp-fold > summary .help-pop')) ev.preventDefault(); }, true);
   // 노래하는 일정에만 셋리 예측 (뮤지컬·사인회·전시·팝업 같은 건 빼요)
   const SP_NO = /사인회|팬싸|영통|전시|팝업|시사회|인터뷰|기자간담회|쇼케이스 ?취재|라이브 ?방송|브이앱|V ?LIVE|위버스|굿즈|생일 ?카페/i;
-  const spable = e => goable(e) && !/뮤지컬/.test(e.category || '') && !SP_NO.test(e.title || '');
+  const spable = e => goable(e) && !/뮤지컬/.test(e.category || '') && !SP_NO.test(e.title || '') && !/녹화분/.test(e.title || '');   // 녹화분 방송은 이미 부른 곡이라 예측 안 해요
   function spBlock0(e) {
     if (!WAIT_ON() || !SP_ON() || !spable(e)) return '';
     const mine = spGet(e.id), real = spReal(e), locked = spLocked(e);
@@ -4733,7 +4737,7 @@
     if (done) {
       const sc = myScore(done), x = `<button type="button" class="wh-x" data-whx="${esc(done.id)}" aria-label="지우기">×</button>`;
       const body = sc ? `<a class="tk-btn" href="#/e/${encodeURIComponent(done.id)}?sp=1">셋리 예측 <b>${sc.score}점</b></a>` : SP_ON() && spGet(done.id).length ? '<span class="tk-n">셋리가 올라오면 점수가 나와요</span>' : '';
-      return `<section class="wait-home open">${x}${tkCard(done, `${tkHead(done)}<div class="tk-foot">${boxHas('w', done.id) ? '<span class="tk-n">직관 기록했어요</span>' : `<button type="button" class="tk-btn" data-box="w" data-id="${esc(done.id)}" data-label="다녀왔어요" data-ic="">다녀왔어요</button>`}${body}</div>`)}</section>`;
+      return `<section class="wait-home open">${x}${tkCard(done, `${tkHead(done)}<div class="tk-foot">${(() => { const k = isWatch(done) ? 'v' : 'w', lab = k === 'v' ? '봤어요' : '다녀왔어요'; return boxHas(k, done.id) ? `<span class="tk-n">${k === 'v' ? '시청' : '직관'} 기록했어요</span>` : `<button type="button" class="tk-btn" data-box="${k}" data-id="${esc(done.id)}" data-label="${lab}" data-ic="">${lab}</button>`; })()}${body}</div>`)}</section>`;
     }
     // 갈 거예요가 아니어도(못 갔어요 포함) 셋리 예측을 한 공연은 끝나고 다음 날 밤까지 점수 카드로 남아요
     const spDone = SP_ON() ? [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && !r.hid[e.id] && (over(e) || evEnded(e)) && Date.now() < dayEnd(e) + 864e5 && spGet(e.id).length).sort((a, b) => b.date.localeCompare(a.date))[0] : null;
@@ -4765,7 +4769,7 @@
     const past = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))].map(id => data.byId.get(id)).filter(e => e && spLocked(e) && spReal(e).length).sort((a, b) => b.date.localeCompare(a.date));
     const card = e => { const n = goN(e.id); return `<article class="wait-card">${tkCard(e, `${tkHead(e)}<button type="button" class="go-mini" data-go="${esc(e.id)}" data-mini="1" aria-pressed="true" aria-label="갈 거예요 취소">${wi('check')}</button>
       ${SP_ON() && spable(e) ? `<a class="tk-line" href="#/e/${encodeURIComponent(e.id)}?sp=1">${wi('target')}셋리 예측 <b>${spGet(e.id).length}곡</b>${spCnt(e.id) >= 2 ? `<small class="tk-spn2">${spCnt(e.id).toLocaleString()}명 참여</small>` : ''}<span class="tk-more">›</span></a>` : ''}
-      <button type="button" class="tk-line rd-open" data-id="${esc(e.id)}">${wi('bag')}준비물 <b>${rdDone(e.id).length}/${rdItems(e.id).length}</b>${rdBar(e.id)}<span class="tk-more">›</span></button>
+      ${isWatch(e) ? '' : `<button type="button" class="tk-line rd-open" data-id="${esc(e.id)}">${wi('bag')}준비물 <b>${rdDone(e.id).length}/${rdItems(e.id).length}</b>${rdBar(e.id)}<span class="tk-more">›</span></button>`}
       ${goTogether(n)}`)}</article>`; };
     let lastM = '';
     const row = e => { const m = e.date.slice(0, 7), h = m !== lastM ? `<h3 class="wm-h">${+m.slice(0, 4)}년 ${+m.slice(5)}월</h3>` : ''; lastM = m; const n = goN(e.id);
@@ -4870,14 +4874,14 @@
     const t = todayIso(), evs = goIds().map(id => data.byId.get(id)).filter(Boolean), r = rd();
     const open = html => { const x = waitSheet(html); x.querySelector('.wt-sheet').classList.add('wt-pop'); return x; };
     // 시작 시간 2시간 뒤부터 '다녀오셨어요?' (시간이 없으면 다음 날부터)
-    const today = evs.find(e => e.date === t && !over(e) && r.shown[e.id] !== t);
+    const today = evs.find(e => !isWatch(e) && e.date === t && !over(e) && r.shown[e.id] !== t);
     if (today) {
       const x = open(popTodayHtml(today));
       r.shown[today.id] = t; boxWrite(RD_KEY, r);
       x.querySelector('.wt-ok').onclick = () => { x.hidden = true; };
       return;
     }
-    const past = evs.filter(e => over(e) && !boxHas('w', e.id) && !waitSkip.has(e.id)).sort((a, b) => b.date.localeCompare(a.date))[0];
+    const past = evs.filter(e => !isWatch(e) && over(e) && !boxHas('w', e.id) && !waitSkip.has(e.id)).sort((a, b) => b.date.localeCompare(a.date))[0];
     if (!past) {
       // 셋리가 나중에 올라오면 점수 알림 (한 번만, 2주 안 일정)
       const ids = [...new Set(box.s.filter(x => x.startsWith('sp:')).map(x => x.slice(3, x.indexOf(':', 3))))];

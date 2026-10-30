@@ -96,6 +96,7 @@
     '📝 메모': ['📝 Memo', '📝 メモ'], '📝 메모 칸 켜기': ['📝 Show memo', '📝 メモを表示'], '메모 칸 끄기': ['Hide memo', 'メモを隠す'], '다음 공연에도 이 메모 쓰기': ['Use this memo for next shows', 'このメモを次の公演にも使う'], '내 메모': ['My memos', 'マイメモ'],
     '길찾기': ['Directions', '道案内'], '네이버 지도': ['Naver Map', 'NAVERマップ'], '네이버 지도에서 찾기': ['Find on Naver Map', 'NAVERマップで探す'], '이 일정 검색': ['Search this', 'この予定を検索'], '┄ 갈 길': ['┄ Path ahead', '┄ この先'],
     '📍 장소 공개됨': ['📍 Public venue', '📍 公開会場'], '🔒 장소 비공개': ['🔒 Venue undisclosed', '🔒 会場非公開'], '💻 온라인': ['💻 Online', '💻 オンライン'],
+    '볼 거예요': ['Will watch', '見ます'], '봤어요': ['Watched', '見ました'],
     '아니에요': ['Not right', '違います'], '셋리 알려주기 ›': ['Share the setlist ›', 'セトリを教える ›'], '오늘': ['Today', '今日'], '어제': ['Yesterday', '昨日'],
     '갈 거예요 취소': ['Cancel going', '行くを取り消す'], '기다리는 일정 전체': ['All waiting', 'すべて見る'], '접기': ['Collapse', '閉じる'], '지우기': ['Remove', '消す'],
   });
