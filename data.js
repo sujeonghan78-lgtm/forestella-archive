@@ -365,7 +365,7 @@
         fanLog.push({ k: same ? 'join' : 'ev', id: same ? same.id : id, at: tsMs(r.time), by: r.by, title: r.title, songs: r.song ? r.song.split(/\s+\/\s+/).filter(Boolean).length : 0 });
         if (r.song) rows.push({ type: '셋리스트', title: `[ID ${same ? same.id : id}]`, song: r.song, by: r.by, time: r.time, newEv: true });
       });
-      const latest = new Map();
+      const latest = new Map(), vers = new Map();
       // 새 일정과 같이 온 셋리는 맨 뒤에 붙어 있어서, 올린 시각 순서로 다시 놓아요 (안 그러면 나중에 고친 셋리를 덮어써요)
       rows.filter(r => r.type === '셋리스트').map((r, i) => [r, i]).sort((a, b) => (tsMs(a[0].time) || 0) - (tsMs(b[0].time) || 0) || a[1] - b[1]).map(x => x[0]).forEach(r => {
         const id = idOf(r);
@@ -373,6 +373,10 @@
         if (id && songs.length) {
           if (!r.newEv && !id.startsWith('T-')) fanLog.push({ k: latest.has(id) ? 'slfix' : 'sl', id, at: tsMs(r.time), by: r.by, ver: slVer(songs), songs: songs.length });
           latest.set(id, { songs, by: r.by, edits: ((latest.get(id) || {}).edits || 0) + 1, fromEv: !!r.newEv });
+          // 사람마다 다른 판: 한 사람은 마지막에 보낸 판만 남겨요
+          if (!vers.has(id)) vers.set(id, new Map());
+          const vk = r.by || ('?' + vers.get(id).size);
+          vers.get(id).delete(vk); vers.get(id).set(vk, { songs, by: r.by, fromEv: !!r.newEv });
         }
       });
       rows.filter(r => (r.type === '셋리확인' || r.type === '일정확인') && r.by).forEach(r => { const id = idOf(r); if (id && !id.startsWith('T-')) fanLog.push({ k: r.type === '셋리확인' ? 'slok' : 'evok', id, at: tsMs(r.time), by: r.by, ver: r.ver }); });
@@ -386,16 +390,28 @@
         }
         const e = events.find(x => x.id === id);
         if (!e || e.songSource === '참고') return;
+        // 판마다 '맞아요' 수를 세서, 2명 넘은 판 중 가장 많은 판(같으면 나중 판), 없으면 마지막 판을 보여줘요
+        const okWho = (fv, ver) => {
+          const w = new Set(rows.filter(r => r.type === '셋리확인' && idOf(r) === id && r.ver === ver && r.by && r.by !== fv.by).map(r => r.by));
+          // 새 일정과 같이 올라온 셋리는 그 일정을 '맞아요'한 사람도 같이 확인한 걸로 쳐요 (등록 화면에서 곡까지 같이 봤어요)
+          (fv.also || []).forEach(b => { if (b && b !== fv.by) w.add(b); });   // 같은 판을 따로 보낸 사람도 확인으로 쳐요
+          if (fv.fromEv && e.fanEvent) rows.filter(r => r.type === '일정확인' && idOf(r) === id && r.by && r.by !== fv.by).forEach(r => w.add(r.by));
+          return w;
+        };
+        const alts = [];
+        [...(vers.get(id) || new Map()).values()].forEach(fv => { const v = slVer(fv.songs); const a = alts.find(x => x.ver === v); if (a) alts.splice(alts.indexOf(a), 1); alts.push({ ...fv, ver: v, also: [...((a && a.also) || []), ...(a ? [a.by] : [])] }); });
+        alts.forEach(a => { a.n = okWho(a, a.ver).size; });
+        const best = alts.filter(a => a.n >= 2).sort((a, b) => b.n - a.n || alts.indexOf(b) - alts.indexOf(a))[0];
+        if (best) f = { ...f, songs: best.songs, by: best.by, fromEv: best.fromEv, also: best.also };
+        else if (alts.length) f = { ...f, also: alts[alts.length - 1].also };
         const ver = slVer(f.songs);
-        const who = new Set(rows.filter(r => r.type === '셋리확인' && idOf(r) === id && r.ver === ver && r.by && r.by !== f.by).map(r => r.by));
-        // 새 일정과 같이 올라온 셋리는 그 일정을 '맞아요'한 사람도 같이 확인한 걸로 쳐요 (등록 화면에서 곡까지 같이 봤어요)
-        if (f.fromEv && e.fanEvent) rows.filter(r => r.type === '일정확인' && idOf(r) === id && r.by && r.by !== f.by).forEach(r => who.add(r.by));
+        const who = okWho(f, ver);
         // 원래 곡 목록이 있어도 최근 판으로 통째로 바꿔요 (틀린 곡을 고칠 수 있게). 원래 목록은 시트 제보 줄을 지우면 돌아와요
         // 예전 셋리 알려주기가 곡 앞 숫자를 번호로 알고 지웠던 것 되돌리기 (버전 번호는 원래 글자 그대로)
         e.songs = f.songs.map(slFix); e.songKeys = [...new Set(e.songs.map(songKey).filter(Boolean))];
         e.songSource = '팬 기록';
         e.fanSrc = e.fanSrc || { note: '' };
-        e.fanSet = { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits, src: e.id };
+        e.fanSet = { ver, songs: f.songs, by: f.by, n: who.size, ok: who.size >= 2, edits: f.edits, src: e.id, alts: alts.length > 1 ? alts.slice().reverse().map(a => ({ ver: a.ver, songs: a.songs, by: a.by, n: a.n })) : null };
       });
       // 같은 공연 여러 날(같은 제목·장소, 3일 안): 하루치만 올라와도 곡이 없는 다른 날에 같이 붙고, 확인도 같이 세요
       const sp = x => (x || '').replace(/\s+/g, '');

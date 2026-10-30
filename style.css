@@ -1035,6 +1035,11 @@ a.ev-day.went { background: #FFF1F5; color: #B23A5E; }
 .sl-state.ok { background: var(--heef7e6); }
 .sl-state.ok .src-badge { color: var(--h2f5b12); background: var(--hd7edc2); }
 .sl-state-msg { flex: 1 1 100%; min-width: 0; color: var(--ink-2); }
+.sl-alts { flex: 1 1 100%; } .sl-alts > summary { cursor: pointer; font-size: calc(12.5px * var(--fs)); font-weight: 600; color: var(--ink-2); }
+.sl-gate { margin: 6px 0; font-size: calc(12px * var(--fs)); color: var(--muted); }
+.sl-alt { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.7); }
+.sl-alt-h { margin: 0 0 4px; font-size: calc(12px * var(--fs)); color: var(--muted); }
+.sl-alt ol { margin: 0 0 6px; padding-left: 22px; font-size: calc(13px * var(--fs)); }
 .sl-state .sl-ok { flex: none; margin: 0; }
 .day-song-link b { color: var(--green); }
 .day-yt { flex: none; display: flex; align-items: center; min-height: 44px; }

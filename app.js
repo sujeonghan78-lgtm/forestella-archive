@@ -5343,25 +5343,39 @@
       : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.'
       : "팬이 올린 셋리예요. 맞으면 '맞아요'를, 틀린 곳이 있으면 아래 '셋리 고치기'를 눌러 주세요.";
     if (f.ok) return okMini('확정', msg);
-    return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
+    // 사람마다 다르게 올린 판: 지금 보이는 판 말고 다른 판도 펼쳐 보고 '맞아요'를 눌러요
+    const others = (f.alts || []).filter(a => a.ver !== f.ver);
+    const altBtn = a => (window.CONFIG.form || {}).fields && a.by !== myUid() && !slOked((f.src || e.id) + ':' + a.ver) ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(a.ver)}">이 판이 맞아요</button>` : '';
+    const alt = others.length ? `<details class="sl-alts"><summary>다르게 올라온 판 ${others.length}개 더 있어요</summary>${others.map((a, i) => `<div class="sl-alt"><p class="sl-alt-h">판 ${i + 2} · ${a.songs.length}곡 · 확인 ${a.n}/2${a.by === myUid() ? ' · 내가 올린 판' : ''}</p><ol>${a.songs.map(t => `<li>${esc(t)}</li>`).join('')}</ol>${altBtn(a)}</div>`).join('')}</details>` : '';
+    return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}${others.length ? ' 지금 보이는 건 판 1이에요.' : ''}</span>${btn}${alt}</div>`;
   }
   // 하루 두 번 공연은 제목 끝 (낮공)·(밤공)으로 나눠 둬요
   const showTag = e => { const m = e.title.match(/\((낮공|밤공)\)$/); return m ? ' ' + m[1] : ''; };
+  // 공연 날 셋리: 시작하면 적을 수 있고(이 폰에 임시저장), 끝나고 2시간 뒤부터 등록돼요
+  const SL_DRAFT = 'sb-sl-draft';
+  const slEndAt = e => { const st = startAt(e); if (st == null) return null; const m = String(e.end || '').match(/(\d{1,2}):(\d{2})/); let en = m ? Date.parse(`${e.date}T${m[1].padStart(2, '0')}:${m[2]}:00+09:00`) : st + 3 * 36e5; if (en < st) en += 864e5; return en; };
+  const slGate = e => { const st = startAt(e), en = slEndAt(e), now = Date.now(); if (st == null || now >= en + 2 * 36e5) return 'open'; return now < st ? 'before' : 'draft'; };
+  const slOpenAt = e => { const d = new Date(slEndAt(e) + 2 * 36e5 + 9 * 36e5); return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`; };
+  const slDrafts = () => { try { return JSON.parse(localStorage.getItem(SL_DRAFT) || '{}'); } catch (err) { return {}; } };
+  const slDraftSet = (id, t) => { try { const d = slDrafts(); if (t) d[id] = t; else delete d[id]; localStorage.setItem(SL_DRAFT, JSON.stringify(d)); } catch (err) { /* 저장 못 해도 괜찮아요 */ } };
   function slForm(evs) {
     if (!evs.length || !(window.CONFIG.form || {}).fields) return '';
+    if (evs.length === 1 && slGate(evs[0]) === 'before') return '';
     // 곡이 이미 있으면 그 목록을 채워 두고 '셋리 고치기'로 보여줘요
     const one = evs.find(e => e.songs.length && e.songSource !== '참고') || evs[0];
     const fs = one && (one.fanSet || (one.songs.length && one.songSource !== '참고' ? { songs: one.songs } : null));
+    const gate = slGate(one);
     const opt = e => `${e.date.slice(5).replace('-', '.')}${showTag(e)}${e.place ? ' ' + e.place : ''}`;
     return `
       <details class="sl-add">
         <summary>${fs ? '✏️ 셋리 고치기' : '📝 셋리 알려주기'}</summary>
         <div class="sl-box">
           ${evs.length > 1 ? `<select class="sl-ev">${evs.map(e => `<option value="${esc(e.id)}"${e === one ? ' selected' : ''}>${esc(opt(e))}</option>`).join('')}</select>` : `<input type="hidden" class="sl-ev" value="${esc(evs[0].id)}">`}
-          <textarea class="sl-in" rows="8" placeholder="한 줄에 한 곡씩 붙여넣어 주세요. 보랩·넬판 같은 줄임말도 알아들어요.&#10;&#10;예)&#10;Save our lives&#10;스카페&#10;넬판&#10;Inner Universe&#10;아리랑">${fs ? esc(fs.songs.join('\n')) : ''}</textarea>
+          <textarea class="sl-in" rows="8" placeholder="한 줄에 한 곡씩 붙여넣어 주세요. 보랩·넬판 같은 줄임말도 알아들어요.&#10;&#10;예)&#10;Save our lives&#10;스카페&#10;넬판&#10;Inner Universe&#10;아리랑">${esc(slDrafts()[one.id] || (fs ? fs.songs.join('\n') : ''))}</textarea>
           <ol class="sl-pre"></ol>
           <p class="src-note sl-msg">✓는 사이트에 있는 곡, ?는 처음 보는 곡이에요. 보내면 '확인 필요'로 붙고, 다른 두 분이 맞다고 하면 확정돼요.${fs && fs.ver ? ' 고쳐서 보내면 확인은 처음부터 다시 받아요.' : ''} 사이트에 반영되기까지 5~10분쯤 걸려요.</p>
-          <button type="button" class="bpill sl-send" disabled>보내기</button>
+          ${gate === 'draft' ? `<p class="sl-gate">적은 건 이 폰에만 임시저장돼요. 공연 끝나고 2시간 뒤(${slOpenAt(one)})부터 등록할 수 있어요.</p>` : ''}
+          <button type="button" class="bpill sl-send" disabled${gate === 'draft' ? ' data-wait="1"' : ''}>${gate === 'draft' ? `${slOpenAt(one)}부터 등록돼요` : fs ? '보내기' : '셋리 등록'}</button>
         </div>
       </details>`;
   }
@@ -5379,7 +5393,10 @@
     const box = ev.target.closest('.sl-box');
     const list = slParse(ev.target.value);
     box.querySelector('.sl-pre').innerHTML = list.map(n => { const m = slMatch(n); return `<li class="${m ? 'ok' : 'new'}">${m ? '✓' : '?'} ${esc(m || n)}</li>`; }).join('');
-    box.querySelector('.sl-send').disabled = !list.length;
+    const sb = box.querySelector('.sl-send');
+    sb.disabled = !list.length || !!sb.dataset.wait;
+    const ev2 = box.querySelector('.sl-ev');
+    if (ev2 && ev.isTrusted) slDraftSet(ev2.value, ev.target.value.trim());
   });
   document.addEventListener('click', ev => {
     const b = ev.target.closest('.sl-send');
@@ -5387,12 +5404,12 @@
     const box = b.closest('.sl-box');
     const id = box.querySelector('.sl-ev').value, e = data.events.find(x => x.id === id);
     const songs = [...new Set(slParse(box.querySelector('.sl-in').value).map(n => slMatch(n) || n))];
-    if (!e || !songs.length) return;
+    if (!e || !songs.length || slGate(e) === 'draft' || slGate(e) === 'before') return;
     const f = window.CONFIG.form;
     const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리스트\n날짜: ${e.date}\n일정: [ID ${e.id}] ${e.title}\n곡: ${songs.join(' / ')}\n누가: ${myUid()}` });
     b.disabled = true; b.textContent = '보내는 중…';
     fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
-      .then(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${songs.length}곡을 보냈어요. 고마워요! 5~10분쯤 뒤 새로 열면 사이트에 붙어 있어요.`; })
+      .then(() => { slDraftSet(id, ''); b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${songs.length}곡을 보냈어요. 고마워요! 5~10분쯤 뒤 새로 열면 사이트에 붙어 있어요.`; })
       .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; box.querySelector('.sl-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
   });
 
@@ -5468,7 +5485,7 @@
     const body = new URLSearchParams({ [f.fields.content]: `종류: 셋리스트\n일정: [ID T-${t.id}] ${t.name}\n곡: ${items.join(' / ')}\n누가: ${myUid()}` });
     b.disabled = true; b.textContent = '보내는 중…';
     fetch(f.url.replace(/viewform.*$/, 'formResponse'), { method: 'POST', mode: 'no-cors', body })
-      .then(() => { b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${list.filter(x => x.name).length}곡을 보냈어요. 고마워요! 5~10분쯤 뒤 새로 열면 바뀌어 있어요.`; })
+      .then(() => { slDraftSet(id, ''); b.textContent = '보냈어요 ✓'; box.querySelector('.sl-msg').textContent = `${list.filter(x => x.name).length}곡을 보냈어요. 고마워요! 5~10분쯤 뒤 새로 열면 바뀌어 있어요.`; })
       .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; box.querySelector('.sl-msg').textContent = '보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'; });
   });
 
@@ -5648,7 +5665,11 @@
     const btn = !f.ok && !mine && !done ? `<button type="button" class="bpill ev-ok" data-id="${esc(e.id)}">맞아요</button>` : '';
     const msg = f.ok ? `팬 ${f.n}명이 확인한 일정이에요.` : mine ? '내가 등록한 일정이에요. 다른 두 분이 맞다고 하면 확정돼요.' : done ? '확인해 줘서 고마워요! 5~10분쯤 뒤 반영돼요.' : "팬이 등록한 일정이에요. 맞으면 '맞아요'를 눌러 주세요.";
     if (f.ok) return okMini('확정', msg);
-    return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}</span>${btn}</div>`;
+    // 사람마다 다르게 올린 판: 지금 보이는 판 말고 다른 판도 펼쳐 보고 '맞아요'를 눌러요
+    const others = (f.alts || []).filter(a => a.ver !== f.ver);
+    const altBtn = a => (window.CONFIG.form || {}).fields && a.by !== myUid() && !slOked((f.src || e.id) + ':' + a.ver) ? `<button type="button" class="bpill sl-ok" data-id="${esc(f.src || e.id)}" data-ver="${esc(a.ver)}">이 판이 맞아요</button>` : '';
+    const alt = others.length ? `<details class="sl-alts"><summary>다르게 올라온 판 ${others.length}개 더 있어요</summary>${others.map((a, i) => `<div class="sl-alt"><p class="sl-alt-h">판 ${i + 2} · ${a.songs.length}곡 · 확인 ${a.n}/2${a.by === myUid() ? ' · 내가 올린 판' : ''}</p><ol>${a.songs.map(t => `<li>${esc(t)}</li>`).join('')}</ol>${altBtn(a)}</div>`).join('')}</details>` : '';
+    return `<div class="sl-state${f.ok ? ' ok' : ''}"><span class="src-badge">${f.ok ? '확정' : `확인 필요 · ${f.n}/2`}</span><span class="sl-state-msg">${msg}${others.length ? ' 지금 보이는 건 판 1이에요.' : ''}</span>${btn}${alt}</div>`;
   }
   const evPending = e => e.fanEvent && !e.fanEvent.ok ? ' <span class="new-tag">확인 필요</span>' : '';
   document.addEventListener('click', ev => {
