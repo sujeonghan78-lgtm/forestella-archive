@@ -5229,6 +5229,9 @@
       ${TS_MAPS.map(one).join('')}
       ${pp.length > 1 ? `<div class="tsq-leg">${pp.map(([, ci, nm]) => `<span><i style="background:${MT_COL[ci % 6]}"></i>${esc(nm)}</span>`).join('')}</div>` : ''}<button type="button" class="mt-sub-btn tsq-save"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>사분면 이미지 저장</button></div>`;
   }
+  // 저장 이미지 색은 지금 고른 테마 색으로
+  const mtTheme = () => { const cs = getComputedStyle(document.documentElement), v = (k, d) => (cs.getPropertyValue(k) || '').trim() || d;
+    return { a: v('--green-dd', '#1F5E3E'), b: v('--green', '#1C7A5E'), c: v('--green-2', '#1FA87A'), g1: v('--g1', '#C6EC6B'), g2: v('--g2', '#62D3A1'), g3: v('--g3', '#72BCF3'), t1: v('--tint-1', '#F1F6F2'), t2: v('--heef6fe', '#EEF6FE'), ln: v('--tint-2', '#C9D9CE') }; };
   // 이미지 저장 (휴대폰 갤러리, 아이폰은 공유 창)
   function mtSave(cv, name) {
     cv.toBlob(b => { if (!b) return; const file = new File([b], name, { type: 'image/png' }); const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -5240,8 +5243,8 @@
     if (!pp.length) return;
     const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const c = cv.getContext('2d'), SANS = CARD_SANS;
     try { await Promise.race([document.fonts.load('800 60px "Nanum Myeongjo"'), new Promise(r => setTimeout(r, 1500))]); } catch (err) { /* 기본 글씨 */ }
-    const g = c.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, '#1F5E3E'); g.addColorStop(0.6, '#1C7A5E'); g.addColorStop(1, '#1FA87A'); c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
-    const st = c.createLinearGradient(0, 0, 1080, 0); st.addColorStop(0, '#C6EC6B'); st.addColorStop(0.5, '#62D3A1'); st.addColorStop(1, '#72BCF3'); c.fillStyle = st; c.fillRect(0, 0, 1080, 14);
+    const g = c.createLinearGradient(0, 0, 1080, 1350); const TH = mtTheme(); g.addColorStop(0, TH.a); g.addColorStop(0.6, TH.b); g.addColorStop(1, TH.c); c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
+    const st = c.createLinearGradient(0, 0, 1080, 0); st.addColorStop(0, TH.g1); st.addColorStop(0.5, TH.g2); st.addColorStop(1, TH.g3); c.fillStyle = st; c.fillRect(0, 0, 1080, 14);
     c.textAlign = 'center'; c.fillStyle = '#fff';
     const [ax, ay] = TS_MAPS[m], X = TS_AX[ax], Y = TS_AX[ay], solo = pp.length === 1;
     c.font = `600 34px ${SANS}`; c.globalAlpha = .8; c.fillText(solo ? '나의 숲별 취향 지도' : `${pp.length}명의 숲별 취향 지도`, 540, 92); c.globalAlpha = 1;
@@ -5250,8 +5253,8 @@
     // 판
     const B = 180, Sz = 720, top = 360, mid = B + Sz / 2, xy = (v, o) => o + (10 + v * 0.8) / 100 * Sz;
     c.fillStyle = 'rgba(255,255,255,.96)'; c.beginPath(); c.roundRect(B - 40, top - 70, Sz + 80, Sz + 140, 40); c.fill();
-    [[0, 0, '#F1F6F2'], [1, 0, '#EEF6FE'], [0, 1, '#EEF6FE'], [1, 1, '#F1F6F2']].forEach(([i, j, col]) => { c.fillStyle = col; c.fillRect(B + i * Sz / 2, top + j * Sz / 2, Sz / 2, Sz / 2); });
-    c.strokeStyle = '#C9D9CE'; c.lineWidth = 3; c.setLineDash([10, 10]); c.beginPath(); c.moveTo(B, top + Sz / 2); c.lineTo(B + Sz, top + Sz / 2); c.moveTo(mid, top); c.lineTo(mid, top + Sz); c.stroke(); c.setLineDash([]);
+    [[0, 0, TH.t1], [1, 0, TH.t2], [0, 1, TH.t2], [1, 1, TH.t1]].forEach(([i, j, col]) => { c.fillStyle = col; c.fillRect(B + i * Sz / 2, top + j * Sz / 2, Sz / 2, Sz / 2); });
+    c.strokeStyle = TH.ln; c.lineWidth = 3; c.setLineDash([10, 10]); c.beginPath(); c.moveTo(B, top + Sz / 2); c.lineTo(B + Sz, top + Sz / 2); c.moveTo(mid, top); c.lineTo(mid, top + Sz); c.stroke(); c.setLineDash([]);
     c.fillStyle = '#1B2B22'; c.font = `700 30px ${SANS}`;
     c.textAlign = 'center'; c.fillText(Y[0], mid, top - 22); c.fillText(Y[1], mid, top + Sz + 48);
     c.textAlign = 'center'; [[X[0], B - 26, -1], [X[1], B + Sz + 26, 1]].forEach(([tx, x, r]) => { c.save(); c.translate(x, top + Sz / 2); c.rotate(r * Math.PI / 2); c.fillText(tx, 0, 10); c.restore(); });
@@ -5510,9 +5513,9 @@
     const R = mtCalc(mtList), group = mtList.length > 2, T = mtHead(mtList, R.pct);
     const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const c = cv.getContext('2d');
     try { await Promise.race([document.fonts.load('800 60px "Nanum Myeongjo"'), new Promise(r => setTimeout(r, 1500))]); } catch (err) { /* 기본 글씨 */ }
-    const g = c.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, '#1F5E3E'); g.addColorStop(0.6, '#1C7A5E'); g.addColorStop(1, '#1FA87A');
+    const g = c.createLinearGradient(0, 0, 1080, 1350); const TH = mtTheme(); g.addColorStop(0, TH.a); g.addColorStop(0.6, TH.b); g.addColorStop(1, TH.c);
     c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
-    const st = c.createLinearGradient(0, 0, 1080, 0); st.addColorStop(0, '#C6EC6B'); st.addColorStop(0.5, '#62D3A1'); st.addColorStop(1, '#72BCF3'); c.fillStyle = st; c.fillRect(0, 0, 1080, 14);
+    const st = c.createLinearGradient(0, 0, 1080, 0); st.addColorStop(0, TH.g1); st.addColorStop(0.5, TH.g2); st.addColorStop(1, TH.g3); c.fillStyle = st; c.fillRect(0, 0, 1080, 14);
     c.fillStyle = 'rgba(255,255,255,.08)'; [[160, 220, 260], [930, 1100, 320], [980, 160, 140]].forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); });
     const SANS = CARD_SANS; c.textAlign = 'center'; c.fillStyle = '#fff';
     const n = mtList.length, r = n > 4 ? 52 : 64, gap = r * 2 + (n > 2 ? 30 : 110), x0 = 540 - (n - 1) * gap / 2;
