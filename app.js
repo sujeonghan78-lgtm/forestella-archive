@@ -5187,7 +5187,7 @@
     return `<div class="mt-hero ts-hero"><i class="mt-stripe"></i>
         <p class="mt-lab">나의 숲별 취향 유형</p>
         <div class="ts-code" aria-label="유형 코드">${X.map((x, k) => `<span class="${x.b ? 'r' : 'l'}"><b>${TS_EN[k][x.b]}</b><small>${TS_AX[k][x.b].replace(/파$/, '')}</small></span>`).join('')}</div>
-        <p class="ts-read">${TS_READ(TS_TYPES.indexOf(T))}</p><p class="mt-type">${T[1]}</p>
+        <p class="mt-type">${T[1]}</p>
         <p class="ts-title">${S[1]}</p>
         <p class="mt-say">${T[2]}</p>
       </div>

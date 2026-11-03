@@ -2142,3 +2142,4 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .ts-read + .mt-type { margin-top: 2px; font-size: 17px; opacity: .92; }
 .ts-mini { display: grid; gap: 1px; }
 .ts-mini small { font-size: 12px; font-weight: 700; letter-spacing: 0; color: var(--ink); }
+.ts-mini small { font-size: 10.5px; font-weight: 500; color: var(--muted); opacity: .8; }
