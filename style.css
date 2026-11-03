@@ -1953,3 +1953,7 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .dy-mem-s { margin-top: 10px; }
 .dy-mem-s h3 { margin: 0 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
 .dy-mem .more-link { display: inline-block; margin: 10px 12px 0 0; font-size: 13px; color: var(--green-d, #245c31); font-weight: 600; text-decoration: none; }
+.anv-got.gold { background: linear-gradient(135deg, #f7e08a, #e8b94a); color: #4a3510; box-shadow: 0 0 0 2px #fff6cf, 0 6px 22px rgba(232,185,74,.55); }
+.anv-got.gold .anv-gt small { color: #6b4e14; }
+.anv-got.gold .anv-gic { background: #fff; }
+.anv-got.gold a { color: #6b4e14; }

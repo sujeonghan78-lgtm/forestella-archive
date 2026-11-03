@@ -7419,7 +7419,7 @@
     if (sc) { const nx = nextOf(sc.slice(5)), n = +nx.slice(0, 4) - +sc.slice(0, 4); mine.push([sc, row('🌱', '입덕한 날', `${dot(sc)} · D+${ddayOf(card.since)}`, n > 0 ? `<span class="dy-nx">${n}주년 ${dd(nx)}</span>` : '')]); }
     const { first } = boxStats();
     if (first) mine.push([first.date, row('🎫', '첫 직관', `${dot(first.date)} · <a href="#/e/${encodeURIComponent(first.id)}">${esc(first.title)}</a>`)]);
-    Object.entries(st.days || {}).forEach(([d, x]) => mine.push([d, row(x.ic, `${esc(x.name)} 함께함`, `${dot(d)}${(() => { const k = Object.keys(st.bdg || {}).find(k => st.bdg[k].d === d); return k ? ` · 뱃지 ${anvRank(k) ? anvRank(k) + '번째 수집자' : '받음'}` : ''; })()}`)]));
+    Object.entries(st.days || {}).forEach(([d, x]) => mine.push([d, row(x.ic, `${esc(x.name)} 함께함`, `${dot(d)}${(() => { const k = Object.keys(st.bdg || {}).find(k => st.bdg[k].d === d); return k ? ` · ${st.bdg[k].gold ? '금빛 뱃지' : '뱃지'} ${anvRank(k) ? anvRank(k) + '번째 수집자' : '받음'}` : ''; })()}`)]));
     mine.sort((a, b) => b[0].localeCompare(a[0]));
     const group = ANNIVS.map(([md, since, label, ic]) => { const nx = nextOf(md), n = since ? +nx.slice(0, 4) - since : 0; return [nx, `<a class="dy-a" href="#/days?m=${md.replace('-', '')}">` + row(ic, since ? `${label === '데뷔' ? '포레스텔라 데뷔' : label} ${n}주년` : label, since ? `${since}.${md.replace('-', '.')}` : md.replace(/^0?(\d+)-0?(\d+)$/, '$1월 $2일'), dd(nx)) + '</a>']; }).sort((a, b) => a[0].localeCompare(b[0]));
     const fd = st.first ? ds(st.first, today) + 1 : 1;
@@ -7470,7 +7470,8 @@
     const name = a[1] ? `${a[2] === '데뷔' ? '포레스텔라 데뷔' : a[2]} ${n}주년` : a[2];
     return { d, ic: a[3], name, since: a[1] ? `${a[1]}.${a[0].replace('-', '.')}` : '', k: 'an-' + a[0].replace('-', '') + '-' + y };
   }
-  const annivBadges = () => Object.entries(anvStore().bdg || {}).map(([k, b]) => ({ k, ic: b.ic, name: b.name, how: '그날 숨은 숲 찾기', got: true }));
+  const annivGoal = a => +((a.name.match(/(\d+)주년/) || [])[1] || 5) || 5;
+  const annivBadges = () => Object.entries(anvStore().bdg || {}).map(([k, b]) => ({ k, ic: b.ic, name: b.gold ? `금빛 ${b.name}` : b.name, how: '그날 숨은 숲 찾기', got: true }));
   const LEAF = '<svg viewBox="0 0 24 24"><path d="M5 19C5 10 11 4 20 4c0 9-6 15-15 15z" fill="currentColor"/><path d="M5 19L14 10" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></svg>';
   const STAR = '<svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.9L22 9.3l-5.8 4.6 2 7.1L12 17l-6.2 4 2-7.1L2 9.3l7.4-.4z" fill="currentColor"/></svg>';
   const TREE = '<svg viewBox="0 0 48 56"><path d="M24 3L9 24h7L6 38h36L32 24h7z" fill="#3f8f4f" stroke="#245c31" stroke-width="2" stroke-linejoin="round"/><rect x="20" y="38" width="8" height="12" rx="2" fill="#8a5a36"/><circle cx="19" cy="22" r="1.6" fill="#ffe27a"/><circle cx="29" cy="30" r="1.6" fill="#ffe27a"/><circle cx="24" cy="13" r="1.6" fill="#ffe27a"/></svg>';
@@ -7512,7 +7513,7 @@
       <div class="anv-top">${num ? `<span class="anv-num">${num}<small>th</small></span>` : `<span class="anv-num anv-numic">${a.ic}</span>`}<span class="anv-tt"><small>${a.since ? esc(a.since) + ' → 오늘' : 'HAPPY DAY'}</small><b>${esc(a.name)}</b><em>${a.my ? '포레스텔라와 함께한 날을 축하해요' : num ? `숲별들과 함께 맞는 ${num}번째 오늘` : '숲별 모두 같이 축하해요'}</em></span></div>
       ${cheerBtn(a)}
       ${a.my ? '' : `<a class="anv-mem" href="#/days?m=${a.d.slice(5).replace('-', '')}">추억하러 가기 ›</a>`}
-      <div class="anv-foot"><span>화면 어딘가 숨은 숲을 찾아보세요</span><a href="#/days">함께한 기념일 ›</a></div>`;
+      <div class="anv-foot"><span>숨은 숲 ${annivGoal(a)}개를 찾아보세요</span><a href="#/days">함께한 기념일 ›</a></div>`;
     document.body.appendChild(b);
     requestAnimationFrame(() => b.classList.add('show'));
     const close = () => { b.classList.remove('show'); setTimeout(() => b.remove(), 400); };
@@ -7544,7 +7545,10 @@
     // 그날 처음 들어오면 축하 배너
     if (st.seen !== a.d) { annivBanner(a); const o = anvStore(); o.seen = a.d; anvSave(o); }
     // 숨은 숲: 가끔 나타났다가 몇 초 뒤 사라져요
+    // 그날 숲 목표 개수(주년 수, 생일·입덕은 5개)를 다 찾으면 금빛 뱃지가 되고 숲은 더 안 나와요
+    const goal = annivGoal(a), foundN = () => ((anvStore().found || {})[a.d] || 0);
     const pop = () => {
+      if (foundN() >= goal) return;
       if (document.hidden || !annivToday()) return next();
       const t = document.createElement('button');
       t.type = 'button'; t.className = 'anv-stk'; t.setAttribute('aria-label', '숨은 숲');
@@ -7558,27 +7562,32 @@
         anvBurst(r.left + r.width / 2, r.top + r.height / 2);
         t.remove();
         const o = anvStore(); o.bdg = o.bdg || {}; o.found = o.found || {};
-        o.found[a.d] = (o.found[a.d] || 0) + 1;
-        const first = !o.bdg[a.k];
+        o.found[a.d] = Math.min(goal, (o.found[a.d] || 0) + 1);
+        const first = !o.bdg[a.k], n = o.found[a.d];
         if (first) { o.bdg[a.k] = { ic: a.ic, name: a.name, d: a.d, n: anvFoundN(a.k) + 1 }; formPost(`종류: 기념\n기념: ${a.k}\n할일: 찾음\n누가: ${myUid()}`).catch(() => {}); }
+        if (n >= goal) o.bdg[a.k].gold = 1;
         anvSave(o);
-        got(first, o.found[a.d]);
+        got(first, n);
+        if (n >= goal) anvBurst(innerWidth / 2, innerHeight - 110, 24);
         next();
       };
     };
-    const next = () => setTimeout(pop, (anvStore().bdg || {})[a.k] ? 90e3 + Math.random() * 120e3 : 20e3 + Math.random() * 40e3);
+    { const o = anvStore(); if (foundN() >= goal && o.bdg && o.bdg[a.k] && !o.bdg[a.k].gold) { o.bdg[a.k].gold = 1; anvSave(o); } }
+    const next = () => setTimeout(pop, 25e3 + Math.random() * 40e3);
     const got = (first, n) => {
       const m = document.createElement('div');
-      m.className = 'anv-got'; m.setAttribute('role', 'status');
-      const rk = (anvStore().bdg || {})[a.k];
-      m.innerHTML = first
-        ? `<span class="anv-gic">${a.ic}</span><span class="anv-gt"><b>${esc(a.name)} 뱃지</b><small>${rk && rk.n ? `${rk.n}번째 수집자예요` : '숨은 숲을 찾았어요'}</small></span><a href="#/card">카드에 달기</a>`
-        : `<span class="anv-gt"><b>또 찾았어요</b><small>오늘 ${n}번째 숲</small></span>`;
+      const done = n >= goal, rk = (anvStore().bdg || {})[a.k];
+      m.className = 'anv-got' + (done ? ' gold' : ''); m.setAttribute('role', 'status');
+      m.innerHTML = done
+        ? `<span class="anv-gic">${a.ic}</span><span class="anv-gt"><b>숲 ${goal}개를 모두 찾았어요</b><small>금빛 ${esc(a.name)} 뱃지</small></span><a href="#/card">카드에 달기</a>`
+        : first
+        ? `<span class="anv-gic">${a.ic}</span><span class="anv-gt"><b>${esc(a.name)} 뱃지</b><small>${rk && rk.n ? `${rk.n}번째 수집자 · ` : ''}숲 ${n}/${goal}</small></span><a href="#/card">카드에 달기</a>`
+        : `<span class="anv-gt"><b>숲 ${n}/${goal}</b><small>${goal - n}개 더 찾으면 금빛 뱃지</small></span>`;
       document.body.appendChild(m);
       requestAnimationFrame(() => m.classList.add('show'));
       const close = () => { m.classList.remove('show'); setTimeout(() => m.remove(), 300); };
       m.querySelectorAll('a').forEach(el => el.addEventListener('click', close));
-      setTimeout(close, first ? 5000 : 1800);
+      setTimeout(close, first || done ? 5000 : 2200);
     };
     setTimeout(pop, 8e3 + Math.random() * 12e3);
   }
