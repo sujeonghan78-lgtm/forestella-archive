@@ -7562,6 +7562,15 @@
     const again = /[?&]anv=1/.test(location.hash);
     if (again) { annivBanner(a); setTimeout(() => got(false, goal, true), 1500); }
     else if (st.seen !== a.d) { annivBanner(a); const o = anvStore(); o.seen = a.d; anvSave(o); }
+    // 같이 축하하는 수: 그날은 1분마다 제보 시트만 다시 받아서 바로 바꿔요
+    const live = () => {
+      if (document.hidden || !annivToday() || !data) return;
+      window.DATA.fetchText(window.CONFIG.sheets.reports).then(t => {
+        data.anniv = window.DATA.annivOf(t);
+        const A = annivToday(); if (A) document.querySelectorAll('.anv-cheer').forEach(w => { w.outerHTML = cheerBtn(A); });
+      }).catch(() => {});
+    };
+    setTimeout(live, 5e3); setInterval(live, 60e3);
     // 숨은 숲: 가끔 나타났다가 몇 초 뒤 사라져요
     // 그날 숲 목표 개수(주년 수, 생일·입덕은 5개)를 다 찾으면 금빛 뱃지가 되고 숲은 더 안 나와요
     const goal = annivGoal(a), foundN = () => ((anvStore().found || {})[a.d] || 0);

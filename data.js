@@ -679,7 +679,7 @@
       buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '셋리예측' || !r.by) return; const id = line0(r, '일정'), at = tsMs(r.time), k = id + '|' + r.by; if (id && (!pl.has(k) || pl.get(k).at <= at)) pl.set(k, { id, by: r.by, at, keys: line0(r, '곡').split('|').filter(Boolean).slice(0, 60) }); });
       pl.forEach(p => { (predsAll[p.id] = predsAll[p.id] || []).push({ by: p.by, keys: p.keys }); });
       // 기념일 (종류: 기념 기념/할일 축하|찾음/누가): 축하한 사람 수, 숨은 숲 찾은 순서
-      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '기념' || !r.by || ['czuhn97c', 'sh98sede'].includes(r.by)) return; const k = line0(r, '기념'), w = line0(r, '할일'); if (!k) return; const a = annivAll[k] = annivAll[k] || { c: {}, f: {} }, at = tsMs(r.time), m = w === '찾음' ? a.f : a.c; if (!(r.by in m) || m[r.by] > at) m[r.by] = at; });
+      Object.assign(annivAll, annivOf(raw.reports));
       // 신고 3명 이상 → 자동 숨김 (관리자가 복구한 건 빼고). 숨겨진 글 수로 기기 글쓰기 막기
       const flagged = [];
       lyr.forEach(l => {
@@ -1237,6 +1237,12 @@
     return `${d.getUTCFullYear()}. ${d.getUTCMonth() + 1}. ${d.getUTCDate()} ${H < 12 ? '오전' : '오후'} ${H % 12 || 12}:${p2(d.getUTCMinutes())}:${p2(d.getUTCSeconds())}`;
   }
   // 시트 시간 글자 → 숫자(ms, 한국 시간)
+  // 기념일 축하·숲 찾기 수 (종류: 기념). 기념일엔 사이트가 1분마다 이것만 다시 받아 세요
+  function annivOf(text) {
+    const out = {};
+    buildReports(toObjects(text || ''), true).forEach(r => { if (r.type !== '기념' || !r.by || ['czuhn97c', 'sh98sede'].includes(r.by)) return; const k = line0(r, '기념'), w = line0(r, '할일'); if (!k) return; const a = out[k] = out[k] || { c: {}, f: {} }, at = tsMs(r.time), m = w === '찾음' ? a.f : a.c; if (!(r.by in m) || m[r.by] > at) m[r.by] = at; });
+    return out;
+  }
   function tsMs(t) {
     const m = String(fixTs(t) || '').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})\D+(오전|오후)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/);
     if (!m) return 0;
@@ -1250,5 +1256,5 @@
     const dels = rows.filter(r => r.type === '의견삭제').map(r => ({ id: line0(r, '대상'), by: r.by })).filter(d => d.id && d.by);
     return { ops, marks, dels };
   }
-  window.DATA = { load, rebuild: () => lastRaw && build(lastRaw), parseCSV, SONG_LANGS, normDate, songKey, setlistName, slVer, buildOpinions, fetchText };
+  window.DATA = { load, rebuild: () => lastRaw && build(lastRaw), parseCSV, SONG_LANGS, normDate, songKey, setlistName, slVer, buildOpinions, fetchText, annivOf };
 })();
