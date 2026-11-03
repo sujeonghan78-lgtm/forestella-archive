@@ -5278,7 +5278,16 @@
   const mtB64 = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const mtUn = s => { try { return JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))); } catch (err) { return null; } };
   const mtUid = () => (window.SB_UID || boxRead('sb-mt-uid') || (() => { const u = Math.random().toString(36).slice(2, 8); boxWrite('sb-mt-uid', u); return u; })()).slice(0, 6);
-  function mtMe() {
+  // 링크에 담을 항목 고르기: 끈 항목은 sb-mt-share.off 에 (기본은 다 담기)
+  const MT_SHARE = 'sb-mt-share';
+  const MT_ITEMS = [['t', '취향 테스트'], ['f', '최애곡'], ['w', '소취곡'], ['h', '♥ 곡'], ['g', '직관'], ['m', '최애 멤버'], ['s', '입덕일']];
+  const mtOff = () => (boxRead(MT_SHARE) || {}).off || [];
+  function mtMe(all) {
+    const p = mtMeAll(), off = all ? [] : mtOff();
+    off.forEach(k => { p[k] = Array.isArray(p[k]) ? [] : ''; });
+    return p;
+  }
+  function mtMeAll() {
     const st = boxStats(), hs = so => mtHash(so.key);
     return {
       n: (card.nick || '').trim().slice(0, 12) || '나', s: card.since || '',
@@ -5330,7 +5339,7 @@
   }
   function matchView() {
     if (!isAdmin()) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
-    const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(), mine = !mtEmpty(me);
+    const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(), mine = !mtEmpty(mtMe(true));
     if (q.get('test')) { if (!tsSt) tsSt = { i: 0, a: [] }; return `<section class="ts-wrap"><button type="button" class="back ts-backbtn" id="ts-back">‹ 이전</button><div id="ts-quiz" class="ts-in"></div></section>`; }
     if (q.get('r') && tsRead()) return `<a class="back" href="#/match">‹ 취향 궁합</a><section class="mt-res">${tsResultHtml(tsRead())}
       <div class="mt-acts"><a class="mt-go" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>친구랑 궁합 보기</a>
@@ -5354,9 +5363,11 @@
           ${mine ? `
             <div class="mt-mine">
               <label class="mt-nick">링크에 보일 이름 <input id="mt-nick" maxlength="12" value="${esc(card.nick || '')}" placeholder="숲별"></label>
-              <ul class="mt-incl">${me.t ? '<li>테스트 <b>✓</b></li>' : ''}<li>최애곡 <b>${me.f.length}</b></li><li>소취곡 <b>${me.w.length}</b></li><li>♥ 곡 <b>${me.h.length}</b></li><li>직관 <b>${me.g.length}</b></li></ul>
+              <p class="mt-pick-h">링크에 담을 것 <small>체크한 것만 보내요</small></p>
+              <div class="mt-pick">${MT_ITEMS.map(([k, l]) => { const A = mtMe(true), v = A[k], n = Array.isArray(v) ? v.length : v ? 1 : 0, cnt = k === 't' ? (v ? tsType(v)[1] : '안 함') : k === 's' ? (v ? v.replace(/-/g, '.') : '없음') : k === 'm' ? (v.map(i => CARD_MEMS[i]).join('·') || '없음') : n;
+                return `<label class="mt-pk${n ? '' : ' none'}"><input type="checkbox" data-k="${k}"${n && !mtOff().includes(k) ? ' checked' : ''}${n ? '' : ' disabled'}><span>${l}</span><b>${esc(String(cnt))}</b></label>`; }).join('')}</div>
               <button type="button" class="mt-go" id="mt-send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>내 궁합 링크 보내기</button>
-              <p class="mt-note">링크엔 위 기록(곡·직관 일정)과 이름·입덕일이 들어가요. 링크를 받은 사람만 볼 수 있어요.<br>여러 명이면 받은 사람이 열고 결과 링크를 다시 보내면 계속 이어져요 (최대 ${MT_MAX}명).</p>
+              <p class="mt-note">링크엔 체크한 것과 이름만 들어가요. ♥ 곡·직관처럼 많은 걸 담을수록 링크가 길어져요. 링크를 받은 사람만 볼 수 있어요.<br>여러 명이면 받은 사람이 열고 결과 링크를 다시 보내면 계속 이어져요 (최대 ${MT_MAX}명).</p>
             </div>` : `<p class="empty">아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.<br><a href="#/songs">곡 아카이브 가기</a></p>`}
         </section>`;
     }
@@ -5427,10 +5438,15 @@
     mtList = got;
     const num = document.getElementById('mt-num');
     if (num && !matchMedia('(prefers-reduced-motion: reduce)').matches) { const n = +num.dataset.n, t0 = performance.now(); const step = t => { const k = Math.min(1, (t - t0) / 900); num.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+    document.querySelectorAll('.mt-pk input').forEach(c => c.onchange = () => {
+      const off = [...document.querySelectorAll('.mt-pk input')].filter(x => !x.checked && !x.disabled).map(x => x.dataset.k);
+      boxWrite(MT_SHARE, { off });
+    });
     const send = document.getElementById('mt-send');
     if (send) send.onclick = () => {
       const v = document.getElementById('mt-nick').value.trim().slice(0, 12);
       if (v !== (card.nick || '')) { card.nick = v; cardSave(); }
+      if (mtEmpty(mtMe())) { toast('담을 항목을 하나 이상 체크해 주세요'); return; }
       share('나랑 포레스텔라 취향 궁합 볼래? 💞 (숲별 기록장)', mtLink([mtMe()]));
     };
     const sh = document.getElementById('mt-share');
