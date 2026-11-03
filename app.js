@@ -5219,7 +5219,7 @@
         ${corner(P + 8, P + 18, X[0], Y[0], 'start')}${corner(W - P - 8, P + 18, X[1], Y[0], 'end')}${corner(P + 8, W - P - 10, X[0], Y[1], 'start')}${corner(W - P - 8, W - P - 10, X[1], Y[1], 'end')}
         ${dots}</svg>`;
     };
-    return `<div class="tsq"><div class="tsq-tabs">${TS_MAPS.map(([a, b], m) => `<button type="button" class="tsq-tab${m ? '' : ' on'}" data-m="${m}">${TS_AXN[a]} × ${TS_AXN[b]}</button>`).join('')}</div>
+    return `<div class="tsq"><div class="tsq-tabs">${TS_MAPS.map(([a, b], m) => `<button type="button" class="tsq-tab${m ? '' : ' on'}" data-m="${m}">${TS_AX[a].map(x => x.replace(/파$/, '')).join('·')} × ${TS_AX[b].map(x => x.replace(/파$/, '')).join('·')}</button>`).join('')}</div>
       ${TS_MAPS.map(one).join('')}
       ${pp.length > 1 ? `<div class="tsq-leg">${pp.map(([, ci, nm]) => `<span><i style="background:${MT_COL[ci % 6]}"></i>${esc(nm)}</span>`).join('')}</div>` : ''}</div>`;
   }
