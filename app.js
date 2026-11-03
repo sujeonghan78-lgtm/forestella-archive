@@ -5457,7 +5457,7 @@
       return { n: nm || '숲별', s: /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : '', u: u || '', f: four(f || ''), w: four(w || ''), h: four(h || ''), g: (g || '').split('.').filter(Boolean).map(t => t[0] === '*' ? t.slice(1) : String(parseInt(t, 36))), m: (m || '').split(''), t: /^[0-9a-z]{16}[0-2]$/.test(t || '') ? t : '' }; });
   };
   // 메신저가 '!'·'~'에서 링크를 자르는 일이 있어서 한 번 더 base64로 감싸요 (앞 '2')
-  const mtLink = list => location.origin + location.pathname + '#/match?d=2' + mtB64(mtPack(list));
+  const mtLink = (list, room) => location.origin + location.pathname + '#/match?' + (room ? 'g=1&' : '') + 'd=2' + mtB64(mtPack(list));
   function mtCalc(list) {
     const pairs = [];
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) pairs.push({ i, j, ...mtPair(list[i], list[j]) });
@@ -5495,6 +5495,8 @@
     const meIn = !mtEmpty(mtMe());  // 링크에 담을 게 하나도 없으면 결과에 안 넣어요 (보내는 링크와 같게)
     const list = inList < 0 && meIn && got.length && got.length < MT_MAX ? [...got, me] : got;
     const meAt = list.indexOf(me);
+    // 숲별 모임: 방장(링크 첫 사람)이 만든 링크(g=1). 친구는 방장에게 내 링크를 보내고, 방장은 받은 링크를 합쳐요
+    const room = q.get('g') === '1' && got.length > 0, host = got[0], iHost = room && mtIsMe(host.u, me);
     const back = `<a class="back" href="#/box">‹ 보관함</a>`;
     // 처음 화면: 내 링크 만들기
     if (list.length < 2) {
@@ -5504,7 +5506,7 @@
           <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><svg class="mt-venn" viewBox="0 0 120 72" aria-hidden="true"><circle cx="44" cy="36" r="30"/><circle cx="76" cy="36" r="30"/><path class="mt-venn-in" d="M60 11.1a30 30 0 0 1 0 49.8a30 30 0 0 1 0-49.8z"/><circle class="mt-venn-d" cx="34" cy="30" r="5"/><circle class="mt-venn-d b" cx="86" cy="42" r="5"/></svg><p class="mt-kick">FOREST MATCH</p><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
           ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsType(tsRead())[1]}</b><span>결과 보기 ›</span></a>`
             : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
-          ${from ? (mtIsMe(from.u, me) ? `<p class="mt-from">${mtAv(from, 0)} 내가 만든 궁합 링크예요. 친구가 열면 둘의 궁합이 보여요.</p>` : `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>`) : ''}
+          ${from ? (mtIsMe(from.u, me) ? (room ? `<p class="mt-from">${mtAv(from, 0)} ${L3('내가 만든 숲별 모임이에요. 친구들이 보내 준 링크를 아래 칸에 한꺼번에 붙여 넣으면 모두 모여요.', 'This is your Soopbyeol group. Paste all the links your friends sent you below to bring everyone together.', '自分が作ったスッピョルの集まりです。友だちから届いたリンクを下にまとめて貼るとみんな集まります。')}</p>${mine ? mtMergeBox(true) : ''}` : `<p class="mt-from">${mtAv(from, 0)} 내가 만든 궁합 링크예요. 친구가 열면 둘의 궁합이 보여요.</p>`) : `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>`) : ''}
           ${mine ? `
             <div class="mt-mine">
               <label class="mt-nick">링크에 보일 이름 <input id="mt-nick" maxlength="12" value="${esc(card.nick || '')}" placeholder="숲별"></label>
@@ -5512,8 +5514,10 @@
               <div class="mt-pick">${MT_ITEMS.map(([k, l]) => { const A = mtMe(true), v = A[k], n = Array.isArray(v) ? v.length : v ? 1 : 0, cnt = k === 't' ? (v ? tsType(v)[1] : '안 함') : k === 's' ? (v ? v.replace(/-/g, '.') : '없음') : k === 'm' ? (v.map(i => CARD_MEMS[i]).join('·') || '없음') : n;
                 return `<label class="mt-pk${n ? '' : ' none'}"><input type="checkbox" data-k="${k}"${n && !mtOff().includes(k) ? ' checked' : ''}${n ? '' : ' disabled'}><span>${l}</span><b>${esc(String(cnt))}</b></label>`; }).join('')}</div>
               <button type="button" class="mt-go" id="mt-send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>내 궁합 링크 보내기</button>
+              <button type="button" class="mt-sub-btn" id="mt-room"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19a5 5 0 0 1 10 0M11 19a5 5 0 0 1 10 0"/></svg>${L3('숲별 모임 만들기', 'Start a Soopbyeol group', 'スッピョルの集まりを作る')}</button>
+              <p class="mt-note">${L3('숲별 모임: 단톡에 링크를 한 번 올리면, 친구들이 각자 내 링크를 방장에게 보내요. 방장이 받은 링크를 합쳐서 결과를 올려 줘요.', 'Group: post the link once in your group chat. Each friend sends their link back to you, then you combine them and share the result.', '集まり：グループチャットにリンクを一度送ると、友だちがそれぞれ自分のリンクを幹事に送ります。幹事がまとめて結果を共有します。')}</p>
               <p class="mt-note">${L3(`링크엔 체크한 것과 이름만 들어가요. ♥ 곡·직관처럼 많은 걸 담을수록 링크가 길어져요. 링크를 받은 사람만 볼 수 있어요.<br>여러 명이면 받은 사람이 열고 결과 링크를 다시 보내면 계속 이어져요 (최대 ${MT_MAX}명).`, `Only the checked items and your name go into the link. The more you add (like ♥ songs or shows), the longer the link. Only people with the link can see it.<br>For a group, each person opens it and sends the result link on (up to ${MT_MAX} people).`, `リンクにはチェックした項目と名前だけが入ります。♥曲や現場など多く入れるほどリンクが長くなります。リンクを受け取った人だけが見られます。<br>複数人なら、受け取った人が開いて結果リンクを送り直すとつながります(最大${MT_MAX}人)。`)}</p>
-            </div>${mtMergeBox(!!from)}` : `<p class="empty">아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.<br><a href="#/songs">곡 아카이브 가기</a></p>`}
+            </div>${from && room && mtIsMe(from.u, me) ? '' : mtMergeBox(!!from)}` : `<p class="empty">아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.<br><a href="#/songs">곡 아카이브 가기</a></p>`}
         </section>`;
     }
     const S = mtSong(), R = mtCalc(list), group = list.length > 2, T = R.none ? ['', '', '비교할 기록이 서로 달라요', '한 명은 테스트, 한 명은 ♥ 곡처럼 담은 게 달라서 아직 궁합을 잴 수 없어요. 같은 항목을 담아 다시 보내 봐요'] : mtHead(list, R.pct);
@@ -5566,12 +5570,13 @@
           <p class="mt-say">${T[3]}</p>
           ${R.tags.length ? `<div class="mt-tags">${R.tags.map(t => `<span>${t}</span>`).join('')}</div>` : ''}
         </div>
-        ${meAt >= 0 && inList < 0 ? `<p class="mt-hint">내 기록도 같이 비교했어요. 아래 '결과 링크 보내기'를 누르면 나도 링크에 들어가요.</p>` : ''}
+        ${room && !iHost && meAt >= 0 ? `<p class="mt-hint mt-room-h">${L3(`<b>${esc(host.n)}</b> 님의 숲별 모임이에요. 이 버튼으로 방장에게 내 링크를 보내 주세요. 방장이 모두 합쳐서 결과를 올려 줘요.`, `This is <b>${esc(host.n)}</b>'s Soopbyeol group. Send your link to the host with this button. The host will combine everyone and share the result.`, `<b>${esc(host.n)}</b>さんのスッピョルの集まりです。このボタンで幹事に自分のリンクを送ってください。幹事がまとめて結果を共有します。`)}</p><button type="button" class="mt-go mt-room-go" onclick="document.getElementById('mt-share').click()">${L3('방장에게 내 링크 보내기', 'Send my link to the host', '幹事に自分のリンクを送る')}</button>` : ''}
+        ${!room && meAt >= 0 && inList < 0 ? `<p class="mt-hint">내 기록도 같이 비교했어요. 아래 '결과 링크 보내기'를 누르면 나도 링크에 들어가요.</p>` : ''}
         ${add ? `<p class="mt-hint">${L3(`${MT_MAX}명이 꽉 차서 나는 못 넣어요.`, `It's full (${MT_MAX} people), so you can't be added.`, `${MT_MAX}人でいっぱいなので追加できません。`)}</p>` : ''}
         ${cards.join('')}
-        ${mtMergeBox(false)}
+        ${!room || iHost ? mtMergeBox(iHost) : ''}
         <div class="mt-acts">
-          <button type="button" class="mt-go" id="mt-share" data-n="${list.length}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>${list.length < MT_MAX ? (group || meAt >= 0 ? '결과 링크 보내기 · 다음 사람도 넣을 수 있어요' : '결과 링크 보내기') : '결과 링크 보내기'}</button>
+          <button type="button" class="mt-go" id="mt-share" data-n="${list.length}" data-room="${room && !iHost && meAt >= 0 ? esc(host.n) : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>${room && !iHost && meAt >= 0 ? L3('방장에게 내 링크 보내기', 'Send my link to the host', '幹事に自分のリンクを送る') : list.length < MT_MAX ? (group || meAt >= 0 ? '결과 링크 보내기 · 다음 사람도 넣을 수 있어요' : '결과 링크 보내기') : '결과 링크 보내기'}</button>
           ${R.none ? '' : `<button type="button" class="mt-sub-btn" id="mt-img"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>결과 이미지 저장</button>`}
           <a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 링크 새로 만들기</a>
         </div>
@@ -5597,7 +5602,10 @@
       share(L3('나랑 포레스텔라 취향 궁합 볼래? 💞 (숲별 기록장)', 'Want to check our Forestella taste match? 💞 (Soopbyeol Archive)', 'フォレステラ好み相性、見てみない? 💞 (スッピョル記録帳)'), mtLink([mtMe()]));
     };
     const sh = document.getElementById('mt-share');
-    if (sh) sh.onclick = () => share((n => L3(`우리 포레 취향 궁합 ${n}% 💞 링크 열면 너도 넣을 수 있어 (숲별 기록장)`, `Our Forestella taste match: ${n}% 💞 Open the link to join (Soopbyeol Archive)`, `私たちのフォレ好み相性 ${n}% 💞 リンクを開けばあなたも参加できるよ (スッピョル記録帳)`))((document.getElementById('mt-num') || { dataset: { n: '?' } }).dataset.n), mtLink(mtList));
+    const rm = document.getElementById('mt-room');
+    if (rm) rm.onclick = () => { const v = document.getElementById('mt-nick').value.trim().slice(0, 12); if (v !== (card.nick || '')) { card.nick = v; cardSave(); } if (mtEmpty(mtMe())) { toast(L3('담을 항목을 하나 이상 체크해 주세요', 'Check at least one item to include', '入れる項目を1つ以上選んでください')); return; } share(L3('숲별 모임에 초대해요! 링크를 열고 \'방장에게 내 링크 보내기\'를 눌러 줘 🌲 (숲별 기록장)', 'Join my Soopbyeol group! Open the link and tap "Send my link to the host" 🌲 (Soopbyeol Archive)', 'スッピョルの集まりに招待します!リンクを開いて「幹事に自分のリンクを送る」を押してね 🌲 (スッピョル記録帳)'), mtLink([mtMe()], true)); };
+    if (sh && sh.dataset.room) sh.onclick = () => share(L3(`${sh.dataset.room} 님, 숲별 모임에 내 링크 보내요 🌲`, `${sh.dataset.room}, here's my link for the group 🌲`, `${sh.dataset.room}さん、集まり用の私のリンクです 🌲`), mtLink(mtList, true));
+    else if (sh) sh.onclick = () => share((n => L3(`우리 포레 취향 궁합 ${n}% 💞 링크 열면 너도 넣을 수 있어 (숲별 기록장)`, `Our Forestella taste match: ${n}% 💞 Open the link to join (Soopbyeol Archive)`, `私たちのフォレ好み相性 ${n}% 💞 リンクを開けばあなたも参加できるよ (スッピョル記録帳)`))((document.getElementById('mt-num') || { dataset: { n: '?' } }).dataset.n), mtLink(mtList));
     const mg = document.getElementById('mt-merge-go');
     if (mg) mg.onclick = () => {
       const r = mtMerge(document.getElementById('mt-merge-t').value, mtList.length ? mtList : [mtMe()]);

@@ -2207,3 +2207,4 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mt-merge summary svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .mt-merge textarea { box-sizing: border-box; width: 100%; margin: 8px 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--tint-2, #C9D9CE); font: inherit; font-size: 13px; resize: vertical; background: var(--card, #fff); color: inherit; }
 .mt-merge .mt-go { width: 100%; margin-bottom: 14px; }
+.mt-room-go { width: 100%; margin: 0 0 14px; }
