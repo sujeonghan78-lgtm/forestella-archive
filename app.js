@@ -5129,6 +5129,8 @@
   const TS_AX = [['음원파', '무대파'], ['오리지널파', '변주파'], ['대표곡파', '숨은 명곡파'], ['클래식파', '팝파']];
   const TS_EN = [['L', 'S'], ['O', 'A'], ['M', 'N'], ['C', 'P']];  // Listen·Stage / Original·Arrange / Main·Niche / Classic·Pop
   const TS_READ = n => ['로', '라', '소', '사'][n >> 2] + ['믹', '밉', '닉', '닙'][n & 3];  // 읽는 법: 로믹·소닙…
+  const TS_EN_W = [['Listen', 'Stage'], ['Original', 'Arrange'], ['Main', 'Niche'], ['Classic', 'Pop']];
+  const TS_EN_D = [['음반·음원으로 조용히 듣는 걸 더 좋아해요', '무대 영상과 떼창, 현장 분위기를 더 즐겨요'], ['포레 오리지널 곡과 처음 버전을 아껴요', '커버곡·재해석과 새 편곡에 더 끌려요'], ['다들 아는 대표곡과 큰 공연장 무대를 좋아해요', '숨은 명곡과 소극장·행사 무대를 찾아다녀요'], ['클래식 크로스오버와 외국어 곡에 끌려요', '록·팝 편곡과 한국어 곡을 더 자주 들어요']];
   const TS_AXN = ['감상', '곡', '발견', '결'], TS_AXT = ['즐기는 방식', '좋아하는 버전', '곡 고르는 눈', '음악 장르'];
   // 순서: 감상(듣·보) 곡(오리지널·변주) 발견(메인·디깅) 결(클래식·팝) → 번호 = 보*8 + 변주*4 + 디깅*2 + 팝
   const TS_TYPES = [
@@ -5186,7 +5188,7 @@
     const T = tsType(t), S = tsStyle(t), X = tsAxes(t);
     return `<div class="mt-hero ts-hero"><i class="mt-stripe"></i>
         <p class="mt-lab">나의 숲별 취향 유형</p>
-        <div class="ts-code" aria-label="유형 코드">${X.map((x, k) => `<span class="${x.b ? 'r' : 'l'}"><b>${TS_EN[k][x.b]}</b><small>${TS_AX[k][x.b].replace(/파$/, '')}</small></span>`).join('')}</div>
+        <div class="ts-code" aria-label="유형 코드">${X.map((x, k) => `<button type="button" class="${x.b ? 'r' : 'l'}" data-k="${k}" data-b="${x.b}"><b>${TS_EN[k][x.b]}</b><small>${TS_AX[k][x.b].replace(/파$/, '')}</small></button>`).join('')}</div><p class="ts-code-tip" hidden></p>
         <p class="mt-type">${T[1]}</p>
         <p class="ts-title">${S[1]}</p>
         <p class="mt-say">${T[2]}</p>
@@ -5273,6 +5275,14 @@
     mtSave(cv, '숲별취향지도.png');
   }
   function tsQuadBind() {
+    document.querySelectorAll('.ts-code').forEach(cd => cd.onclick = ev => {
+      const b = ev.target.closest('button'), tip = cd.nextElementSibling; if (!b || !tip) return;
+      const k = +b.dataset.k, v = +b.dataset.b, was = b.classList.contains('sel');
+      cd.querySelectorAll('button').forEach(x => x.classList.remove('sel'));
+      if (was) { tip.hidden = true; return; }
+      b.classList.add('sel'); tip.hidden = false;
+      tip.innerHTML = `<b>${TS_EN[k][v]}</b> ${TS_EN_W[k][v]} · ${TS_AX[k][v]}<br>${TS_EN_D[k][v]}<small>반대는 ${TS_EN[k][1 - v]} ${TS_EN_W[k][1 - v]} · ${TS_AX[k][1 - v]}</small>`;
+    });
     document.querySelectorAll('.tsq').forEach(q => q.onclick = ev => {
       if (ev.target.closest('.tsq-save')) { const on = q.querySelector('.tsq-tab.on'); tsQuadImage(TSQ_DATA.get(q.dataset.q) || [], on ? +on.dataset.m : 0); return; }
       const b = ev.target.closest('.tsq-tab'); if (!b) return;
