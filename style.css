@@ -2143,3 +2143,14 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .ts-mini { display: grid; gap: 1px; }
 .ts-mini small { font-size: 12px; font-weight: 700; letter-spacing: 0; color: var(--ink); }
 .ts-mini small { font-size: 10.5px; font-weight: 500; color: var(--muted); opacity: .8; }
+.mt-nick input { width: 100%; box-sizing: border-box; min-width: 0; }
+.mt-hero-in { padding: 28px 18px 26px; }
+.mt-venn { display: block; width: 120px; height: 72px; margin: 0 auto 6px; overflow: visible; }
+.mt-venn circle { fill: rgba(255, 255, 255, .1); stroke: rgba(255, 255, 255, .9); stroke-width: 2; }
+.mt-venn .mt-venn-in { fill: rgba(198, 236, 107, .55); animation: mt-glow 2.4s ease-in-out infinite; }
+.mt-venn .mt-venn-d { fill: #fff; stroke: none; }
+.mt-venn .mt-venn-d.b { fill: #9fd4ff; }
+@keyframes mt-glow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .mt-venn .mt-venn-in { animation: none; } }
+.mt-kick { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .28em; opacity: .7; }
+.mt-hero-in h1 { margin-top: 4px; }

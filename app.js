@@ -5360,7 +5360,7 @@
       const from = got[0];
       return `${back}
         <section class="mt-intro">
-          <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><span class="mt-spark">💞</span><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
+          <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><svg class="mt-venn" viewBox="0 0 120 72" aria-hidden="true"><circle cx="44" cy="36" r="30"/><circle cx="76" cy="36" r="30"/><path class="mt-venn-in" d="M60 11.1a30 30 0 0 1 0 49.8a30 30 0 0 1 0-49.8z"/><circle class="mt-venn-d" cx="34" cy="30" r="5"/><circle class="mt-venn-d b" cx="86" cy="42" r="5"/></svg><p class="mt-kick">FOREST MATCH</p><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
           ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsType(tsRead())[1]}</b><span>결과 보기 ›</span></a>`
             : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
           ${from ? `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>` : ''}
