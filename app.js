@@ -7543,7 +7543,10 @@
     setOff(st.off === a.d);
     document.body.appendChild(tg);
     // 그날 처음 들어오면 축하 배너
-    if (st.seen !== a.d) { annivBanner(a); const o = anvStore(); o.seen = a.d; anvSave(o); }
+    // 주소에 anv=1 이 있으면 한 번 더 보여줘요 (캡처용, 아무것도 보내거나 세지 않아요)
+    const again = /[?&]anv=1/.test(location.hash);
+    if (again) { annivBanner(a); setTimeout(() => got(false, goal, true), 1500); }
+    else if (st.seen !== a.d) { annivBanner(a); const o = anvStore(); o.seen = a.d; anvSave(o); }
     // 숨은 숲: 가끔 나타났다가 몇 초 뒤 사라져요
     // 그날 숲 목표 개수(주년 수, 생일·입덕은 5개)를 다 찾으면 금빛 뱃지가 되고 숲은 더 안 나와요
     const goal = annivGoal(a), foundN = () => ((anvStore().found || {})[a.d] || 0);
@@ -7574,7 +7577,7 @@
     };
     { const o = anvStore(); if (foundN() >= goal && o.bdg && o.bdg[a.k] && !o.bdg[a.k].gold) { o.bdg[a.k].gold = 1; anvSave(o); } }
     const next = () => setTimeout(pop, 25e3 + Math.random() * 40e3);
-    const got = (first, n) => {
+    const got = (first, n, demo) => {
       const m = document.createElement('div');
       const done = n >= goal, rk = (anvStore().bdg || {})[a.k];
       m.className = 'anv-got' + (done ? ' gold' : ''); m.setAttribute('role', 'status');
@@ -7587,7 +7590,7 @@
       requestAnimationFrame(() => m.classList.add('show'));
       const close = () => { m.classList.remove('show'); setTimeout(() => m.remove(), 300); };
       m.querySelectorAll('a').forEach(el => el.addEventListener('click', close));
-      setTimeout(close, first || done ? 5000 : 2200);
+      setTimeout(close, demo ? 15000 : first || done ? 5000 : 2200);
     };
     setTimeout(pop, 8e3 + Math.random() * 12e3);
   }
