@@ -5313,7 +5313,8 @@
   }
   // 궁합: 답 9개 비교 (같은 쪽이면 가까울수록 1, 반대면 0)
   const tsSim = (a, b) => { const x = tsVals(a), y = tsVals(b); let s = 0; for (let i = 0; i < 8; i++) s += 1 - Math.abs(x[i] - y[i]) / 100; return (s + (a[16] === b[16] ? 1 : 0)) / 9; };
-  const tsSameAx = (a, b) => { const x = tsAxes(a), y = tsAxes(b); return x.filter((v, k) => v.b === y[k].b).length; };
+  // 같은 축: 글자가 같거나, 50 근처에서 갈렸어도 위치가 10 이내면 같은 걸로
+  const tsSameAx = (a, b) => { const x = tsAxes(a), y = tsAxes(b); return x.filter((v, k) => v.b === y[k].b || Math.abs(v.pos - y[k].pos) <= 10).length; };
   const TS_REL = [[4, '🌲🌲', '거울 숲별', '취향 축 4개가 다 같아요. 서로의 플레이리스트를 믿어도 돼요'], [3, '🌿', '단짝 숲별', '거의 다 맞고 하나만 달라서 대화가 끊이지 않아요'], [2, '🧭', '서로 채워주는 짝꿍', '반은 같고 반은 달라서 서로 새 곡을 알려 줘요'], [0, '🔭', '정반대라 끌리는 사이', '취향이 정반대라 오히려 덕질이 두 배로 넓어져요']];
 
   // ---------- 숲별 취향 궁합 (#/match) ----------
@@ -5411,7 +5412,8 @@
       .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), t: /^[0-9a-z]{16}[0-2]$/.test(p.t || '') ? p.t : '', ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) }));
     const inList = got.findIndex(p => p.u === me.u);
     if (inList >= 0) got[inList] = me;
-    const list = inList < 0 && mine && got.length && got.length < MT_MAX ? [...got, me] : got;
+    const meIn = !mtEmpty(mtMe());  // 링크에 담을 게 하나도 없으면 결과에 안 넣어요 (보내는 링크와 같게)
+    const list = inList < 0 && meIn && got.length && got.length < MT_MAX ? [...got, me] : got;
     const meAt = list.indexOf(me);
     const back = `<a class="back" href="#/box">‹ 보관함</a>`;
     // 처음 화면: 내 링크 만들기
@@ -5443,14 +5445,15 @@
     if (tp.length >= 2) {
       cards.push(card1('🧭', '취향 사분면', tsQuad(tp.map(([p, i]) => [p.t, i, p.n]))));
       cards.push(card1('🧪', '우리 취향 유형', `<ul class="ts-who">${tp.map(([p, i]) => `<li>${mtAv(p, i)}<span><b>${esc(p.n)}</b>${tsType(p.t)[1]} · ${tsStyle(p.t)[1]}</span></li>`).join('')}</ul>`));
-      const side = (t, i) => i === 8 ? +t[16] : tsVals(t)[i] <= 50 ? 0 : 1, lab = (i, v) => i === 8 ? TS_STYLE.o[v][1] : TS_Q[i].p[v];
+      const side = (t, i) => { if (i === 8) return +t[16]; const v = tsVals(t)[i]; return v < 38 ? 0 : v > 62 ? 1 : 2; },
+        lab = (i, v) => i === 8 ? TS_STYLE.o[v][1] : v === 2 ? `${tsShort(TS_Q[i], 0)}·${tsShort(TS_Q[i], 1)} 반반` : TS_Q[i].p[v];
       if (tp.length === 2) {
         const [[a], [b]] = tp, same = [], diff = [];
         for (let i = 0; i < 9; i++) { const x = side(a.t, i), y = side(b.t, i); (x === y ? same : diff).push(x === y ? `둘 다 <b>${lab(i, x)}</b>` : `${esc(a.n)} <b>${lab(i, x)}</b> · ${esc(b.n)} <b>${lab(i, y)}</b>`); }
         cards.push(card1('🤝', `같은 답 <b>${same.length}개</b>`, same.length ? `<ul class="ts-lines">${same.map(x => `<li>${x}</li>`).join('')}</ul>` : '<p class="mt-sub">하나도 안 겹쳐요. 그래서 더 재밌어요</p>'));
         if (diff.length) cards.push(card1('⚡', '여기선 갈렸어요', `<ul class="ts-lines">${diff.map(x => `<li>${x}</li>`).join('')}</ul>`));
       } else {
-        const rows = [...Array(9).keys()].map(i => { const c = [0, 0, 0]; tp.forEach(([p]) => c[side(p.t, i)]++); const o = (i === 8 ? [0, 1, 2] : [0, 1]).filter(v => c[v]).sort((x, y) => c[y] - c[x]); return { i, c, o }; }).sort((x, y) => Math.max(...y.c) - Math.max(...x.c));
+        const rows = [...Array(9).keys()].map(i => { const c = [0, 0, 0]; tp.forEach(([p]) => c[side(p.t, i)]++); const o = [0, 1, 2].filter(v => c[v]).sort((x, y) => c[y] - c[x]); return { i, c, o }; }).sort((x, y) => Math.max(...y.c) - Math.max(...x.c));
         cards.push(card1('📊', '우리 모임은', `<ul class="ts-lines">${rows.map(r => `<li>${r.o.length === 1 ? `모두 <b>${lab(r.i, r.o[0])}</b>` : r.o.map(v => `${lab(r.i, v)} <b>${r.c[v]}</b>`).join(' : ')}</li>`).join('')}</ul>`));
       }
     }
@@ -5472,7 +5475,7 @@
       cards.push(card1('🌱', '숲별 선배는?', d > 0 ? `<p class="mt-big">${mtAv(o, oi)} ${esc(o.n)}</p><p class="mt-sub">${group ? '막내 숲별보다' : `${esc(y.n)} 님보다`} <b>${d.toLocaleString('en-US')}일</b> 먼저 입덕했어요</p>` : '<p class="mt-big">입덕 동기!</p><p class="mt-sub">같은 날 숲에 들어왔어요</p>'));
     }
     if (!cards.length) cards.push(card1('🌱', '아직 겹치는 게 없어요', '<p class="mt-sub">서로의 ♥ 곡을 들어 보고 다시 해 봐요</p>'));
-    const add = inList < 0 && mine && meAt < 0 && got.length >= MT_MAX;
+    const add = inList < 0 && meIn && meAt < 0 && got.length >= MT_MAX;
     return `${back}
       <section class="mt-res${group ? ' mt-g' : ''}">
         <div class="mt-hero"><i class="mt-stripe"></i>
@@ -5496,11 +5499,11 @@
   let mtList = [];
   function bindMatch() {
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe();
-    const got = (q.get('d') ? mtUnpack(q.get('d')) : []).slice(0, MT_MAX), i = got.findIndex(p => p && p.u === me.u);
+    const got = (q.get('d') ? mtUnpack(q.get('d')) : []).filter(p => p && typeof p.n === 'string').slice(0, MT_MAX), i = got.findIndex(p => p.u === me.u);
     if (i >= 0) got[i] = me; else if (!mtEmpty(me) && got.length && got.length < MT_MAX) got.push(me);
     mtList = got;
     const num = document.getElementById('mt-num');
-    if (num && !matchMedia('(prefers-reduced-motion: reduce)').matches) { const n = +num.dataset.n, t0 = performance.now(); const step = t => { const k = Math.min(1, (t - t0) / 900); num.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+    if (num && !matchMedia('(prefers-reduced-motion: reduce)').matches) { const n = +num.dataset.n, t0 = performance.now(); const step = () => { const k = Math.max(0, Math.min(1, (performance.now() - t0) / 900)); num.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
     document.querySelectorAll('.mt-pk input').forEach(c => c.onchange = () => {
       const off = [...document.querySelectorAll('.mt-pk input')].filter(x => !x.checked && !x.disabled).map(x => x.dataset.k);
       boxWrite(MT_SHARE, { off });
