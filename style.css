@@ -2110,3 +2110,15 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mt-pk span { flex: 1; }
 .mt-pk b { font-size: 12.5px; font-weight: 600; color: var(--muted); max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mt-pk.none { opacity: .45; }
+.tsq-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; border-radius: 16px; background: var(--soft); }
+.tsq-tab { display: grid; gap: 1px; padding: 7px 6px; border: 0; border-radius: 12px; background: none; font-size: 11.5px; line-height: 1.3; }
+.tsq-tab span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tsq-tab span + span { font-weight: 500; opacity: .85; }
+.ts-big { font-size: 46px; }
+.tsq-l { font-size: 11px; }
+@media (max-width: 360px) { .tsq-tab { font-size: 10.5px; } }
+.ts-code { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-width: 280px; margin: 14px auto 4px; }
+.ts-code span { display: grid; justify-items: center; gap: 2px; padding: 10px 0 8px; border-radius: 14px; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .28); }
+.ts-code b { font-family: "Nanum Myeongjo", serif; font-size: 30px; font-weight: 800; line-height: 1; }
+.ts-code small { font-size: 10.5px; opacity: .85; white-space: nowrap; }
+.ts-code span.r { background: rgba(255, 255, 255, .26); }

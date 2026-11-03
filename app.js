@@ -5184,7 +5184,7 @@
     const T = tsType(t), S = tsStyle(t), X = tsAxes(t);
     return `<div class="mt-hero ts-hero"><i class="mt-stripe"></i>
         <p class="mt-lab">나의 숲별 취향 유형</p>
-        <p class="ts-big">${T[0]}</p>
+        <div class="ts-code" aria-label="유형 코드">${X.map((x, k) => `<span class="${x.b ? 'r' : 'l'}"><b>${TS_AX[k][x.b][0]}</b><small>${TS_AX[k][x.b].replace(/파$/, '')}</small></span>`).join('')}</div>
         <p class="mt-type">${T[1]}</p>
         <p class="ts-title">${S[1]}</p>
         <p class="mt-say">${T[2]}</p>
@@ -5204,7 +5204,7 @@
   // 사분면: 사람마다 점 하나 (지도 2장: 감상×결, 곡×발견). pp = [[답, 색 번호, 이름]]
   const TS_MAPS = [[0, 3], [1, 2]];
   function tsQuad(pp) {
-    const W = 300, P = 34, S = W - P * 2, xy = v => P + v / 100 * S;
+    const W = 300, P = 34, S = W - P * 2, xy = v => P + (10 + v * 0.8) / 100 * S;  // 끝까지 가도 칸 안쪽에
     const one = ([ax, ay], m) => {
       const X = TS_AX[ax], Y = TS_AX[ay], seen = new Map();
       const dots = pp.map(([t, ci, nm]) => { const a = tsAxes(t); let x = xy(a[ax].pos), y = xy(a[ay].pos); const k = Math.round(x / 8) + ':' + Math.round(y / 8), n = seen.get(k) || 0; seen.set(k, n + 1); x += n * 9; y -= n * 9;
@@ -5219,7 +5219,7 @@
         ${corner(P + 8, P + 18, X[0], Y[0], 'start')}${corner(W - P - 8, P + 18, X[1], Y[0], 'end')}${corner(P + 8, W - P - 10, X[0], Y[1], 'start')}${corner(W - P - 8, W - P - 10, X[1], Y[1], 'end')}
         ${dots}</svg>`;
     };
-    return `<div class="tsq"><div class="tsq-tabs">${TS_MAPS.map(([a, b], m) => `<button type="button" class="tsq-tab${m ? '' : ' on'}" data-m="${m}">${TS_AX[a].map(x => x.replace(/파$/, '')).join('·')} × ${TS_AX[b].map(x => x.replace(/파$/, '')).join('·')}</button>`).join('')}</div>
+    return `<div class="tsq"><div class="tsq-tabs">${TS_MAPS.map(([a, b], m) => `<button type="button" class="tsq-tab${m ? '' : ' on'}" data-m="${m}"><span>${TS_AX[a].map(x => x.replace(/파$/, '')).join('·')}</span><span>× ${TS_AX[b].map(x => x.replace(/파$/, '')).join('·')}</span></button>`).join('')}</div>
       ${TS_MAPS.map(one).join('')}
       ${pp.length > 1 ? `<div class="tsq-leg">${pp.map(([, ci, nm]) => `<span><i style="background:${MT_COL[ci % 6]}"></i>${esc(nm)}</span>`).join('')}</div>` : ''}</div>`;
   }
