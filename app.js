@@ -7565,7 +7565,7 @@
     // 같이 축하하는 수: 그날은 1분마다 제보 시트만 다시 받아서 바로 바꿔요
     const live = () => {
       if (document.hidden || !annivToday() || !data) return;
-      window.DATA.fetchText(window.CONFIG.sheets.reports).then(t => {
+      window.DATA.fetchText(window.CONFIG.sheets.reports + '&_=' + Date.now()).then(t => {
         data.anniv = window.DATA.annivOf(t);
         const A = annivToday(); if (A) document.querySelectorAll('.anv-cheer').forEach(w => { w.outerHTML = cheerBtn(A); });
       }).catch(() => {});
