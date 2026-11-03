@@ -34,7 +34,7 @@
     if (!data) return '';
     const x = todayDay();
     if (!x) return '';
-    return `<a class="today-bar" href="${x.href}"><span class="tb-ic" aria-hidden="true">${x.ic}</span><span class="tb-t"><small>${esc(x.pre || '오늘은')}</small><b>${esc(x.t)}</b></span><span class="tb-go" aria-hidden="true">›</span></a>`;
+    return `<a class="today-bar" href="${x.href}">${x.ic} ${esc(x.pre ? x.pre + ' · ' : '오늘은 ')}<b>${esc(x.t)}</b>${x.pre ? '' : '이에요'}</a>`;
   }
 
   function soon(title, note) {
