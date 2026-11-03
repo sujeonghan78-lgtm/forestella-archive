@@ -5114,16 +5114,17 @@
   // 축 4개 = 질문 둘씩 (강도를 더해서 정하고, 딱 반반이면 첫 질문으로 정한 뒤 '반반' 표시)
   const TS_KEY = 'sb-taste';
   const TS_Q = [
-    { ax: 0, q: '포레스텔라 곡, 주로 어떻게 즐겨요?', a: ['🎧', '음반으로 듣기'], b: ['📺', '무대 영상으로 보기'], p: ['음반파', '무대 영상파'] },
-    { ax: 0, q: '공연장에서 나는?', a: ['🤫', '숨죽여 듣기'], b: ['📣', '떼창'], p: ['숨죽여 듣기파', '떼창파'] },
-    { ax: 1, q: '더 끌리는 곡은?', a: ['🌱', '포레 원곡'], b: ['🔁', '다른 가수 노래 재해석'], p: ['원곡파', '커버파'] },
-    { ax: 1, q: '같은 곡이라면?', a: ['🕰️', '처음 부른 버전'], b: ['✨', '새로 편곡한 버전'], p: ['처음 버전파', '편곡 버전파'] },
-    { ax: 2, q: '내 플레이리스트는?', a: ['🌟', '대놓고 유명곡'], b: ['🔎', '숨어 듣는 명곡'], p: ['유명곡파', '숨은 명곡파'] },
-    { ax: 2, q: '직접 보러 간다면?', a: ['🏟️', '큰 공연장 콘서트'], b: ['🎪', '소극장·지역 행사'], p: ['대형 공연장파', '소극장·행사파'] },
-    { ax: 3, q: '마음이 가는 장르는?', a: ['🎻', '클래식 크로스오버'], b: ['🎸', '록·팝'], p: ['클래식파', '록·팝파'] },
-    { ax: 3, q: '자꾸 돌려 듣게 되는 건?', a: ['🌍', '외국어 곡'], b: ['💬', '한국어 곡'], p: ['외국곡파', '한국어곡파'] },
+    { ax: 0, q: '음반보다 무대 영상을 더 자주 찾아본다', a: ['🎧', '음반으로 듣기'], b: ['📺', '무대 영상으로 보기'], p: ['음반파', '무대 영상파'] },
+    { ax: 0, q: '공연장에선 따라 부르는 게 더 신난다', a: ['🤫', '숨죽여 듣기'], b: ['📣', '떼창'], p: ['숨죽여 듣기파', '떼창파'] },
+    { ax: 1, q: '포레 원곡보다 다른 가수 노래 재해석이 더 끌린다', a: ['🌱', '포레 원곡'], b: ['🔁', '다른 가수 노래 재해석'], p: ['원곡파', '커버파'] },
+    { ax: 1, q: '같은 곡이면 새로 편곡한 버전이 더 좋다', a: ['🕰️', '처음 부른 버전'], b: ['✨', '새로 편곡한 버전'], p: ['처음 버전파', '편곡 버전파'] },
+    { ax: 2, q: '남들은 잘 모르는 숨은 명곡을 더 아낀다', a: ['🌟', '대놓고 유명곡'], b: ['🔎', '숨어 듣는 명곡'], p: ['유명곡파', '숨은 명곡파'] },
+    { ax: 2, q: '큰 공연장보다 소극장·지역 행사가 더 좋다', a: ['🏟️', '큰 공연장 콘서트'], b: ['🎪', '소극장·지역 행사'], p: ['대형 공연장파', '소극장·행사파'] },
+    { ax: 3, q: '클래식보다 록·팝 편곡에 더 신난다', a: ['🎻', '클래식 크로스오버'], b: ['🎸', '록·팝'], p: ['클래식파', '록·팝파'] },
+    { ax: 3, q: '외국어 곡보다 한국어 곡을 더 자주 듣는다', a: ['🌍', '외국어 곡'], b: ['💬', '한국어 곡'], p: ['외국곡파', '한국어곡파'] },
   ];
   const TS_STYLE = { q: '나의 덕질 스타일은?', o: [['🎫', '직관파', '공연은 직접 봐야지'], ['📒', '기록파', '날짜·셋리 정리가 행복해'], ['🛋️', '방구석파', '영상으로 충분해']] };
+  const TS_ANS = ['전혀 아니야', '아닌 편', '그런 편', '완전 맞아'];
   const TS_ORDER = [0, 2, 4, 6, 1, 3, 5, 7, 8];  // 축이 섞여 나오게
   const TS_AX = [['듣는파', '보는파'], ['오리지널파', '변주파'], ['메인파', '디깅파'], ['클래식파', '팝파']];
   const TS_AXN = ['감상', '곡', '발견', '결'];
@@ -5165,10 +5166,11 @@
     const bar = `<div class="ts-prog"><i style="width:${Math.round(n / tot * 100)}%"></i></div><p class="ts-n">${n + 1} / ${tot}</p>`;
     if (qi === 8) return `${bar}<h2 class="ts-q">${TS_STYLE.q}</h2><div class="ts-3">${TS_STYLE.o.map(([ic, t, s], k) => `<button type="button" class="ts-opt${tsSt.a[8] === k ? ' on' : ''}" data-v="${k}"><span>${ic}</span><b>${t}</b><small>${s}</small></button>`).join('')}</div>`;
     const Q = TS_Q[qi], cur = tsSt.a[qi];
-    return `${bar}<h2 class="ts-q">${Q.q}</h2>
-      <div class="ts-pair"><div class="ts-side"><span>${Q.a[0]}</span><b>${Q.a[1]}</b></div><div class="ts-side"><span>${Q.b[0]}</span><b>${Q.b[1]}</b></div></div>
-      <div class="ts-scale">${[0, 1, 2, 3].map(v => `<button type="button" class="ts-dot ts-d${v}${cur === v ? ' on' : ''}" data-v="${v}" aria-label="${['완전 ', '조금 ', '조금 ', '완전 '][v] + (v < 2 ? Q.a[1] : Q.b[1])}"></button>`).join('')}</div>
-      <div class="ts-hint"><span>완전</span><span>조금</span><span>조금</span><span>완전</span></div>`;
+    return `${bar}<p class="ts-num">Q${n + 1}</p><h2 class="ts-q">${Q.q}</h2>
+      <div class="ts-line${cur != null ? ' picked' : ''}">
+        <div class="ts-ends"><span>${Q.a[0]} ${Q.a[1]}</span><span>${Q.b[1]} ${Q.b[0]}</span></div>
+        <div class="ts-track"><i class="ts-rail"></i>${TS_ANS.map((l, v) => `<button type="button" class="ts-pt ts-p${v}${cur === v ? ' on' : ''}" data-v="${v}"><i></i><span>${l}</span></button>`).join('')}</div>
+      </div>`;
   }
   function tsResultHtml(t) {
     const T = tsType(t), S = tsStyle(t), X = tsAxes(t);
@@ -5179,12 +5181,16 @@
         <p class="ts-title">${S[0]} ${S[1]}</p>
         <p class="mt-say">${T[2]}</p>
       </div>
-      <section class="mt-card ts-axes">${X.map((x, k) => `
-        <div class="ts-ax"><p><span class="${x.b ? '' : 'on'}">${TS_AX[k][0]}</span><small>${TS_AXN[k]}</small><span class="${x.b ? 'on' : ''}">${TS_AX[k][1]}</span></p>
-          <div class="ts-axbar"><i style="${x.b ? 'right' : 'left'}:0;width:${x.pct}%"></i></div>
-          ${x.half ? `<em class="ts-half">⚖ 반반 · ${TS_AX[k][1 - x.b]} 기질도 있어요</em>` : ''}</div>`).join('')}
-      </section>
-      <section class="mt-card"><h2><span>📝</span>내 답</h2><div class="mt-chips">${TS_Q.map((q, i) => `<span class="chip">${['완전 ', '', '', '완전 '][+t[i]]}${q.p[+t[i] < 2 ? 0 : 1]}</span>`).join('')}<span class="chip">${S[1]}</span></div></section>`;
+      <section class="ts-sum">
+        <h2 class="ts-sum-h">나의 취향 지도</h2>
+        ${X.map((x, k) => { const qs = TS_Q.map((q, i) => [q, i]).filter(([q]) => q.ax === k); const w = x.b ? 1 : 0; return `
+        <div class="ts-ax${x.half ? ' half' : ''}">
+          <div class="ts-ax-top"><span class="${w ? '' : 'on'}">${TS_AX[k][0]}${w ? '' : ` <em>${x.half ? '⚖' : x.pct + '%'}</em>`}</span><small>${TS_AXN[k]}</small><span class="${w ? 'on' : ''}">${w ? `<em>${x.half ? '⚖' : x.pct + '%'}</em> ` : ''}${TS_AX[k][1]}</span></div>
+          <div class="ts-axbar"><i class="${w ? 'r' : 'l'}" style="width:${x.pct - 50}%"></i></div>
+          <p class="ts-why">${qs.map(([q, i]) => `${(+t[i] < 2 ? q.a : q.b)[0]} ${q.p[+t[i] < 2 ? 0 : 1]}`).join('<em>·</em>')}${x.half ? `<em>·</em>반반이라 첫 답으로 정했어요` : ''}</p>
+        </div>`; }).join('')}
+        <div class="ts-style"><span>${S[0]}</span><p><small>덕질 스타일</small><b>${S[1]}</b> ${S[2]}</p></div>
+      </section>`;
   }
   function tsBind() {
     const box = document.getElementById('ts-quiz'); if (!box) return;
