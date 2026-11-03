@@ -5199,7 +5199,9 @@
           <p class="ts-why">내 답: ${qs.map(([q, i]) => q.p[tsVals(t)[i] <= 50 ? 0 : 1]).join('<em>·</em>')}${x.half ? `<em>·</em>반반이라 첫 답으로 정했어요` : ''}</p>
         </div>`; }).join('')}
         <div class="ts-style"><p><small>덕질 스타일</small><b>${S[1]}</b> ${S[2]}</p></div>
-      </section>`;
+      </section>
+      <details class="ts-all"><summary>16가지 유형 모두 보기</summary><ul>${TS_TYPES.map((y, n) => { const bits = [n >> 3 & 1, n >> 2 & 1, n >> 1 & 1, n & 1], me = y === T;
+        return `<li${me ? ' class="me"' : ''}><span class="ts-mini">${bits.map((v, k) => TS_AX[k][v][0]).join('')}</span><p><b>${y[1]}${me ? ' <em>나</em>' : ''}</b><small>${y[2]}</small></p></li>`; }).join('')}</ul></details>`;
   }
   // 사분면: 사람마다 점 하나 (지도 2장: 감상×결, 곡×발견). pp = [[답, 색 번호, 이름]]
   const TS_MAPS = [[0, 3], [1, 2]];
