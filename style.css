@@ -2208,3 +2208,15 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mt-merge textarea { box-sizing: border-box; width: 100%; margin: 8px 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--tint-2, #C9D9CE); font: inherit; font-size: 13px; resize: vertical; background: var(--card, #fff); color: inherit; }
 .mt-merge .mt-go { width: 100%; margin-bottom: 14px; }
 .mt-room-go { width: 100%; margin: 0 0 14px; }
+.mt-room-new { display: grid; gap: 8px; margin: 8px 0 4px; }
+.mt-room-new[hidden] { display: none; }
+.mt-room-new input { box-sizing: border-box; width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--tint-2, #C9D9CE); font: inherit; background: var(--card, #fff); color: inherit; }
+.mt-room-t { margin: 0 0 10px; text-align: center; font-weight: 800; font-size: 15px; letter-spacing: .02em; }
+.mt-hero .mt-room-t { color: #fff; position: relative; }
+.mt-merge-list { display: grid; gap: 6px; margin-bottom: 10px; }
+.mt-ml-h { margin: 2px 0; font-size: 12px; color: var(--muted); font-weight: 700; }
+.mt-ml { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--card, #fff); font-size: 14px; }
+.mt-ml input { width: 18px; height: 18px; accent-color: var(--green); flex: none; }
+.mt-ml b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-ml small { color: var(--muted); font-size: 12px; flex: none; }
+.mt-ml-bad { margin: 2px 0; font-size: 12px; color: #B4541A; line-height: 1.5; }
