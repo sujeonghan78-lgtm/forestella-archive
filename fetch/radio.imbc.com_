@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+	<meta charset="euc-kr">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="referrer" content="no-referrer-when-downgrade">
+	<title>MBC 라디오 | 만나면 좋은 친구 MBC</title>
+	<meta property="og:title" content="MBC 라디오 | 만나면 좋은 친구 MBC">
+	<meta property="og:site_name" content="MBC 라디오 | 만나면 좋은 친구 MBC">
+	<meta property="og:type" content="website">
+	<meta property="og:image" content="https://img.imbc.com/commons/2018/image/comm2018noti/meta_mbc.png">
+	<meta property="og:description" content="MBC 라디오 | 만나면 좋은 친구 MBC">
+	<meta property="og:url" content="https://www.imbc.com/broad/radio/">
+	<link href="//www.imbc.com/commons/2018/css/sub-common.css" rel="stylesheet" type="text/css">
+	<link href="//www.imbc.com/commons/2018/css/slick.css" rel="stylesheet" type="text/css">
+	<link href="//www.imbc.com/commons/2018/css/radio.css" rel="stylesheet" type="text/css">
+	<script src="//www.imbc.com/commons/libs/jquery-1.12.3.min.js"></script>
+	<script src="//www.imbc.com/commons/2018/js/common.js" type="text/javascript"></script>
+	<script src="//www.imbc.com/commons/2018/js/slick.min.js" type="text/javascript"></script>
+	<script src="//www.imbc.com/commons/2018/js/lib.common.2018.js" type="text/javascript"></script>
+	<script type="text/javascript" src="//www.imbc.com/common/js/global_function.js"></script>
+	<script type="text/javascript" src="//www.imbc.com/broad/radio/radiopro_admin/WizRadio.js"
+		charset="euc-kr"></script>
+	<!--[if lt IE 9]><script src="//www.imbc.com/commons/libs/html5shiv.min.js" type="text/javascript"></script><![endif]-->
+	<script src="//www.imbc.com/commons/2018/js/radio.main.ui.js" type="text/javascript"></script>
+	<script src="//www.imbc.com/commons/2018/js/lib.radio.main.2018.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		(function (w, d, a) {
+			w.__beusablerumclient__ = {
+				load: function (src) {
+					var b = d.createElement("script");
+					b.src = src; b.async = true; b.type = "text/javascript";
+					d.getElementsByTagName("head")[0].appendChild(b);
+				}
+			}; w.__beusablerumclient__.load(a);
+		})(window, document, '//rum.beusable.net/script/b190115e153931u160/e0e66f776d');
+	</script>
+
+</head>
+
+<body>
+	<div id="accessibility">
+		<a href="#container">본문 바로가기</a>
+		<a href="#footer">푸터(고객센터 등) 바로가기</a>
+	</div>
+	<div id="wrap" class="main">
+		<div id="header">
+			<!-- 헤더, 네비 -->
+			<div class="nav wrapper">
+				<!-- 네비게이션 -->
+			</div>
+		</div>
+		<div id="container" class="wrap-radio main-radio">
+			<div class="radio-top-bg">
+				<div class="radio-bg">
+				</div>
+			</div>
+			<div class="wrap-channel">
+				<div class="channel ch-fm">
+					<h1><img src="//img.imbc.com/commons/2018/image/radio/logo-fm.png" alt="표준FM 95.9"></h1>
+				</div>
+				<div class="channel ch-fm4u">
+					<h1><img src="//img.imbc.com/commons/2018/image/radio/logo-fm4u.png" alt="FM4U 91.9"></h1>
+				</div>
+				<div class="wrap-link">
+
+					<ul>
+						
+                        
+                        <li>
+                            <a href="https://miniwebapp.imbc.com" target="_blank" title="새창">
+                                <span class="img"><img src="//img.imbc.com/broad/radio/s9_2015_main/s9_2018_quic/__icsFiles/thumbnail/2026/02/05/4_1.png" alt="스마트 라디오 mini" /></span>
+                                <span class="ellipsis">스마트 라디오 mini</span>
+                            </a>
+                        </li>
+                        
+						
+                        
+                        <li>
+                            <a href="https://www.imbc.com/broad/radio/special_vod/viewradio/index.html" target="_blank" title="새창">
+                                <span class="img"><img src="//img.imbc.com/broad/radio/s9_2015_main/s9_2018_quic/__icsFiles/thumbnail/2026/02/05/3_1.png" alt="보라 편성표" /></span>
+                                <span class="ellipsis">보라 편성표</span>
+                            </a>
+                        </li>
+                        
+						
+                        
+                        <li>
+                            <a href="https://www.youtube.com/@radiombc" target="_blank" title="새창">
+                                <span class="img"><img src="//img.imbc.com/broad/radio/s9_2015_main/s9_2018_quic/__icsFiles/thumbnail/2026/02/05/2_1.png" alt="공식 유튜브 므흐즈" /></span>
+                                <span class="ellipsis">공식 유튜브 므흐즈</span>
+                            </a>
+                        </li>
+                        
+						
+                        
+                        <li>
+                            <a href="https://www.youtube.com/@mbcradio_sisa" target="_blank" title="새창">
+                                <span class="img"><img src="//img.imbc.com/broad/radio/s9_2015_main/s9_2018_quic/__icsFiles/thumbnail/2026/02/05/1_1.png" alt="라디오 시사 유튜브" /></span>
+                                <span class="ellipsis">라디오 시사 유튜브</span>
+                            </a>
+                        </li>
+                        
+						
+                        
+                        <li>
+                            <a href="https://www.youtube.com/@idolradio" target="_blank" title="새창">
+                                <span class="img"><img src="//img.imbc.com/broad/radio/s9_2015_main/s9_2018_quic/__icsFiles/thumbnail/2026/02/05/5_1.png" alt="아이돌 라디오 유니버스" /></span>
+                                <span class="ellipsis">아이돌 라디오 유니버스</span>
+                            </a>
+                        </li>
+                        
+						
+					</ul>
+				</div>
+			</div>
+			<div class="wrap-notice">
+				<div class="radio-content">
+					<div class="wrap-section">
+						<div class="banner-float">
+							<div class="banner-item">
+								
+								
+								<a href="https://program.imbc.com/radio/noon/events/2373"
+									>
+									<img src="//img.imbc.com/broad/radio/s9_2015_main/maintop/__icsFiles/afieldfile/2026/11/03/1793693036.png"
+										alt="연말특집 바로크로 돌아가다">
+								</a>
+								
+								
+								
+								<a href="https://www.imbc.com/broad/radio/notice/3901151_74964.html"
+									>
+									<img src="//img.imbc.com/broad/radio/s9_2015_main/maintop/__icsFiles/afieldfile/2026/11/02/439x266.jpg"
+										alt="라디오 템플릿 개편">
+								</a>
+								
+								
+								
+								<a href="https://playvod.imbc.com/Vod/VodPlay?broadcastId=1001919103516100000"
+									>
+									<img src="//img.imbc.com/broad/radio/s9_2015_main/maintop/__icsFiles/afieldfile/2026/10/07/jungo_oneus.jpg"
+										alt="정오의 희망곡 원어스">
+								</a>
+								
+								
+								
+								<a href="https://www.youtube.com/channel/UCTTmtS2ljy1vyl_s-d_LEHQ"
+									>
+									<img src="//img.imbc.com/broad/radio/s9_2015_main/maintop/__icsFiles/afieldfile/2022/04/13/radiotop.jpg"
+										alt="MBC RADIO 시사 YouTube">
+								</a>
+								
+								
+							</div>
+						</div>
+						<div class="r-notice">
+							<a
+								href="//www.imbc.com/broad/radio/notice/index.html"><span class="tit">알립니다</span></a><a
+								href="http://www.imbc.com/broad/radio/notice/3901151_74964.html"><span
+									class="cont ellipsis">라디오 홈페이지 개편 안내</span></a>
+						</div>
+					</div>
+					<div class="wrap-now">
+						<p class="tit">Radio NOW</p>
+						<div class="notice-list">
+							<ul></ul>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="radio-bbs">
+				<h3 class="bbs-nav"><a href="//www.imbc.com/broad/radio/special_vod/special_vod/index.html">#보이는라디오</a>
+				</h3>
+				<div class="wrap-bbs bora-list type-video">
+					<ul></ul>
+				</div>
+				<h3 class="bbs-nav"><a href="//www.imbc.com/broad/radio/photo/?gid=30">#사진방</a></h3>
+				<div class="wrap-bbs wrap-photo">
+					<div class="photo-radio">
+						<ul class="photo-list"></ul>
+					</div>
+				</div>
+				<h3 class="bbs-nav"><a href="https://clip.imbc.com/BrandClip/mbc?station=672" target="_blank">#라디오 클립</a></h3>
+				<div class="wrap-bbs bora-list">
+					<ul></ul>
+				</div>
+			</div>
+			<div class="radio-chart">
+				<h2><a href="//www.imbc.com/broad/radio/mrachart/index.html">정오의 희망곡 차트</a></h2>
+				<div class="wrap-chart">
+					<div class="slide-chart"></div>
+				</div>
+			</div>
+			<div class="radio-all">
+				<div class="all-map">
+					<div class="fm-all">
+						<strong>표준FM 95.9</strong>
+						<ul></ul>
+					</div>
+					<div class="fm4u-idol">
+					    <div class="fm4u-all">
+    						<strong>FM4U 91.9</strong>
+    						<ul></ul>
+					    </div>
+					    <div class="idol-all">
+    						<strong>아이돌 라디오 유니버스</strong>
+    						<ul></ul>
+					    </div>
+					</div>
+					<div class="allthat-youtube">
+					    <div class="allthat-all">
+    						<strong>올댓뮤직</strong>
+    						<ul></ul>
+    					</div>
+					    <div class="youtube-all">
+    						<strong>유튜브 오리지널</strong>
+    						<ul></ul>
+					    </div>
+					<div class="podcast-all">
+    						<strong>팟캐스트 오리지널</strong>
+    						<ul></ul>
+					</div>
+					</div>
+					<div class="menu-etc">
+						<strong>라디오 이용하기</strong>
+						<div class="box-etc">
+							<ul class="hori">
+								<li><a href="//www.imbc.com/broad/radio/radiogift/index.html">상품문의</a></li>
+								<li><a href="//www.imbc.com/broad/radio/frequency/">전국 주파수 안내</a></li>
+								<li><a href="//www.imbc.com/broad/radio/radioads/">라디오 광고/협찬 안내</a></li>
+							</ul>
+							<ul class="hori">
+								<li><span>편성표 :&nbsp;&nbsp;</span><a
+										href="https://schedule.imbc.com/schedule.html?chcode=FM">표준FM</a></li>
+								<li><a href="https://schedule.imbc.com/schedule.html?chcode=FM4U">FM4U</a></li>
+								<li><a href="https://schedule.imbc.com/schedule.html?chcode=ALLTHAT&c=5">올댓뮤직</a></li>
+								<li><a href="https://www.imbc.com/broad/radio/podcastm/index.html">MBC 라디오 팟캐스트</a></li>
+							</ul>
+							<span class="sub-tit"><a href="https://imnews.imbc.com/replay/nwradio/index.html">라디오 뉴스</a></span>
+									<!-- <ul class="hori">
+										
+										<li><a href="//imnews.imbc.com/replay/nwradio/index.html">라디오 뉴스</a></li>
+										
+										<li><a href="//www.imbc.com/broad/radio/fm/newseconomy/index.html">뉴스와 경제</a></li>
+										
+									</ul> -->
+							<span class="sub-tit">라디오 캠페인</span>
+							<ul class="hori">
+								
+								<li><a
+										href="https://miniwebapp.imbc.com/index?service=podcast&program=1000873100000100000">잠깐만</a>
+								</li>
+								
+								<li><a
+										href="https://miniwebapp.imbc.com/index?service=podcast&program=1000885100000100000">꿈의 지도</a>
+								</li>
+								
+								<li><a
+										href="//www.imbc.com/broad/radio/mbcurisori/index.html">우리의 소리를 찾아서</a>
+								</li>
+								
+								<li><a
+										href="https://miniwebapp.imbc.com/index?service=podcast&program=1003492100000100000">굿체인지</a>
+								</li>
+								
+								<li><a
+										href="https://miniwebapp.imbc.com/index?service=podcast&program=1006254100000100000">ESG캠페인</a>
+								</li>
+								
+								<li><a
+										href="https://miniwebapp.imbc.com/index?service=podcast&program=1006315100000100000">연중캠페인</a>
+								</li>
+								
+								<li><a
+										href="https://miniwebapp.imbc.com/index?service=podcast&program=1006891100000100000">생명존중 캠페인</a>
+								</li>
+								
+							</ul>
+							<span class="sub-tit" style="margin-bottom:8px">라디오SNS</span>
+							<a href="https://www.facebook.com/radiombc" target="_blank"
+								style="display:inline-block;margin-right: 10px;"><img
+									src="//img.imbc.com/commons/2018/image/radio/ico-fb.png" alt="라디오 페이스북"></a><a
+								href="https://www.instagram.com/radiombc" target="_blank"
+								style="display:inline-block;margin-right: 10px;"><img
+									src="//img.imbc.com/commons/2018/image/radio/ico-insta.png" alt="라디오 인스타그램"></a><a
+								href="https://www.youtube.com/channel/UCKNZsAeQXpvI-Mpoc0ZKhsA" target="_blank"><img
+									src="//img.imbc.com/commons/2018/image/radio/ico-youtube.png" alt="라디오 유튜브"></a>
+							<span class="sub-tit">라디오 플러스</span>
+							<ul class="hori">
+								<li><a href="https://www.imbc.com/broad/radio/podcastm/v2/setting/corner/core/3497638_72545.html"
+										target="_blank" title="새창열림">라디오 특집 다시듣기</a></li>
+								<li><a href="https://www.imbc.com/broad/radio/event/gma/" target="_blank"
+										title="새창열림">골든 마우스 어워즈</a></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="footer">
+			<!-- 푸터 -->
+			<div class="fnb wrapper">
+				<!-- fnb -->
+			</div>
+		</div>
+	</div>
+	<script language="javascript">
+		RadioInfo.Init();
+	</script>
+</body>
+
+</html>
