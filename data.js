@@ -25,8 +25,12 @@
     return rows.filter(r => r.some(v => v.trim() !== ''));
   }
 
+  // 같은 시트 글자를 여러 번 읽을 때(제보 탭은 한 번 만들 때 17번쯤) 다시 쪼개지 않게 기억해 둬요
+  const csvMemo = new Map();
   function toObjects(text) {
-    const [head, ...rows] = parseCSV(text);
+    let parsed = csvMemo.get(text);
+    if (!parsed) { parsed = parseCSV(text); if (csvMemo.size > 12) csvMemo.clear(); csvMemo.set(text, parsed); }
+    const [head, ...rows] = parsed;
     if (!head) return [];
     const keys = head.map(h => h.trim());
     return rows.map(r => {
@@ -181,7 +185,7 @@
   // 구글 폼 응답 탭은 질문 제목이 열 이름이 돼서, 이름 일부로 찾아요.
   // 셋리 판 구분 번호: 곡 목록이 같으면 같은 번호
   const slVer = songs => { let h = 5381; songs.join('/').split('').forEach(ch => { h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0; }); return h.toString(36); };
-  const line0 = (r, key) => (((r.raw || '').match(new RegExp('^[ \\t]*' + key + '[ \\t]*[:：][ \\t]*(.*)$', 'm')) || [])[1] || '').trim();
+  const line0 = (r, key) => (((r.raw || '').match(lineRx(key)) || [])[1] || '').trim();
   // 관리자가 중복이라 원본에 합친 일정(window.SB_EV_MERGE {중복ID: 원본ID})에 들어온 이름 고치기·캐스팅 회차·셋리 고치기는 원본 일정 것으로 쳐요.
   // 날짜·장소 제안과 삭제 요청은 안 옮겨요 (날짜는 원본 것, 장소는 원본 빈 칸만 채워요)
   const MV_TYPES = new Set(['이름수정', '이름확인', '캐스팅', '셋리스트', '셋리확인']);
@@ -190,13 +194,14 @@
     list.forEach(r => { if (!MV_TYPES.has(r.type)) return; r.title = (r.title || '').replace(/\[ID ([\w-]+)\]/, (m, id) => hid.has(id) && to[id] ? `[ID ${to[id]}]` : m); });
     return list;
   }
+  const lineRxs = {}, lineRx = key => lineRxs[key] || (lineRxs[key] = new RegExp('^[ \\t]*' + key + '[ \\t]*[:：][ \\t]*(.*)$', 'm'));
   function buildReports(rows, all) {
     const pick = (r, word) => {
       const k = Object.keys(r).find(k => k.includes(word));
       return k ? r[k] : '';
     };
     // 통합형 폼: "제보 내용" 한 칸에 "종류: … / 날짜: … / 일정: … / 곡: … / 링크: … / 내용: …" 줄로 들어와요 (예전 칸 나뉜 응답도 읽어요)
-    const line = (txt, key) => { const v = (((txt || '').match(new RegExp('^[ \\t]*' + key + '[ \\t]*[:：][ \\t]*(.*)$', 'm')) || [])[1] || '').trim(); return /중 하나$/.test(v) ? '' : v; };
+    const line = (txt, key) => { const v = (((txt || '').match(lineRx(key)) || [])[1] || '').trim(); return /중 하나$/.test(v) ? '' : v; };
     return mvMerged(rows.map(r => {
       const c = pick(r, '내용');
       const free = c && !/^\s*(종류|날짜|일정|곡|링크|내용)\s*[:：]/m.test(c) ? c.trim() : '';
