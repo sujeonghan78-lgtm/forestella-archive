@@ -4922,6 +4922,7 @@
     ['story', '숲별 이야기', () => homeStory()],
     ['wish', '듣고 싶은 곡 TOP 5', () => homeWish()],
     ['videos', '유튜브 새 영상', () => homeVideos()],
+    ['views', '조회수 소식', () => homeViews()],
     ['shortcuts', '음반 · 콘서트', () => homeShortcuts()],
     ['programs', '프로그램별 모아보기', () => homePrograms()],
     ['ago', '지난 오늘', () => homeAgo()],
@@ -5206,6 +5207,7 @@
   const ytChOf = (v, c) => c === '포레스텔라' ? !v.ch && !v.bc : c === '방송사' ? v.bc && !YT_PROD.test(v.bc) : c === '소속사·제작사' ? v.bc && YT_PROD.test(v.bc) : v.ch === c;
   const ytChLabel = c => c === '포레스텔라' || c === '방송사' || c === '소속사·제작사' ? c : YT_CH_NAMES[c] || c + ' 채널';
   const YT_SORTS = { '': '최신순', old: '오래된순' };
+  const YT_SORTS_V = { ...YT_SORTS, views: '조회수 순', up: '이번 주 많이 오른 순' };  // 유튜브 화면만
   function ytState() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || '');
     return { ch: multiOf(qs, 'ch'), kind: multiOf(qs, 'kind'), y: multiOf(qs, 'y'), m: multiOf(qs, 'm'), o: qs.get('o') || '', q: qs.get('q') || '' };
@@ -5233,7 +5235,7 @@
     const qm = matcher(st.q);
     const chOk = v => !st.ch.length || st.ch.some(c => ytChOf(v, c));
     let list = all.filter(v => chOk(v) && (!st.kind.length || st.kind.includes(v.kind)) && (!st.y.length || st.y.includes(v.date.slice(0, 4))) && (!st.m.length || st.m.some(m => v.members.includes(m))) && (!qm || qm(vidText(v))));
-    list = [...list].sort((a, b) => st.o === 'old' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
+    list = [...list].sort((a, b) => st.o === 'old' ? a.date.localeCompare(b.date) : st.o === 'views' ? (b.views || 0) - (a.views || 0) : st.o === 'up' ? (b.wk || 0) - (a.wk || 0) || (b.views || 0) - (a.views || 0) : b.date.localeCompare(a.date));
     const btn = k => `<button type="button" class="yf-btn${st[k].length ? ' on' : ''}" data-yf="${k}">${ytBtnLabel(k, st[k])}</button>`;
     const pill = (lab, next) => `<a class="yf-pill" href="${ytLink(next)}">${esc(lab)} <span aria-hidden="true">✕</span></a>`;
     const pills = [];
@@ -5248,7 +5250,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input type="search" id="yt-q" value="${esc(st.q)}" placeholder="영상 찾기 · 초성 OK" aria-label="영상 찾기" autocomplete="off">
       </form>
-      <div class="yf-row">${['ch', 'kind', 'y', 'm'].map(btn).join('')}<button type="button" class="yf-btn yf-sort" data-yf="o">${st.o === 'old' ? '오래된' : '최신'} ⇅</button></div>
+      <div class="yf-row">${['ch', 'kind', 'y', 'm'].map(btn).join('')}<button type="button" class="yf-btn yf-sort" data-yf="o">${{ old: '오래된', views: '조회수', up: '많이 오른' }[st.o] || '최신'} ⇅</button></div>
       ${pills.length ? `<div class="yf-pills">${pills.join('')}</div>` : ''}
       <div class="view-row"><p class="sub">${list.length.toLocaleString()}개${pills.length ? ` · <a class="yf-clear" href="${ytLink({ q: st.q })}">모두 지우기</a>` : ''}</p>${albumBtn()}</div>
       </div>
@@ -5262,7 +5264,7 @@
     if (!w) return;
     if (k === 'o') {
       w.innerHTML = `<div class="yf-back"></div><section class="yf-sheet" role="dialog" aria-label="정렬"><div class="yf-head"><b>정렬</b></div>
-        <div class="yf-opts">${Object.entries(YT_SORTS).map(([v, t]) => `<a class="chip${st.o === v ? ' on' : ''}" href="${ytLink({ ...st, o: v })}">${t}</a>`).join('')}</div></section>`;
+        <div class="yf-opts">${Object.entries(YT_SORTS_V).map(([v, t]) => `<a class="chip${st.o === v ? ' on' : ''}" href="${ytLink({ ...st, o: v })}">${t}</a>`).join('')}</div></section>`;
     } else {
       const opts = ytOpts(all)[k], [name, lab] = YT_F[k];
       const cnt = x => all.filter(v => k === 'ch' ? ytChOf(v, x) : k === 'kind' ? v.kind === x : k === 'y' ? v.date.startsWith(x) : v.members.includes(x)).length;
@@ -7052,10 +7054,39 @@
   // ---------- 공식 유튜브 (data/yt_videos.json) ----------
   const ytThumbUrl = id => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`;
   const ytTitle = t => t.replace(/^포레스텔라\s*\(Forestella\)\s*/i, '');
+  // 조회수: 1만 넘으면 '만', 1억 넘으면 '억' (소수 한 자리는 100만 아래·10억 아래만)
+  function fmtViews(n) {
+    if (n >= 1e8) return `${+(n / 1e8).toFixed(n < 1e9 ? 1 : 0)}억`;
+    if (n >= 1e4) return `${(+(n / 1e4).toFixed(n < 1e6 ? 1 : 0)).toLocaleString()}만`;
+    return n.toLocaleString();
+  }
+  const VIEW_STEPS = [1e5, 2e5, 3e5, 5e5, 1e6, 2e6, 3e6, 5e6, 1e7, 2e7, 3e7, 5e7, 1e8];
+  const stepLabel = m => m >= 1e8 ? `${m / 1e8}억` : `${m / 1e4}만`;
+  // 홈 '조회수 소식': 이번 주 고비 돌파 🎉 · 곧 고비 ⏳ · 많이 오른 📈 (기록이 쌓이기 전엔 많이 본 영상)
+  function homeViews() {
+    const all = (data.official || []).filter(v => v.views);
+    if (!all.length) return '';
+    const crossed = all.map(v => [v, VIEW_STEPS.filter(m => v.prev != null && v.prev < m && v.views >= m).pop()]).filter(x => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 2);
+    const seen = new Set(crossed.map(x => x[0]));
+    const near = all.filter(v => !seen.has(v)).map(v => { const m = VIEW_STEPS.find(m => m > v.views); return [v, m, m ? m - v.views : 0]; })
+      .filter(([, m, left]) => m && m >= 5e5 && left / m <= 0.03).sort((a, b) => a[2] / a[1] - b[2] / b[1]).slice(0, 2);
+    near.forEach(x => seen.add(x[0]));
+    const up = all.filter(v => v.wk > 0 && !seen.has(v)).sort((a, b) => b.wk - a.wk).slice(0, 2);
+    const top = up.length ? [] : all.filter(v => !seen.has(v)).sort((a, b) => b.views - a.views).slice(0, 3);
+    const row = (v, ic, note) => `<a class="vw-row" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener"><i class="vw-th"><img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()"></i><span class="vw-t"><b>${esc(ytTitle(v.title))}</b><small>${ic} ${note}</small></span></a>`;
+    const rows = [
+      ...crossed.map(([v, m]) => row(v, '🎉', `<b class="vw-hit">${stepLabel(m)} 돌파!</b> · 지금 ${fmtViews(v.views)}`)),
+      ...near.map(([v, m, left]) => row(v, '⏳', `곧 ${stepLabel(m)} · <b>${fmtViews(left)}</b> 남음`)),
+      ...up.map(v => row(v, '📈', `이번 주 <b>+${fmtViews(v.wk)}</b> · ${fmtViews(v.views)}`)),
+      ...top.map(v => row(v, '▶', `${fmtViews(v.views)}회`)),
+    ];
+    return `<section class="block home-views"><div class="block-head"><h2 class="h2">▶ 조회수 소식${help('공식·멤버·방송사 채널 영상 조회수를 하루 한 번 모아요. 이번 주에 100만·500만 같은 고비를 넘은 영상, 곧 넘을 영상, 많이 오른 영상이에요.')}</h2><a class="more" href="#/yt?o=${up.length ? 'up' : 'views'}">전체 보기</a></div>
+      <div class="stack vw-list">${rows.join('')}</div></section>`;
+  }
   function ytCard(v) {
     return `<a class="x-card yt-card" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener">
         <img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()">
-        <span class="x-text"><span class="x-date">${v.bc ? esc(v.bc) + ' · ' : v.ch ? esc(v.ch) + ' 채널 · ' : ''}${esc(v.kind)} · ${esc(v.date.replace(/-/g, '.'))}</span>${esc(ytTitle(v.title))}</span>
+        <span class="x-text"><span class="x-date">${v.bc ? esc(v.bc) + ' · ' : v.ch ? esc(v.ch) + ' 채널 · ' : ''}${esc(v.kind)} · ${esc(v.date.replace(/-/g, '.'))}${v.views ? ` · ▶ ${fmtViews(v.views)}${v.wk > 0 ? ` <em class="vw-up">이번 주 +${fmtViews(v.wk)}</em>` : ''}` : ''}</span>${esc(ytTitle(v.title))}</span>
       </a>`;
   }
   // 카드 목록: 처음 n개만 보이고 '더 보기'로 n개씩 펼쳐요

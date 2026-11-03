@@ -228,7 +228,7 @@
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
-    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, places] = await Promise.all([
+    const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, places, views] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
       fetchText(s.reports).catch(() => ''),
@@ -249,8 +249,9 @@
       fetchText('data/member_career.json').catch(() => ''),
       fetchText('data/naver_links.json').catch(() => ''),
       fetchText('data/places.json').catch(() => ''),
+      fetchText('data/yt_views.json').catch(() => ''),
     ]);
-    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, places, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
+    return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, places, views, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
   function readCache() {
@@ -931,6 +932,11 @@
     try { official = JSON.parse(raw.yt || '{}').videos || []; } catch (err) { /* 없으면 넘어가요 */ }
     // 방송사 공식 채널 영상 (data/yt_bc.json, 매일 자동): v.bc = 채널 이름, 날짜는 방송일
     try { const seenId = new Set(official.map(v => v.id)); official = official.concat((JSON.parse(raw.ytbc || '{}').videos || []).filter(v => !seenId.has(v.id))).sort((a, b) => b.date.localeCompare(a.date)); } catch (err) { /* 없으면 넘어가요 */ }
+    // 조회수 (data/yt_views.json, 매일 자동): v.views = 오늘, v.wk = 일주일 동안 늘어난 수, v.prev = 일주일 전
+    let VW = {};
+    try { VW = JSON.parse(raw.views || '{}'); } catch (err) { /* 없으면 넘어가요 */ }
+    if (VW.now) official.forEach(v => { const n = VW.now[v.id]; if (n == null) return; v.views = n; const p = (VW.prev || {})[v.id]; if (p != null && VW.ago !== VW.d) { v.prev = p; v.wk = n - p; } });
+    const viewsInfo = { d: VW.d || '', ago: VW.ago || '' };
     const VIDEO_SONG_ALIAS = [
       [/spread silk on my heart|내 마음의 주단을 깔고/i, '내 마음에 주단을 깔고'], [/as i live|살다가/i, '살다가'], [/(^|[^a-z])till([^a-z]|$)/i, '사랑의 맹세(till)'],
       [/마마\s*\(mama\)|mama\s*\((원곡|original)|^mama\s*\(original/i, 'mama'], [/l'?immensit[aá]/i, "l'immensita"], [/my eden/i, 'my eden'], [/(^|[^a-z])angel([^a-z]|$)/i, 'angel'], [/내 나라 내 겨[례레]/, '내 나라 내 겨레'],
@@ -1212,7 +1218,7 @@
     votes.filter(v => !v.ok).forEach(v => { const so = songs.get(songAlias[v.k] || v.k); if (so) (so.fixProps = so.fixProps || []).push(v); });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, anniv: annivAll, autoMerge, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, anniv: annivAll, autoMerge, viewsInfo, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
