@@ -7436,7 +7436,7 @@
     if (first) mine.push([first.date, row('🎫', '첫 직관', `${dot(first.date)} · <a href="#/e/${encodeURIComponent(first.id)}">${esc(first.title)}</a>`)]);
     Object.entries(st.days || {}).forEach(([d, x]) => mine.push([d, row(x.ic, `${esc(x.name)} 함께함`, `${dot(d)}${(() => { const k = Object.keys(st.bdg || {}).find(k => st.bdg[k].d === d); return k ? ` · ${st.bdg[k].gold ? '금빛 뱃지' : '뱃지'} ${anvRank(k) ? anvRank(k) + '번째 수집자' : '받음'}` : ''; })()}`)]));
     mine.sort((a, b) => b[0].localeCompare(a[0]));
-    const group = ANNIVS.map(([md, since, label, ic]) => { const nx = nextOf(md), n = since ? +nx.slice(0, 4) - since : 0; return [nx, `<a class="dy-a" href="#/days?m=${md.replace('-', '')}">` + row(ic, since ? `${label === '데뷔' ? '포레스텔라 데뷔' : label} ${n}주년` : label, since ? `${since}.${md.replace('-', '.')}` : md.replace(/^0?(\d+)-0?(\d+)$/, '$1월 $2일'), dd(nx)) + '</a>']; }).sort((a, b) => a[0].localeCompare(b[0]));
+    const group = ANNIVS.map(([md, since, label, ic]) => { const nx = nextOf(md), n = since ? +nx.slice(0, 4) - since : 0; return [nx, `<a class="dy-a" href="#/days?m=${md.replace('-', '')}">` + row(ic, since ? `${label === '데뷔' || label === '결성' ? '포레스텔라 ' + label : label} ${n}주년` : label, since ? `${since}.${md.replace('-', '.')}` : md.replace(/^0?(\d+)-0?(\d+)$/, '$1월 $2일'), dd(nx)) + '</a>']; }).sort((a, b) => a[0].localeCompare(b[0]));
     const fd = st.first ? ds(st.first, today) + 1 : 1;
     return `
       <div class="about-top">
@@ -7453,6 +7453,7 @@
   // 기념일: 그날 하루 화면에 잎·별이 흩날리고, 가끔 뜨는 숨은 숲을 누르면 뱃지를 받아요
   const ANNIVS = [
     ['11-03', 2017, '팬텀싱어 우승', '🏆', { evq: /팬텀싱어 ?2 \((1[23]|1~13)회\)|우승팀 포레스텔라 첫 번째 팬미팅/, songs: ['Come Un Eterno Addio', 'Il Mirto e la Rosa', "In Un'altra Vita", 'Maldita Sea Mi Suerte'], vq: /팬텀싱어\s?2|팬텀싱어 시즌2/, from: '2017-08-01', to: '2018-02-28', prog: '팬텀싱어' }],
+    ['09-26', 2017, '결성', '🌿', { prog: '팬텀싱어' }],
     ['03-14', 2018, '데뷔', '🌲', { day: '2018-03-14', from: '2018-03-01', to: '2018-03-31', vq: /데뷔|Mosaic|Into the Forest|Ever Green/i }],
     ['07-15', 0, '배두훈 생일', '🎂', { m: '배두훈' }], ['03-08', 0, '강형호 생일', '🎂', { m: '강형호' }], ['11-19', 0, '조민규 생일', '🎂', { m: '조민규' }], ['07-10', 0, '고우림 생일', '🎂', { m: '고우림' }],
   ];
@@ -7471,7 +7472,7 @@
       + sec('공식 X 생일 글', xs.length ? `<a class="more-link" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${encodeURIComponent(M.m)}">생일 축하 글 모아보기 ›</a>` : '')
       + (M.prog ? `<a class="more-link" href="${progHref(M.prog)}">${esc(M.prog)} 모아보기 ›</a>` : '')
       + (M.m ? `<a class="more-link" href="#/members?m=${encodeURIComponent(M.m)}">${esc(M.m)} 활동 보기 ›</a>` : '');
-    return html ? `<section class="mg dy-mem" id="dy-mem"><h2 class="mg-h">${A[3]} ${esc(A[1] ? `${A[2] === '데뷔' ? '포레스텔라 데뷔' : A[2]}의 추억` : A[2])}</h2>${html}</section>` : '';
+    return html ? `<section class="mg dy-mem" id="dy-mem"><h2 class="mg-h">${A[3]} ${esc(A[1] ? `${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]}의 추억` : A[2])}</h2>${html}</section>` : '';
   }
   const ANV_KEY = 'sb-anniv';
   const anvStore = () => { try { return JSON.parse(localStorage.getItem(ANV_KEY)) || {}; } catch (e) { return {}; } };
@@ -7482,7 +7483,7 @@
     if (!a && sc && sc.slice(5) === d.slice(5) && sc < d) { const n = +d.slice(0, 4) - +sc.slice(0, 4); return { d, ic: '🌱', name: `입덕 ${n}주년`, since: sc.replace(/-/g, '.'), k: 'an-my-' + d.slice(0, 4), my: true }; }
     if (!a) return null;
     const y = +d.slice(0, 4), n = a[1] ? y - a[1] : 0;
-    const name = a[1] ? `${a[2] === '데뷔' ? '포레스텔라 데뷔' : a[2]} ${n}주년` : a[2];
+    const name = a[1] ? `${a[2] === '데뷔' || a[2] === '결성' ? '포레스텔라 ' + a[2] : a[2]} ${n}주년` : a[2];
     return { d, ic: a[3], name, since: a[1] ? `${a[1]}.${a[0].replace('-', '.')}` : '', k: 'an-' + a[0].replace('-', '') + '-' + y };
   }
   const annivGoal = a => +((a.name.match(/(\d+)주년/) || [])[1] || 5) || 5;
