@@ -5412,7 +5412,7 @@
   function mtMeAll() {
     const st = boxStats(), hs = so => mtHash(so.key);
     return {
-      n: (card.nick || '').trim().slice(0, 12) || '나', s: card.since || '',
+      n: (card.nick || '').trim().slice(0, 12) || '숲별',  // 이름 없으면 남에게도 '숲별'로 (예전엔 '나'라서 헷갈렸어요) s: card.since || '',
       f: pickList('fav').map(hs).slice(0, 15), w: pickList('wish').map(hs).slice(0, 15),
       h: st.songs.map(hs).slice(0, 150), g: [...new Set(st.went.map(e => e.id))].slice(0, 200),
       m: CARD_MEMS.map((m, i) => card.mem.includes(m) ? String(i) : '').filter(Boolean), u: mtUid().replace(/[^\w-]/g, ''), t: tsRead(),
@@ -5486,7 +5486,7 @@
           <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><svg class="mt-venn" viewBox="0 0 120 72" aria-hidden="true"><circle cx="44" cy="36" r="30"/><circle cx="76" cy="36" r="30"/><path class="mt-venn-in" d="M60 11.1a30 30 0 0 1 0 49.8a30 30 0 0 1 0-49.8z"/><circle class="mt-venn-d" cx="34" cy="30" r="5"/><circle class="mt-venn-d b" cx="86" cy="42" r="5"/></svg><p class="mt-kick">FOREST MATCH</p><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
           ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsType(tsRead())[1]}</b><span>결과 보기 ›</span></a>`
             : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
-          ${from ? `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>` : ''}
+          ${from ? (mtIsMe(from.u, me) ? `<p class="mt-from">${mtAv(from, 0)} 내가 만든 궁합 링크예요. 친구가 열면 둘의 궁합이 보여요.</p>` : `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>`) : ''}
           ${mine ? `
             <div class="mt-mine">
               <label class="mt-nick">링크에 보일 이름 <input id="mt-nick" maxlength="12" value="${esc(card.nick || '')}" placeholder="숲별"></label>
