@@ -2200,3 +2200,10 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .gift-make { margin-top: 10px; width: 100%; justify-content: center; }
 .gift-make small { font-size: 11px; opacity: .7; margin-left: 4px; }
 .ts-tbl-save { margin: 0 auto 14px; display: flex; }
+/* 받은 링크 합치기 */
+.mt-merge { margin: 14px 0; padding: 4px 16px; border-radius: 20px; background: var(--tint-1); }
+.mt-merge summary { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 0; font-size: 14px; font-weight: 700; color: var(--green); cursor: pointer; list-style: none; }
+.mt-merge summary::-webkit-details-marker { display: none; }
+.mt-merge summary svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.mt-merge textarea { box-sizing: border-box; width: 100%; margin: 8px 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--tint-2, #C9D9CE); font: inherit; font-size: 13px; resize: vertical; background: var(--card, #fff); color: inherit; }
+.mt-merge .mt-go { width: 100%; margin-bottom: 14px; }

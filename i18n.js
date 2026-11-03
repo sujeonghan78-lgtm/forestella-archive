@@ -100,11 +100,124 @@
     '아니에요': ['Not right', '違います'], '셋리 알려주기 ›': ['Share the setlist ›', 'セトリを教える ›'], '오늘': ['Today', '今日'], '어제': ['Yesterday', '昨日'],
     '갈 거예요 취소': ['Cancel going', '行くを取り消す'], '기다리는 일정 전체': ['All waiting', 'すべて見る'], '접기': ['Collapse', '閉じる'], '지우기': ['Remove', '消す'],
   });
+
+  // 취향 테스트 · 취향 궁합 (v617)
+  const LB = {
+    '음원파': ['Listener', '音源派'], '무대파': ['Stage fan', 'ステージ派'], '오리지널파': ['Original fan', 'オリジナル派'], '변주파': ['Arrange fan', 'アレンジ派'],
+    '대표곡파': ['Hits fan', '代表曲派'], '숨은 명곡파': ['Hidden-gem fan', '隠れ名曲派'], '클래식파': ['Classical fan', 'クラシック派'], '팝파': ['Pop fan', 'ポップ派'],
+    '숨죽여 듣기파': ['Quiet listener', '静かに聴く派'], '떼창파': ['Sing-along fan', '合唱派'], '오리지널 곡파': ['Originals fan', 'オリジナル曲派'], '커버곡파': ['Covers fan', 'カバー曲派'],
+    '처음 버전파': ['First-version fan', '初版派'], '편곡 버전파': ['New-arrangement fan', '新編曲派'], '큰 공연장파': ['Big-venue fan', '大会場派'], '소극장·행사파': ['Small-venue fan', '小劇場・イベント派'],
+    '외국곡파': ['Foreign-song fan', '外国語曲派'], '한국어곡파': ['Korean-song fan', '韓国語曲派'], '직관파': ['Live-goer', '現場派'], '기록파': ['Record-keeper', '記録派'], '방구석파': ['Couch fan', 'おうち派'],
+  };
+  const SH = {
+    '음원': ['Listen', '音源'], '무대': ['Stage', 'ステージ'], '오리지널': ['Original', 'オリジナル'], '변주': ['Arrange', 'アレンジ'], '대표곡': ['Hits', '代表曲'], '숨은 명곡': ['Hidden gems', '隠れ名曲'],
+    '클래식': ['Classical', 'クラシック'], '팝': ['Pop', 'ポップ'], '숨죽여 듣기': ['quiet listening', '静かに聴く'], '떼창': ['sing-along', '合唱'], '오리지널 곡': ['originals', 'オリジナル曲'], '커버곡': ['covers', 'カバー曲'],
+    '처음 버전': ['first version', '初版'], '편곡 버전': ['new arrangement', '新編曲'], '큰 공연장': ['big venues', '大会場'], '소극장·행사': ['small venues', '小劇場・イベント'], '외국곡': ['foreign songs', '外国語曲'], '한국어곡': ['Korean songs', '韓国語曲'],
+  };
+  const VSO = {
+    '음반으로 듣기': ['Listen to albums', '音源で聴く'], '무대 영상으로 보기': ['Watch stage videos', 'ステージ映像で見る'], '포레 오리지널 곡': ['Forestella originals', 'フォレのオリジナル曲'], '커버곡·재해석곡': ['Covers & reinterpretations', 'カバー・再解釈曲'],
+    '대놓고 유명곡': ['Famous hits', '誰もが知る名曲'], '숨어 듣는 명곡': ['Hidden gems', 'こっそり聴く名曲'], '클래식 크로스오버': ['Classical crossover', 'クラシカル・クロスオーバー'], '록·팝': ['Rock & pop', 'ロック・ポップ'],
+    '숨죽여 듣기': ['Listen quietly', '静かに聴く'], '떼창': ['Sing along', '合唱'], '처음 부른 버전': ['The first version', '最初のバージョン'], '새로 편곡한 버전': ['A new arrangement', '新しい編曲'],
+    '큰 공연장 콘서트': ['Big-venue concerts', '大会場コンサート'], '소극장·지역 행사': ['Small halls & local events', '小劇場・地方イベント'], '외국어 곡': ['Foreign-language songs', '外国語の曲'], '한국어 곡': ['Korean songs', '韓国語の曲'],
+  };
+  Object.assign(T, LB, VSO, {
+    '취향 궁합': ['Taste match', '好み相性'], '숲별 취향 궁합': ['Soopbyeol taste match', 'スッピョル好み相性'], '‹ 취향 궁합': ['‹ Taste match', '‹ 好み相性'], '‹ 이전': ['‹ Back', '‹ 戻る'], '‹ 함께한 기념일': ['‹ Our anniversaries', '‹ 一緒の記念日'],
+    '나랑 취향이 얼마나 비슷할까?': ['How alike are our tastes?', '私と好みはどれくらい似てる?'], '링크를 보내면 친구 기록이랑 바로 비교돼요': ['Send a link and compare with a friend\'s records', 'リンクを送ると友だちの記録とすぐ比べられます'],
+    '취향 테스트 먼저 해 볼래요?': ['Try the taste test first?', 'まず好みテストをしてみる?'], '9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요': ['9 questions · 1 minute. Works even without any records', '9問・1分で完了。記録がなくても相性が見られます'],
+    '아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.': ['Nothing to compare yet. Tap ♥ or 💚 favorite on songs, or 🎫 attended on schedules.', 'まだ比べる記録がありません。曲に♥や💚最推し曲、予定に🎫現場を押すと相性が見られます。'],
+    '곡 아카이브 가기': ['Go to song archive', '曲アーカイブへ'], '나의 취향 유형': ['My taste type', '私の好みタイプ'], '결과 보기 ›': ['See result ›', '結果を見る ›'],
+    '링크에 보일 이름': ['Name shown in the link', 'リンクに表示する名前'], '링크에 담을 것': ['What to include', 'リンクに入れるもの'], '체크한 것만 보내요': ['Only checked items are sent', 'チェックした項目だけ送ります'],
+    '취향 테스트': ['Taste test', '好みテスト'], '최애곡': ['Favorite songs', '最推し曲'], '소취곡': ['Wish songs', '聴きたい曲'], '♥ 곡': ['♥ songs', '♥曲'], '직관': ['Attended', '現場'], '최애 멤버': ['Favorite member', '推しメン'], '입덕일': ['Fan since', 'ファンになった日'],
+    '없음': ['None', 'なし'], '안 함': ['Not taken', '未実施'], '내 궁합 링크 보내기': ['Send my match link', '相性リンクを送る'],
+    '다음': ['Next', '次へ'], '마지막 질문으로': ['To the last question', '最後の質問へ'], '반반': ['Half & half', '半々'], 'VS': ['VS', 'VS'],
+    '나의 덕질 스타일은?': ['What\'s your fan style?', 'あなたの推し活スタイルは?'], '공연은 직접 봐야지': ['Shows are meant to be seen live', '公演は生で見なきゃ'], '날짜·셋리 정리가 행복해': ['Organizing dates and setlists makes me happy', '日付・セトリ整理が幸せ'], '영상으로 충분해': ['Videos are enough', '映像で十分'],
+    '나의 숲별 취향 유형': ['My Soopbyeol taste type', '私のスッピョル好みタイプ'], '나는 어디쯤?': ['Where am I?', '私はどのあたり?'], '사분면 이미지 저장': ['Save quadrant image', '四象限画像を保存'],
+    '나의 취향 지도': ['My taste map', '私の好みマップ'], '즐기는 방식': ['How you enjoy', '楽しみ方'], '좋아하는 버전': ['Favorite version', '好きなバージョン'], '곡 고르는 눈': ['Song taste', '曲を選ぶ目'], '음악 장르': ['Genre', 'ジャンル'], '덕질 스타일': ['Fan style', '推し活スタイル'],
+    '딱 반반이라 첫 답으로 정했어요': ['Exactly half, so your first answer decided', 'ちょうど半々なので最初の答えで決めました'], '거의 반반이에요': ['Almost half & half', 'ほぼ半々です'],
+    '숲별 통계': ['Fan stats', 'みんなの統計'], '축마다 숲별은': ['Fans on each axis', '軸ごとのみんな'], '숲별 통계에 내 결과 넣지 않기': ['Leave my result out of fan stats', 'みんなの統計に自分の結果を入れない'], '이름은 안 들어가요': ['No names are sent', '名前は入りません'],
+    '16가지 유형 모두 보기': ['See all 16 types', '16タイプをすべて見る'], '4×4 유형표 이미지 저장': ['Save 4×4 type chart', '4×4タイプ表を保存'], '친구랑 궁합 보기': ['Check match with a friend', '友だちと相性を見る'], '테스트 다시 하기': ['Retake the test', 'もう一度テスト'], '유형 코드': ['Type code', 'タイプコード'],
+    '정통 오페라 하우스형': ['Opera House Purist', '王道オペラハウス型'], '명곡을 원곡 그대로, 볼륨은 크게': ['Classics as they are, volume up', '名曲は原曲のまま、音量は大きく'],
+    '플레이리스트 장인형': ['Playlist Master', 'プレイリスト職人型'], '타이틀곡 가사는 이미 다 외웠어요': ['Already knows every title-track lyric', 'タイトル曲の歌詞はもう全部覚えた'],
+    '비밀 서재의 아리아 수집가': ['Secret-Library Aria Collector', '秘密の書斎のアリア収集家'], '아는 사람만 아는 아리아를 아껴 들어요': ['Treasures arias only insiders know', '知る人ぞ知るアリアを大切に聴く'],
+    '새벽 라디오 디깅러': ['Late-Night Radio Digger', '夜明けのラジオ・ディガー'], '새벽에 혼자 듣는 수록곡이 제일 좋아요': ['B-sides alone at dawn are the best', '夜明けにひとりで聴く収録曲が一番'],
+    '편곡 감별사': ['Arrangement Connoisseur', '編曲鑑定士'], '같은 곡도 버전마다 다른 걸 귀신같이 알아요': ['Spots every difference between versions', '同じ曲でもバージョンの違いを見抜く'],
+    '재해석 탐험가': ['Reinterpretation Explorer', '再解釈探検家'], '포레가 부른 커버로 원곡까지 찾아 들어요': ['Finds the originals through Forestella covers', 'フォレのカバーから原曲まで探して聴く'],
+    '달빛 커버 수집가': ['Moonlight Cover Collector', '月明かりのカバー収集家'], '한 번뿐인 커버 음원을 소중히 모아요': ['Collects one-of-a-kind cover recordings', '一度きりのカバー音源を大切に集める'],
+    '숨은 커버 채집가': ['Hidden Cover Hunter', '隠れカバー採集家'], '방송에서 딱 한 번 부른 곡을 기억해요': ['Remembers songs sung just once on TV', '放送で一度だけ歌った曲を覚えている'],
+    '대극장 VIP석형': ['Grand Theater VIP', '大劇場VIP席型'], '웅장한 무대는 큰 공연장에서 봐야 제맛': ['Epic stages belong in big halls', '壮大なステージは大会場で見てこそ'],
+    '떼창 대장': ['Sing-along Captain', '合唱隊長'], '전주만 나와도 목소리가 먼저 나가요': ['Starts singing at the first note', 'イントロだけでもう声が出る'],
+    '소극장 아리아 사냥꾼': ['Small-Hall Aria Hunter', '小劇場アリアハンター'], '가까이서 듣는 성악 발성에 반했어요': ['Fell for classical voices up close', '間近で聴く声楽の発声に惚れた'],
+    '숨은 무대 발굴단': ['Hidden Stage Finder', '隠れステージ発掘団'], '지역 행사 무대 영상까지 다 찾아봐요': ['Tracks down even local event videos', '地方イベントの映像まで全部探す'],
+    '그랜드 피날레형': ['Grand Finale', 'グランドフィナーレ型'], '편곡이 터지는 마지막 무대를 기다려요': ['Waits for the explosive final arrangement', '編曲が炸裂するラストを待つ'],
+    '무대 위 록스타형': ['Rock Star on Stage', 'ステージのロックスター型'], '록 편곡 무대에선 같이 헤드뱅잉': ['Headbangs along to rock arrangements', 'ロック編曲では一緒にヘドバン'],
+    '한 번뿐인 무대 수집가': ['One-time Stage Collector', '一度きりのステージ収集家'], '다시 없을 무대를 기억하는 게 행복해요': ['Happiest remembering stages that won\'t return', '二度とないステージを覚えているのが幸せ'],
+    '레전드 편곡 덕후': ['Legend Arrangement Fan', '伝説編曲オタク'], '레전드 편곡 무대를 몇 번이고 돌려 봐요': ['Replays legendary arrangements again and again', '伝説の編曲ステージを何度も見返す'],
+    '음반·음원으로 조용히 듣는 걸 더 좋아해요': ['Prefers listening quietly to albums and tracks', 'アルバム・音源で静かに聴くのが好き'], '무대 영상과 떼창, 현장 분위기를 더 즐겨요': ['Enjoys stage videos, sing-alongs and the live mood', 'ステージ映像や合唱、現場の雰囲気が好き'],
+    '포레 오리지널 곡과 처음 버전을 아껴요': ['Loves Forestella originals and first versions', 'フォレのオリジナル曲と初版を大切に'], '커버곡·재해석과 새 편곡에 더 끌려요': ['Drawn to covers, reinterpretations and new arrangements', 'カバー・再解釈や新編曲に惹かれる'],
+    '다들 아는 대표곡과 큰 공연장 무대를 좋아해요': ['Likes the well-known hits and big-venue stages', 'みんなが知る代表曲と大会場ステージが好き'], '숨은 명곡과 소극장·행사 무대를 찾아다녀요': ['Seeks out hidden gems and small-venue stages', '隠れ名曲と小劇場・イベントを探し回る'],
+    '클래식 크로스오버와 외국어 곡에 끌려요': ['Drawn to classical crossover and foreign-language songs', 'クラシカル・クロスオーバーと外国語曲に惹かれる'], '록·팝 편곡과 한국어 곡을 더 자주 들어요': ['Listens more to rock/pop arrangements and Korean songs', 'ロック・ポップ編曲と韓国語曲をよく聴く'],
+    '취향 테스트 메이트': ['Taste-test mates', 'テスト仲間'], '최애곡 메이트': ['Favorite-song mates', '最推し曲仲間'], '플레이리스트 메이트': ['Playlist mates', 'プレイリスト仲間'], '직관 메이트': ['Concert mates', '現場仲間'], '소취 동지': ['Wish-song buddies', '聴きたい曲の同志'], '같은 멤버 러버': ['Same-member lovers', '同じ推しメン'],
+    '거울 숲별': ['Mirror fans', '鏡のスッピョル'], '취향 축 4개가 다 같아요. 서로의 플레이리스트를 믿어도 돼요': ['All 4 axes match. You can trust each other\'s playlists', '好みの軸が4つとも同じ。お互いのプレイリストを信じてOK'],
+    '단짝 숲별': ['Best-buddy fans', '親友スッピョル'], '거의 다 맞고 하나만 달라서 대화가 끊이지 않아요': ['Almost all match, one differs, so the talk never ends', 'ほとんど同じで一つだけ違うから話が尽きない'],
+    '서로 채워주는 짝꿍': ['Complementary pair', '補い合うペア'], '반은 같고 반은 달라서 서로 새 곡을 알려 줘요': ['Half same, half different: you share new songs', '半分同じで半分違うから新しい曲を教え合える'],
+    '정반대라 끌리는 사이': ['Opposites attract', '正反対だから惹かれ合う'], '취향이 정반대라 오히려 덕질이 두 배로 넓어져요': ['Opposite tastes double your fandom world', '好みが正反対だからこそ推し活が2倍広がる'],
+    '포레 취향 쌍둥이': ['Forestella taste twins', 'フォレ好みの双子'], '플레이리스트를 바꿔 들어도 모를 사이예요': ['You could swap playlists and not notice', 'プレイリストを交換しても気づかない仲'],
+    '같은 숲길 산책 메이트': ['Same forest-trail mates', '同じ森の散歩仲間'], '좋아하는 무대가 거의 다 겹쳐요': ['Your favorite stages almost all overlap', '好きなステージがほとんど重なる'],
+    '옆 나무 이웃': ['Neighboring trees', '隣の木のご近所さん'], '반은 같고 반은 서로 추천해 주기 좋은 사이': ['Half the same, half to recommend', '半分同じ、半分はおすすめし合える仲'],
+    '서로의 숲 가이드': ['Each other\'s forest guide', 'お互いの森のガイド'], '서로 모르는 명곡을 알려 줄 수 있어요': ['You can show each other unknown gems', '知らない名曲を教え合える'],
+    '다른 숲의 탐험가': ['Explorers of different forests', '別の森の探検家'], '취향이 달라서 덕질이 두 배로 넓어져요': ['Different tastes double your fandom world', '好みが違うから推し活が2倍広がる'],
+    '한 그루 숲': ['A single-tree forest', '一本の木の森'], '이 모임은 사실 한 사람이에요': ['This group is basically one person', 'このグループは実は一人です'],
+    '같은 숲 소풍단': ['Same-forest picnic crew', '同じ森のピクニック隊'], '어느 공연을 같이 가도 신나는 모임': ['Fun together at any show', 'どの公演に一緒に行っても楽しい'],
+    '숲속 합창단': ['Forest choir', '森の合唱団'], '떼창 맞추기 딱 좋은 조합이에요': ['Perfect for singing along together', '合唱を合わせるのにぴったり'],
+    '각자 다른 숲길 원정대': ['Different-trail expedition', 'それぞれの森の道の遠征隊'], '서로의 최애곡을 돌려 듣기 좋아요': ['Great for swapping favorite songs', 'お互いの最推し曲を回して聴こう'],
+    '숲 다양성 연구회': ['Forest diversity club', '森の多様性研究会'], '취향이 다 달라서 이야기할 게 많아요': ['All different, so lots to talk about', 'みんな違うから話すことがたくさん'],
+    '우리의 숲별 취향 궁합': ['Our taste match', '私たちの好み相性'], '내 기록도 같이 비교했어요. 아래 \'결과 링크 보내기\'를 누르면 나도 링크에 들어가요.': ['Your records were compared too. Tap "Send result link" below to add yourself.', '自分の記録も比べました。下の「結果リンクを送る」を押すと自分もリンクに入ります。'],
+    '취향 사분면': ['Taste quadrant', '好み四象限'], '우리 취향 유형': ['Our taste types', '私たちの好みタイプ'], '우리 모임은': ['Our group', '私たちのグループは'], '모두': ['All', '全員'], '같은 답': ['Same answers', '同じ答え'],
+    '하나도 안 겹쳐요. 그래서 더 재밌어요': ['Nothing overlaps. That makes it more fun', '一つも重ならない。だからもっと楽しい'], '여기선 갈렸어요': ['Where you differ', 'ここで分かれました'], '둘 다': ['Both', '二人とも'],
+    '제일 잘 맞는 짝꿍': ['Best-matched pairs', '一番相性のいいペア'], '숲별 선배는?': ['Who\'s the senior fan?', '先輩スッピョルは?'], '결과 링크 보내기': ['Send result link', '結果リンクを送る'],
+    '결과 링크 보내기 · 다음 사람도 넣을 수 있어요': ['Send result link · the next person can join', '結果リンクを送る・次の人も参加できます'], '결과 이미지 저장': ['Save result image', '結果画像を保存'], '내 링크 새로 만들기': ['Make a new link', '新しいリンクを作る'],
+    '비교할 기록이 서로 달라요': ['Your records don\'t overlap', '比べられる記録が違います'], '한 명은 테스트, 한 명은 ♥ 곡처럼 담은 게 달라서 아직 궁합을 잴 수 없어요. 같은 항목을 담아 다시 보내 봐요': ['One shared the test and the other only ♥ songs, so there\'s nothing to compare yet. Send again with the same items.', '一人はテスト、一人は♥曲など入れた項目が違うので、まだ相性を測れません。同じ項目を入れて送り直してみて。'],
+    '아직 겹치는 게 없어요': ['Nothing in common yet', 'まだ重なるものがありません'], '서로의 ♥ 곡을 들어 보고 다시 해 봐요': ['Listen to each other\'s ♥ songs and try again', 'お互いの♥曲を聴いてからもう一度'],
+    '같이 간 공연': ['Shows you both went to', '一緒に行った公演'], '다 같이 간 공연': ['Shows everyone went to', 'みんなで行った公演'], '어쩌면 같은 공연장에 있었을지도 몰라요': ['You may have been in the same hall', '同じ会場にいたかも'],
+    '둘 다 최애곡': ['Both favorites', '二人の最推し曲'], '모두의 최애곡': ['Everyone\'s favorites', 'みんなの最推し曲'], '같이 기다리는 소취곡': ['Wish songs you share', '一緒に待つ聴きたい曲'], '같이 소원 빌어요': ['Let\'s wish together', '一緒に願おう'],
+    '둘 다 ♥한 곡': ['Songs you both ♥', '二人とも♥した曲'], '모두 ♥한 곡': ['Songs everyone ♥', 'みんなが♥した曲'], '여럿이 ♥한 곡': ['Songs several of you ♥', '何人かが♥した曲'], '같은 최애 멤버': ['Same favorite member', '同じ推しメン'],
+    '내가 만든 궁합 링크예요. 친구가 열면 둘의 궁합이 보여요.': ['This is your own match link. When a friend opens it, they\'ll see your match.', '自分で作った相性リンクです。友だちが開くと二人の相性が見られます。'],
+    '님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.': [' sent you a match link. You need some records to compare.', 'さんが相性リンクを送りました。比べるには自分の記録が必要です。'],
+    '이미지를 저장했어요': ['Image saved', '画像を保存しました'], '나': ['Me', '私'], '(나)': ['(me)', '(私)'], '나의 숲별 취향 지도': ['My taste map', '私の好みマップ'], '우리는 어디쯤?': ['Where are we?', '私たちはどのあたり?'], '숲별 취향 유형 16': ['16 taste types', '好みタイプ16'],
+    '숲별 기록장 · 취향 테스트': ['Soopbyeol Archive · Taste test', 'スッピョル記録帳・好みテスト'], '숲별 기록장 · 취향 궁합': ['Soopbyeol Archive · Taste match', 'スッピョル記録帳・好み相性'],
+  });
+  const RD = { 로: ['Lo', 'ロ'], 라: ['La', 'ラ'], 소: ['So', 'ソ'], 사: ['Sa', 'サ'], 믹: ['mik', 'ミック'], 밉: ['mip', 'ミップ'], 닉: ['nik', 'ニック'], 닙: ['nip', 'ニップ'] };
+  const lb = w => (LB[w] || SH[w] || [w, w])[lang === 'ja' ? 1 : 0];
+  function trTaste(k) {
+    let m;
+    if ((m = k.match(/^([로라소사])([믹밉닉닙])$/))) return RD[m[1]][i] + RD[m[2]][i];
+    if ((m = k.match(/^(.+) VS (.+)$/)) && VSO[m[1]] && VSO[m[2]]) return `${VSO[m[1]][i]} VS ${VSO[m[2]][i]}`;
+    if ((m = k.match(/^완전 (.+)$/)) && SH[m[1]]) return lang === 'ja' ? `完全に${SH[m[1]][1]}` : `Totally ${SH[m[1]][0]}`;
+    if ((m = k.match(/^(.+) 쪽$/)) && SH[m[1]]) return lang === 'ja' ? `やや${SH[m[1]][1]}` : `Leaning ${SH[m[1]][0]}`;
+    if ((m = k.match(/^(: |· )?(.+)·(.+) 반반$/)) && SH[m[2]] && SH[m[3]]) return `${m[1] || ''}${lang === 'ja' ? `${SH[m[2]][1]}・${SH[m[3]][1]} 半々` : `Half ${SH[m[2]][0]} / ${SH[m[3]][0]}`}`;
+    if ((m = k.match(/^(×\s*)?([^·]+)·([^·]+)$/)) && SH[m[2]] && SH[m[3]]) return `${m[1] || ''}${SH[m[2]][i]}·${SH[m[3]][i]}`;
+    if ((m = k.match(/^: (.+)$/)) && LB[m[1]]) return ': ' + LB[m[1]][i];
+    if ((m = k.match(/^내 답: (.+)$/))) return (lang === 'ja' ? '私の答え: ' : 'My answers: ') + (LB[m[1]] ? LB[m[1]][i] : (trTaste(m[1]) || m[1]));
+    if ((m = k.match(/^(.+)·(.+) × (.+)·(.+) 취향 지도$/)) && LB[m[1]] && LB[m[3]]) return `${lb(m[1])}·${lb(m[2])} × ${lb(m[3])}·${lb(m[4])} ${lang === 'ja' ? '好みマップ' : 'taste map'}`;
+    if ((m = k.match(/^(\w+) · (.+)$/)) && LB[m[2]]) return `${m[1]} · ${LB[m[2]][i]}`;
+    if ((m = k.match(/^반대는 (\w) (\w+) · (.+)$/)) && LB[m[3]]) return lang === 'ja' ? `反対は ${m[1]} ${m[2]} · ${LB[m[3]][1]}` : `Opposite: ${m[1]} ${m[2]} · ${LB[m[3]][0]}`;
+    if ((m = k.match(/^(.+) · (직관파|기록파|방구석파)$/)) && T[m[1]]) return `${T[m[1]][i]} · ${LB[m[2]][i]}`;
+    if ((m = k.match(/^(\d+)명의 숲별 취향 궁합$/))) return lang === 'ja' ? `${m[1]}人の好み相性` : `Taste match of ${m[1]}`;
+    if ((m = k.match(/^(\d+)명의 숲별 취향 지도$/))) return lang === 'ja' ? `${m[1]}人の好みマップ` : `Taste map of ${m[1]}`;
+    if ((m = k.match(/^(\d+)위$/))) return lang === 'ja' ? m[1] + '位' : '#' + m[1];
+    if ((m = k.match(/^(\d+)일$/))) return lang === 'ja' ? m[1] + '日' : m[1] + ' days';
+    if ((m = k.match(/^(.*) \(나\)$/))) return `${m[1]} ${lang === 'ja' ? '(私)' : '(me)'}`;
+    if (LB[k]) return LB[k][i];
+    if (SH[k]) return SH[k][i];
+    if ((m = k.match(/^([^가-힣\s]+) (.+)$/)) && T[m[2]]) return `${m[1]} ${T[m[2]][i]}`;
+    return null;
+  }
   function tr(s) {
     const k = s.trim();
     let m0;
     if (!k || !/[가-힣]/.test(k)) return null;
     if (T[k]) return s.replace(k, T[k][i]);
+    { const t2 = trTaste(k); if (t2 != null) return s.replace(k, t2); }
     if (k === '숲별') return s.replace(k, lang === 'ja' ? 'スプビョル' : 'Soopbyeol');
     if ((m0 = k.match(/^(\d+)명$/))) return s.replace(k, lang === 'ja' ? m0[1] + '人' : m0[1] + ' fans');
     if ((m0 = k.match(/^(\d+)곡 중 (\d+)곡 맞혔어요$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}曲中${m0[2]}曲当たり` : `${m0[2]} of ${m0[1]} songs right`);
