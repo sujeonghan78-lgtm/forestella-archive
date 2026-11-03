@@ -5116,7 +5116,7 @@
   const TS_Q = [
     { ax: 0, q: '음반보다 무대 영상을 더 자주 찾아본다', a: ['🎧', '음반으로 듣기'], b: ['📺', '무대 영상으로 보기'], p: ['음반파', '무대 영상파'] },
     { ax: 0, q: '공연장에선 따라 부르는 게 더 신난다', a: ['🤫', '숨죽여 듣기'], b: ['📣', '떼창'], p: ['숨죽여 듣기파', '떼창파'] },
-    { ax: 1, q: '포레 원곡보다 다른 가수 노래 재해석이 더 끌린다', a: ['🌱', '포레 원곡'], b: ['🔁', '다른 가수 노래 재해석'], p: ['원곡파', '커버파'] },
+    { ax: 1, q: '포레 원곡보다 다른 가수 노래 재해석이 더 끌린다', a: ['🌱', '포레 오리지널 곡'], b: ['🔁', '커버곡·재해석곡'], p: ['오리지널 곡파', '커버곡파'] },
     { ax: 1, q: '같은 곡이면 새로 편곡한 버전이 더 좋다', a: ['🕰️', '처음 부른 버전'], b: ['✨', '새로 편곡한 버전'], p: ['처음 버전파', '편곡 버전파'] },
     { ax: 2, q: '남들은 잘 모르는 숨은 명곡을 더 아낀다', a: ['🌟', '대놓고 유명곡'], b: ['🔎', '숨어 듣는 명곡'], p: ['유명곡파', '숨은 명곡파'] },
     { ax: 2, q: '큰 공연장보다 소극장·지역 행사가 더 좋다', a: ['🏟️', '큰 공연장 콘서트'], b: ['🎪', '소극장·지역 행사'], p: ['대형 공연장파', '소극장·행사파'] },
@@ -5186,19 +5186,19 @@
         <p class="mt-lab">나의 숲별 취향 유형</p>
         <p class="ts-big">${T[0]}</p>
         <p class="mt-type">${T[1]}</p>
-        <p class="ts-title">${S[0]} ${S[1]}</p>
+        <p class="ts-title">${S[1]}</p>
         <p class="mt-say">${T[2]}</p>
       </div>
-      <section class="mt-card"><h2><span>🧭</span>나는 어디쯤?</h2>${tsQuad([[t, 0, card.nick || '나']])}</section>
+      <section class="mt-card"><h2>나는 어디쯤?</h2>${tsQuad([[t, 0, card.nick || '나']])}</section>
       <section class="ts-sum">
         <h2 class="ts-sum-h">나의 취향 지도</h2>
         ${X.map((x, k) => { const qs = TS_Q.map((q, i) => [q, i]).filter(([q]) => q.ax === k); const w = x.b ? 1 : 0; return `
         <div class="ts-ax${x.half ? ' half' : ''}">
           <p class="ts-ax-t">${TS_AXT[k]}</p><div class="ts-ax-top"><span class="${w ? '' : 'on'}">${TS_AX[k][0]}${w ? '' : ` <em>${x.half ? '⚖' : x.pct + '%'}</em>`}</span><span class="${w ? 'on' : ''}">${w ? `<em>${x.half ? '⚖' : x.pct + '%'}</em> ` : ''}${TS_AX[k][1]}</span></div>
           <div class="ts-axbar"><i class="${w ? 'r' : 'l'}" style="width:${x.pct - 50}%"></i></div>
-          <p class="ts-why">내 답: ${qs.map(([q, i]) => `${(tsVals(t)[i] <= 50 ? q.a : q.b)[0]} ${q.p[tsVals(t)[i] <= 50 ? 0 : 1]}`).join('<em>·</em>')}${x.half ? `<em>·</em>반반이라 첫 답으로 정했어요` : ''}</p>
+          <p class="ts-why">내 답: ${qs.map(([q, i]) => q.p[tsVals(t)[i] <= 50 ? 0 : 1]).join('<em>·</em>')}${x.half ? `<em>·</em>반반이라 첫 답으로 정했어요` : ''}</p>
         </div>`; }).join('')}
-        <div class="ts-style"><span>${S[0]}</span><p><small>덕질 스타일</small><b>${S[1]}</b> ${S[2]}</p></div>
+        <div class="ts-style"><p><small>덕질 스타일</small><b>${S[1]}</b> ${S[2]}</p></div>
       </section>`;
   }
   // 사분면: 사람마다 점 하나 (지도 2장: 감상×결, 곡×발견). pp = [[답, 색 번호, 이름]]
@@ -5259,6 +5259,20 @@
   // 서버 없이 링크에 기록을 담아요: ?d= 뒤에 [{n 이름, s 입덕일, f 최애곡, w 소취곡, h ♥곡, g 직관 일정, m 최애 멤버, u 번호}] (곡은 짧은 해시 5자)
   // 여는 사람은 자동으로 같이 비교되고, '링크 보내기'를 눌러야 내 기록이 링크에 들어가요. 최대 6명
   const MT_MAX = 6;
+  // 카드 머리 선 아이콘 (이모지 대신)
+  const MT_IC = {
+    '♥': '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+    '💚': '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M9.5 11.5l2 2 3.5-4"/>',
+    '⚡': '<path d="M13 3 5 14h6l-1 7 8-11h-6z"/>',
+    '🌱': '<path d="M12 21v-9"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z"/>',
+    '🎤': '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/>',
+    '🎫': '<path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M10 7v10" stroke-dasharray="2 2"/>',
+    '📊': '<path d="M5 20V10M12 20V4M19 20v-7"/>',
+    '🙏': '<path d="M12 3l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.1l5.8-.8z"/>',
+    '🤝': '<circle cx="9" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M12 19a5 5 0 0 1 9 0"/>',
+    '🧪': '<path d="M5 19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2L13 9V3h-2v6z"/><path d="M8 15h8"/>',
+    '🧭': '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5z"/>',
+  };
   const MT_A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   const mtHash = k => { let h = 2166136261; for (const c of k) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } h >>>= 8; let o = ''; for (let i = 0; i < 4; i++) { o = MT_A[h & 63] + o; h >>>= 6; } return o; };
   const mtB64 = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -5277,7 +5291,7 @@
   const mtSong = () => { const m = new Map(); data.songs.forEach(so => m.set(mtHash(so.key), so)); return m; };
   const mtInter = (a, b) => a.filter(x => b.includes(x));
   const mtOv = (a, b) => { if (!a.length || !b.length) return null; const c = mtInter(a, b).length; return c ? 0.6 * c / Math.min(a.length, b.length) + 0.4 * 2 * c / (a.length + b.length) : 0; };
-  const MT_PARTS = [['t', 40, '🧪 취향 테스트 메이트'], ['f', 30, '💚 최애곡 메이트'], ['h', 25, '♥ 플레이리스트 메이트'], ['g', 25, '🎫 직관 메이트'], ['w', 10, '🙏 소취 동지'], ['m', 10, '같은 멤버 러버']];
+  const MT_PARTS = [['t', 40, '취향 테스트 메이트'], ['f', 30, '최애곡 메이트'], ['h', 25, '플레이리스트 메이트'], ['g', 25, '직관 메이트'], ['w', 10, '소취 동지'], ['m', 10, '같은 멤버 러버']];
   function mtPair(a, b) {
     let sum = 0, wt = 0; const got = {};
     MT_PARTS.forEach(([k, w]) => {
@@ -5334,13 +5348,13 @@
       return `${back}
         <section class="mt-intro">
           <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><span class="mt-spark">💞</span><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
-          ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsName(tsRead())}</b><span>결과 보기 ›</span></a>`
-            : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><span>🧪</span><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
+          ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsType(tsRead())[1]}</b><span>결과 보기 ›</span></a>`
+            : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
           ${from ? `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>` : ''}
           ${mine ? `
             <div class="mt-mine">
               <label class="mt-nick">링크에 보일 이름 <input id="mt-nick" maxlength="12" value="${esc(card.nick || '')}" placeholder="숲별"></label>
-              <ul class="mt-incl">${me.t ? '<li>🧪 유형 <b>✓</b></li>' : ''}<li>💚 최애곡 <b>${me.f.length}</b></li><li>🙏 소취곡 <b>${me.w.length}</b></li><li>♥ 곡 <b>${me.h.length}</b></li><li>🎫 직관 <b>${me.g.length}</b></li></ul>
+              <ul class="mt-incl">${me.t ? '<li>테스트 <b>✓</b></li>' : ''}<li>최애곡 <b>${me.f.length}</b></li><li>소취곡 <b>${me.w.length}</b></li><li>♥ 곡 <b>${me.h.length}</b></li><li>직관 <b>${me.g.length}</b></li></ul>
               <button type="button" class="mt-go" id="mt-send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>내 궁합 링크 보내기</button>
               <p class="mt-note">링크엔 위 기록(곡·직관 일정)과 이름·입덕일이 들어가요. 링크를 받은 사람만 볼 수 있어요.<br>여러 명이면 받은 사람이 열고 결과 링크를 다시 보내면 계속 이어져요 (최대 ${MT_MAX}명).</p>
             </div>` : `<p class="empty">아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.<br><a href="#/songs">곡 아카이브 가기</a></p>`}
@@ -5349,12 +5363,12 @@
     const S = mtSong(), R = mtCalc(list), group = list.length > 2, T = mtHead(list, R.pct);
     const songs = ks => ks.map(k => S.get(k)).filter(Boolean);
     const chips = arr => `<div class="mt-chips">${arr.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>`;
-    const card1 = (ic, t, body) => `<section class="mt-card"><h2><span>${ic}</span>${t}</h2>${body}</section>`;
+    const card1 = (ic, t, body) => `<section class="mt-card"><h2><span>${MT_IC[ic] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${MT_IC[ic]}</svg>` : ''}</span>${t}</h2>${body}</section>`;
     const cards = [];
     const tp = list.map((p, i) => [p, i]).filter(([p]) => p.t);
     if (tp.length >= 2) {
       cards.push(card1('🧭', '취향 사분면', tsQuad(tp.map(([p, i]) => [p.t, i, p.n]))));
-      cards.push(card1('🧪', '우리 취향 유형', `<ul class="ts-who">${tp.map(([p, i]) => `<li>${mtAv(p, i)}<span><b>${esc(p.n)}</b>${tsName(p.t)} · ${tsStyle(p.t)[1]}</span></li>`).join('')}</ul>`));
+      cards.push(card1('🧪', '우리 취향 유형', `<ul class="ts-who">${tp.map(([p, i]) => `<li>${mtAv(p, i)}<span><b>${esc(p.n)}</b>${tsType(p.t)[1]} · ${tsStyle(p.t)[1]}</span></li>`).join('')}</ul>`));
       const side = (t, i) => i === 8 ? +t[16] : tsVals(t)[i] <= 50 ? 0 : 1, lab = (i, v) => i === 8 ? TS_STYLE.o[v][1] : TS_Q[i].p[v];
       if (tp.length === 2) {
         const [[a], [b]] = tp, same = [], diff = [];
