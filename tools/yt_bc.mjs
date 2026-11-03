@@ -22,10 +22,13 @@ const CHANNELS = [
   // 라디오 공식 채널·JTBC 음악 클립 (2026-11-03 추가): 라디오 영상은 조회수가 적어서 1천 이상이면 받아요
   ['UCKNZsAeQXpvI-Mpoc0ZKhsA', 'MBC 라디오', 1000], ['UCAmff0euQRf6RwVlbB8PLMw', 'SBS 라디오', 1000], ['UCbVRtqsTmYh1xhrDSTfSQLg', 'KBS 쿨FM', 1000],
   ['UC6jh6fov4G5Pb8Pgy1DJDEA', 'DJ티비씨'],
+  ['UC2klpNOmQgbnnYwaW5eQOLQ', 'KBS 클래식FM', 1000], ['UC4GVSWFx-E6At_bnRIUmP4A', 'KBS KONG', 1000], ['UCeubR4oC-jj0F74hhvpQ3cA', 'KBS 해피FM', 1000],
 ];
+// 이 채널들은 '조민규' 이름만 있어도 받아요 (클래식·라디오는 팀 이름 없이 '조민규 with …'로 올라와요)
+const MG_OK = /^(KBS 클래식FM|KBS KONG|KBS 해피FM|KBS 쿨FM|MBC 라디오|SBS 라디오)$/;
 const NAME0 = /포레스텔라|forestella|배두훈|강형호|고우림/i;  // 조민규는 다른 사람과 이름이 같아서 혼자로는 안 받아요
 // 단, 팬텀싱어 영상이면 조민규 이름만 있어도 받아요 (2017년엔 아직 팀 이름이 없었어요)
-const NAME = { test: t => NAME0.test(t) || (/조민규/.test(t) && /팬텀\s?싱어|phantom ?singer/i.test(t)) };
+const NAME = { test: (t, ch = '') => NAME0.test(t) || (/조민규/.test(t) && (/팬텀\s?싱어|phantom ?singer/i.test(t) || MG_OK.test(ch))) };
 const MIN_VIEWS = 10000;
 const old = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : { channels: [], videos: [] };
 // --only=@a,@b : 그 채널만 처음부터 전부 찾아요 (새로 넣은 채널용)
@@ -43,7 +46,7 @@ try {
     found.push({ id: ch.id, handle, name });
     let page = '';
     do {
-      const d = await api('search', { part: 'id', type: 'video', channelId: ch.id, q: '포레스텔라|Forestella|고우림|강형호|배두훈', maxResults: 50, order: 'date', ...(full ? {} : { publishedAfter: since }), ...(page && { pageToken: page }) });
+      const d = await api('search', { part: 'id', type: 'video', channelId: ch.id, q: MG_OK.test(name) ? '포레스텔라|Forestella|고우림|강형호|배두훈|조민규' : '포레스텔라|Forestella|고우림|강형호|배두훈', maxResults: 50, order: 'date', ...(full ? {} : { publishedAfter: since }), ...(page && { pageToken: page }) });
       d.items.forEach(i => { chOf[i.id.videoId] ||= name; });
       page = d.nextPageToken;
     } while (page);
@@ -82,7 +85,7 @@ for (let i = 0; i < ids.length && !stopped; i += 50) {
   const d = await api('videos', { part: 'snippet,contentDetails,statistics', id: ids.slice(i, i + 50).join(',') });
   for (const v of d.items) {
     const views = Number(v.statistics.viewCount || 0), t = v.snippet.title;
-    if (!NAME.test(t) || views < (minOf[chOf[v.id]] ?? MIN_VIEWS)) continue;
+    if (!NAME.test(t, chOf[v.id]) || views < (minOf[chOf[v.id]] ?? MIN_VIEWS)) continue;
     const up = kst(v.snippet.publishedAt), air = aired(t, up);
     add.push({ id: v.id, date: air || up, ...(air && air !== up && { up }), title: t, sec: sec(v.contentDetails.duration), views, bc: chOf[v.id] });
   }
