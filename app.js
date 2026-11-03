@@ -5114,13 +5114,13 @@
   // 축 4개 = 질문 둘씩 (강도를 더해서 정하고, 딱 반반이면 첫 질문으로 정한 뒤 '반반' 표시)
   const TS_KEY = 'sb-taste';
   const TS_Q = [
-    { ax: 0, q: '음반보다 무대 영상을 더 자주 찾아본다', a: ['🎧', '음반으로 듣기'], b: ['📺', '무대 영상으로 보기'], p: ['음반파', '무대 영상파'] },
+    { ax: 0, q: '음반보다 무대 영상을 더 자주 찾아본다', a: ['🎧', '음반으로 듣기'], b: ['📺', '무대 영상으로 보기'], p: ['음원파', '무대파'] },
     { ax: 0, q: '공연장에선 따라 부르는 게 더 신난다', a: ['🤫', '숨죽여 듣기'], b: ['📣', '떼창'], p: ['숨죽여 듣기파', '떼창파'] },
     { ax: 1, q: '포레 원곡보다 다른 가수 노래 재해석이 더 끌린다', a: ['🌱', '포레 오리지널 곡'], b: ['🔁', '커버곡·재해석곡'], p: ['오리지널 곡파', '커버곡파'] },
     { ax: 1, q: '같은 곡이면 새로 편곡한 버전이 더 좋다', a: ['🕰️', '처음 부른 버전'], b: ['✨', '새로 편곡한 버전'], p: ['처음 버전파', '편곡 버전파'] },
-    { ax: 2, q: '남들은 잘 모르는 숨은 명곡을 더 아낀다', a: ['🌟', '대놓고 유명곡'], b: ['🔎', '숨어 듣는 명곡'], p: ['유명곡파', '숨은 명곡파'] },
-    { ax: 2, q: '큰 공연장보다 소극장·지역 행사가 더 좋다', a: ['🏟️', '큰 공연장 콘서트'], b: ['🎪', '소극장·지역 행사'], p: ['대형 공연장파', '소극장·행사파'] },
-    { ax: 3, q: '클래식보다 록·팝 편곡에 더 신난다', a: ['🎻', '클래식 크로스오버'], b: ['🎸', '록·팝'], p: ['클래식파', '록·팝파'] },
+    { ax: 2, q: '남들은 잘 모르는 숨은 명곡을 더 아낀다', a: ['🌟', '대놓고 유명곡'], b: ['🔎', '숨어 듣는 명곡'], p: ['대표곡파', '숨은 명곡파'] },
+    { ax: 2, q: '큰 공연장보다 소극장·지역 행사가 더 좋다', a: ['🏟️', '큰 공연장 콘서트'], b: ['🎪', '소극장·지역 행사'], p: ['큰 공연장파', '소극장·행사파'] },
+    { ax: 3, q: '클래식보다 록·팝 편곡에 더 신난다', a: ['🎻', '클래식 크로스오버'], b: ['🎸', '록·팝'], p: ['클래식파', '팝파'] },
     { ax: 3, q: '외국어 곡보다 한국어 곡을 더 자주 듣는다', a: ['🌍', '외국어 곡'], b: ['💬', '한국어 곡'], p: ['외국곡파', '한국어곡파'] },
   ];
   const TS_STYLE = { q: '나의 덕질 스타일은?', o: [['🎫', '직관파', '공연은 직접 봐야지'], ['📒', '기록파', '날짜·셋리 정리가 행복해'], ['🛋️', '방구석파', '영상으로 충분해']] };
@@ -5325,12 +5325,14 @@
   // 짧은 링크: 사람은 '!'로, 칸은 '~'로 나눠요. 이름은 base64, 곡은 4자씩 붙여 쓰고, 숫자 일정 번호는 36진수('.'로 나눔, 글자 섞인 번호는 앞에 '*')
   const mtPack = list => '1' + list.map(p => [mtB64(p.n), (p.s || '').replace(/-/g, ''), p.u, p.f.join(''), p.w.join(''), p.h.join(''), p.g.map(id => /^\d+$/.test(id) ? (+id).toString(36) : '*' + id).join('.'), p.m.join(''), p.t || ''].join('~')).join('!');
   const mtUnpack = d => {
+    if (d[0] === '2') { try { d = decodeURIComponent(escape(atob(d.slice(1).replace(/-/g, '+').replace(/_/g, '/')))); } catch (err) { return []; } }
     if (d[0] !== '1') { const j = mtUn(d); return Array.isArray(j) ? j : []; }
     const four = t => t.match(/.{4}/g) || [];
     return d.slice(1).split('!').map(x => { const [n, s, u, f, w, h, g, m, t] = x.split('~'); let nm = ''; try { nm = decodeURIComponent(escape(atob((n || '').replace(/-/g, '+').replace(/_/g, '/')))); } catch (err) { /* 이름 없음 */ }
       return { n: nm || '숲별', s: /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : '', u: u || '', f: four(f || ''), w: four(w || ''), h: four(h || ''), g: (g || '').split('.').filter(Boolean).map(t => t[0] === '*' ? t.slice(1) : String(parseInt(t, 36))), m: (m || '').split(''), t: /^[0-9a-z]{16}[0-2]$/.test(t || '') ? t : '' }; });
   };
-  const mtLink = list => location.origin + location.pathname + '#/match?d=' + mtPack(list);
+  // 메신저가 '!'·'~'에서 링크를 자르는 일이 있어서 한 번 더 base64로 감싸요 (앞 '2')
+  const mtLink = list => location.origin + location.pathname + '#/match?d=2' + mtB64(mtPack(list));
   function mtCalc(list) {
     const pairs = [];
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) pairs.push({ i, j, ...mtPair(list[i], list[j]) });
@@ -5343,7 +5345,7 @@
   }
   function matchView() {
     if (!isAdmin()) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
-    const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(), mine = !mtEmpty(mtMe(true));
+    const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(true), mine = !mtEmpty(me);
     if (q.get('test')) { if (!tsSt) tsSt = { i: 0, a: [] }; return `<section class="ts-wrap"><button type="button" class="back ts-backbtn" id="ts-back">‹ 이전</button><div id="ts-quiz" class="ts-in"></div></section>`; }
     if (q.get('r') && tsRead()) return `<a class="back" href="#/match">‹ 취향 궁합</a><section class="mt-res">${tsResultHtml(tsRead())}
       <div class="mt-acts"><a class="mt-go" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>친구랑 궁합 보기</a>
