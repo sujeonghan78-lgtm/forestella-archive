@@ -5109,6 +5109,105 @@
     box.querySelector('.drive-msg').textContent = n ? `네이버 지도 링크 ${n}개가 들어 있어요. 보내기를 눌러 주세요.` : t.value.trim() ? '네이버 지도 링크가 아니에요. 공유 → 링크 복사로 받은 주소를 붙여 주세요.' : '';
   });
 
+  // ---------- 숲별 취향 테스트 (#/match?test=1) ----------
+  // 답은 sb-taste { a: '9글자' } — 앞 8개는 0 완전A·1 조금A·2 조금B·3 완전B, 마지막(덕질 스타일)은 0·1·2
+  // 축 4개 = 질문 둘씩 (강도를 더해서 정하고, 딱 반반이면 첫 질문으로 정한 뒤 '반반' 표시)
+  const TS_KEY = 'sb-taste';
+  const TS_Q = [
+    { ax: 0, q: '포레스텔라 곡, 주로 어떻게 즐겨요?', a: ['🎧', '음반으로 듣기'], b: ['📺', '무대 영상으로 보기'], p: ['음반파', '무대 영상파'] },
+    { ax: 0, q: '공연장에서 나는?', a: ['🤫', '숨죽여 듣기'], b: ['📣', '떼창'], p: ['숨죽여 듣기파', '떼창파'] },
+    { ax: 1, q: '더 끌리는 곡은?', a: ['🌱', '포레 원곡'], b: ['🔁', '다른 가수 노래 재해석'], p: ['원곡파', '커버파'] },
+    { ax: 1, q: '같은 곡이라면?', a: ['🕰️', '처음 부른 버전'], b: ['✨', '새로 편곡한 버전'], p: ['처음 버전파', '편곡 버전파'] },
+    { ax: 2, q: '내 플레이리스트는?', a: ['🌟', '대놓고 유명곡'], b: ['🔎', '숨어 듣는 명곡'], p: ['유명곡파', '숨은 명곡파'] },
+    { ax: 2, q: '직접 보러 간다면?', a: ['🏟️', '큰 공연장 콘서트'], b: ['🎪', '소극장·지역 행사'], p: ['대형 공연장파', '소극장·행사파'] },
+    { ax: 3, q: '마음이 가는 장르는?', a: ['🎻', '클래식 크로스오버'], b: ['🎸', '록·팝'], p: ['클래식파', '록·팝파'] },
+    { ax: 3, q: '자꾸 돌려 듣게 되는 건?', a: ['🌍', '외국어 곡'], b: ['💬', '한국어 곡'], p: ['외국곡파', '한국어곡파'] },
+  ];
+  const TS_STYLE = { q: '나의 덕질 스타일은?', o: [['🎫', '직관파', '공연은 직접 봐야지'], ['📒', '기록파', '날짜·셋리 정리가 행복해'], ['🛋️', '방구석파', '영상으로 충분해']] };
+  const TS_ORDER = [0, 2, 4, 6, 1, 3, 5, 7, 8];  // 축이 섞여 나오게
+  const TS_AX = [['듣는파', '보는파'], ['오리지널파', '변주파'], ['메인파', '디깅파'], ['클래식파', '팝파']];
+  const TS_AXN = ['감상', '곡', '발견', '결'];
+  // 순서: 감상(듣·보) 곡(오리지널·변주) 발견(메인·디깅) 결(클래식·팝) → 번호 = 보*8 + 변주*4 + 디깅*2 + 팝
+  const TS_TYPES = [
+    ['🎻', '정통 오페라 하우스형', '명곡을 원곡 그대로, 볼륨은 크게'],
+    ['🎧', '플레이리스트 장인형', '타이틀곡 가사는 이미 다 외웠어요'],
+    ['🕯️', '비밀 서재의 아리아 수집가', '아는 사람만 아는 아리아를 아껴 들어요'],
+    ['📻', '새벽 라디오 디깅러', '새벽에 혼자 듣는 수록곡이 제일 좋아요'],
+    ['🎼', '편곡 감별사', '같은 곡도 버전마다 다른 걸 귀신같이 알아요'],
+    ['🎹', '재해석 탐험가', '포레가 부른 커버로 원곡까지 찾아 들어요'],
+    ['🌙', '달빛 커버 수집가', '한 번뿐인 커버 음원을 소중히 모아요'],
+    ['🍃', '숨은 커버 채집가', '방송에서 딱 한 번 부른 곡을 기억해요'],
+    ['👑', '대극장 VIP석형', '웅장한 무대는 큰 공연장에서 봐야 제맛'],
+    ['📣', '떼창 대장', '전주만 나와도 목소리가 먼저 나가요'],
+    ['🏛️', '소극장 아리아 사냥꾼', '가까이서 듣는 성악 발성에 반했어요'],
+    ['🔦', '숨은 무대 발굴단', '지역 행사 무대 영상까지 다 찾아봐요'],
+    ['🎆', '그랜드 피날레형', '편곡이 터지는 마지막 무대를 기다려요'],
+    ['🎸', '무대 위 록스타형', '록 편곡 무대에선 같이 헤드뱅잉'],
+    ['🎭', '한 번뿐인 무대 수집가', '다시 없을 무대를 기억하는 게 행복해요'],
+    ['🌋', '레전드 편곡 덕후', '레전드 편곡 무대를 몇 번이고 돌려 봐요'],
+  ];
+  const tsRead = () => { const t = (boxRead(TS_KEY) || {}).a; return typeof t === 'string' && /^[0-3]{8}[0-2]$/.test(t) ? t : ''; };
+  // 축마다 { b: 0|1, pct: 고른 쪽 %, half: 반반 }
+  function tsAxes(t) {
+    const w = [2, 1, -1, -2];
+    return [0, 1, 2, 3].map(ax => {
+      const qs = TS_Q.map((q, i) => [q, i]).filter(([q]) => q.ax === ax).map(([, i]) => +t[i]);
+      const s = qs.reduce((m, v) => m + w[v], 0), b = s ? (s > 0 ? 0 : 1) : (qs[0] < 2 ? 0 : 1);
+      return { b, pct: Math.round(50 + Math.abs(s) * 12.5), half: !s };
+    });
+  }
+  const tsType = t => { const x = tsAxes(t); return TS_TYPES[x[0].b * 8 + x[1].b * 4 + x[2].b * 2 + x[3].b]; };
+  const tsStyle = t => TS_STYLE.o[+t[8]];
+  const tsName = t => { const T = tsType(t); return `${T[0]} ${T[1]}`; };
+  let tsSt = null;  // 진행 중 { i, a: [] }
+  function tsQuizHtml() {
+    const n = tsSt.i, qi = TS_ORDER[n], tot = TS_ORDER.length;
+    const bar = `<div class="ts-prog"><i style="width:${Math.round(n / tot * 100)}%"></i></div><p class="ts-n">${n + 1} / ${tot}</p>`;
+    if (qi === 8) return `${bar}<h2 class="ts-q">${TS_STYLE.q}</h2><div class="ts-3">${TS_STYLE.o.map(([ic, t, s], k) => `<button type="button" class="ts-opt${tsSt.a[8] === k ? ' on' : ''}" data-v="${k}"><span>${ic}</span><b>${t}</b><small>${s}</small></button>`).join('')}</div>`;
+    const Q = TS_Q[qi], cur = tsSt.a[qi];
+    return `${bar}<h2 class="ts-q">${Q.q}</h2>
+      <div class="ts-pair"><div class="ts-side"><span>${Q.a[0]}</span><b>${Q.a[1]}</b></div><div class="ts-side"><span>${Q.b[0]}</span><b>${Q.b[1]}</b></div></div>
+      <div class="ts-scale">${[0, 1, 2, 3].map(v => `<button type="button" class="ts-dot ts-d${v}${cur === v ? ' on' : ''}" data-v="${v}" aria-label="${['완전 ', '조금 ', '조금 ', '완전 '][v] + (v < 2 ? Q.a[1] : Q.b[1])}"></button>`).join('')}</div>
+      <div class="ts-hint"><span>완전</span><span>조금</span><span>조금</span><span>완전</span></div>`;
+  }
+  function tsResultHtml(t) {
+    const T = tsType(t), S = tsStyle(t), X = tsAxes(t);
+    return `<div class="mt-hero ts-hero"><i class="mt-stripe"></i>
+        <p class="mt-lab">나의 숲별 취향 유형</p>
+        <p class="ts-big">${T[0]}</p>
+        <p class="mt-type">${T[1]}</p>
+        <p class="ts-title">${S[0]} ${S[1]}</p>
+        <p class="mt-say">${T[2]}</p>
+      </div>
+      <section class="mt-card ts-axes">${X.map((x, k) => `
+        <div class="ts-ax"><p><span class="${x.b ? '' : 'on'}">${TS_AX[k][0]}</span><small>${TS_AXN[k]}</small><span class="${x.b ? 'on' : ''}">${TS_AX[k][1]}</span></p>
+          <div class="ts-axbar"><i style="${x.b ? 'right' : 'left'}:0;width:${x.pct}%"></i></div>
+          ${x.half ? `<em class="ts-half">⚖ 반반 · ${TS_AX[k][1 - x.b]} 기질도 있어요</em>` : ''}</div>`).join('')}
+      </section>
+      <section class="mt-card"><h2><span>📝</span>내 답</h2><div class="mt-chips">${TS_Q.map((q, i) => `<span class="chip">${['완전 ', '', '', '완전 '][+t[i]]}${q.p[+t[i] < 2 ? 0 : 1]}</span>`).join('')}<span class="chip">${S[1]}</span></div></section>`;
+  }
+  function tsBind() {
+    const box = document.getElementById('ts-quiz'); if (!box) return;
+    const draw = () => { box.innerHTML = tsQuizHtml(); box.classList.remove('ts-in'); void box.offsetWidth; box.classList.add('ts-in'); };
+    box.onclick = ev => {
+      const b = ev.target.closest('[data-v]'); if (!b || !tsSt) return;
+      const qi = TS_ORDER[tsSt.i]; tsSt.a[qi] = +b.dataset.v;
+      b.classList.add('on');
+      setTimeout(() => {
+        if (tsSt.i < TS_ORDER.length - 1) { tsSt.i++; draw(); return; }
+        boxWrite(TS_KEY, { a: tsSt.a.join(''), at: Date.now() }); tsSt = null;
+        const d = new URLSearchParams(location.hash.split('?')[1] || '').get('d'); location.hash = d ? '#/match?d=' + encodeURIComponent(d) : '#/match?r=1';
+      }, 220);
+    };
+    const bk = document.getElementById('ts-back');
+    if (bk) bk.onclick = () => { if (tsSt.i) { tsSt.i--; draw(); } else history.back(); };
+    draw();
+  }
+  // 궁합: 답 9개 비교 (같은 쪽이면 가까울수록 1, 반대면 0)
+  const tsSim = (a, b) => { let s = 0; for (let i = 0; i < 8; i++) s += 1 - Math.abs(+a[i] - +b[i]) / 3; return (s + (a[8] === b[8] ? 1 : 0)) / 9; };
+  const tsSameAx = (a, b) => { const x = tsAxes(a), y = tsAxes(b); return x.filter((v, k) => v.b === y[k].b).length; };
+  const TS_REL = [[4, '🌲🌲', '거울 숲별', '취향 축 4개가 다 같아요. 서로의 플레이리스트를 믿어도 돼요'], [3, '🌿', '단짝 숲별', '거의 다 맞고 하나만 달라서 대화가 끊이지 않아요'], [2, '🧭', '서로 채워주는 짝꿍', '반은 같고 반은 달라서 서로 새 곡을 알려 줘요'], [0, '🔭', '정반대라 끌리는 사이', '취향이 정반대라 오히려 덕질이 두 배로 넓어져요']];
+
   // ---------- 숲별 취향 궁합 (#/match) ----------
   // 서버 없이 링크에 기록을 담아요: ?d= 뒤에 [{n 이름, s 입덕일, f 최애곡, w 소취곡, h ♥곡, g 직관 일정, m 최애 멤버, u 번호}] (곡은 짧은 해시 5자)
   // 여는 사람은 자동으로 같이 비교되고, '링크 보내기'를 눌러야 내 기록이 링크에 들어가요. 최대 6명
@@ -5124,18 +5223,18 @@
       n: (card.nick || '').trim().slice(0, 12) || '나', s: card.since || '',
       f: pickList('fav').map(hs).slice(0, 15), w: pickList('wish').map(hs).slice(0, 15),
       h: st.songs.map(hs).slice(0, 150), g: [...new Set(st.went.map(e => e.id))].slice(0, 200),
-      m: CARD_MEMS.map((m, i) => card.mem.includes(m) ? String(i) : '').filter(Boolean), u: mtUid().replace(/[^\w-]/g, ''),
+      m: CARD_MEMS.map((m, i) => card.mem.includes(m) ? String(i) : '').filter(Boolean), u: mtUid().replace(/[^\w-]/g, ''), t: tsRead(),
     };
   }
-  const mtEmpty = p => !p.f.length && !p.h.length && !p.g.length && !p.w.length;
+  const mtEmpty = p => !p.f.length && !p.h.length && !p.g.length && !p.w.length && !p.t;
   const mtSong = () => { const m = new Map(); data.songs.forEach(so => m.set(mtHash(so.key), so)); return m; };
   const mtInter = (a, b) => a.filter(x => b.includes(x));
   const mtOv = (a, b) => { if (!a.length || !b.length) return null; const c = mtInter(a, b).length; return c ? 0.6 * c / Math.min(a.length, b.length) + 0.4 * 2 * c / (a.length + b.length) : 0; };
-  const MT_PARTS = [['f', 30, '💚 최애곡 메이트'], ['h', 25, '♥ 플레이리스트 메이트'], ['g', 25, '🎫 직관 메이트'], ['w', 10, '🙏 소취 동지'], ['m', 10, '같은 멤버 러버']];
+  const MT_PARTS = [['t', 40, '🧪 취향 테스트 메이트'], ['f', 30, '💚 최애곡 메이트'], ['h', 25, '♥ 플레이리스트 메이트'], ['g', 25, '🎫 직관 메이트'], ['w', 10, '🙏 소취 동지'], ['m', 10, '같은 멤버 러버']];
   function mtPair(a, b) {
     let sum = 0, wt = 0; const got = {};
     MT_PARTS.forEach(([k, w]) => {
-      const v = k === 'g' ? (a.g.length && b.g.length ? [0, 0.6, 0.8, 1][Math.min(3, mtInter(a.g, b.g).length)] : null) : mtOv(a[k], b[k]);
+      const v = k === 't' ? (a.t && b.t ? tsSim(a.t, b.t) : null) : k === 'g' ? (a.g.length && b.g.length ? [0, 0.6, 0.8, 1][Math.min(3, mtInter(a.g, b.g).length)] : null) : mtOv(a[k], b[k]);
       if (v == null) return; got[k] = v; sum += v * w; wt += w;
     });
     if (!wt) return { pct: 0, got };
@@ -5145,15 +5244,17 @@
   const MT_TYPES = [[95, '🌲🌲', '포레 취향 쌍둥이', '플레이리스트를 바꿔 들어도 모를 사이예요'], [80, '🌿', '같은 숲길 산책 메이트', '좋아하는 무대가 거의 다 겹쳐요'], [65, '🌳', '옆 나무 이웃', '반은 같고 반은 서로 추천해 주기 좋은 사이'], [50, '🧭', '서로의 숲 가이드', '서로 모르는 명곡을 알려 줄 수 있어요'], [0, '🔭', '다른 숲의 탐험가', '취향이 달라서 덕질이 두 배로 넓어져요']];
   const MT_GROUP = [[90, '🌲', '한 그루 숲', '이 모임은 사실 한 사람이에요'], [75, '🧺', '같은 숲 소풍단', '어느 공연을 같이 가도 신나는 모임'], [60, '🎶', '숲속 합창단', '떼창 맞추기 딱 좋은 조합이에요'], [45, '🗺️', '각자 다른 숲길 원정대', '서로의 최애곡을 돌려 듣기 좋아요'], [0, '🔬', '숲 다양성 연구회', '취향이 다 달라서 이야기할 게 많아요']];
   const mtType = (pct, group) => (group ? MT_GROUP : MT_TYPES).find(t => pct >= t[0]);
+  // 둘 다 취향 테스트를 했으면 관계 이름은 같은 축 수로
+  const mtHead = (list, pct) => list.length === 2 && list[0].t && list[1].t ? TS_REL.find(r => tsSameAx(list[0].t, list[1].t) >= r[0]) : mtType(pct, list.length > 2);
   const MT_COL = ['#1C7A5E', '#2C86CF', '#5BAF2E', '#1FA87A', '#24513A', '#2C5A8A'];
   const mtAv = (p, i) => `<span class="mt-av" style="background:${MT_COL[i % 6]}">${esc([...p.n][0] || '?')}</span>`;
   // 짧은 링크: 사람은 '!'로, 칸은 '~'로 나눠요. 이름은 base64, 곡은 4자씩 붙여 쓰고, 숫자 일정 번호는 36진수('.'로 나눔, 글자 섞인 번호는 앞에 '*')
-  const mtPack = list => '1' + list.map(p => [mtB64(p.n), (p.s || '').replace(/-/g, ''), p.u, p.f.join(''), p.w.join(''), p.h.join(''), p.g.map(id => /^\d+$/.test(id) ? (+id).toString(36) : '*' + id).join('.'), p.m.join('')].join('~')).join('!');
+  const mtPack = list => '1' + list.map(p => [mtB64(p.n), (p.s || '').replace(/-/g, ''), p.u, p.f.join(''), p.w.join(''), p.h.join(''), p.g.map(id => /^\d+$/.test(id) ? (+id).toString(36) : '*' + id).join('.'), p.m.join(''), p.t || ''].join('~')).join('!');
   const mtUnpack = d => {
     if (d[0] !== '1') { const j = mtUn(d); return Array.isArray(j) ? j : []; }
     const four = t => t.match(/.{4}/g) || [];
-    return d.slice(1).split('!').map(x => { const [n, s, u, f, w, h, g, m] = x.split('~'); let nm = ''; try { nm = decodeURIComponent(escape(atob((n || '').replace(/-/g, '+').replace(/_/g, '/')))); } catch (err) { /* 이름 없음 */ }
-      return { n: nm || '숲별', s: /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : '', u: u || '', f: four(f || ''), w: four(w || ''), h: four(h || ''), g: (g || '').split('.').filter(Boolean).map(t => t[0] === '*' ? t.slice(1) : String(parseInt(t, 36))), m: (m || '').split('') }; });
+    return d.slice(1).split('!').map(x => { const [n, s, u, f, w, h, g, m, t] = x.split('~'); let nm = ''; try { nm = decodeURIComponent(escape(atob((n || '').replace(/-/g, '+').replace(/_/g, '/')))); } catch (err) { /* 이름 없음 */ }
+      return { n: nm || '숲별', s: /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : '', u: u || '', f: four(f || ''), w: four(w || ''), h: four(h || ''), g: (g || '').split('.').filter(Boolean).map(t => t[0] === '*' ? t.slice(1) : String(parseInt(t, 36))), m: (m || '').split(''), t: /^[0-3]{8}[0-2]$/.test(t || '') ? t : '' }; });
   };
   const mtLink = list => location.origin + location.pathname + '#/match?d=' + mtPack(list);
   function mtCalc(list) {
@@ -5169,8 +5270,12 @@
   function matchView() {
     if (!isAdmin()) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(), mine = !mtEmpty(me);
+    if (q.get('test')) { if (!tsSt) tsSt = { i: 0, a: [] }; return `<section class="ts-wrap"><button type="button" class="back ts-backbtn" id="ts-back">‹ 이전</button><div id="ts-quiz" class="ts-in"></div></section>`; }
+    if (q.get('r') && tsRead()) return `<a class="back" href="#/match">‹ 취향 궁합</a><section class="mt-res">${tsResultHtml(tsRead())}
+      <div class="mt-acts"><a class="mt-go" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>친구랑 궁합 보기</a>
+      <a class="mt-sub-btn" href="#/match?test=1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8L4 8.5"/><path d="M4 4v4.5h4.5"/></svg>테스트 다시 하기</a></div></section>`;
     const got = (q.get('d') ? mtUnpack(q.get('d')) : []).filter(p => p && typeof p.n === 'string').slice(0, MT_MAX)
-      .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) }));
+      .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), t: /^[0-3]{8}[0-2]$/.test(p.t || '') ? p.t : '', ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) }));
     const inList = got.findIndex(p => p.u === me.u);
     if (inList >= 0) got[inList] = me;
     const list = inList < 0 && mine && got.length && got.length < MT_MAX ? [...got, me] : got;
@@ -5182,21 +5287,37 @@
       return `${back}
         <section class="mt-intro">
           <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><span class="mt-spark">💞</span><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
+          ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsName(tsRead())}</b><span>결과 보기 ›</span></a>`
+            : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><span>🧪</span><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
           ${from ? `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>` : ''}
           ${mine ? `
             <div class="mt-mine">
               <label class="mt-nick">링크에 보일 이름 <input id="mt-nick" maxlength="12" value="${esc(card.nick || '')}" placeholder="숲별"></label>
-              <ul class="mt-incl"><li>💚 최애곡 <b>${me.f.length}</b></li><li>🙏 소취곡 <b>${me.w.length}</b></li><li>♥ 곡 <b>${me.h.length}</b></li><li>🎫 직관 <b>${me.g.length}</b></li></ul>
+              <ul class="mt-incl">${me.t ? '<li>🧪 유형 <b>✓</b></li>' : ''}<li>💚 최애곡 <b>${me.f.length}</b></li><li>🙏 소취곡 <b>${me.w.length}</b></li><li>♥ 곡 <b>${me.h.length}</b></li><li>🎫 직관 <b>${me.g.length}</b></li></ul>
               <button type="button" class="mt-go" id="mt-send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>내 궁합 링크 보내기</button>
               <p class="mt-note">링크엔 위 기록(곡·직관 일정)과 이름·입덕일이 들어가요. 링크를 받은 사람만 볼 수 있어요.<br>여러 명이면 받은 사람이 열고 결과 링크를 다시 보내면 계속 이어져요 (최대 ${MT_MAX}명).</p>
             </div>` : `<p class="empty">아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.<br><a href="#/songs">곡 아카이브 가기</a></p>`}
         </section>`;
     }
-    const S = mtSong(), R = mtCalc(list), group = list.length > 2, T = mtType(R.pct, group);
+    const S = mtSong(), R = mtCalc(list), group = list.length > 2, T = mtHead(list, R.pct);
     const songs = ks => ks.map(k => S.get(k)).filter(Boolean);
     const chips = arr => `<div class="mt-chips">${arr.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>`;
     const card1 = (ic, t, body) => `<section class="mt-card"><h2><span>${ic}</span>${t}</h2>${body}</section>`;
     const cards = [];
+    const tp = list.map((p, i) => [p, i]).filter(([p]) => p.t);
+    if (tp.length >= 2) {
+      cards.push(card1('🧪', '우리 취향 유형', `<ul class="ts-who">${tp.map(([p, i]) => `<li>${mtAv(p, i)}<span><b>${esc(p.n)}</b>${tsName(p.t)} · ${tsStyle(p.t)[1]}</span></li>`).join('')}</ul>`));
+      const side = (t, i) => i === 8 ? +t[8] : +t[i] < 2 ? 0 : 1, lab = (i, v) => i === 8 ? TS_STYLE.o[v][1] : TS_Q[i].p[v];
+      if (tp.length === 2) {
+        const [[a], [b]] = tp, same = [], diff = [];
+        for (let i = 0; i < 9; i++) { const x = side(a.t, i), y = side(b.t, i); (x === y ? same : diff).push(x === y ? `둘 다 <b>${lab(i, x)}</b>` : `${esc(a.n)} <b>${lab(i, x)}</b> · ${esc(b.n)} <b>${lab(i, y)}</b>`); }
+        cards.push(card1('🤝', `같은 답 <b>${same.length}개</b>`, same.length ? `<ul class="ts-lines">${same.map(x => `<li>${x}</li>`).join('')}</ul>` : '<p class="mt-sub">하나도 안 겹쳐요. 그래서 더 재밌어요</p>'));
+        if (diff.length) cards.push(card1('⚡', '여기선 갈렸어요', `<ul class="ts-lines">${diff.map(x => `<li>${x}</li>`).join('')}</ul>`));
+      } else {
+        const rows = [...Array(9).keys()].map(i => { const c = [0, 0, 0]; tp.forEach(([p]) => c[side(p.t, i)]++); const o = (i === 8 ? [0, 1, 2] : [0, 1]).filter(v => c[v]).sort((x, y) => c[y] - c[x]); return { i, c, o }; }).sort((x, y) => Math.max(...y.c) - Math.max(...x.c));
+        cards.push(card1('📊', '우리 모임은', `<ul class="ts-lines">${rows.map(r => `<li>${r.o.length === 1 ? `모두 <b>${lab(r.i, r.o[0])}</b>` : r.o.map(v => `${lab(r.i, v)} <b>${r.c[v]}</b>`).join(' : ')}</li>`).join('')}</ul>`));
+      }
+    }
     const evs = R.all('g').map(id => data.byId.get(id)).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date));
     if (evs.length) cards.push(card1('🎫', `${group ? '다 같이' : '같이'} 간 공연 <b>${evs.length}번</b>`, `<ul class="mt-evs">${evs.slice(0, 6).map(e => `<li><a href="#/e/${encodeURIComponent(e.id)}"><span>${e.date.replace(/-/g, '.')}</span>${esc(e.title)}</a></li>`).join('')}</ul>${evs.length > 6 ? `<p class="mt-more">외 ${evs.length - 6}번</p>` : ''}<p class="mt-sub">어쩌면 같은 공간에서 같은 노래를 들었어요</p>`));
     const fav = songs(R.all('f'));
@@ -5254,10 +5375,11 @@
     if (sh) sh.onclick = () => share(`우리 포레 취향 궁합 ${document.getElementById('mt-num').dataset.n}% 💞 링크 열면 너도 넣을 수 있어 (숲별 기록장)`, mtLink(mtList));
     const im = document.getElementById('mt-img');
     if (im) im.onclick = () => mtImage();
+    tsBind();
   }
   // 결과 이미지 (1080×1350): 위 큰 카드만
   async function mtImage() {
-    const R = mtCalc(mtList), group = mtList.length > 2, T = mtType(R.pct, group);
+    const R = mtCalc(mtList), group = mtList.length > 2, T = mtHead(mtList, R.pct);
     const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const c = cv.getContext('2d');
     try { await Promise.race([document.fonts.load('800 60px "Nanum Myeongjo"'), new Promise(r => setTimeout(r, 1500))]); } catch (err) { /* 기본 글씨 */ }
     const g = c.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, '#1F5E3E'); g.addColorStop(0.6, '#1C7A5E'); g.addColorStop(1, '#1FA87A');
