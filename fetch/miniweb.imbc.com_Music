@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="euc-kr">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <title>선곡표</title>
+    <link rel='stylesheet' href='https://font.imbc.com/nanumgothic/nanumgothic.css'>
+    <link rel="stylesheet" href="/css/musicstyle.css">
+    <link rel="stylesheet" href="/Content/PagedList.css" />
+    <link rel="stylesheet" type="text/css" href="/css/jquery-ui.css" />
+    <script src="https://www.imbc.com/commons/libs/jquery-1.12.3.min.js"></script>
+    <script src="/js/jquery-ui.js"></script>
+    <script src="https://www.imbc.com/commons/libs/css_browser_selector.min.js"></script>
+    <script type='text/javascript' src='https://www.imbc.com/commons/nlogger/nlogger.js' charset='utf-8'></script>
+
+    <!--[if lt IE 9]><script src="http://www.imbc.com/commons/libs/html5shiv.min.js"></script><![endif]-->
+    <script type="text/javascript">
+        document.domain = "imbc.com";
+
+        $(document).ready(function () {
+            //$('#datePicker0, #datePicker1').datepicker({
+            //    dayNamesMin: ['월', '화', '수', '목', '금', '토', '일'],
+            //    monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+            //    dateFormat: 'yy.mm.dd',
+            //    showOtherMonths: true,
+            //    changeMonth: true,
+            //    selectOtherMonths: true,
+            //    required: true,
+            //    numberOfMonths: 1,
+            //    changeMonth: true,
+            //    changeYear: true,
+            //    showOn: "both",
+            //    buttonImage: "../images/ico-calendar.png",
+            //    buttonImageOnly: true,
+            //    prevText: "이전 월", // ◀ 접근성 관련 추가
+            //    nextText: "다음 월", // ◀ 접근성 관련 추가
+            //    buttonText: "달력 보기" // ◀ 접근성 관련 추가
+            //});
+        });
+    </script>
+</head>
+
+<body>
+    <div id="musicWrap">
+        
+
+
+<div class="sec-con">
+    <table class="list-type">
+        <caption>방송일, 제목, 조회수를 알 수 있는 선곡표</caption>
+        <colgroup>
+            <col width="19.48%" />
+            <col width="auto" />
+            <col width="18.80%" />
+        </colgroup>
+        <thead class="color-bg2 color-txt">
+            <tr>
+                <th scope="col">방송일</th>
+                <th scope="col">제목</th>
+                <th scope="col">조회</th>
+            </tr>
+        </thead>
+        <tbody>
+                <tr>
+                    <td>2026-11-03</td>
+                    <td><a href='/Music/View?seqID=7511&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 11월 3일 화요일</p></a></td>
+                    <td>89</td>
+                </tr>
+                <tr>
+                    <td>2026-11-02</td>
+                    <td><a href='/Music/View?seqID=7510&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 11월 2일 월요일</p></a></td>
+                    <td>148</td>
+                </tr>
+                <tr>
+                    <td>2026-11-01</td>
+                    <td><a href='/Music/View?seqID=7509&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 11월 1일 일요일</p></a></td>
+                    <td>156</td>
+                </tr>
+                <tr>
+                    <td>2026-10-31</td>
+                    <td><a href='/Music/View?seqID=7508&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 10월 31일 토요일</p></a></td>
+                    <td>185</td>
+                </tr>
+                <tr>
+                    <td>2026-10-30</td>
+                    <td><a href='/Music/View?seqID=7507&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 10월 30일 금요일</p></a></td>
+                    <td>207</td>
+                </tr>
+                <tr>
+                    <td>2026-10-29</td>
+                    <td><a href='/Music/View?seqID=7506&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 10월 29일 목요일</p></a></td>
+                    <td>223</td>
+                </tr>
+                <tr>
+                    <td>2026-10-28</td>
+                    <td><a href='/Music/View?seqID=7505&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 10월 28일 수요일</p></a></td>
+                    <td>189</td>
+                </tr>
+                <tr>
+                    <td>2026-10-27</td>
+                    <td><a href='/Music/View?seqID=7504&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 10월 27일 화요일</p></a></td>
+                    <td>268</td>
+                </tr>
+                <tr>
+                    <td>2026-10-26</td>
+                    <td><a href='/Music/View?seqID=7503&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 10월 26일 월요일</p></a></td>
+                    <td>219</td>
+                </tr>
+                <tr>
+                    <td>2026-10-25</td>
+                    <td><a href='/Music/View?seqID=7502&amp;progCode=RAMFM300&amp;page=1'><p class="title ellip2">2026년 10월 25일 일요일</p></a></td>
+                    <td>215</td>
+                </tr>
+
+        </tbody>
+    </table>
+
+    <div class="paging-area">
+                <a href="/Music/Index?progCode=RAMFM300&page=1" class="btn on">1</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=2" class="btn ">2</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=3" class="btn ">3</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=4" class="btn ">4</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=5" class="btn ">5</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=6" class="btn ">6</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=7" class="btn ">7</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=8" class="btn ">8</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=9" class="btn ">9</a>
+        <a href="/Music/Index?progCode=RAMFM300&page=10" class="btn ">10</a>
+                <a href="/Music/Index?progCode=RAMFM300&page=2" class="btn prev"><span class="icon ico-next">다음보기</span></a>
+    </div>
+
+<form action="/Music/Search" method="post" name="searchform" onsubmit="return valdationSearch()"><input id="progCode" name="progCode" type="hidden" value="RAMFM300" />        <div class="search-area color-bg2">
+            
+            <div class="search-wrap">
+                <label for="sortSearch" class="tit">분류별 검색</label>
+                <select name="searchType" id="sortSearch">
+                    <option value="">선택</option>
+                    <option value="1">제목</option>
+                    <option value="2">가수</option>
+                    <option value="3">곡명</option>
+                </select>
+                <div class="search-box">
+                    <input type="text" id="miniSearch" name="searchWord">
+                    <label for="miniSearch" class="color-bg"><button type="submit">검색</button><span class="icon ico-search"></span></label>
+                </div>
+            </div>
+        </div>
+</form></div>
+
+
+        
+    <script type="text/javascript">
+        window.onload = function () {
+            var height = document.body.offsetHeight;
+            var sendScripts = "";
+
+            sendScripts += "if (document.getElementById('songlist_frame') != null) { document.getElementById('songlist_frame').style.height = '" + height + "px'; }";
+
+            var postObj = {
+                action_type: "Eval",
+                action: sendScripts,
+                height: height
+            };
+
+            if (window.parent) {
+                window.parent.postMessage(JSON.stringify(postObj), "*");
+            }
+
+        }
+
+        function valdationSearch() {
+            if ($("#sortSearch option:selected").val() == "") {
+                alert('검색할 분류를 선택해 주세요.');
+                return false;
+            }
+            if ($("#miniSearch").val() == "") {
+                alert('검색어를 입력해 주세요.');
+                return false;
+            }
+            return true;
+        }
+
+    </script>
+
+
+    </div>
+</body>
+</html>
