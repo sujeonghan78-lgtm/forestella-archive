@@ -19,8 +19,13 @@ const CHANNELS = [
   ['@playmnet', 'Mnet TV'], ['@mnet', 'Mnet K-POP'], ['@dingomusic', '딩고 뮤직'], ['@universalmusicclassics', '유니버설뮤직 클래식'],
   // 뮤지컬 제작사·소속사·공연 주관사 (2026-10-23 추가): 조회수가 적어도 받아요 (세 번째 칸 = 최소 조회수)
   ['@artsnartists', '아트앤아티스트', 0], ['@bluestagemusical', '블루스테이지', 0], ['@beatinteractive', '비트인터렉티브', 0], ['@springent', '스프링이엔티', 0],
+  // 라디오 공식 채널·JTBC 음악 클립 (2026-11-03 추가): 라디오 영상은 조회수가 적어서 1천 이상이면 받아요
+  ['UCKNZsAeQXpvI-Mpoc0ZKhsA', 'MBC 라디오', 1000], ['UCAmff0euQRf6RwVlbB8PLMw', 'SBS 라디오', 1000], ['UCbVRtqsTmYh1xhrDSTfSQLg', 'KBS 쿨FM', 1000],
+  ['UC6jh6fov4G5Pb8Pgy1DJDEA', 'DJ티비씨'],
 ];
-const NAME = /포레스텔라|forestella|배두훈|강형호|고우림/i;  // 조민규는 다른 사람과 이름이 같아서 혼자로는 안 받아요
+const NAME0 = /포레스텔라|forestella|배두훈|강형호|고우림/i;  // 조민규는 다른 사람과 이름이 같아서 혼자로는 안 받아요
+// 단, 팬텀싱어 영상이면 조민규 이름만 있어도 받아요 (2017년엔 아직 팀 이름이 없었어요)
+const NAME = { test: t => NAME0.test(t) || (/조민규/.test(t) && /팬텀\s?싱어|phantom ?singer/i.test(t)) };
 const MIN_VIEWS = 10000;
 const old = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : { channels: [], videos: [] };
 // --only=@a,@b : 그 채널만 처음부터 전부 찾아요 (새로 넣은 채널용)
@@ -32,7 +37,8 @@ const chOf = {}, found = [], missing = [];
 let stopped = '';
 try {
   for (const [handle, name] of CHANNELS.filter(c => !only.length || only.includes(c[0]))) {
-    const ch = (await api('channels', { part: 'id', forHandle: handle })).items?.[0];
+    // 핸들(@…)이 없는 채널은 채널 ID(UC…)로 적어요
+    const ch = handle.startsWith('UC') ? { id: handle } : (await api('channels', { part: 'id', forHandle: handle })).items?.[0];
     if (!ch) { missing.push(handle); continue; }
     found.push({ id: ch.id, handle, name });
     let page = '';
@@ -41,6 +47,15 @@ try {
       d.items.forEach(i => { chOf[i.id.videoId] ||= name; });
       page = d.nextPageToken;
     } while (page);
+    // JTBC 채널은 팬텀싱어 시절 영상(조민규 이름만 있는 것 포함)도 따로 찾아요
+    if (/^JTBC|DJ티비씨/.test(name)) {
+      let pg = '';
+      do {
+        const d = await api('search', { part: 'id', type: 'video', channelId: ch.id, q: '팬텀싱어 조민규|팬텀싱어2|팬텀싱어 2', maxResults: 50, ...(full ? {} : { publishedAfter: since }), ...(pg && { pageToken: pg }) });
+        d.items.forEach(i => { chOf[i.id.videoId] ||= name; });
+        pg = d.nextPageToken;
+      } while (pg);
+    }
   }
   // 채널 안 검색은 유튜브 쪽 한계로 빠지는 영상이 많아요 (2026-10-26 확인: 열린음악회 바람의 노래 544만 등).
   // 처음·일요일·--wide 땐 전체 검색(조회수 순)으로 한 번 더 찾아서, 위 채널이나 아래 방송사 공식 채널 영상만 받아요
