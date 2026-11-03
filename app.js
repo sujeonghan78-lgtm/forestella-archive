@@ -5225,7 +5225,7 @@
   }
   function tsQuadBind() {
     document.querySelectorAll('.tsq').forEach(q => q.onclick = ev => { const b = ev.target.closest('.tsq-tab'); if (!b) return;
-      q.querySelectorAll('.tsq-tab').forEach(x => x.classList.toggle('on', x === b)); q.querySelectorAll('.tsq-svg').forEach(x => { x.hidden = x.dataset.m !== b.dataset.m; }); });
+      q.querySelectorAll('.tsq-tab').forEach(x => x.classList.toggle('on', x === b)); q.querySelectorAll('.tsq-svg').forEach(x => x.toggleAttribute('hidden', x.dataset.m !== b.dataset.m)); });
   }
   function tsBind() {
     tsQuadBind();
