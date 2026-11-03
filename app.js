@@ -216,7 +216,7 @@
   let boxUser = boxRead(BOX_USER);  // { name, pin, at }
   const boxApi = () => (window.CONFIG || {}).boxApi || '';
   // 관리자가 중복이라 원본에 합친 일정은 원본에 누른 걸로 쳐요 (window.SB_EV_MERGE {중복ID: 원본ID})
-  const boxMg = () => window.SB_EV_MERGE || {};
+  const boxMg = () => ({ ...((data || {}).autoMerge || {}), ...(window.SB_EV_MERGE || {}) });
   const boxHas = (k, id) => box[k].includes(id) || box[k].some(x => boxMg()[x] === id);
   const BOX_LABEL = { e: ['♡ 좋아요', '♥ 좋아요'], s: ['♡', '♥'], w: ['🎫 직관했어요', '🎫 직관 ✓'], v: ['📺 시청했어요', '📺 시청 ✓'] };
   const boxBtn = (k, id, cls = 'act') => `<button type="button" class="${cls} box-btn" data-box="${k}" data-id="${esc(id)}" aria-pressed="${boxHas(k, id)}"${k === 's' ? ' aria-label="이 곡 좋아요"' : ''}>${BOX_LABEL[k][boxHas(k, id) ? 1 : 0]}</button>`;
@@ -3088,7 +3088,7 @@
     ['y3', '🌟', '3년차 숲별', '입덕 3년', () => ddayOf(card.since) > 365 * 3],
     ['y5', '✨', '5년차 숲별', '입덕 5년', () => ddayOf(card.since) > 365 * 5],
   ];
-  const cardBadges = (st = boxStats()) => CARD_BADGES.map(([k, ic, name, how, f]) => { const r = f(st); return { k, ic, name: typeof r === 'string' ? r : name, how: typeof r === 'string' ? `같은 투어 ${parseInt(r, 10)}번 직관` : how, got: !!r }; });
+  const cardBadges = (st = boxStats()) => [...annivBadges(), ...CARD_BADGES.map(([k, ic, name, how, f]) => { const r = f(st); return { k, ic, name: typeof r === 'string' ? r : name, how: typeof r === 'string' ? `같은 투어 ${parseInt(r, 10)}번 직관` : how, got: !!r }; })];
   const STK_KEY = 'sb-card-stk';
   let cardStk = boxRead(STK_KEY) || [];  // [{ src, x, y, w, r, shape }] 카드 바깥 틀 기준 위치
   let cardStkImg = new Map(), cardSel = -1, cardExport = false;
@@ -4329,7 +4329,8 @@
           ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표')}
           ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기')}
           ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동')}
-          ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일')}`)}
+          ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일')}
+          ${item('#/days', '<path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/>', '함께한 기념일', annivToday() && '오늘')}`)}
         ${grp('숲별 소통', `
           ${item('#/story', '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>', '숲별 이야기', nNew(storyUnread().length) && 'NEW ' + nNew(storyUnread().length))}
           ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', nNew(newsUnread().length) && 'NEW ' + nNew(newsUnread().length))}
@@ -5098,6 +5099,7 @@
     add: addView,
     opinion: opinionView,
     news: newsView,
+    days: daysView,
     story: storyView,
     fan: fanView,
     map: mapView,
@@ -7281,7 +7283,7 @@
     });
   }
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', days: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -7403,6 +7405,184 @@
     gc.count({ path: location.pathname + route });
   }
 
+  // 함께한 기념일: 첫 방문·입덕일·첫 직관·기념일에 들른 날 + 포레스텔라 기념일 다음 날짜
+  function daysView() {
+    const st = anvStore(), today = todayIso(), y = +today.slice(0, 4);
+    const ds = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+    const dot = d => d.replace(/-/g, '.');
+    const nextOf = mmdd => { let d = `${y}-${mmdd}`; if (d < today) d = `${y + 1}-${mmdd}`; return d; };
+    const dd = d => { const n = ds(today, d); return n === 0 ? '<em class="dy-today">오늘</em>' : `<span class="dy-dd">D-${n}</span>`; };
+    const row = (ic, title, sub, right) => `<div class="dy-row"><span class="dy-ic">${ic}</span><span class="dy-t"><b>${title}</b><small>${sub}</small></span>${right || ''}</div>`;
+    const mine = [];
+    if (st.first) mine.push([st.first, row('🌲', st.firstOld ? '기념일 모으기 시작' : '숲별 기록장 첫 방문', `${dot(st.first)} · ${ds(st.first, today) + 1}일째`)]);
+    const sc = (card.since || '').slice(0, 10);
+    if (sc) { const nx = nextOf(sc.slice(5)), n = +nx.slice(0, 4) - +sc.slice(0, 4); mine.push([sc, row('🌱', '입덕한 날', `${dot(sc)} · D+${ddayOf(card.since)}`, n > 0 ? `<span class="dy-nx">${n}주년 ${dd(nx)}</span>` : '')]); }
+    const { first } = boxStats();
+    if (first) mine.push([first.date, row('🎫', '첫 직관', `${dot(first.date)} · <a href="#/e/${encodeURIComponent(first.id)}">${esc(first.title)}</a>`)]);
+    Object.entries(st.days || {}).forEach(([d, x]) => mine.push([d, row(x.ic, `${esc(x.name)} 함께함`, `${dot(d)}${(() => { const k = Object.keys(st.bdg || {}).find(k => st.bdg[k].d === d); return k ? ` · 뱃지 ${anvRank(k) ? anvRank(k) + '번째 수집자' : '받음'}` : ''; })()}`)]));
+    mine.sort((a, b) => b[0].localeCompare(a[0]));
+    const group = ANNIVS.map(([md, since, label, ic]) => { const nx = nextOf(md), n = since ? +nx.slice(0, 4) - since : 0; return [nx, `<a class="dy-a" href="#/days?m=${md.replace('-', '')}">` + row(ic, since ? `${label === '데뷔' ? '포레스텔라 데뷔' : label} ${n}주년` : label, since ? `${since}.${md.replace('-', '.')}` : md.replace(/^0?(\d+)-0?(\d+)$/, '$1월 $2일'), dd(nx)) + '</a>']; }).sort((a, b) => a[0].localeCompare(b[0]));
+    const fd = st.first ? ds(st.first, today) + 1 : 1;
+    return `
+      <div class="about-top">
+        <a class="back" href="#/more">‹ 더보기</a>
+        <h1 class="h1">함께한 기념일</h1>
+        <p>이 폰에 자동으로 모여요. 기념일에 들르면 여기에 남아요.</p>
+      </div>
+      <div class="dy-hero">${card.since ? `<small>포레스텔라와 함께한 지</small><b>D+${ddayOf(card.since).toLocaleString()}</b>` : `<small>숲별 기록장과 함께한 지</small><b>${fd}일</b>`}${annivToday() ? `<span>오늘은 ${esc(annivToday().name)}</span>${cheerBtn(annivToday())}` : ''}</div>
+      ${(() => { const q = (new URLSearchParams(location.hash.split('?')[1] || '').get('m') || '').replace(/^(\d\d)(\d\d)$/, '$1-$2'); const md = q || (annivToday() && !annivToday().my ? today.slice(5) : ''); return md ? annivMemory(md) : ''; })()}
+      <section class="mg"><h2 class="mg-h">나의 기념일</h2><div class="dy-list">${mine.map(x => x[1]).join('')}</div></section>
+      <section class="mg"><h2 class="mg-h">포레스텔라 기념일</h2><div class="dy-list">${group.map(x => x[1]).join('')}</div></section>`;
+  }
+
+  // 기념일: 그날 하루 화면에 잎·별이 흩날리고, 가끔 뜨는 숨은 숲을 누르면 뱃지를 받아요
+  const ANNIVS = [
+    ['11-03', 2017, '팬텀싱어 우승', '🏆', { evq: /팬텀싱어 ?2 \((1[23]|1~13)회\)|우승팀 포레스텔라 첫 번째 팬미팅/, songs: ['Come Un Eterno Addio', 'Il Mirto e la Rosa', "In Un'altra Vita", 'Maldita Sea Mi Suerte'], vq: /팬텀싱어\s?2|팬텀싱어 시즌2/, from: '2017-08-01', to: '2018-02-28', prog: '팬텀싱어' }],
+    ['03-14', 2018, '데뷔', '🌲', { day: '2018-03-14', from: '2018-03-01', to: '2018-03-31', vq: /데뷔|Mosaic|Into the Forest|Ever Green/i }],
+    ['07-15', 0, '배두훈 생일', '🎂', { m: '배두훈' }], ['03-08', 0, '강형호 생일', '🎂', { m: '강형호' }], ['11-19', 0, '조민규 생일', '🎂', { m: '조민규' }], ['07-10', 0, '고우림 생일', '🎂', { m: '고우림' }],
+  ];
+  // 추억하러 가기: 그 기념일과 관련된 일정·곡·영상·공식 X
+  function annivMemory(md) {
+    const A = ANNIVS.find(x => x[0] === md);
+    if (!A) return '';
+    const M = A[4] || {}, sec = (h, body) => body ? `<div class="dy-mem-s"><h3>${h}</h3>${body}</div>` : '';
+    const evs = data.events.filter(e => (M.evq && M.evq.test(e.title)) || (M.day && e.date === M.day)).sort((a, b) => a.date.localeCompare(b.date));
+    const songs = (M.songs || []).map(n => data.songs.get(window.DATA.songKey(n))).filter(Boolean);
+    const vids = M.vq ? (data.official || []).filter(v => M.vq.test(v.title) && (!M.from || v.date >= M.from) && (!M.to || v.date <= M.to)).sort((a, b) => b.views - a.views || a.date.localeCompare(b.date)).slice(0, 6) : [];
+    const xs = M.m ? (data.xFeed || []).filter(p => p.cat === '생일' && p.m.includes(M.m)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4) : [];
+    const html = sec('그날의 기록', evs.map(e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`).join(''))
+      + sec(M.evq ? '결승 무대 곡' : '그때 부른 곡', songs.length ? `<div class="chips wrap">${songs.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>` : '')
+      + sec('영상', vids.length ? `<div class="stack x-list">${vids.map(ytCard).join('')}</div>` : '')
+      + sec('공식 X 생일 글', xs.length ? `<a class="more-link" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${encodeURIComponent(M.m)}">생일 축하 글 모아보기 ›</a>` : '')
+      + (M.prog ? `<a class="more-link" href="${progHref(M.prog)}">${esc(M.prog)} 모아보기 ›</a>` : '')
+      + (M.m ? `<a class="more-link" href="#/members?m=${encodeURIComponent(M.m)}">${esc(M.m)} 활동 보기 ›</a>` : '');
+    return html ? `<section class="mg dy-mem" id="dy-mem"><h2 class="mg-h">${A[3]} ${esc(A[1] ? `${A[2] === '데뷔' ? '포레스텔라 데뷔' : A[2]}의 추억` : A[2])}</h2>${html}</section>` : '';
+  }
+  const ANV_KEY = 'sb-anniv';
+  const anvStore = () => { try { return JSON.parse(localStorage.getItem(ANV_KEY)) || {}; } catch (e) { return {}; } };
+  const anvSave = o => { try { localStorage.setItem(ANV_KEY, JSON.stringify(o)); } catch (e) {} };
+  function annivToday() {
+    const d = todayIso(), a = ANNIVS.find(x => x[0] === d.slice(5));
+    const sc = ((typeof card !== 'undefined' && card.since) || '').slice(0, 10);
+    if (!a && sc && sc.slice(5) === d.slice(5) && sc < d) { const n = +d.slice(0, 4) - +sc.slice(0, 4); return { d, ic: '🌱', name: `입덕 ${n}주년`, since: sc.replace(/-/g, '.'), k: 'an-my-' + d.slice(0, 4), my: true }; }
+    if (!a) return null;
+    const y = +d.slice(0, 4), n = a[1] ? y - a[1] : 0;
+    const name = a[1] ? `${a[2] === '데뷔' ? '포레스텔라 데뷔' : a[2]} ${n}주년` : a[2];
+    return { d, ic: a[3], name, since: a[1] ? `${a[1]}.${a[0].replace('-', '.')}` : '', k: 'an-' + a[0].replace('-', '') + '-' + y };
+  }
+  const annivBadges = () => Object.entries(anvStore().bdg || {}).map(([k, b]) => ({ k, ic: b.ic, name: b.name, how: '그날 숨은 숲 찾기', got: true }));
+  const LEAF = '<svg viewBox="0 0 24 24"><path d="M5 19C5 10 11 4 20 4c0 9-6 15-15 15z" fill="currentColor"/><path d="M5 19L14 10" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></svg>';
+  const STAR = '<svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.9L22 9.3l-5.8 4.6 2 7.1L12 17l-6.2 4 2-7.1L2 9.3l7.4-.4z" fill="currentColor"/></svg>';
+  const TREE = '<svg viewBox="0 0 48 56"><path d="M24 3L9 24h7L6 38h36L32 24h7z" fill="#3f8f4f" stroke="#245c31" stroke-width="2" stroke-linejoin="round"/><rect x="20" y="38" width="8" height="12" rx="2" fill="#8a5a36"/><circle cx="19" cy="22" r="1.6" fill="#ffe27a"/><circle cx="29" cy="30" r="1.6" fill="#ffe27a"/><circle cx="24" cy="13" r="1.6" fill="#ffe27a"/></svg>';
+
+  const anvFoundN = k => { const f = (((data || {}).anniv || {})[k] || {}).f || {}; return Object.keys(f).filter(u => u !== myUid()).length; };
+  const anvCheerN = k => { const c = (((data || {}).anniv || {})[k] || {}).c || {}, me = myUid(); return Object.keys(c).filter(u => u !== me).length + ((anvStore().cheer || {})[k] ? 1 : 0); };
+  // 수집 순서: 시트에 내 기록이 있으면 시각 순으로, 없으면 찾았을 때 센 번호
+  const anvRank = k => { const f = (((data || {}).anniv || {})[k] || {}).f || {}, me = myUid(); if (me in f) return Object.values(f).filter(t => t < f[me]).length + 1; return ((anvStore().bdg || {})[k] || {}).n || 0; };
+  const CHEER_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l5-13 8 8z"/><path d="M14 4v2M19 9h2M17.5 5.5l1.5-1.5M11 9.5c1-1.5 1-3 0-4.5M14.5 13c1.5-1 3-1 4.5 0"/></svg>';
+  const cheerBtn = a => { const on = !!(anvStore().cheer || {})[a.k], n = anvCheerN(a.k); return `<div class="anv-cheer"><button type="button" class="anv-cb${on ? ' on' : ''}" data-k="${a.k}"${on ? ' disabled' : ''}>${CHEER_IC}<span>${on ? '축하했어요' : '같이 축하하기'}</span></button><small class="anv-cn">${n ? `<b>${n.toLocaleString()}명</b>이 같이 축하하고 있어요` : '첫 번째로 축하해 주세요'}</small></div>`; };
+  // 같이 축하하기 (배너·함께한 기념일 화면 어디서 눌러도)
+  document.addEventListener('click', ev => {
+    const btn = ev.target.closest('.anv-cb'), a = annivToday();
+    if (!btn || !a) return;
+    {
+      const o = anvStore(); if ((o.cheer || {})[a.k]) return;
+      o.cheer = { ...(o.cheer || {}), [a.k]: a.d }; anvSave(o);
+      formPost(`종류: 기념\n기념: ${a.k}\n할일: 축하\n누가: ${myUid()}`).catch(() => {});
+      const r = btn.getBoundingClientRect(); anvBurst(r.left + r.width / 2, r.top + r.height / 2, 16);
+      document.querySelectorAll('.anv-cheer').forEach(w => { w.outerHTML = cheerBtn(a); });
+    }
+  });
+  function anvBurst(x, y, n = 12) {
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement('i');
+      p.className = 'anv-bit ' + (i % 2 ? 'st' : 'lf');
+      p.innerHTML = i % 2 ? STAR : LEAF;
+      const ang = Math.PI * 2 * i / n, dist = 50 + Math.random() * 40;
+      p.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.cos(ang) * dist}px;--dy:${Math.sin(ang) * dist}px`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 900);
+    }
+  }
+  function annivBanner(a) {
+    const b = document.createElement('div');
+    const num = (a.name.match(/(\d+)주년/) || [])[1];
+    b.className = 'anv-ban'; b.setAttribute('role', 'dialog');
+    b.innerHTML = `<button type="button" class="anv-x" aria-label="닫기">✕</button>
+      <div class="anv-top">${num ? `<span class="anv-num">${num}<small>th</small></span>` : `<span class="anv-num anv-numic">${a.ic}</span>`}<span class="anv-tt"><small>${a.since ? esc(a.since) + ' → 오늘' : 'HAPPY DAY'}</small><b>${esc(a.name)}</b><em>${a.my ? '포레스텔라와 함께한 날을 축하해요' : num ? `숲별들과 함께 맞는 ${num}번째 오늘` : '숲별 모두 같이 축하해요'}</em></span></div>
+      ${cheerBtn(a)}
+      ${a.my ? '' : `<a class="anv-mem" href="#/days?m=${a.d.slice(5).replace('-', '')}">추억하러 가기 ›</a>`}
+      <div class="anv-foot"><span>화면 어딘가 숨은 숲을 찾아보세요</span><a href="#/days">함께한 기념일 ›</a></div>`;
+    document.body.appendChild(b);
+    requestAnimationFrame(() => b.classList.add('show'));
+    const close = () => { b.classList.remove('show'); setTimeout(() => b.remove(), 400); };
+    b.querySelector('.anv-x').onclick = close;
+    b.querySelectorAll('.anv-foot a, .anv-mem').forEach(x => x.addEventListener('click', close));
+  }
+  function annivStart() {
+    const a = annivToday();
+    const st = anvStore(), d0 = todayIso();
+    // 첫 방문일: 이미 쓰던 폰이면(다른 기록이 있으면) '이날부터 모으기 시작'으로 표시해요
+    if (!st.first) { let old = false; try { old = Object.keys(localStorage).some(k => k.startsWith('sb-') && k !== ANV_KEY); } catch (e) {} st.first = d0; st.firstOld = old; anvSave(st); }
+    if (!a) return;
+    if (!(st.days || {})[a.d]) { st.days = { ...(st.days || {}), [a.d]: { ic: a.ic, name: a.name } }; anvSave(st); }
+    // 흩날리는 잎·별 (글씨를 가리지 않게 연하게, 터치는 그대로 아래로)
+    const fall = document.createElement('div');
+    fall.className = 'anv-fall'; fall.setAttribute('aria-hidden', 'true');
+    fall.innerHTML = Array.from({ length: 16 }, (_, i) => {
+      const star = i % 3 === 0, sz = star ? 10 + Math.random() * 8 : 14 + Math.random() * 10;
+      return `<i class="${star ? 'st' : 'lf'}" style="left:${Math.random() * 100}%;width:${sz}px;height:${sz}px;animation-duration:${10 + Math.random() * 9}s,${3 + Math.random() * 3}s;animation-delay:-${Math.random() * 18}s,0s">${star ? STAR : LEAF}</i>`;
+    }).join('');
+    document.body.appendChild(fall);
+    const tg = document.createElement('button');
+    tg.type = 'button'; tg.className = 'anv-tg';
+    const setOff = off => { fall.hidden = off; tg.classList.toggle('off', off); tg.setAttribute('aria-label', off ? '흩날림 켜기' : '흩날림 끄기'); tg.title = tg.getAttribute('aria-label'); };
+    tg.innerHTML = LEAF;
+    tg.onclick = () => { const o = anvStore(); o.off = o.off === a.d ? '' : a.d; anvSave(o); setOff(o.off === a.d); };
+    setOff(st.off === a.d);
+    document.body.appendChild(tg);
+    // 그날 처음 들어오면 축하 배너
+    if (st.seen !== a.d) { annivBanner(a); const o = anvStore(); o.seen = a.d; anvSave(o); }
+    // 숨은 숲: 가끔 나타났다가 몇 초 뒤 사라져요
+    const pop = () => {
+      if (document.hidden || !annivToday()) return next();
+      const t = document.createElement('button');
+      t.type = 'button'; t.className = 'anv-stk'; t.setAttribute('aria-label', '숨은 숲');
+      t.style.left = (8 + Math.random() * 74) + '%'; t.style.top = (22 + Math.random() * 52) + '%';
+      t.innerHTML = TREE;
+      document.body.appendChild(t);
+      const gone = setTimeout(() => { t.classList.add('bye'); setTimeout(() => t.remove(), 500); next(); }, 7000);
+      t.onclick = () => {
+        clearTimeout(gone);
+        const r = t.getBoundingClientRect();
+        anvBurst(r.left + r.width / 2, r.top + r.height / 2);
+        t.remove();
+        const o = anvStore(); o.bdg = o.bdg || {}; o.found = o.found || {};
+        o.found[a.d] = (o.found[a.d] || 0) + 1;
+        const first = !o.bdg[a.k];
+        if (first) { o.bdg[a.k] = { ic: a.ic, name: a.name, d: a.d, n: anvFoundN(a.k) + 1 }; formPost(`종류: 기념\n기념: ${a.k}\n할일: 찾음\n누가: ${myUid()}`).catch(() => {}); }
+        anvSave(o);
+        got(first, o.found[a.d]);
+        next();
+      };
+    };
+    const next = () => setTimeout(pop, (anvStore().bdg || {})[a.k] ? 90e3 + Math.random() * 120e3 : 20e3 + Math.random() * 40e3);
+    const got = (first, n) => {
+      const m = document.createElement('div');
+      m.className = 'anv-got'; m.setAttribute('role', 'status');
+      const rk = (anvStore().bdg || {})[a.k];
+      m.innerHTML = first
+        ? `<span class="anv-gic">${a.ic}</span><span class="anv-gt"><b>${esc(a.name)} 뱃지</b><small>${rk && rk.n ? `${rk.n}번째 수집자예요` : '숨은 숲을 찾았어요'}</small></span><a href="#/card">카드에 달기</a>`
+        : `<span class="anv-gt"><b>또 찾았어요</b><small>오늘 ${n}번째 숲</small></span>`;
+      document.body.appendChild(m);
+      requestAnimationFrame(() => m.classList.add('show'));
+      const close = () => { m.classList.remove('show'); setTimeout(() => m.remove(), 300); };
+      m.querySelectorAll('a').forEach(el => el.addEventListener('click', close));
+      setTimeout(close, first ? 5000 : 1800);
+    };
+    setTimeout(pop, 8e3 + Math.random() * 12e3);
+  }
+
   window.addEventListener('hashchange', () => {
     const wasOpen = !sheet.hidden;
     countView();
@@ -7412,6 +7592,7 @@
   render();
   start();
   countView();
+  annivStart();
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

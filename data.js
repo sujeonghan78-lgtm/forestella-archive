@@ -211,7 +211,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && r.type !== '기념' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요|기념)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -558,6 +558,29 @@
         e.nameProps = ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id }));
       });
     }
+    // 카페에서 자동으로 가져온 일정이 이미 있는 일정(시트·보충·팬 등록)과 같은 날 같은 일정이면 하나로 합쳐요.
+    // 이미 있던 일정을 남기고(셋리·직관 기록이 거기 붙어 있어서) 빈 장소·시간만 카페 것으로 채워요.
+    // 같은 날 1부·2부처럼 숫자가 다르면 다른 일정으로 봐요
+    const autoMerge = {};
+    {
+      const tok = t => new Set(String(t || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').split(' ').filter(w => w.length > 1));
+      const nums = t => [...String(t || '').matchAll(/\d+/g)].map(m => m[0]).filter(n => !/^20\d\d$/.test(n)).sort().join(',');
+      const same = (a, b) => {
+        if (nums(a.title) !== nums(b.title)) return false;
+        const A = tok(a.title), B = tok(b.title), n = [...A].filter(w => B.has(w)).length;
+        return n >= 3 && n / Math.min(A.size, B.size) >= 0.6;
+      };
+      const stay = events.filter(e => !e.auto);
+      events.filter(e => e.auto).forEach(a => {
+        const t = stay.find(e => (e.date === a.date || (e.endDate && a.date >= e.date && a.date <= e.endDate)) && same(a, e));
+        if (!t) return;
+        autoMerge[a.id] = t.id;
+        if (!t.place && a.place) t.place = a.place;
+        else if (a.place && t.place && t.place.length <= 6 && !t.place.includes(' ') && !a.place.includes(t.place)) t.place = `${a.place} (${t.place})`;
+        if (!t.start && /^\d{1,2}:\d\d/.test(a.start || '')) { t.start = a.start; if (!t.end && a.end) t.end = a.end; }
+      });
+      for (let i = events.length - 1; i >= 0; i--) if (autoMerge[events[i].id]) events.splice(i, 1);
+    }
     // 관리자가 숨긴 일정: 사이트가 서명을 확인한 번호만 window.SB_EV_HIDE에 들어와요
     // 관리자가 '원본에 합치기'를 한 일정은 장소·시간·영상·셋리를 원본의 빈 칸에 옮기고 숨겨요 (날짜는 원본 것, 이름·캐스팅·셋리 고치기 제보는 mvMerged가 원본으로 옮겨요)
     const evHide = window.SB_EV_HIDE || new Set(), evTo = window.SB_EV_MERGE || {}, hidden = [];
@@ -580,7 +603,7 @@
     // 관리자가 지우면(서명된 숨김 줄, 번호 'c'+일정·날짜·시간) 빠져요
     let lyricsAll = [], flaggedAll = [];
     const bansAll = {};
-    const heartsAll = { s: {}, e: {}, w: {}, g: {}, mine: null }, predsAll = {};
+    const heartsAll = { s: {}, e: {}, w: {}, g: {}, mine: null }, predsAll = {}, annivAll = {};
     const langVotes = new Map();   // 곡키 → {언어: Set(누가)}
     const songVotes = new Map();   // 곡키|항목|값 → {k, what, val, by: Set, at}
     if (raw.reports) {
@@ -655,6 +678,8 @@
       const pl = new Map();
       buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '셋리예측' || !r.by) return; const id = line0(r, '일정'), at = tsMs(r.time), k = id + '|' + r.by; if (id && (!pl.has(k) || pl.get(k).at <= at)) pl.set(k, { id, by: r.by, at, keys: line0(r, '곡').split('|').filter(Boolean).slice(0, 60) }); });
       pl.forEach(p => { (predsAll[p.id] = predsAll[p.id] || []).push({ by: p.by, keys: p.keys }); });
+      // 기념일 (종류: 기념 기념/할일 축하|찾음/누가): 축하한 사람 수, 숨은 숲 찾은 순서
+      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '기념' || !r.by) return; const k = line0(r, '기념'), w = line0(r, '할일'); if (!k) return; const a = annivAll[k] = annivAll[k] || { c: {}, f: {} }, at = tsMs(r.time), m = w === '찾음' ? a.f : a.c; if (!(r.by in m) || m[r.by] > at) m[r.by] = at; });
       // 신고 3명 이상 → 자동 숨김 (관리자가 복구한 건 빼고). 숨겨진 글 수로 기기 글쓰기 막기
       const flagged = [];
       lyr.forEach(l => {
@@ -687,6 +712,7 @@
     const reports = (raw.reports ? buildReports(toObjects(raw.reports)) : []).map(r => ({ ...r, id: 'r' + slVer([r.time, r.raw || r.message]) }))
       .filter(r => !repHide.some(h => r.date === h.date && (r.raw || r.message || '').includes(h.has)));
     const byId = new Map(events.map(e => [e.id, e]));
+    Object.entries(autoMerge).forEach(([a, t]) => { if (byId.has(t) && !byId.has(a)) byId.set(a, byId.get(t)); });
     events.forEach(e => { e.related = []; });
     // 콘서트 셋리스트 (나무위키·기사 기준) 붙이기
     let tours = [];
@@ -1169,7 +1195,7 @@
     votes.filter(v => !v.ok).forEach(v => { const so = songs.get(songAlias[v.k] || v.k); if (so) (so.fixProps = so.fixProps || []).push(v); });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, anniv: annivAll, autoMerge, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.
