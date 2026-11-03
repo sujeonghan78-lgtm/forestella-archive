@@ -5207,7 +5207,9 @@
   }
   // 사분면: 사람마다 점 하나 (지도 2장: 감상×결, 곡×발견). pp = [[답, 색 번호, 이름]]
   const TS_MAPS = [[0, 3], [1, 2]];
+  const TSQ_DATA = new Map(); let tsqN = 0;
   function tsQuad(pp) {
+    const qid = 'q' + (++tsqN); TSQ_DATA.set(qid, pp);
     const W = 300, P = 34, S = W - P * 2, xy = v => P + (10 + v * 0.8) / 100 * S;  // 끝까지 가도 칸 안쪽에
     const one = ([ax, ay], m) => {
       const X = TS_AX[ax], Y = TS_AX[ay], seen = new Map();
@@ -5223,12 +5225,54 @@
         ${corner(P + 8, P + 18, X[0], Y[0], 'start')}${corner(W - P - 8, P + 18, X[1], Y[0], 'end')}${corner(P + 8, W - P - 10, X[0], Y[1], 'start')}${corner(W - P - 8, W - P - 10, X[1], Y[1], 'end')}
         ${dots}</svg>`;
     };
-    return `<div class="tsq"><div class="tsq-tabs">${TS_MAPS.map(([a, b], m) => `<button type="button" class="tsq-tab${m ? '' : ' on'}" data-m="${m}"><span>${TS_AX[a].map(x => x.replace(/파$/, '')).join('·')}</span><span>× ${TS_AX[b].map(x => x.replace(/파$/, '')).join('·')}</span></button>`).join('')}</div>
+    return `<div class="tsq" data-q="${qid}"><div class="tsq-tabs">${TS_MAPS.map(([a, b], m) => `<button type="button" class="tsq-tab${m ? '' : ' on'}" data-m="${m}"><span>${TS_AX[a].map(x => x.replace(/파$/, '')).join('·')}</span><span>× ${TS_AX[b].map(x => x.replace(/파$/, '')).join('·')}</span></button>`).join('')}</div>
       ${TS_MAPS.map(one).join('')}
-      ${pp.length > 1 ? `<div class="tsq-leg">${pp.map(([, ci, nm]) => `<span><i style="background:${MT_COL[ci % 6]}"></i>${esc(nm)}</span>`).join('')}</div>` : ''}</div>`;
+      ${pp.length > 1 ? `<div class="tsq-leg">${pp.map(([, ci, nm]) => `<span><i style="background:${MT_COL[ci % 6]}"></i>${esc(nm)}</span>`).join('')}</div>` : ''}<button type="button" class="mt-sub-btn tsq-save"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>사분면 이미지 저장</button></div>`;
+  }
+  // 이미지 저장 (휴대폰 갤러리, 아이폰은 공유 창)
+  function mtSave(cv, name) {
+    cv.toBlob(b => { if (!b) return; const file = new File([b], name, { type: 'image/png' }); const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (ios && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file] }).catch(() => {}); return; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('이미지를 저장했어요'); }, 'image/png');
+  }
+  // 사분면 이미지 1080×1350: 위 제목(혼자면 내 코드·유형), 가운데 사분면, 아래 이름표
+  async function tsQuadImage(pp, m) {
+    if (!pp.length) return;
+    const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const c = cv.getContext('2d'), SANS = CARD_SANS;
+    try { await Promise.race([document.fonts.load('800 60px "Nanum Myeongjo"'), new Promise(r => setTimeout(r, 1500))]); } catch (err) { /* 기본 글씨 */ }
+    const g = c.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, '#1F5E3E'); g.addColorStop(0.6, '#1C7A5E'); g.addColorStop(1, '#1FA87A'); c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
+    const st = c.createLinearGradient(0, 0, 1080, 0); st.addColorStop(0, '#C6EC6B'); st.addColorStop(0.5, '#62D3A1'); st.addColorStop(1, '#72BCF3'); c.fillStyle = st; c.fillRect(0, 0, 1080, 14);
+    c.textAlign = 'center'; c.fillStyle = '#fff';
+    const [ax, ay] = TS_MAPS[m], X = TS_AX[ax], Y = TS_AX[ay], solo = pp.length === 1;
+    c.font = `600 34px ${SANS}`; c.globalAlpha = .8; c.fillText(solo ? '나의 숲별 취향 지도' : `${pp.length}명의 숲별 취향 지도`, 540, 92); c.globalAlpha = 1;
+    if (solo) { const t = pp[0][0], A = tsAxes(t), T = tsType(t); c.font = `700 72px ${SANS}`; c.fillText(A.map((x, k) => TS_EN[k][x.b]).join(' '), 540, 178); c.font = `700 40px ${SANS}`; c.fillText(T[1], 540, 240); }
+    else { c.font = `800 56px "Nanum Myeongjo", serif`; c.fillText('우리는 어디쯤?', 540, 190); }
+    // 판
+    const B = 180, Sz = 720, top = 360, mid = B + Sz / 2, xy = (v, o) => o + (10 + v * 0.8) / 100 * Sz;
+    c.fillStyle = 'rgba(255,255,255,.96)'; c.beginPath(); c.roundRect(B - 40, top - 70, Sz + 80, Sz + 140, 40); c.fill();
+    [[0, 0, '#F1F6F2'], [1, 0, '#EEF6FE'], [0, 1, '#EEF6FE'], [1, 1, '#F1F6F2']].forEach(([i, j, col]) => { c.fillStyle = col; c.fillRect(B + i * Sz / 2, top + j * Sz / 2, Sz / 2, Sz / 2); });
+    c.strokeStyle = '#C9D9CE'; c.lineWidth = 3; c.setLineDash([10, 10]); c.beginPath(); c.moveTo(B, top + Sz / 2); c.lineTo(B + Sz, top + Sz / 2); c.moveTo(mid, top); c.lineTo(mid, top + Sz); c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#1B2B22'; c.font = `700 30px ${SANS}`;
+    c.textAlign = 'center'; c.fillText(Y[0], mid, top - 22); c.fillText(Y[1], mid, top + Sz + 48);
+    c.textAlign = 'center'; [[X[0], B - 26, -1], [X[1], B + Sz + 26, 1]].forEach(([tx, x, r]) => { c.save(); c.translate(x, top + Sz / 2); c.rotate(r * Math.PI / 2); c.fillText(tx, 0, 10); c.restore(); });
+    c.fillStyle = '#7A8A80'; c.font = `500 24px ${SANS}`; const cn = (a, b) => `${a.replace(/파$/, '')}·${b.replace(/파$/, '')}`;
+    c.textAlign = 'left'; c.fillText(cn(X[0], Y[0]), B + 20, top + 40); c.fillText(cn(X[0], Y[1]), B + 20, top + Sz - 22);
+    c.textAlign = 'right'; c.fillText(cn(X[1], Y[0]), B + Sz - 20, top + 40); c.fillText(cn(X[1], Y[1]), B + Sz - 20, top + Sz - 22);
+    const seen = new Map();
+    pp.forEach(([t, ci, nm]) => { const a = tsAxes(t); let x = xy(a[ax].pos, B), y = xy(a[ay].pos, top); const k = Math.round(x / 26) + ':' + Math.round(y / 26), n = seen.get(k) || 0; seen.set(k, n + 1); x += n * 28; y -= n * 28;
+      c.fillStyle = 'rgba(0,0,0,.15)'; c.beginPath(); c.arc(x, y + 4, 44, 0, 7); c.fill();
+      c.fillStyle = MT_COL[ci % 6]; c.beginPath(); c.arc(x, y, 44, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 8; c.stroke();
+      c.fillStyle = '#fff'; c.textAlign = 'center'; c.font = `700 38px ${SANS}`; c.fillText([...nm][0] || '?', x, y + 13); });
+    // 이름표
+    if (!solo) { c.font = `600 30px ${SANS}`; const w = pp.map(([, , nm]) => c.measureText(nm).width + 54), tot = w.reduce((a, b) => a + b, 0) + 24 * (w.length - 1); let x = 540 - tot / 2;
+      pp.forEach(([, ci, nm], i) => { c.fillStyle = MT_COL[ci % 6]; c.beginPath(); c.arc(x + 14, 1238, 12, 0, 7); c.fill(); c.fillStyle = '#fff'; c.textAlign = 'left'; c.fillText(nm, x + 36, 1249); x += w[i] + 24; }); }
+    c.textAlign = 'center'; c.fillStyle = '#fff'; c.font = `500 26px ${SANS}`; c.globalAlpha = .75; c.fillText('숲별 기록장 · 취향 테스트', 540, 1312); c.globalAlpha = 1;
+    mtSave(cv, '숲별취향지도.png');
   }
   function tsQuadBind() {
-    document.querySelectorAll('.tsq').forEach(q => q.onclick = ev => { const b = ev.target.closest('.tsq-tab'); if (!b) return;
+    document.querySelectorAll('.tsq').forEach(q => q.onclick = ev => {
+      if (ev.target.closest('.tsq-save')) { const on = q.querySelector('.tsq-tab.on'); tsQuadImage(TSQ_DATA.get(q.dataset.q) || [], on ? +on.dataset.m : 0); return; }
+      const b = ev.target.closest('.tsq-tab'); if (!b) return;
       q.querySelectorAll('.tsq-tab').forEach(x => x.classList.toggle('on', x === b)); q.querySelectorAll('.tsq-svg').forEach(x => x.toggleAttribute('hidden', x.dataset.m !== b.dataset.m)); });
   }
   function tsBind() {
