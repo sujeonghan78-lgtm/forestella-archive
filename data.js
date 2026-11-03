@@ -216,7 +216,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && r.type !== '기념' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요|기념)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && r.type !== '기념' && r.type !== '취향' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요|기념|취향)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -609,7 +609,7 @@
     // 관리자가 지우면(서명된 숨김 줄, 번호 'c'+일정·날짜·시간) 빠져요
     let lyricsAll = [], flaggedAll = [];
     const bansAll = {};
-    const heartsAll = { s: {}, e: {}, w: {}, g: {}, mine: null }, predsAll = {}, annivAll = {};
+    const heartsAll = { s: {}, e: {}, w: {}, g: {}, mine: null }, predsAll = {}, annivAll = {}, tasteAll = {};
     const langVotes = new Map();   // 곡키 → {언어: Set(누가)}
     const songVotes = new Map();   // 곡키|항목|값 → {k, what, val, by: Set, at}
     if (raw.reports) {
@@ -686,6 +686,9 @@
       pl.forEach(p => { (predsAll[p.id] = predsAll[p.id] || []).push({ by: p.by, keys: p.keys }); });
       // 기념일 (종류: 기념 기념/할일 축하|찾음/누가): 축하한 사람 수, 숨은 숲 찾은 순서
       Object.assign(annivAll, annivOf(raw.reports));
+      // 취향 테스트 통계 (종류: 취향 누가/답: 17자 | 빼기): 사람마다 가장 늦게 보낸 것만, '빼기'면 안 셈
+      { const tl = new Map(); buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '취향' || !r.by) return; const a = line0(r, '답'), at = tsMs(r.time); if (!tl.has(r.by) || tl.get(r.by).at <= at) tl.set(r.by, { at, a }); });
+        tl.forEach((x, by) => { if (/^[0-9a-z]{16}[0-2]$/.test(x.a)) tasteAll[by] = x.a; }); }
       // 신고 3명 이상 → 자동 숨김 (관리자가 복구한 건 빼고). 숨겨진 글 수로 기기 글쓰기 막기
       const flagged = [];
       lyr.forEach(l => {
@@ -1218,7 +1221,7 @@
     votes.filter(v => !v.ok).forEach(v => { const so = songs.get(songAlias[v.k] || v.k); if (so) (so.fixProps = so.fixProps || []).push(v); });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, anniv: annivAll, autoMerge, viewsInfo, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, anniv: annivAll, taste: tasteAll, autoMerge, viewsInfo, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

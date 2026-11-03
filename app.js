@@ -5170,6 +5170,31 @@
   const tsStyle = t => TS_STYLE.o[+t[16]];
   const tsName = t => { const T = tsType(t); return `${T[0]} ${T[1]}`; };
   let tsSt = null;  // 진행 중 { i, a: [] }
+  // 숲별 통계: 결과는 이름 없이 답 17자만 보내요 (종류: 취향). '통계에 넣지 않기'면 '답: 빼기'
+  const TS_STAT_MIN = 30;
+  const tsNoStat = () => !!(boxRead(TS_KEY) || {}).noStat;
+  const tsSend = a => formPost(`종류: 취향\n누가: ${myUid()}\n답: ${a}`).catch(() => {});
+  const tsIdx = t => { const x = tsAxes(t); return x[0].b * 8 + x[1].b * 4 + x[2].b * 2 + x[3].b; };
+  function tsStatHtml(t) {
+    const D = { ...((typeof data !== 'undefined' && data && data.taste) || {}) }, me = myUid();
+    if (tsNoStat()) delete D[me]; else D[me] = t;
+    const all = Object.values(D), n = all.length, off = tsNoStat();
+    const opt = `<label class="ts-st-opt"><input type="checkbox" id="ts-st-off"${off ? ' checked' : ''}> 숲별 통계에 내 결과 넣지 않기 <small>이름은 안 들어가요</small></label>`;
+    if (n < TS_STAT_MIN) return `<section class="ts-st ts-st-wait"><p>지금 <b>${n}명</b>이 모였어요. ${TS_STAT_MIN}명이 넘으면 숲별 통계가 열려요</p>${opt}</section>`;
+    const pc = c => Math.round(c / n * 100), cnt = Array(16).fill(0); all.forEach(a => cnt[tsIdx(a)]++);
+    const rank = [...cnt.keys()].sort((a, b) => cnt[b] - cnt[a]), my = tsIdx(t), myP = pc(cnt[my]), myR = rank.indexOf(my) + 1;
+    const code = k => [k >> 3 & 1, k >> 2 & 1, k >> 1 & 1, k & 1].map((v, i) => TS_EN[i][v]).join('');
+    const bar = (k, top) => `<li${k === my ? ' class="me"' : ''}><span class="ts-mini">${code(k)}</span><span class="ts-st-n"><b>${TS_TYPES[k][1]}${k === my ? ' <em>나</em>' : ''}</b><i style="width:${Math.max(2, cnt[k] / cnt[top] * 100)}%"></i></span><small>${pc(cnt[k])}%</small></li>`;
+    const top5 = rank.slice(0, 5), list = top5.includes(my) ? top5 : [...top5, my];
+    const axes = [0, 1, 2, 3].map(k => { const r = all.filter(a => tsAxes(a)[k].b).length, l = n - r; return `<div class="ts-st-ax"><p><span>${TS_AX[k][0]} <b>${pc(l)}%</b></span><span><b>${pc(r)}%</b> ${TS_AX[k][1]}</span></p><div class="ts-st-bar"><i style="width:${pc(l)}%"></i></div></div>`; }).join('');
+    const sc = [0, 0, 0]; all.forEach(a => sc[+a[16]]++);
+    return `<section class="ts-st"><h2 class="ts-sum-h">숲별 통계 <small>${n.toLocaleString()}명 참여</small></h2>
+      <p class="ts-st-me">나와 같은 <b>${code(my)}</b>는 숲별의 <b>${myP}%</b> · 16유형 중 <b>${myR}위</b>${myP <= 4 ? '<em>희귀 유형</em>' : ''}</p>
+      <ol class="ts-st-rank">${list.map(k => bar(k, rank[0])).join('')}</ol>
+      <h3>축마다 숲별은</h3>${axes}
+      <h3>덕질 스타일</h3><div class="ts-st-sty">${TS_STYLE.o.map(([, nm], i) => `<span${+t[16] === i ? ' class="me"' : ''}><b>${pc(sc[i])}%</b>${nm}</span>`).join('')}</div>
+      ${opt}</section>`;
+  }
   function tsQuizHtml() {
     const n = tsSt.i, qi = TS_ORDER[n], tot = TS_ORDER.length;
     const bar = `<div class="ts-prog"><i style="width:${Math.round(n / tot * 100)}%"></i></div><p class="ts-n">${n + 1} / ${tot}</p>`;
@@ -5204,6 +5229,7 @@
         </div>`; }).join('')}
         <div class="ts-style"><p><small>덕질 스타일</small><b>${S[1]}</b> ${S[2]}</p></div>
       </section>
+      ${tsStatHtml(t)}
       <details class="ts-all"><summary>16가지 유형 모두 보기</summary><ul>${TS_TYPES.map((y, n) => { const bits = [n >> 3 & 1, n >> 2 & 1, n >> 1 & 1, n & 1], me = y === T;
         return `<li${me ? ' class="me"' : ''}><span class="ts-mini">${bits.map((v, k) => TS_EN[k][v]).join('')}<small>${TS_READ(n)}</small></span><p><b>${y[1]}${me ? ' <em>나</em>' : ''}</b><small>${y[2]}</small></p></li>`; }).join('')}</ul></details>`;
   }
@@ -5275,6 +5301,8 @@
     mtSave(cv, '숲별취향지도.png');
   }
   function tsQuadBind() {
+    const so = document.getElementById('ts-st-off');
+    if (so) so.onchange = () => { const o = boxRead(TS_KEY) || {}; if (!o.a) return; o.noStat = so.checked; boxWrite(TS_KEY, o); tsSend(so.checked ? '빼기' : o.a); const sec = so.closest('.ts-st'); if (sec) { sec.outerHTML = tsStatHtml(o.a); tsQuadBind(); } };
     document.querySelectorAll('.ts-code').forEach(cd => cd.onclick = ev => {
       const b = ev.target.closest('button'), tip = cd.nextElementSibling; if (!b || !tip) return;
       const k = +b.dataset.k, v = +b.dataset.b, was = b.classList.contains('sel');
@@ -5294,7 +5322,7 @@
     const draw = () => { box.innerHTML = tsQuizHtml(); box.classList.remove('ts-in'); void box.offsetWidth; box.classList.add('ts-in'); };
     const done = () => {
       if (tsSt.i < TS_ORDER.length - 1) { tsSt.i++; draw(); return; }
-      boxWrite(TS_KEY, { a: tsEnc(tsSt.a), at: Date.now() }); tsSt = null;
+      { const a = tsEnc(tsSt.a), off = tsNoStat(); boxWrite(TS_KEY, { a, at: Date.now(), noStat: off }); if (!off) tsSend(a); } tsSt = null;
       const d = new URLSearchParams(location.hash.split('?')[1] || '').get('d'); location.hash = d ? '#/match?d=' + encodeURIComponent(d) : '#/match?r=1';
     };
     box.oninput = ev => {
@@ -5548,6 +5576,37 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = file.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('이미지를 저장했어요'); }, 'image/png');
   }
 
+  // 금빛 뱃지 선물: 관리자가 서명한 링크(#/gift?k=기념키&e=만료&s=서명)를 연 폰에 금빛 뱃지를 넣어요. 링크는 하루만 열려요
+  const giftMsg = (k, e) => new TextEncoder().encode(`gift:${k}:${e}`);
+  const annivByKey = k => { const m = /^an-(\d\d)(\d\d)-(\d{4})$/.exec(k || ''); if (!m) return null; const A = ANNIVS.find(x => x[0] === `${m[1]}-${m[2]}`); if (!A) return null; const y = +m[3], n = A[1] ? y - A[1] : 0;
+    return { k, d: `${y}-${m[1]}-${m[2]}`, ic: A[3], name: A[1] ? `${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]} ${n}주년` : A[2] }; };
+  async function giftLink(k) {
+    const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
+    const e = String(Date.now() + 864e5), sg = b64u(await crypto.subtle.sign(SIGN, key, giftMsg(k, e)));
+    return location.origin + location.pathname + `#/gift?k=${k}&e=${e}&s=${sg}`;
+  }
+  function giftView() { return `<a class="back" href="#/days">‹ 함께한 기념일</a><section class="gift-box" id="gift-box"><p class="empty">선물 상자를 여는 중…</p></section>`; }
+  const giftJust = new Set();  // 이번에 막 받은 선물 (화면이 두 번 그려져도 '도착했어요'로)
+  async function giftCheck() {
+    const box = document.getElementById('gift-box'); if (!box) return;
+    const q = new URLSearchParams(location.hash.split('?')[1] || ''), k = q.get('k'), e = q.get('e') || '', sg = q.get('s') || '', A = annivByKey(k);
+    let ok = false;
+    try { if (A && /^\d+$/.test(e) && crypto.subtle) for (const c of adminKeys()) { const pub = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: c.x, y: c.y, ext: true }, ECDSA, false, ['verify']); if (await crypto.subtle.verify(SIGN, pub, unb64u(sg), giftMsg(k, e))) { ok = true; break; } } } catch (err) { ok = false; }
+    const o = anvStore(), had = !!(o.bdg && o.bdg[k] && o.bdg[k].gold);
+    if (!ok) { box.innerHTML = `<p class="empty">선물 링크가 올바르지 않아요.</p>`; return; }
+    if (!had && +e < Date.now()) { box.innerHTML = `<p class="empty">선물 링크가 만료됐어요. 보내 준 분께 새 링크를 부탁해 주세요.</p>`; return; }
+    if (!had) giftJust.add(k);
+    if (!had) { o.bdg = { ...(o.bdg || {}), [k]: { ...((o.bdg || {})[k] || {}), ic: A.ic, name: A.name, d: A.d, gold: 1, gift: 1 } }; anvSave(o); }
+    box.innerHTML = `<div class="gift-card"><p class="gift-k">FOR YOU</p><div class="gift-badge">${A.ic}</div><h1>금빛 ${esc(A.name)} 뱃지</h1>
+      <p>${had && !giftJust.has(k) ? '이미 이 폰에 있는 뱃지예요.' : '숲에서 보낸 선물이 도착했어요. 이 폰에 뱃지를 넣어 두었어요.'}</p>
+      <a class="mt-go" href="#/card">숲별 카드에 달기</a></div>`;
+  }
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.gift-make'); if (!b || !isAdmin()) return;
+    b.disabled = true;
+    try { share(`🎁 숲별 기록장 선물이에요 (하루 안에 열어 주세요)`, await giftLink(b.dataset.k)); } catch (err) { toast('선물 링크를 만들지 못했어요'); }
+    b.disabled = false;
+  });
   const routes = {
     home: () => `
       ${header()}
@@ -5563,7 +5622,7 @@
     program: programView,
     local: localView,
     box: boxView,
-    card: cardView, wait: waitView, match: matchView,
+    card: cardView, wait: waitView, match: matchView, gift: giftView,
     songs: songsView,
     song: songView,
     timeline: timelineView,
@@ -7790,7 +7849,7 @@
     });
   }
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', match: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', days: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', match: 'more', gift: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', days: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -7840,6 +7899,7 @@
     if (name === 'box') bindBox();
     if (name === 'card') bindCard();
     if (name === 'match') bindMatch();
+    if (name === 'gift') giftCheck();
     setTimeout(waitPop, 800);
     if (name === 'map') bindMap();
     if (name === 'more') bindMore();
@@ -7961,7 +8021,9 @@
     const xs = M.m ? (data.xFeed || []).filter(p => p.cat === '생일' && p.m.includes(M.m)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4) : [];
     // 그해 그날 마지막까지 함께 축하한 숲별 수 (기능 생긴 2026년부터, 지난 날·오늘만)
     const cheers = []; for (let y = +todayIso().slice(0, 4); y >= 2026; y--) { const d = `${y}-${md}`; if (d > todayIso()) continue; const n = anvCheerN(`an-${md.replace('-', '')}-${y}`); if (n) cheers.push(`<div class="dy-row"><span class="dy-ic">${A[3]}</span><span class="dy-t"><b>${y}${A[1] ? ` · ${y - A[1]}주년` : ''}</b><small>${d === todayIso() ? '오늘 지금까지' : '그날'} <b>${n.toLocaleString()}명</b>이 함께 축하했어요</small></span></div>`); }
-    const html = sec('함께 축하한 숲별', cheers.join(''))
+    const gy = (() => { for (let y = +todayIso().slice(0, 4); y >= 2026; y--) if (`${y}-${md}` <= todayIso()) return y; return 0; })();
+    const gift = isAdmin() && gy ? `<button type="button" class="mt-sub-btn gift-make" data-k="an-${md.replace('-', '')}-${gy}">🎁 ${gy} 금빛 뱃지 선물 링크 만들기 <small>관리자만 보여요</small></button>` : '';
+    const html = sec('함께 축하한 숲별', cheers.join('') + gift)
       + sec('그날의 기록', evs.map(e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`).join(''))
       + sec(M.evq ? '결승 무대 곡' : '그때 부른 곡', songs.length ? `<div class="chips wrap">${songs.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>` : '')
       + sec('영상', vids.length ? `<div class="stack x-list">${vids.map(ytCard).join('')}</div>` : '')
