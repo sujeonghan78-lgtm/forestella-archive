@@ -679,7 +679,7 @@
       buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '셋리예측' || !r.by) return; const id = line0(r, '일정'), at = tsMs(r.time), k = id + '|' + r.by; if (id && (!pl.has(k) || pl.get(k).at <= at)) pl.set(k, { id, by: r.by, at, keys: line0(r, '곡').split('|').filter(Boolean).slice(0, 60) }); });
       pl.forEach(p => { (predsAll[p.id] = predsAll[p.id] || []).push({ by: p.by, keys: p.keys }); });
       // 기념일 (종류: 기념 기념/할일 축하|찾음/누가): 축하한 사람 수, 숨은 숲 찾은 순서
-      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '기념' || !r.by) return; const k = line0(r, '기념'), w = line0(r, '할일'); if (!k) return; const a = annivAll[k] = annivAll[k] || { c: {}, f: {} }, at = tsMs(r.time), m = w === '찾음' ? a.f : a.c; if (!(r.by in m) || m[r.by] > at) m[r.by] = at; });
+      buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '기념' || !r.by || ['czuhn97c', 'sh98sede'].includes(r.by)) return; const k = line0(r, '기념'), w = line0(r, '할일'); if (!k) return; const a = annivAll[k] = annivAll[k] || { c: {}, f: {} }, at = tsMs(r.time), m = w === '찾음' ? a.f : a.c; if (!(r.by in m) || m[r.by] > at) m[r.by] = at; });
       // 신고 3명 이상 → 자동 숨김 (관리자가 복구한 건 빼고). 숨겨진 글 수로 기기 글쓰기 막기
       const flagged = [];
       lyr.forEach(l => {
