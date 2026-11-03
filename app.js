@@ -5113,7 +5113,8 @@
   // 서버 없이 링크에 기록을 담아요: ?d= 뒤에 [{n 이름, s 입덕일, f 최애곡, w 소취곡, h ♥곡, g 직관 일정, m 최애 멤버, u 번호}] (곡은 짧은 해시 5자)
   // 여는 사람은 자동으로 같이 비교되고, '링크 보내기'를 눌러야 내 기록이 링크에 들어가요. 최대 6명
   const MT_MAX = 6;
-  const mtHash = k => { let h = 2166136261; for (const c of k) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return ((h >>> 0) % 60466176).toString(36).padStart(5, '0'); };
+  const MT_A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  const mtHash = k => { let h = 2166136261; for (const c of k) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } h >>>= 8; let o = ''; for (let i = 0; i < 4; i++) { o = MT_A[h & 63] + o; h >>>= 6; } return o; };
   const mtB64 = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const mtUn = s => { try { return JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))); } catch (err) { return null; } };
   const mtUid = () => (window.SB_UID || boxRead('sb-mt-uid') || (() => { const u = Math.random().toString(36).slice(2, 8); boxWrite('sb-mt-uid', u); return u; })()).slice(0, 6);
@@ -5123,7 +5124,7 @@
       n: (card.nick || '').trim().slice(0, 12) || '나', s: card.since || '',
       f: pickList('fav').map(hs).slice(0, 15), w: pickList('wish').map(hs).slice(0, 15),
       h: st.songs.map(hs).slice(0, 150), g: [...new Set(st.went.map(e => e.id))].slice(0, 200),
-      m: CARD_MEMS.map((m, i) => card.mem.includes(m) ? i : -1).filter(i => i >= 0), u: mtUid(),
+      m: CARD_MEMS.map((m, i) => card.mem.includes(m) ? String(i) : '').filter(Boolean), u: mtUid().replace(/[^\w-]/g, ''),
     };
   }
   const mtEmpty = p => !p.f.length && !p.h.length && !p.g.length && !p.w.length;
@@ -5146,7 +5147,15 @@
   const mtType = (pct, group) => (group ? MT_GROUP : MT_TYPES).find(t => pct >= t[0]);
   const MT_COL = ['#1C7A5E', '#2C86CF', '#5BAF2E', '#1FA87A', '#24513A', '#2C5A8A'];
   const mtAv = (p, i) => `<span class="mt-av" style="background:${MT_COL[i % 6]}">${esc([...p.n][0] || '?')}</span>`;
-  const mtLink = list => location.origin + location.pathname + '#/match?d=' + mtB64(JSON.stringify(list));
+  // 짧은 링크: 사람은 '!'로, 칸은 '~'로 나눠요. 이름은 base64, 곡은 4자씩 붙여 쓰고, 숫자 일정 번호는 36진수('.'로 나눔, 글자 섞인 번호는 앞에 '*')
+  const mtPack = list => '1' + list.map(p => [mtB64(p.n), (p.s || '').replace(/-/g, ''), p.u, p.f.join(''), p.w.join(''), p.h.join(''), p.g.map(id => /^\d+$/.test(id) ? (+id).toString(36) : '*' + id).join('.'), p.m.join('')].join('~')).join('!');
+  const mtUnpack = d => {
+    if (d[0] !== '1') { const j = mtUn(d); return Array.isArray(j) ? j : []; }
+    const four = t => t.match(/.{4}/g) || [];
+    return d.slice(1).split('!').map(x => { const [n, s, u, f, w, h, g, m] = x.split('~'); let nm = ''; try { nm = decodeURIComponent(escape(atob((n || '').replace(/-/g, '+').replace(/_/g, '/')))); } catch (err) { /* 이름 없음 */ }
+      return { n: nm || '숲별', s: /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : '', u: u || '', f: four(f || ''), w: four(w || ''), h: four(h || ''), g: (g || '').split('.').filter(Boolean).map(t => t[0] === '*' ? t.slice(1) : String(parseInt(t, 36))), m: (m || '').split('') }; });
+  };
+  const mtLink = list => location.origin + location.pathname + '#/match?d=' + mtPack(list);
   function mtCalc(list) {
     const pairs = [];
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) pairs.push({ i, j, ...mtPair(list[i], list[j]) });
@@ -5160,7 +5169,7 @@
   function matchView() {
     if (!isAdmin()) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(), mine = !mtEmpty(me);
-    const got = ((q.get('d') && mtUn(q.get('d'))) || []).filter(p => p && typeof p.n === 'string').slice(0, MT_MAX)
+    const got = (q.get('d') ? mtUnpack(q.get('d')) : []).filter(p => p && typeof p.n === 'string').slice(0, MT_MAX)
       .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) }));
     const inList = got.findIndex(p => p.u === me.u);
     if (inList >= 0) got[inList] = me;
@@ -5230,7 +5239,7 @@
   let mtList = [];
   function bindMatch() {
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe();
-    const got = ((q.get('d') && mtUn(q.get('d'))) || []).slice(0, MT_MAX), i = got.findIndex(p => p && p.u === me.u);
+    const got = (q.get('d') ? mtUnpack(q.get('d')) : []).slice(0, MT_MAX), i = got.findIndex(p => p && p.u === me.u);
     if (i >= 0) got[i] = me; else if (!mtEmpty(me) && got.length && got.length < MT_MAX) got.push(me);
     mtList = got;
     const num = document.getElementById('mt-num');
