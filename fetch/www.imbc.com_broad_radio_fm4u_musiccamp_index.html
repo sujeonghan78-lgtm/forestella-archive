@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="euc-kr">
+    <title>배철수의 음악캠프</title>
+
+    <meta property="og:site_name" content="MBC">
+    <meta property="og:title" content="배철수의 음악캠프">
+    <meta property="og:type" content="website">
+    <meta property="og:description" content="방송: FM4U 매일 저녁 6시~8시">
+    <meta property="og:image" content="http://img.imbc.com/broad/radio/fm4u/musiccamp/v2/setting/homepage/__icsFiles/afieldfile/2020/06/18/b9_640_360_1.JPG">
+    <meta property="og:url" content="http://www.imbc.com/broad/radio/fm4u/musiccamp/index.html">
+
+    <link rel="stylesheet" type="text/css" href="//www.imbc.com/commons/css/base-v2.css" charset="euc-kr">
+    <link href="//www.imbc.com/commons/2018/css/sub-common.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="//www.imbc.com/broad/radio/include/css/radio_footer.css">
+    <link rel="stylesheet" type="text/css" href="//www.imbc.com/broad/radio/include/css/2019common.css">
+    <link rel="stylesheet" type="text/css" href="common/2019_style.css">
+    <script src="//www.imbc.com/commons/libs/jquery-1.12.3.min.js"></script>
+    <script src="//www.imbc.com/common/js/global_function.js"></script>
+    <script src="//www.imbc.com/commons/libs/css_browser_selector.min.js"></script>
+    <script src="//www.imbc.com/broad/radio/include/js/radio.2019lib.js"></script>
+    <script src="//www.imbc.com/commons/2018/js/common.js" type="text/javascript"></script>
+    <script src="common/2019_data.js"></script>
+    <script src="common/2019_radio.ui.js"></script>
+    <!--[if lt IE 9]><script src="//www.imbc.com/commons/libs/html5shiv.min.js"></script><![endif]-->
+</head>
+
+<body>
+     <!-- 팝업 Start -->
+    <!-- <div class="layer" id="layerPopup">
+        <div class="layer_wrap">
+            <div class="layer_popup"><a href="https://smartstore.naver.com/baecamp35" target="_blank" title="새창열림"><img src="//img.imbc.com/broad/radio/fm4u/musiccamp/image3/img_popup_260319.jpg" alt="배철수의 음악캠프 배캠 굿즈 후드집업 자켓 출시" /></a></div>
+            <div class="layer_btn">
+                <div class="btn_today">
+                    <input type="checkbox" name="chkbox" id="todaycloseyn" value="Y">
+                    <label for="todaycloseyn" class="check_label"><span class="box"></span><span class="label">오늘 하루 이 창을 열지 않음</span></label>
+                </div>
+                <a href="#" onclick="closeWin(event);" title="닫기"></a>
+            </div>
+        </div>
+    </div> -->
+    <!-- 팝업 End -->
+    <div id="accessibility">
+        <a href="#imbc_nav">주메뉴 바로가기</a>
+        <a href="#imbc_content">본문 바로가기</a>
+    </div>
+    <div id="wrap" class="wrapper main">
+		<div id="header">
+			<!-- 헤더, 네비 -->
+			<div class="nav wrapper">
+				<!-- 네비게이션 -->
+			</div>
+		</div>
+        <div id="container" class="container">
+            <div class="visual">
+                <!-- 로고/방송시간 -->
+                <!-- 롤링 있는 경우 -->
+                <!--<div class="roll-area">
+                    <img src="//img.imbc.com/broad/radio/fm4u/worldmorning/2017common/img/visual1-v1.jpg" alt="" style="top:0px;margin-left:-960px;">
+                    <img src="//img.imbc.com/broad/radio/fm4u/worldmorning/2017common/img/visual2-v2.jpg" alt="" style="margin-left:-960px;">
+                    <img src="//img.imbc.com/broad/radio/fm4u/worldmorning/2017common/img/visual3-v3.jpg" alt="" style="margin-left:-960px;">
+                </div>
+                <div class="btn-roll-control">
+
+                </div>
+                <button type="button" class="btn-front btn-stop btn-play">
+                    <span class="blind">자동재생 정지</span>
+                </button>-->
+                <script>
+                    $(document).ready(function() {
+                        $(".tit-logo > a").removeAttr("href");
+                    });
+
+                </script>
+            </div>
+            <div class="radio_nav" id="imbc_nav">
+                <!-- 메뉴 -->
+            </div>
+            <div id="imbc_content" class="page">
+                <section class="hori weekly-today">
+                    <span class="tit">Today</span>
+                    <div class="wrap-today" id="weekToday"></div>
+                </section>
+                <!--section 1-->
+                <div class="radio-cont">
+                    <section class="vert">
+                        <!-- 매일코너 -->
+                        <div class="box daily">
+                        </div>
+                        <!--다시듣기type2 이미지형-->
+                        <div class="box podcast-v2">
+                            <strong class="title">다시듣기</strong>
+                            <div class="podcast-txt">
+                            </div>
+                        </div>
+                    </section>
+                    <!--section 2-->
+                    <section class="vert">
+                        <!-- 선곡표 type2 앨범 + 텍스트-->
+                        <div class="box music music_v2">
+                        </div>
+                    </section>
+
+                    <section class="vert">
+                        <div class="box" id="">
+                            <div class="con_day">
+                                <p class="dayFirst">SINCE 1990&#46; 3&#46; 19</p>
+                                <ul class="today">
+                                    <li class="dayPart1">until Today</li>
+                                    <li class="autoToday"><span>8416</span></li>
+                                    <li class="dayPart2">days</li>
+                                </ul>
+                            </div>
+                            <script>
+                                $(function() {
+                                    today = new Date();
+                                    dday = new Date(1990, 2, 19);
+                                    $('.autoToday span').html(Math.floor(-(dday.getTime() - today.getTime()) / 86400000) + 1);
+                                    $('.popup-live .btn-close').on('click', function() {
+                                        $(this).parent().remove();
+                                    });
+                                });
+
+                            </script>
+                        </div>
+                        <!-- 포토게시판 호버형 -->
+                        <div class="box photo" id="photo">
+                        </div>
+                    </section>
+                    <!--section 4-->
+                    <section class="vert last">
+                        <!--베너 이미지-->
+                        <div class="box-round banner-float">
+                        </div>
+                        <!--베너 이미지-->
+                        <div class="box sns">
+                            <strong class="title">SNS</strong>
+                            <ul>
+                                <li><a target="_blank" href="//www.instagram.com/baecamp/"><img src="//img.imbc.com/broad/radio/channelm/2018radioguide/images/banner-instagram.jpg" alt="sns1"></a></li>
+                                <li><a target="_blank" href="//twitter.com/baecamp"><img src="//img.imbc.com/broad/radio/channelm/2018radioguide/images/sns1-1.jpg" alt="sns1"></a></li>
+                            </ul>
+                        </div>
+                        <div class="box ad">
+                            <iframe style="width:250px; height:250px" noresize scrolling="no" frameborder="0" marginheight="0" marginwidth="0" src="//www.imbc.com/commons/ad/ad250.html" title="광고"></iframe>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+        <div id="footer" class="footer">
+            <div class="radio-footer">
+
+            </div>
+            <div class="copyright">&copy; MBC&amp;iMBC 무단 전재, 재배포 및 이용(AI학습 포함)금지</div>
+        </div>
+    </div>
+    <!-- 게시판 -->
+    <script>
+        //사진방
+        var board0;
+        board0 = getBoard(navData, '사진방')[0].id;
+        document.write('<scr' + 'ipt src="//imbbs.imbc.com/getjs.mbc?bid=' + board0 + '&npage=5&img=yes&tlen=100&content=yes&clen=60"></scr' + 'ipt>');
+        //알립니다(텍스트 게시판)
+        var board1;
+        board1 = getBoard(navData, '알립니다')[0].id;
+        document.write('<scr' + 'ipt src="//imbbs.imbc.com/getjs.mbc?bid=' + board1 + '&npage=2&img=yes&tlen=110&content=yes&clen=60"></scr' + 'ipt>');
+
+    </script>
+</body>
+
+</html>

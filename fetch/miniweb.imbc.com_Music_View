@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="euc-kr">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <title>선곡표</title>
+    <link rel='stylesheet' href='https://font.imbc.com/nanumgothic/nanumgothic.css'>
+    <link rel="stylesheet" href="/css/musicstyle.css">
+    <link rel="stylesheet" href="/Content/PagedList.css" />
+    <link rel="stylesheet" type="text/css" href="/css/jquery-ui.css" />
+    <script src="https://www.imbc.com/commons/libs/jquery-1.12.3.min.js"></script>
+    <script src="/js/jquery-ui.js"></script>
+    <script src="https://www.imbc.com/commons/libs/css_browser_selector.min.js"></script>
+    <script type='text/javascript' src='https://www.imbc.com/commons/nlogger/nlogger.js' charset='utf-8'></script>
+
+    <!--[if lt IE 9]><script src="http://www.imbc.com/commons/libs/html5shiv.min.js"></script><![endif]-->
+    <script type="text/javascript">
+        document.domain = "imbc.com";
+
+        $(document).ready(function () {
+            //$('#datePicker0, #datePicker1').datepicker({
+            //    dayNamesMin: ['월', '화', '수', '목', '금', '토', '일'],
+            //    monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+            //    dateFormat: 'yy.mm.dd',
+            //    showOtherMonths: true,
+            //    changeMonth: true,
+            //    selectOtherMonths: true,
+            //    required: true,
+            //    numberOfMonths: 1,
+            //    changeMonth: true,
+            //    changeYear: true,
+            //    showOn: "both",
+            //    buttonImage: "../images/ico-calendar.png",
+            //    buttonImageOnly: true,
+            //    prevText: "이전 월", // ◀ 접근성 관련 추가
+            //    nextText: "다음 월", // ◀ 접근성 관련 추가
+            //    buttonText: "달력 보기" // ◀ 접근성 관련 추가
+            //});
+        });
+    </script>
+</head>
+
+<body>
+    <div id="musicWrap">
+        
+
+
+
+<div id="musicView" class="music-view">
+    <div class="view-area">
+        <div class="view-title color-line color-bg2">
+            <p class="title">2026년 11월 2일 월요일</p>2026-11-02
+        </div>
+    </div>
+    <div class="list-noti" style="margin-bottom:28px">
+        <p style="font-size:12px;text-align:center">* MBC의 동의 없는 선곡 콘텐츠의 상업적 이용을 금합니다.</p>
+    </div>
+    
+<table class="list-type">
+    <caption>선곡표 내용 검색 결과(제목, 내용)</caption>
+    <colgroup>
+        <col width="15.4%" />
+        <col width="auto" />
+        <col width="20%" />
+        <col width="15.42%" />
+    </colgroup>
+    <thead class="color-bg color-txt2">
+        <tr>
+            <th scope="col">번호</th>
+            <th scope="col">곡명</th>
+            <th scope="col">가수</th>
+            <th scope="col">설명</th>
+        </tr>
+    </thead>
+    <tbody>
+            <tr>
+                <td>1</td>
+                <td><p class="title">THE HEART OF ROCK AND ROLL</p></td>
+                <td><p class="singer">HUEY LEWIS AND THE NEWS</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td><p class="title">FREE FALLIN&#39;</p></td>
+                <td><p class="singer">TOM PETTY</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td><p class="title">GEORGY PORGY</p></td>
+                <td><p class="singer">TOTO</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td><p class="title">SHATTERED DREAMS</p></td>
+                <td><p class="singer">JOHNNY HATES JAZZ</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td><p class="title">MEMORIES</p></td>
+                <td><p class="singer">MAROON 5</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td><p class="title">KAREN / ELLA MEDLEY - 1. THIS MASQUERADE / 2. MY FUNNY VALENTINE / 3. I&#39;LL BE SEEING YOU ETC.</p></td>
+                <td><p class="singer">CARPENTERS</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td><p class="title">WITH ARMS WIDE OPEN</p></td>
+                <td><p class="singer">CREED</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td><p class="title">AUTUMN LEAVES</p></td>
+                <td><p class="singer">ERIC CLAPTON</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td><p class="title">My Life</p></td>
+                <td><p class="singer">The Vamps, New Hope Club</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td><p class="title">OUT OF TIME</p></td>
+                <td><p class="singer">THE ROLLING STONES</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>11</td>
+                <td><p class="title">GRACIAS A LA VIDA</p></td>
+                <td><p class="singer">MERCEDES SOSA</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>12</td>
+                <td><p class="title">THE PHOENIX</p></td>
+                <td><p class="singer">FALL OUT BOY</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>13</td>
+                <td><p class="title">RIPTIDE</p></td>
+                <td><p class="singer">VANCE JOY</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>14</td>
+                <td><p class="title">SOUR CANDY</p></td>
+                <td><p class="singer">LADY GAGA, BLACKPINK (블랙핑크)</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>15</td>
+                <td><p class="title">THUNDERSTRUCK</p></td>
+                <td><p class="singer">OST / AC/DC</p></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>16</td>
+                <td><p class="title">ALL RISE</p></td>
+                <td><p class="singer">BLUE</p></td>
+                <td></td>
+            </tr>
+
+    </tbody>
+</table>
+<script type="text/javascript">
+    // 통계
+    var prog_title = 16 < 1 ? "" : "RAMFM300     ";
+    var info_prog_title = "배철수의 음악캠프".replace(/&amp;/g, "&");
+
+    if ((typeof nLogger) != "undefined") {
+        // 표준FM
+        if (prog_title.indexOf("STFM") > -1 || prog_title.indexOf("RASFM") > -1) {
+            nLogger.params({
+                _m6_depth1: info_prog_title,
+                _m6_depth2: "선곡표",
+                _m6_depth3: "본문"
+            });
+
+            if (!IsNethruSend) {
+                nLogger.log();
+                IsNethruSend = true;
+            }
+        }
+        // FM4U
+        else if (prog_title.indexOf("FM4U") > -1 || prog_title.indexOf("RAMFM") > -1) {
+            nLogger.params({
+                _m7_depth1: info_prog_title,
+                _m7_depth2: "선곡표",
+                _m7_depth3: "본문"
+            });
+
+            if (!IsNethruSend) {
+                nLogger.log();
+                IsNethruSend = true;
+            }
+        }
+    }
+</script>
+
+
+    <div class="link-wrap">
+        <a href='/Music?progCode=RAMFM300&amp;page=1' class="link-list color-bg">목록</a>
+    </div>
+
+    <div class="sec-con">
+
+        <div class="list-page">
+
+                <a href='/Music/View?progCode=RAMFM300&amp;seqID=7511'>
+                    <span class="icon ico-up"></span><p class="title"><strong class="color-txt">다음글</strong>2026년 11월 3일 화요일</p><span class="date">2026-11-03</span>
+                </a>
+                            <a href='/Music/View?progCode=RAMFM300&amp;seqID=7509'>
+                    <span class="icon ico-down"></span><p class="title"><strong class="color-txt">이전글</strong>2026년 11월 1일 일요일</p><span class="date">2026-11-01</span>
+                </a>
+        </div>
+
+    </div>
+</div>
+
+
+
+        
+    <script type="text/javascript">
+        window.onload = function () {
+            var height = document.body.offsetHeight;
+            var sendScripts = "";
+
+            sendScripts += "if (document.getElementById('songlist_frame') != null) { document.getElementById('songlist_frame').style.height = '" + height + "px'; }";
+
+            var postObj = {
+                action_type: "Eval",
+                action: sendScripts,
+                height: height + 10
+            };
+
+            if (window.parent) {
+                window.parent.postMessage(JSON.stringify(postObj), "*");
+            }
+        }
+
+        $(document).ready(function () {
+             $.ajax({
+                type: "POST",
+                    url: '/Music/AddViewCount',
+                    data: { seqID: 7510, progCode: "RAMFM300" },
+                    success: function (data) {
+                    }
+            });
+
+            //parent.iframeLoaded();
+
+            var conH = $(".view-con").height();
+            var conT = 0;
+
+            if (conT > 100 && conH > 255){
+              $(".view-area").append( '<div class="btn-box"><button type="button" class="btn-more">내용 더보기<span class="icon ico-arrowB"></span></button></div>');
+              $(".btn-more").on('click', function(e){
+                                      e.preventDefault;
+                                      var show = $(this).parent().hasClass('on');
+                $(this).toggleClass("on");
+                                      if (show == true) {
+                    $(this).parent().removeClass('on');
+                    $(this).text('내용 더보기').append('<span class="icon ico-arrowB"></span>')
+                                          $(".view-con").css({'height':256});
+                      } else {
+                    $(this).parent().addClass('on');
+                    $(this).text('내용 닫기').append('<span class="icon ico-arrowB"></span>')
+                    $(".view-con").css({'height':'auto'});
+                }
+              })
+            } else {
+                $(".view-con").height(0);
+              return false;
+            }
+          });
+    </script>
+
+
+    </div>
+</body>
+</html>
