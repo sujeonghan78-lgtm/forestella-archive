@@ -4357,7 +4357,7 @@
           ${WAIT_ON() ? item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? String(goIds().length) : '') : ''}
           ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드')}
           ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국')}
-          ${item('#/match', '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>', '취향 궁합')}`)}
+          ${isAdmin() ? item('#/match', '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>', '취향 궁합') : ''}`)}
         ${grp('아카이브', `
           ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트')}
           ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사')}
@@ -5144,7 +5144,7 @@
   const MT_TYPES = [[95, '🌲🌲', '포레 취향 쌍둥이', '플레이리스트를 바꿔 들어도 모를 사이예요'], [80, '🌿', '같은 숲길 산책 메이트', '좋아하는 무대가 거의 다 겹쳐요'], [65, '🌳', '옆 나무 이웃', '반은 같고 반은 서로 추천해 주기 좋은 사이'], [50, '🧭', '서로의 숲 가이드', '서로 모르는 명곡을 알려 줄 수 있어요'], [0, '🔭', '다른 숲의 탐험가', '취향이 달라서 덕질이 두 배로 넓어져요']];
   const MT_GROUP = [[90, '🌲', '한 그루 숲', '이 모임은 사실 한 사람이에요'], [75, '🧺', '같은 숲 소풍단', '어느 공연을 같이 가도 신나는 모임'], [60, '🎶', '숲속 합창단', '떼창 맞추기 딱 좋은 조합이에요'], [45, '🗺️', '각자 다른 숲길 원정대', '서로의 최애곡을 돌려 듣기 좋아요'], [0, '🔬', '숲 다양성 연구회', '취향이 다 달라서 이야기할 게 많아요']];
   const mtType = (pct, group) => (group ? MT_GROUP : MT_TYPES).find(t => pct >= t[0]);
-  const MT_COL = ['#2f7d5b', '#d9775b', '#5b7fd9', '#b65bd9', '#d9b35b', '#5bb8c9'];
+  const MT_COL = ['#1C7A5E', '#2C86CF', '#5BAF2E', '#1FA87A', '#24513A', '#2C5A8A'];
   const mtAv = (p, i) => `<span class="mt-av" style="background:${MT_COL[i % 6]}">${esc([...p.n][0] || '?')}</span>`;
   const mtLink = list => location.origin + location.pathname + '#/match?d=' + mtB64(JSON.stringify(list));
   function mtCalc(list) {
@@ -5158,6 +5158,7 @@
     return { pairs, pct, all, cnt, tags };
   }
   function matchView() {
+    if (!isAdmin()) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(), mine = !mtEmpty(me);
     const got = ((q.get('d') && mtUn(q.get('d'))) || []).filter(p => p && typeof p.n === 'string').slice(0, MT_MAX)
       .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) }));
@@ -5171,7 +5172,7 @@
       const from = got[0];
       return `${back}
         <section class="mt-intro">
-          <div class="mt-hero mt-hero-in"><span class="mt-spark">💞</span><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
+          <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><span class="mt-spark">💞</span><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
           ${from ? `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>` : ''}
           ${mine ? `
             <div class="mt-mine">
@@ -5208,7 +5209,7 @@
     const add = inList < 0 && mine && meAt < 0 && got.length >= MT_MAX;
     return `${back}
       <section class="mt-res${group ? ' mt-g' : ''}">
-        <div class="mt-hero">
+        <div class="mt-hero"><i class="mt-stripe"></i>
           <div class="mt-avs">${list.map((p, i) => `<span class="mt-pp">${mtAv(p, i)}<small>${esc(p.n)}${i === meAt ? ' (나)' : ''}</small></span>`).join(group ? '' : '<span class="mt-x">×</span>')}</div>
           <p class="mt-lab">${group ? `${list.length}명의` : '우리의'} 숲별 취향 궁합</p>
           <p class="mt-pct"><b id="mt-num" data-n="${R.pct}">${R.pct}</b>%</p>
@@ -5250,8 +5251,9 @@
     const R = mtCalc(mtList), group = mtList.length > 2, T = mtType(R.pct, group);
     const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const c = cv.getContext('2d');
     try { await Promise.race([document.fonts.load('800 60px "Nanum Myeongjo"'), new Promise(r => setTimeout(r, 1500))]); } catch (err) { /* 기본 글씨 */ }
-    const g = c.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, '#1f5c43'); g.addColorStop(0.55, '#3f8f6a'); g.addColorStop(1, '#f0b98f');
+    const g = c.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, '#1F5E3E'); g.addColorStop(0.6, '#1C7A5E'); g.addColorStop(1, '#1FA87A');
     c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
+    const st = c.createLinearGradient(0, 0, 1080, 0); st.addColorStop(0, '#C6EC6B'); st.addColorStop(0.5, '#62D3A1'); st.addColorStop(1, '#72BCF3'); c.fillStyle = st; c.fillRect(0, 0, 1080, 14);
     c.fillStyle = 'rgba(255,255,255,.08)'; [[160, 220, 260], [930, 1100, 320], [980, 160, 140]].forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); });
     const SANS = CARD_SANS; c.textAlign = 'center'; c.fillStyle = '#fff';
     const n = mtList.length, r = n > 4 ? 52 : 64, gap = r * 2 + (n > 2 ? 30 : 110), x0 = 540 - (n - 1) * gap / 2;
