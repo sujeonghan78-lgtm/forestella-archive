@@ -4356,7 +4356,8 @@
           ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함')}
           ${WAIT_ON() ? item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? String(goIds().length) : '') : ''}
           ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드')}
-          ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국')}`)}
+          ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국')}
+          ${item('#/match', '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>', '취향 궁합')}`)}
         ${grp('아카이브', `
           ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트')}
           ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사')}
@@ -5108,6 +5109,165 @@
     box.querySelector('.drive-msg').textContent = n ? `네이버 지도 링크 ${n}개가 들어 있어요. 보내기를 눌러 주세요.` : t.value.trim() ? '네이버 지도 링크가 아니에요. 공유 → 링크 복사로 받은 주소를 붙여 주세요.' : '';
   });
 
+  // ---------- 숲별 취향 궁합 (#/match) ----------
+  // 서버 없이 링크에 기록을 담아요: ?d= 뒤에 [{n 이름, s 입덕일, f 최애곡, w 소취곡, h ♥곡, g 직관 일정, m 최애 멤버, u 번호}] (곡은 짧은 해시 5자)
+  // 여는 사람은 자동으로 같이 비교되고, '링크 보내기'를 눌러야 내 기록이 링크에 들어가요. 최대 6명
+  const MT_MAX = 6;
+  const mtHash = k => { let h = 2166136261; for (const c of k) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return ((h >>> 0) % 60466176).toString(36).padStart(5, '0'); };
+  const mtB64 = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const mtUn = s => { try { return JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))); } catch (err) { return null; } };
+  const mtUid = () => (window.SB_UID || boxRead('sb-mt-uid') || (() => { const u = Math.random().toString(36).slice(2, 8); boxWrite('sb-mt-uid', u); return u; })()).slice(0, 6);
+  function mtMe() {
+    const st = boxStats(), hs = so => mtHash(so.key);
+    return {
+      n: (card.nick || '').trim().slice(0, 12) || '나', s: card.since || '',
+      f: pickList('fav').map(hs).slice(0, 15), w: pickList('wish').map(hs).slice(0, 15),
+      h: st.songs.map(hs).slice(0, 150), g: [...new Set(st.went.map(e => e.id))].slice(0, 200),
+      m: CARD_MEMS.map((m, i) => card.mem.includes(m) ? i : -1).filter(i => i >= 0), u: mtUid(),
+    };
+  }
+  const mtEmpty = p => !p.f.length && !p.h.length && !p.g.length && !p.w.length;
+  const mtSong = () => { const m = new Map(); data.songs.forEach(so => m.set(mtHash(so.key), so)); return m; };
+  const mtInter = (a, b) => a.filter(x => b.includes(x));
+  const mtOv = (a, b) => { if (!a.length || !b.length) return null; const c = mtInter(a, b).length; return c ? 0.6 * c / Math.min(a.length, b.length) + 0.4 * 2 * c / (a.length + b.length) : 0; };
+  const MT_PARTS = [['f', 30, '💚 최애곡 메이트'], ['h', 25, '♥ 플레이리스트 메이트'], ['g', 25, '🎫 직관 메이트'], ['w', 10, '🙏 소취 동지'], ['m', 10, '같은 멤버 러버']];
+  function mtPair(a, b) {
+    let sum = 0, wt = 0; const got = {};
+    MT_PARTS.forEach(([k, w]) => {
+      const v = k === 'g' ? (a.g.length && b.g.length ? [0, 0.6, 0.8, 1][Math.min(3, mtInter(a.g, b.g).length)] : null) : mtOv(a[k], b[k]);
+      if (v == null) return; got[k] = v; sum += v * w; wt += w;
+    });
+    if (!wt) return { pct: 0, got };
+    const s = sum / wt;
+    return { pct: s >= 0.999 ? 100 : Math.round(32 + 66 * Math.sqrt(s)), got };
+  }
+  const MT_TYPES = [[95, '🌲🌲', '포레 취향 쌍둥이', '플레이리스트를 바꿔 들어도 모를 사이예요'], [80, '🌿', '같은 숲길 산책 메이트', '좋아하는 무대가 거의 다 겹쳐요'], [65, '🌳', '옆 나무 이웃', '반은 같고 반은 서로 추천해 주기 좋은 사이'], [50, '🧭', '서로의 숲 가이드', '서로 모르는 명곡을 알려 줄 수 있어요'], [0, '🔭', '다른 숲의 탐험가', '취향이 달라서 덕질이 두 배로 넓어져요']];
+  const MT_GROUP = [[90, '🌲', '한 그루 숲', '이 모임은 사실 한 사람이에요'], [75, '🧺', '같은 숲 소풍단', '어느 공연을 같이 가도 신나는 모임'], [60, '🎶', '숲속 합창단', '떼창 맞추기 딱 좋은 조합이에요'], [45, '🗺️', '각자 다른 숲길 원정대', '서로의 최애곡을 돌려 듣기 좋아요'], [0, '🔬', '숲 다양성 연구회', '취향이 다 달라서 이야기할 게 많아요']];
+  const mtType = (pct, group) => (group ? MT_GROUP : MT_TYPES).find(t => pct >= t[0]);
+  const MT_COL = ['#2f7d5b', '#d9775b', '#5b7fd9', '#b65bd9', '#d9b35b', '#5bb8c9'];
+  const mtAv = (p, i) => `<span class="mt-av" style="background:${MT_COL[i % 6]}">${esc([...p.n][0] || '?')}</span>`;
+  const mtLink = list => location.origin + location.pathname + '#/match?d=' + mtB64(JSON.stringify(list));
+  function mtCalc(list) {
+    const pairs = [];
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) pairs.push({ i, j, ...mtPair(list[i], list[j]) });
+    const pct = pairs.length ? Math.round(pairs.reduce((s, p) => s + p.pct, 0) / pairs.length) : 0;
+    const all = k => list.reduce((acc, p) => acc == null ? p[k] : mtInter(acc, p[k]), null) || [];
+    const cnt = k => { const m = new Map(); list.forEach(p => new Set(p[k]).forEach(x => m.set(x, (m.get(x) || 0) + 1))); return m; };
+    const keys = {}; pairs.forEach(p => Object.entries(p.got).forEach(([k, v]) => { keys[k] = (keys[k] || 0) + v / pairs.length; }));
+    const tags = MT_PARTS.filter(([k]) => keys[k] >= 0.5).sort((a, b) => keys[b[0]] - keys[a[0]]).slice(0, 2).map(x => x[2]);
+    return { pairs, pct, all, cnt, tags };
+  }
+  function matchView() {
+    const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(), mine = !mtEmpty(me);
+    const got = ((q.get('d') && mtUn(q.get('d'))) || []).filter(p => p && typeof p.n === 'string').slice(0, MT_MAX)
+      .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) }));
+    const inList = got.findIndex(p => p.u === me.u);
+    if (inList >= 0) got[inList] = me;
+    const list = inList < 0 && mine && got.length && got.length < MT_MAX ? [...got, me] : got;
+    const meAt = list.indexOf(me);
+    const back = `<a class="back" href="#/box">‹ 보관함</a>`;
+    // 처음 화면: 내 링크 만들기
+    if (list.length < 2) {
+      const from = got[0];
+      return `${back}
+        <section class="mt-intro">
+          <div class="mt-hero mt-hero-in"><span class="mt-spark">💞</span><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
+          ${from ? `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>` : ''}
+          ${mine ? `
+            <div class="mt-mine">
+              <label class="mt-nick">링크에 보일 이름 <input id="mt-nick" maxlength="12" value="${esc(card.nick || '')}" placeholder="숲별"></label>
+              <ul class="mt-incl"><li>💚 최애곡 <b>${me.f.length}</b></li><li>🙏 소취곡 <b>${me.w.length}</b></li><li>♥ 곡 <b>${me.h.length}</b></li><li>🎫 직관 <b>${me.g.length}</b></li></ul>
+              <button type="button" class="mt-go" id="mt-send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>내 궁합 링크 보내기</button>
+              <p class="mt-note">링크엔 위 기록(곡·직관 일정)과 이름·입덕일이 들어가요. 링크를 받은 사람만 볼 수 있어요.<br>여러 명이면 받은 사람이 열고 결과 링크를 다시 보내면 계속 이어져요 (최대 ${MT_MAX}명).</p>
+            </div>` : `<p class="empty">아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.<br><a href="#/songs">곡 아카이브 가기</a></p>`}
+        </section>`;
+    }
+    const S = mtSong(), R = mtCalc(list), group = list.length > 2, T = mtType(R.pct, group);
+    const songs = ks => ks.map(k => S.get(k)).filter(Boolean);
+    const chips = arr => `<div class="mt-chips">${arr.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>`;
+    const card1 = (ic, t, body) => `<section class="mt-card"><h2><span>${ic}</span>${t}</h2>${body}</section>`;
+    const cards = [];
+    const evs = R.all('g').map(id => data.byId.get(id)).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date));
+    if (evs.length) cards.push(card1('🎫', `${group ? '다 같이' : '같이'} 간 공연 <b>${evs.length}번</b>`, `<ul class="mt-evs">${evs.slice(0, 6).map(e => `<li><a href="#/e/${encodeURIComponent(e.id)}"><span>${e.date.replace(/-/g, '.')}</span>${esc(e.title)}</a></li>`).join('')}</ul>${evs.length > 6 ? `<p class="mt-more">외 ${evs.length - 6}번</p>` : ''}<p class="mt-sub">어쩌면 같은 공간에서 같은 노래를 들었어요</p>`));
+    const fav = songs(R.all('f'));
+    if (fav.length) cards.push(card1('💚', `${group ? '모두의' : '둘 다'} 최애곡`, chips(fav)));
+    const wish = songs(R.all('w'));
+    if (wish.length) cards.push(card1('🙏', '같이 기다리는 소취곡', chips(wish) + '<p class="mt-sub">같이 소원 빌어요</p>'));
+    const hAll = songs(R.all('h'));
+    if (hAll.length) cards.push(card1('♥', `${group ? '모두' : '둘 다'} ♥한 곡 <b>${hAll.length}곡</b>`, chips(hAll.slice(0, 12)) + (hAll.length > 12 ? `<p class="mt-more">외 ${hAll.length - 12}곡</p>` : '')));
+    else if (group) { const c = R.cnt('h'), top = [...c.entries()].filter(x => x[1] > 1).sort((a, b) => b[1] - a[1]).slice(0, 8); if (top.length) cards.push(card1('♥', '여럿이 ♥한 곡', `<div class="mt-chips">${top.map(([k, n]) => S.get(k) ? `<a class="chip" href="#/song/${encodeURIComponent(S.get(k).key)}">${esc(S.get(k).name)} <small>${n}명</small></a>` : '').join('')}</div>`)); }
+    const mem = R.all('m').map(i => CARD_MEMS[i]).filter(Boolean);
+    if (mem.length) cards.push(card1('🎤', '같은 최애 멤버', `<p class="mt-big">${mem.join(' · ')}</p>`));
+    if (group) cards.push(card1('🤝', '제일 잘 맞는 짝꿍', `<ol class="mt-rank">${R.pairs.slice().sort((a, b) => b.pct - a.pct).slice(0, 5).map(p => `<li>${mtAv(list[p.i], p.i)}${mtAv(list[p.j], p.j)}<span class="mt-rn">${esc(list[p.i].n)} × ${esc(list[p.j].n)}</span><b>${p.pct}%</b></li>`).join('')}</ol>`));
+    const ss = list.map((p, i) => [p, i]).filter(([p]) => p.s).sort((a, b) => a[0].s.localeCompare(b[0].s));
+    if (ss.length >= 2) {
+      const [o, oi] = ss[0], [y] = ss[ss.length - 1], d = Math.round((Date.parse(y.s) - Date.parse(o.s)) / 864e5);
+      cards.push(card1('🌱', '숲별 선배는?', d > 0 ? `<p class="mt-big">${mtAv(o, oi)} ${esc(o.n)}</p><p class="mt-sub">${group ? '막내 숲별보다' : `${esc(y.n)} 님보다`} <b>${d.toLocaleString('en-US')}일</b> 먼저 입덕했어요</p>` : '<p class="mt-big">입덕 동기!</p><p class="mt-sub">같은 날 숲에 들어왔어요</p>'));
+    }
+    if (!cards.length) cards.push(card1('🌱', '아직 겹치는 게 없어요', '<p class="mt-sub">서로의 ♥ 곡을 들어 보고 다시 해 봐요</p>'));
+    const add = inList < 0 && mine && meAt < 0 && got.length >= MT_MAX;
+    return `${back}
+      <section class="mt-res${group ? ' mt-g' : ''}">
+        <div class="mt-hero">
+          <div class="mt-avs">${list.map((p, i) => `<span class="mt-pp">${mtAv(p, i)}<small>${esc(p.n)}${i === meAt ? ' (나)' : ''}</small></span>`).join(group ? '' : '<span class="mt-x">×</span>')}</div>
+          <p class="mt-lab">${group ? `${list.length}명의` : '우리의'} 숲별 취향 궁합</p>
+          <p class="mt-pct"><b id="mt-num" data-n="${R.pct}">${R.pct}</b>%</p>
+          <p class="mt-type"><span>${T[1]}</span>${T[2]}</p>
+          <p class="mt-say">${T[3]}</p>
+          ${R.tags.length ? `<div class="mt-tags">${R.tags.map(t => `<span>${t}</span>`).join('')}</div>` : ''}
+        </div>
+        ${meAt >= 0 && inList < 0 ? `<p class="mt-hint">내 기록도 같이 비교했어요. 아래 '결과 링크 보내기'를 누르면 나도 링크에 들어가요.</p>` : ''}
+        ${add ? `<p class="mt-hint">${MT_MAX}명이 꽉 차서 나는 못 넣어요.</p>` : ''}
+        ${cards.join('')}
+        <div class="mt-acts">
+          <button type="button" class="mt-go" id="mt-share" data-n="${list.length}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>${list.length < MT_MAX ? (group || meAt >= 0 ? '결과 링크 보내기 · 다음 사람도 넣을 수 있어요' : '결과 링크 보내기') : '결과 링크 보내기'}</button>
+          <button type="button" class="mt-sub-btn" id="mt-img"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>결과 이미지 저장</button>
+          <a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 링크 새로 만들기</a>
+        </div>
+      </section>`;
+  }
+  let mtList = [];
+  function bindMatch() {
+    const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe();
+    const got = ((q.get('d') && mtUn(q.get('d'))) || []).slice(0, MT_MAX), i = got.findIndex(p => p && p.u === me.u);
+    if (i >= 0) got[i] = me; else if (!mtEmpty(me) && got.length && got.length < MT_MAX) got.push(me);
+    mtList = got;
+    const num = document.getElementById('mt-num');
+    if (num && !matchMedia('(prefers-reduced-motion: reduce)').matches) { const n = +num.dataset.n, t0 = performance.now(); const step = t => { const k = Math.min(1, (t - t0) / 900); num.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+    const send = document.getElementById('mt-send');
+    if (send) send.onclick = () => {
+      const v = document.getElementById('mt-nick').value.trim().slice(0, 12);
+      if (v !== (card.nick || '')) { card.nick = v; cardSave(); }
+      share('나랑 포레스텔라 취향 궁합 볼래? 💞 (숲별 기록장)', mtLink([mtMe()]));
+    };
+    const sh = document.getElementById('mt-share');
+    if (sh) sh.onclick = () => share(`우리 포레 취향 궁합 ${document.getElementById('mt-num').dataset.n}% 💞 링크 열면 너도 넣을 수 있어 (숲별 기록장)`, mtLink(mtList));
+    const im = document.getElementById('mt-img');
+    if (im) im.onclick = () => mtImage();
+  }
+  // 결과 이미지 (1080×1350): 위 큰 카드만
+  async function mtImage() {
+    const R = mtCalc(mtList), group = mtList.length > 2, T = mtType(R.pct, group);
+    const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const c = cv.getContext('2d');
+    try { await Promise.race([document.fonts.load('800 60px "Nanum Myeongjo"'), new Promise(r => setTimeout(r, 1500))]); } catch (err) { /* 기본 글씨 */ }
+    const g = c.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, '#1f5c43'); g.addColorStop(0.55, '#3f8f6a'); g.addColorStop(1, '#f0b98f');
+    c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
+    c.fillStyle = 'rgba(255,255,255,.08)'; [[160, 220, 260], [930, 1100, 320], [980, 160, 140]].forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); });
+    const SANS = CARD_SANS; c.textAlign = 'center'; c.fillStyle = '#fff';
+    const n = mtList.length, r = n > 4 ? 52 : 64, gap = r * 2 + (n > 2 ? 30 : 110), x0 = 540 - (n - 1) * gap / 2;
+    mtList.forEach((p, i) => { const x = x0 + i * gap; c.fillStyle = MT_COL[i % 6]; c.beginPath(); c.arc(x, 270, r, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 6; c.stroke(); c.fillStyle = '#fff'; c.font = `700 ${r}px ${SANS}`; c.fillText([...p.n][0] || '?', x, 270 + r * 0.36); c.font = `600 30px ${SANS}`; c.fillText(p.n, x, 270 + r + 50); });
+    if (n === 2) { c.font = `300 64px ${SANS}`; c.fillText('×', 540, 292); }
+    c.font = `600 40px ${SANS}`; c.globalAlpha = .85; c.fillText(group ? `${n}명의 숲별 취향 궁합` : '우리의 숲별 취향 궁합', 540, 520); c.globalAlpha = 1;
+    c.font = `800 260px "Nanum Myeongjo", serif`; c.fillText(R.pct + '%', 540, 790);
+    c.font = `700 70px ${SANS}`; c.fillText(T[1] + ' ' + T[2], 540, 930);
+    c.font = `500 40px ${SANS}`; c.globalAlpha = .9; c.fillText(T[3], 540, 1005); c.globalAlpha = 1;
+    if (R.tags.length) { c.font = `600 34px ${SANS}`; const w = R.tags.map(t => c.measureText(t).width + 60), tot = w.reduce((a, b) => a + b, 0) + 20 * (w.length - 1); let x = 540 - tot / 2; R.tags.forEach((t, i) => { c.fillStyle = 'rgba(255,255,255,.2)'; c.beginPath(); c.roundRect(x, 1060, w[i], 70, 35); c.fill(); c.fillStyle = '#fff'; c.fillText(t, x + w[i] / 2, 1107); x += w[i] + 20; }); }
+    c.font = `500 30px ${SANS}`; c.globalAlpha = .75; c.fillText('숲별 기록장 · 취향 궁합', 540, 1290); c.globalAlpha = 1;
+    cv.toBlob(b => { if (!b) return; const file = new File([b], '숲별궁합.png', { type: 'image/png' }); const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (ios && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file] }).catch(() => {}); return; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = file.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('이미지를 저장했어요'); }, 'image/png');
+  }
+
   const routes = {
     home: () => `
       ${header()}
@@ -5123,7 +5283,7 @@
     program: programView,
     local: localView,
     box: boxView,
-    card: cardView, wait: waitView,
+    card: cardView, wait: waitView, match: matchView,
     songs: songsView,
     song: songView,
     timeline: timelineView,
@@ -7350,7 +7510,7 @@
     });
   }
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', days: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', match: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', days: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -7399,6 +7559,7 @@
     if (name === 'program') bindPrograms();
     if (name === 'box') bindBox();
     if (name === 'card') bindCard();
+    if (name === 'match') bindMatch();
     setTimeout(waitPop, 800);
     if (name === 'map') bindMap();
     if (name === 'more') bindMore();
