@@ -1,0 +1,41 @@
+# 시트 백업: 매일 새벽 3시 반(한국 시간)에 config.js의 시트 게시 주소를 전부 CSV로 받아 backup 가지에 날짜별로 쌓아요
+# 사이트(main)와 따로 두어서 사이트 배포에는 영향이 없어요. 되돌릴 땐 backup 가지의 그날 폴더 CSV를 시트에 붙이면 돼요
+name: sheet-backup
+on:
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: sheet-backup
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: site
+      - name: 시트 받기
+        run: |
+          d=$(TZ=Asia/Seoul date +%F)
+          mkdir -p "out/$d"
+          grep -oE "[a-zA-Z]+: '[^']*output=csv'" site/config.js | while IFS= read -r line; do
+            name=${line%%:*}; url=$(echo "$line" | grep -oE "https://[^']*")
+            curl -sSL --retry 3 --max-time 120 "$url" -o "out/$d/$name.csv"
+            echo "$name $(wc -c < "out/$d/$name.csv") bytes"
+          done
+          echo "D=$d" >> "$GITHUB_ENV"
+      - name: backup 가지에 올리기
+        run: |
+          cd site
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch -q origin backup; then git checkout -q -B backup origin/backup; else git checkout -q --orphan backup; git rm -rqf .; fi
+          mkdir -p "$D" && cp ../out/$D/*.csv "$D/"
+          # 90일 넘은 폴더는 지워요
+          for x in 20*-*-*; do [ -d "$x" ] && [ "$x" \< "$(TZ=Asia/Seoul date -d '-90 days' +%F)" ] && git rm -rqf "$x"; done
+          git add "$D"
+          git diff --cached --quiet && exit 0
+          git commit -qm "시트 백업 $D"
+          git push -q origin backup
