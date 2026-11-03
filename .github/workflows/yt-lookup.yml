@@ -38,7 +38,7 @@ jobs:
               const list = []; let tok = "";
               for (let p = 0; p < 2; p++) {
                 const j = await get(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=50&regionCode=KR&relevanceLanguage=ko&q=${encodeURIComponent(q)}${tok ? "&pageToken=" + tok : ""}&key=${key}`);
-                (j.items || []).forEach(v => list.push({ id: v.id.videoId, date: v.snippet.publishedAt, title: v.snippet.title, ch: v.snippet.channelTitle }));
+                (j.items || []).forEach(v => list.push({ id: v.id.videoId, date: v.snippet.publishedAt, title: v.snippet.title, ch: v.snippet.channelTitle, chId: v.snippet.channelId }));
                 if (!j.nextPageToken) break; tok = j.nextPageToken;
               }
               out.search[q] = list;
