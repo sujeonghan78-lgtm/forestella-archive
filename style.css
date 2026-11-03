@@ -1957,3 +1957,12 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .anv-got.gold .anv-gt small { color: #6b4e14; }
 .anv-got.gold .anv-gic { background: #fff; }
 .anv-got.gold a { color: #6b4e14; }
+/* 금빛 뱃지 */
+.cf-pv.gold canvas { animation: gold-glow 2.6s ease-in-out infinite; }
+@keyframes gold-glow { 0%,100% { filter: drop-shadow(0 6px 18px rgba(20,50,35,.14)) drop-shadow(0 0 6px rgba(242,201,76,.35)); } 50% { filter: drop-shadow(0 6px 18px rgba(20,50,35,.14)) drop-shadow(0 0 18px rgba(242,201,76,.8)); } }
+.cf-badge.gold { position: relative; overflow: hidden; border-color: #e0b04a; background: linear-gradient(135deg, #fff8dc, #f6dc86 50%, #fff3c4); color: #5a3d0c; }
+.cf-badge.gold small { color: #7a5716; }
+.cf-badge.gold::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.85) 50%, transparent 65%); transform: translateX(-100%); animation: gold-sweep 2.4s ease-in-out infinite; pointer-events: none; }
+@keyframes gold-sweep { 60%,100% { transform: translateX(100%); } }
+.cf-gold, #card-form .cf-gold { display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; font-size: calc(12.5px * var(--fs)); font-weight: 400; color: var(--muted); }
+#card-form .cf-gold input { width: 18px; height: 18px; min-height: 0; margin: 0; padding: 0; flex: none; accent-color: var(--green); }

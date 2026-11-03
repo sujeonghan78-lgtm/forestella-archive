@@ -3280,7 +3280,7 @@
     block('최애곡', B.favs.slice(0, 6));
     block('소취곡', B.wishes.slice(0, 6));
     if (B.best) block('최고의 날', [B.best.date.replace(/-/g, '.'), B.best.title]);
-    if (B.bdg.length) block('뱃지', B.bdg.map(b => `${b.ic} ${b.name} (${b.how})`));
+    if (B.bdg.length) block('뱃지', B.bdg.map(b => `${b.gold ? '✦ ' : ''}${b.ic} ${b.name} (${b.how})`));
     if (card.debut.trim() || B.favs.length || B.wishes.length || B.best || B.bdg.length) dash();
     row('합계', B.dd || 'D+', { b: true, sz: 20 });
     row('결제', '평생 할부 · 숲별카드', { c: MUTE, sz: 11 });
@@ -3383,6 +3383,7 @@
   }
 
   function drawCard(cv) {
+    if (cv.parentNode) cv.parentNode.classList.toggle('gold', !card.noGold && cardBadges().some(b => b.gold && b.got && (card.badges || []).includes(b.k)));
     if (card.frame === 'receipt') return drawReceipt(cv);
     if (card.frame === 'playlist') return drawPlaylist(cv);
     const C = CARD_COLORS[card.color] || CARD_COLORS.forest, F = CARD_FONTS[card.font] || CARD_FONTS.myeong;
@@ -3461,7 +3462,20 @@
         if (bx > P && bx + w > P + IN) { bx = P; by += 26; }
         const x0 = bx, y1 = by;
         ops.push(() => {
-          ctx.strokeStyle = C.acc; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0 + .5, y1 + .5, w - 1, 21, 11) : ctx.rect(x0, y1, w, 21); ctx.stroke();
+          const pill = () => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0 + .5, y1 + .5, w - 1, 21, 11) : ctx.rect(x0, y1, w, 21); };
+          if (b.gold && !card.noGold) {
+            // 금빛 뱃지: 금색 바탕 + 은은한 빛 + 반짝이
+            ctx.save(); ctx.shadowColor = 'rgba(240,196,70,.85)'; ctx.shadowBlur = 10;
+            const g = ctx.createLinearGradient(x0, y1, x0 + w, y1 + 21); g.addColorStop(0, '#fff3c4'); g.addColorStop(.45, '#f2cf62'); g.addColorStop(.55, '#fff7d6'); g.addColorStop(1, '#e0a93a');
+            pill(); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+            pill(); ctx.strokeStyle = '#c8922a'; ctx.lineWidth = 1; ctx.stroke();
+            const spark = (sx, sy, r) => { ctx.beginPath(); ctx.moveTo(sx, sy - r); ctx.quadraticCurveTo(sx, sy, sx + r, sy); ctx.quadraticCurveTo(sx, sy, sx, sy + r); ctx.quadraticCurveTo(sx, sy, sx - r, sy); ctx.quadraticCurveTo(sx, sy, sx, sy - r); ctx.fillStyle = '#ffe58a'; ctx.fill(); };
+            spark(x0 + w - 3, y1 + 1, 4.5); spark(x0 + 4, y1 + 20, 3); spark(x0 + w * .55, y1 - 2, 2.5);
+            ctx.font = font(700, 10.5); ctx.fillStyle = '#5a3d0c'; ctx.fillText(t, x0 + 9, y1 + 5);
+            ctx.font = font(400, 8.5); ctx.fillStyle = '#7a5716'; ctx.fillText(b.how, x0 + 9 + tw + 5, y1 + 6.5);
+            return;
+          }
+          ctx.strokeStyle = C.acc; ctx.lineWidth = 1; pill(); ctx.stroke();
           ctx.font = font(600, 10.5); ctx.fillStyle = C.ink; ctx.fillText(t, x0 + 9, y1 + 5);
           ctx.font = font(400, 8.5); ctx.fillStyle = C.mute; ctx.fillText(b.how, x0 + 9 + tw + 5, y1 + 6.5);
         });
@@ -3681,7 +3695,7 @@
         <div class="cf-g"><span class="cf-l">사진 <small>안 넣어도 돼요</small></span>
           <div class="cf-photo"><label class="chip cf-file">📷 ${cardPhoto ? '사진 바꾸기' : '폰에서 사진 고르기'}<input type="file" id="cf-photo" accept="image/*" hidden></label>${cardPhoto ? '<button type="button" class="link-btn" id="cf-photo-x">사진 빼기</button>' : ''}</div>
           <p class="src-note">직접 찍었거나 공유해도 되는 사진을 넣어 주세요. 사진은 이 폰에만 있어요.${cardPhoto ? ' 미리보기에서 사진을 끌어서 위치를 맞출 수 있어요.' : ''}</p></div>
-        <details class="cf-g cf-bd"><summary><span class="cf-l">뱃지 <small>${(() => { const bs = cardBadges(st), on = bs.filter(b => b.got && (card.badges || []).includes(b.k)); return on.length ? esc(on.map(b => b.ic + ' ' + b.name).join(' · ')) : `받은 뱃지 ${bs.filter(b => b.got).length}개 · 3개까지 넣어요`; })()}</small></span><span class="cf-bd-t">펼치기</span></summary><div class="cf-badges">${cardBadges(st).map(b => `<button type="button" class="cf-badge${(card.badges || []).includes(b.k) && b.got ? ' on' : ''}" data-grp="badges" data-v="${b.k}" aria-pressed="${(card.badges || []).includes(b.k) && b.got}"${b.got ? '' : ' disabled'}><span>${b.ic}</span><b>${esc(b.name)}</b><small>${esc(b.got ? '받았어요' : b.how)}</small></button>`).join('')}</div></details>
+        <details class="cf-g cf-bd"><summary><span class="cf-l">뱃지 <small>${(() => { const bs = cardBadges(st), on = bs.filter(b => b.got && (card.badges || []).includes(b.k)); return on.length ? esc(on.map(b => b.ic + ' ' + b.name).join(' · ')) : `받은 뱃지 ${bs.filter(b => b.got).length}개 · 3개까지 넣어요`; })()}</small></span><span class="cf-bd-t">펼치기</span></summary><div class="cf-badges">${cardBadges(st).map(b => `<button type="button" class="cf-badge${(card.badges || []).includes(b.k) && b.got ? ' on' : ''}${b.gold && !card.noGold ? ' gold' : ''}" data-grp="badges" data-v="${b.k}" aria-pressed="${(card.badges || []).includes(b.k) && b.got}"${b.got ? '' : ' disabled'}><span>${b.ic}</span><b>${esc(b.name)}</b><small>${esc(b.got ? '받았어요' : b.how)}</small></button>`).join('')}</div>${cardBadges(st).some(b => b.gold) ? `<label class="cf-gold"><input type="checkbox" id="cf-goldfx"${card.noGold ? '' : ' checked'}> 금빛 뱃지 효과 (금색·반짝임)</label>` : ''}</details>
         <label><span class="cf-l">한마디 <small>안 써도 돼요</small></span><input id="cf-line" maxlength="40" value="${esc(card.line)}" placeholder="숲별이라 행복해" autocomplete="off"></label>
         <div class="cf-g"><span class="cf-l">글씨체</span><div class="cf-fonts">${Object.entries(CARD_FONTS).map(([k, f]) => `<button type="button" class="cf-font${card.font === k ? ' on' : ''}" data-grp="font" data-v="${k}" aria-pressed="${card.font === k}" style="font-family:${esc(f.f)};font-weight:${f.w}${k === 'pen' ? ';font-size:21px' : ''}">${f.name} 숲별</button>`).join('')}</div></div>
         <div class="cf-g"><span class="cf-l">틀 모양</span><div class="chips cf-chips">${Object.entries(CARD_FRAMES).map(([k, n]) => chip('frame', k, n, (card.frame || 'round') === k)).join('')}</div></div>
@@ -3718,6 +3732,7 @@
     const form = document.getElementById('card-form');
     const txt = { 'cf-nick': 'nick', 'cf-debut': 'debut', 'cf-fav': 'fav', 'cf-wish': 'wish', 'cf-line': 'line', 'cf-since': 'since', 'cf-best': 'best' };
     form.oninput = form.onchange = ev => {
+      if (ev.target.id === 'cf-goldfx') { card.noGold = !ev.target.checked; cardSave(); document.querySelectorAll('.cf-badge').forEach(x => x.classList.toggle('gold', !card.noGold && /^금빛 /.test(x.querySelector('b').textContent))); redraw(); return; }
       const k = txt[ev.target.id];
       if (!k) return;
       card[k] = ev.target.value;
@@ -7471,7 +7486,7 @@
     return { d, ic: a[3], name, since: a[1] ? `${a[1]}.${a[0].replace('-', '.')}` : '', k: 'an-' + a[0].replace('-', '') + '-' + y };
   }
   const annivGoal = a => +((a.name.match(/(\d+)주년/) || [])[1] || 5) || 5;
-  const annivBadges = () => Object.entries(anvStore().bdg || {}).map(([k, b]) => ({ k, ic: b.ic, name: b.gold ? `금빛 ${b.name}` : b.name, how: '그날 숨은 숲 찾기', got: true }));
+  const annivBadges = () => Object.entries(anvStore().bdg || {}).map(([k, b]) => ({ k, ic: b.ic, name: b.gold ? `금빛 ${b.name}` : b.name, how: b.gold ? '숨은 숲 모두 찾기' : '그날 숨은 숲 찾기', got: true, gold: !!b.gold }));
   const LEAF = '<svg viewBox="0 0 24 24"><path d="M5 19C5 10 11 4 20 4c0 9-6 15-15 15z" fill="currentColor"/><path d="M5 19L14 10" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></svg>';
   const STAR = '<svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.9L22 9.3l-5.8 4.6 2 7.1L12 17l-6.2 4 2-7.1L2 9.3l7.4-.4z" fill="currentColor"/></svg>';
   const TREE = '<svg viewBox="0 0 48 56"><path d="M24 3L9 24h7L6 38h36L32 24h7z" fill="#3f8f4f" stroke="#245c31" stroke-width="2" stroke-linejoin="round"/><rect x="20" y="38" width="8" height="12" rx="2" fill="#8a5a36"/><circle cx="19" cy="22" r="1.6" fill="#ffe27a"/><circle cx="29" cy="30" r="1.6" fill="#ffe27a"/><circle cx="24" cy="13" r="1.6" fill="#ffe27a"/></svg>';
