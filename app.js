@@ -5127,7 +5127,7 @@
   const TS_ANS = ['전혀 아니야', '아닌 편', '그런 편', '완전 맞아'];
   const TS_ORDER = [0, 2, 4, 6, 1, 3, 5, 7, 8];  // 축이 섞여 나오게
   const TS_AX = [['듣는파', '보는파'], ['오리지널파', '변주파'], ['메인파', '디깅파'], ['클래식파', '팝파']];
-  const TS_AXN = ['감상', '곡', '발견', '결'];
+  const TS_AXN = ['감상', '곡', '발견', '결'], TS_AXT = ['즐기는 방식', '좋아하는 버전', '곡 고르는 눈', '음악 장르'];
   // 순서: 감상(듣·보) 곡(오리지널·변주) 발견(메인·디깅) 결(클래식·팝) → 번호 = 보*8 + 변주*4 + 디깅*2 + 팝
   const TS_TYPES = [
     ['🎻', '정통 오페라 하우스형', '명곡을 원곡 그대로, 볼륨은 크게'],
@@ -5194,9 +5194,9 @@
         <h2 class="ts-sum-h">나의 취향 지도</h2>
         ${X.map((x, k) => { const qs = TS_Q.map((q, i) => [q, i]).filter(([q]) => q.ax === k); const w = x.b ? 1 : 0; return `
         <div class="ts-ax${x.half ? ' half' : ''}">
-          <div class="ts-ax-top"><span class="${w ? '' : 'on'}">${TS_AX[k][0]}${w ? '' : ` <em>${x.half ? '⚖' : x.pct + '%'}</em>`}</span><small>${TS_AXN[k]}</small><span class="${w ? 'on' : ''}">${w ? `<em>${x.half ? '⚖' : x.pct + '%'}</em> ` : ''}${TS_AX[k][1]}</span></div>
+          <p class="ts-ax-t">${TS_AXT[k]}</p><div class="ts-ax-top"><span class="${w ? '' : 'on'}">${TS_AX[k][0]}${w ? '' : ` <em>${x.half ? '⚖' : x.pct + '%'}</em>`}</span><span class="${w ? 'on' : ''}">${w ? `<em>${x.half ? '⚖' : x.pct + '%'}</em> ` : ''}${TS_AX[k][1]}</span></div>
           <div class="ts-axbar"><i class="${w ? 'r' : 'l'}" style="width:${x.pct - 50}%"></i></div>
-          <p class="ts-why">${qs.map(([q, i]) => `${(tsVals(t)[i] <= 50 ? q.a : q.b)[0]} ${q.p[tsVals(t)[i] <= 50 ? 0 : 1]}`).join('<em>·</em>')}${x.half ? `<em>·</em>반반이라 첫 답으로 정했어요` : ''}</p>
+          <p class="ts-why">내 답: ${qs.map(([q, i]) => `${(tsVals(t)[i] <= 50 ? q.a : q.b)[0]} ${q.p[tsVals(t)[i] <= 50 ? 0 : 1]}`).join('<em>·</em>')}${x.half ? `<em>·</em>반반이라 첫 답으로 정했어요` : ''}</p>
         </div>`; }).join('')}
         <div class="ts-style"><span>${S[0]}</span><p><small>덕질 스타일</small><b>${S[1]}</b> ${S[2]}</p></div>
       </section>`;

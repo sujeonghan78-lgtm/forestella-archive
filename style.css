@@ -2099,3 +2099,4 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .ts-vs div:last-child span { background: var(--heef6fe); }
 .ts-vs b { font-size: 15px; line-height: 1.35; word-break: keep-all; }
 .ts-vs em { font-style: normal; font-family: "Nanum Myeongjo", serif; font-size: 22px; font-weight: 800; color: var(--muted); }
+.ts-ax-t { margin: 0 0 6px; font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
