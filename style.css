@@ -1977,3 +1977,11 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .vw-t small b { color: var(--green-d); font-weight: 700; }
 .vw-t small .vw-hit { color: #c27a00; }
 .vw-up { white-space: nowrap; font-style: normal; color: var(--green-d); font-weight: 600; }
+
+/* 오늘은 무슨 날 (홈 제목 밑 한 줄) */
+.today-bar { display: flex; align-items: center; gap: 10px; margin: 4px 0 12px; padding: 10px 14px; border-radius: 14px; background: var(--grad-soft); border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.today-bar .tb-ic { flex: none; font-size: 20px; line-height: 1; }
+.today-bar .tb-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.today-bar small { font-size: calc(11px * var(--fs)); color: var(--muted); }
+.today-bar b { font-weight: 600; font-size: calc(14px * var(--fs)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today-bar .tb-go { flex: none; color: var(--muted); font-size: 18px; }
