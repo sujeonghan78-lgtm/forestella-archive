@@ -2135,3 +2135,6 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .ts-all b { font-size: 14px; }
 .ts-all b em { font-style: normal; font-size: 11px; color: #fff; background: var(--green); padding: 1px 7px; border-radius: 99px; margin-left: 4px; vertical-align: 2px; }
 .ts-all small { font-size: 12px; color: var(--muted); }
+.ts-code b { font-family: "IBM Plex Sans KR", system-ui, sans-serif; font-size: 32px; font-weight: 700; letter-spacing: 0; }
+.ts-mini { font-family: "IBM Plex Sans KR", system-ui, sans-serif; font-size: 16px; font-weight: 700; letter-spacing: .12em; width: 58px; }
+.ts-mini { width: 62px; white-space: nowrap; letter-spacing: .06em; font-size: 15px; }

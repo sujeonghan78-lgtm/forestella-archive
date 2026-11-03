@@ -5127,6 +5127,7 @@
   const TS_ANS = ['전혀 아니야', '아닌 편', '그런 편', '완전 맞아'];
   const TS_ORDER = [0, 2, 4, 6, 1, 3, 5, 7, 8];  // 축이 섞여 나오게
   const TS_AX = [['음원파', '무대파'], ['오리지널파', '변주파'], ['대표곡파', '숨은 명곡파'], ['클래식파', '팝파']];
+  const TS_EN = [['A', 'S'], ['O', 'V'], ['M', 'H'], ['C', 'P']];  // Audio·Stage / Original·Variation / Main·Hidden / Classic·Pop
   const TS_AXN = ['감상', '곡', '발견', '결'], TS_AXT = ['즐기는 방식', '좋아하는 버전', '곡 고르는 눈', '음악 장르'];
   // 순서: 감상(듣·보) 곡(오리지널·변주) 발견(메인·디깅) 결(클래식·팝) → 번호 = 보*8 + 변주*4 + 디깅*2 + 팝
   const TS_TYPES = [
@@ -5184,7 +5185,7 @@
     const T = tsType(t), S = tsStyle(t), X = tsAxes(t);
     return `<div class="mt-hero ts-hero"><i class="mt-stripe"></i>
         <p class="mt-lab">나의 숲별 취향 유형</p>
-        <div class="ts-code" aria-label="유형 코드">${X.map((x, k) => `<span class="${x.b ? 'r' : 'l'}"><b>${TS_AX[k][x.b][0]}</b><small>${TS_AX[k][x.b].replace(/파$/, '')}</small></span>`).join('')}</div>
+        <div class="ts-code" aria-label="유형 코드">${X.map((x, k) => `<span class="${x.b ? 'r' : 'l'}"><b>${TS_EN[k][x.b]}</b><small>${TS_AX[k][x.b].replace(/파$/, '')}</small></span>`).join('')}</div>
         <p class="mt-type">${T[1]}</p>
         <p class="ts-title">${S[1]}</p>
         <p class="mt-say">${T[2]}</p>
@@ -5201,7 +5202,7 @@
         <div class="ts-style"><p><small>덕질 스타일</small><b>${S[1]}</b> ${S[2]}</p></div>
       </section>
       <details class="ts-all"><summary>16가지 유형 모두 보기</summary><ul>${TS_TYPES.map((y, n) => { const bits = [n >> 3 & 1, n >> 2 & 1, n >> 1 & 1, n & 1], me = y === T;
-        return `<li${me ? ' class="me"' : ''}><span class="ts-mini">${bits.map((v, k) => TS_AX[k][v][0]).join('')}</span><p><b>${y[1]}${me ? ' <em>나</em>' : ''}</b><small>${y[2]}</small></p></li>`; }).join('')}</ul></details>`;
+        return `<li${me ? ' class="me"' : ''}><span class="ts-mini">${bits.map((v, k) => TS_EN[k][v]).join('')}</span><p><b>${y[1]}${me ? ' <em>나</em>' : ''}</b><small>${y[2]}</small></p></li>`; }).join('')}</ul></details>`;
   }
   // 사분면: 사람마다 점 하나 (지도 2장: 감상×결, 곡×발견). pp = [[답, 색 번호, 이름]]
   const TS_MAPS = [[0, 3], [1, 2]];
