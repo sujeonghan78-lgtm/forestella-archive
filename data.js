@@ -977,9 +977,9 @@
     const DMS = new Map(), dms = x => { let v = DMS.get(x); if (v === undefined) { v = new Date(x).getTime(); DMS.set(x, v); } return v; };
     const days = (a, b) => (dms(a) - dms(b)) / 864e5;
     // 방송 프로그램 이름 낱말 (일정명에서 [KBS2]·[멤버] 같은 머리말과 방송사 이름은 빼요) + 영어 제목 별칭
-    const PROG_STOP = new Set(['kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'jtbc', 'mnet', 'mbn', 'tvn', 'ebs', '포레스텔라', 'forestella', '방송', '특집', '출연', '녹화', '본방', '재방']);
+    const PROG_STOP = new Set(['awards', 'award', 'world', 'tv', 'kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'jtbc', 'mnet', 'mbn', 'tvn', 'ebs', '포레스텔라', 'forestella', '방송', '특집', '출연', '녹화', '본방', '재방']);
     const progWords = t => (String(t).replace(/^\[[^\]]*\]\s*/, '').normalize('NFKC').match(/[0-9A-Za-z가-힣]{2,}/g) || []).map(w => w.toLowerCase()).filter(w => !PROG_STOP.has(w) && !/^\d+$/.test(w));
-    const PROG_ALIAS = { 불후의: /immortal songs/i, 명곡: /immortal songs/i, 열린음악회: /open concert/i, 스케치북: /sketchbook/i, 뮤직뱅크: /music ?bank/i, 음악중심: /music ?core|예능연구소/i, 엠카운트다운: /m ?countdown|엠카/i, 가요대축제: /song festival/i, 복면가왕: /king of mask/i, 편스토랑: /fun_?staurant/i };
+    const PROG_ALIAS = { 불후의: /immortal songs/i, 명곡: /immortal songs/i, 열린음악회: /open concert/i, 스케치북: /sketchbook/i, 뮤직뱅크: /music ?bank/i, 음악중심: /music ?core|예능연구소/i, 엠카운트다운: /m ?countdown|엠카/i, 가요대축제: /song festival/i, 복면가왕: /king of mask/i, 편스토랑: /fun_?staurant/i, 시즌즈: /the seasons/i, 연기대상: /drama awards/i, 연예대상: /entertainment awards/i, 코리아: /korea on stage/i };
     const MAIN_VID = new Map(events.filter(e => e.videoId).map(e => [e.videoId, e]));
     official.forEach(v => {
       const t = v.title, ft = flat(t);
@@ -999,14 +999,21 @@
       const stage = ['라이브', '클립', '영상', '무대', '직캠'].includes(v.kind) && !/recap|인사|greeting|예고|preview|d-\d|exhibition|메이킹|making/i.test(t);
       if (v.bc) {
         // 방송사 영상: 방송 일정(공연 제외)만, 프로그램 이름이 제목에 있고 날짜가 가까운 것 (재업로드가 많아 날짜만으로는 안 붙여요)
-        if (v.tour || !(behind || stage) || /모음|몰아보기|compilation|댓글|리액션/i.test(v.title)) return;
+        // 제목에 방송 날짜(251107 방송 등)가 있으면 그 날짜로 맞추고, 그땐 쇼츠·예고·모음도 붙여요
+        const tm = t.match(/(?:^|\D)(\d{2})(\d{2})(\d{2})(?!\d)/), td = tm && `20${tm[1]}-${tm[2]}-${tm[3]}`;
+        const vd = td && !isNaN(dms(td)) && td >= '2017-01-01' && days(td, v.date) <= (/예고|선공개/.test(t) ? 14 : 2) && !/world/i.test(v.bc) ? td : '';  // KBS WORLD 제목 날짜는 올린 날이라 빼요
+        const bh = behind || /behind|비하인드/i.test(t);
+        if (v.tour || /댓글|리액션/.test(t)) return;
+        if (!vd && (!(bh || stage) || /모음|몰아보기|compilation/i.test(t))) return;
         const fv = flat(v.title) + ' ' + Object.entries(PROG_ALIAS).filter(([, rx]) => rx.test(v.title)).map(([k]) => k).join(' ');
         let best = null, score = 0, bgap = 1e9;
         const cand = [];
         events.forEach(e => {
           if (e.category === '공연' || LINK_SKIP.has(`${v.id}>ev:${e.id}`)) return;
-          const gap = days(v.date, e.date);
-          if (gap < -1 || gap > (behind ? 400 : 14)) return;
+          const gap = days(vd || v.date, e.date), yr = (t.match(/\b(20\d\d)\b/) || [])[1];
+          // KBS WORLD 같은 해외 채널은 늦게 올라와서 조금 더 넓게, 'OOOO 연예대상'처럼 연도가 같으면 90일까지
+          const far = bh ? 400 : vd ? 1 : yr && e.title.includes(yr) ? 90 : /world/i.test(v.bc) ? 21 : 14;
+          if (gap < -1 || gap > far) return;
           // 제작사·소속사 채널은 방송사가 아니라서 그날(하루 차이까지) 일정에만 붙여요
           if (PROD_CH.test(v.bc) && Math.abs(gap) > 1) return;
           const sc = (e._pw || (e._pw = progWords(e.title))).filter(w => fv.includes(w)).reduce((n, w) => n + w.length, 0);
@@ -1015,11 +1022,13 @@
         });
         // 프로그램 이름이 제목에 없으면: 같은 날(하루 차이까지) 같은 방송사 방송 일정이 딱 하나일 때만 붙여요
         const net = (v.bc.match(/^(KBS|MBC|SBS|JTBC|Mnet|MBN|tvN|EBS)/i) || [])[1];
-        if (!best && net && !behind && !Object.keys(PROG_ALIAS).some(k => fv.includes(k))) {
-          const same = events.filter(e => e.category !== '공연' && !LINK_SKIP.has(`${v.id}>ev:${e.id}`) && new RegExp(net, 'i').test(e.title) && days(v.date, e.date) >= 0 && days(v.date, e.date) <= 1);
+        if (!best && net && !bh && !Object.keys(PROG_ALIAS).some(k => fv.includes(k))) {
+          const same = events.filter(e => e.category !== '공연' && !LINK_SKIP.has(`${v.id}>ev:${e.id}`) && new RegExp(net, 'i').test(e.title) && days(vd || v.date, e.date) >= 0 && days(vd || v.date, e.date) <= 1);
+          const same0 = same.filter(e => days(vd || v.date, e.date) === 0);
+          if (same.length > 1 && same0.length === 1) same.splice(0, same.length, same0[0]);
           if (same.length === 1) { best = same[0]; bgap = days(v.date, best.date); score = 0; }
         }
-        if (best) { v.event = best; const tie = cand.filter(c => c.sc >= score && Math.abs(c.gap - bgap) <= 2).length - 1;
+        if (best) { v.event = best; const behind = bh; const tie = cand.filter(c => c.sc >= score && Math.abs(c.gap - bgap) <= 2).length - 1;
           v.evWhy = [bgap >= 3 && `날짜 ${Math.round(bgap)}일 차이`, tie > 0 && `비슷한 일정 ${tie + 1}개 중 하나`, !score && '제목에 프로그램 이름이 없어 날짜·방송사로 붙임'].filter(Boolean); (behind ? (best.ytBehind = best.ytBehind || []) : (best.ytStage = best.ytStage || [])).push(v); }
         return;
       }
