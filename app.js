@@ -5147,29 +5147,37 @@
     ['🎭', '한 번뿐인 무대 수집가', '다시 없을 무대를 기억하는 게 행복해요'],
     ['🌋', '레전드 편곡 덕후', '레전드 편곡 무대를 몇 번이고 돌려 봐요'],
   ];
-  const tsRead = () => { const t = (boxRead(TS_KEY) || {}).a; return typeof t === 'string' && /^[0-3]{8}[0-2]$/.test(t) ? t : ''; };
+  // 답 문자열: 질문 8개 × 0~100(36진수 2자) + 덕질 스타일 1자 → 17자
+  const tsVals = t => [...Array(8).keys()].map(i => Math.min(100, parseInt(t.slice(i * 2, i * 2 + 2), 36) || 0));
+  const tsEnc = a => a.slice(0, 8).map(v => Math.round(v).toString(36).padStart(2, '0')).join('') + a[8];
+  const tsShort = (Q, k) => Q.p[k].replace(/파$/, '');
+  const tsWord = (v, Q) => v <= 12 ? `완전 ${tsShort(Q, 0)}` : v <= 37 ? `${tsShort(Q, 0)} 쪽` : v < 63 ? '반반' : v < 88 ? `${tsShort(Q, 1)} 쪽` : `완전 ${tsShort(Q, 1)}`;
+  const tsRead = () => { const t = (boxRead(TS_KEY) || {}).a; return typeof t === 'string' && /^[0-9a-z]{16}[0-2]$/.test(t) ? t : ''; };
   // 축마다 { b: 0|1, pct: 고른 쪽 %, half: 반반 }
   function tsAxes(t) {
-    const w = [2, 1, -1, -2];
+    const V = tsVals(t);
     return [0, 1, 2, 3].map(ax => {
-      const qs = TS_Q.map((q, i) => [q, i]).filter(([q]) => q.ax === ax).map(([, i]) => +t[i]);
-      const s = qs.reduce((m, v) => m + w[v], 0), b = s ? (s > 0 ? 0 : 1) : (qs[0] < 2 ? 0 : 1);
-      return { b, pct: Math.round(50 + Math.abs(s) * 12.5), half: !s };
+      const qs = TS_Q.map((q, i) => [q, i]).filter(([q]) => q.ax === ax).map(([, i]) => V[i]);
+      const pos = qs.reduce((m, v) => m + v, 0) / qs.length, b = pos !== 50 ? (pos > 50 ? 1 : 0) : (qs[0] > 50 ? 1 : 0);
+      return { b, pos, pct: Math.round(b ? pos : 100 - pos), half: Math.abs(pos - 50) <= 5 };
     });
   }
   const tsType = t => { const x = tsAxes(t); return TS_TYPES[x[0].b * 8 + x[1].b * 4 + x[2].b * 2 + x[3].b]; };
-  const tsStyle = t => TS_STYLE.o[+t[8]];
+  const tsStyle = t => TS_STYLE.o[+t[16]];
   const tsName = t => { const T = tsType(t); return `${T[0]} ${T[1]}`; };
   let tsSt = null;  // 진행 중 { i, a: [] }
   function tsQuizHtml() {
     const n = tsSt.i, qi = TS_ORDER[n], tot = TS_ORDER.length;
     const bar = `<div class="ts-prog"><i style="width:${Math.round(n / tot * 100)}%"></i></div><p class="ts-n">${n + 1} / ${tot}</p>`;
     if (qi === 8) return `${bar}<h2 class="ts-q">${TS_STYLE.q}</h2><div class="ts-3">${TS_STYLE.o.map(([ic, t, s], k) => `<button type="button" class="ts-opt${tsSt.a[8] === k ? ' on' : ''}" data-v="${k}"><span>${ic}</span><b>${t}</b><small>${s}</small></button>`).join('')}</div>`;
-    const Q = TS_Q[qi], cur = tsSt.a[qi];
-    return `${bar}<p class="ts-num">Q${n + 1}</p><h2 class="ts-q">${Q.q}</h2>
-      <div class="ts-line${cur != null ? ' picked' : ''}">
-        <div class="ts-ends"><span>${Q.a[0]} ${Q.a[1]}</span><span>${Q.b[1]} ${Q.b[0]}</span></div>
-        <div class="ts-track"><i class="ts-rail"></i>${TS_ANS.map((l, v) => `<button type="button" class="ts-pt ts-p${v}${cur === v ? ' on' : ''}" data-v="${v}"><i></i><span>${l}</span></button>`).join('')}</div>
+    const Q = TS_Q[qi], cur = tsSt.a[qi] == null ? 50 : tsSt.a[qi];
+    return `${bar}<p class="ts-num">Q${n + 1}</p>
+      <div class="ts-vs"><div><span>${Q.a[0]}</span><b>${Q.a[1]}</b></div><em>VS</em><div><span>${Q.b[0]}</span><b>${Q.b[1]}</b></div></div>
+      <div class="ts-sl">
+        <input type="range" class="ts-range" min="0" max="100" value="${cur}" aria-label="${esc(Q.a[1] + ' VS ' + Q.b[1])}">
+        <div class="ts-ticks"><span>완전 ${tsShort(Q, 0)}</span><span>반반</span><span>완전 ${tsShort(Q, 1)}</span></div>
+        <p class="ts-now"><b>${tsWord(cur, Q)}</b></p>
+        <button type="button" class="mt-go ts-next">${n + 1 < tot - 1 ? '다음' : '마지막 질문으로'}</button>
       </div>`;
   }
   function tsResultHtml(t) {
@@ -5181,36 +5189,69 @@
         <p class="ts-title">${S[0]} ${S[1]}</p>
         <p class="mt-say">${T[2]}</p>
       </div>
+      <section class="mt-card"><h2><span>🧭</span>나는 어디쯤?</h2>${tsQuad([[t, 0, card.nick || '나']])}</section>
       <section class="ts-sum">
         <h2 class="ts-sum-h">나의 취향 지도</h2>
         ${X.map((x, k) => { const qs = TS_Q.map((q, i) => [q, i]).filter(([q]) => q.ax === k); const w = x.b ? 1 : 0; return `
         <div class="ts-ax${x.half ? ' half' : ''}">
           <div class="ts-ax-top"><span class="${w ? '' : 'on'}">${TS_AX[k][0]}${w ? '' : ` <em>${x.half ? '⚖' : x.pct + '%'}</em>`}</span><small>${TS_AXN[k]}</small><span class="${w ? 'on' : ''}">${w ? `<em>${x.half ? '⚖' : x.pct + '%'}</em> ` : ''}${TS_AX[k][1]}</span></div>
           <div class="ts-axbar"><i class="${w ? 'r' : 'l'}" style="width:${x.pct - 50}%"></i></div>
-          <p class="ts-why">${qs.map(([q, i]) => `${(+t[i] < 2 ? q.a : q.b)[0]} ${q.p[+t[i] < 2 ? 0 : 1]}`).join('<em>·</em>')}${x.half ? `<em>·</em>반반이라 첫 답으로 정했어요` : ''}</p>
+          <p class="ts-why">${qs.map(([q, i]) => `${(tsVals(t)[i] <= 50 ? q.a : q.b)[0]} ${q.p[tsVals(t)[i] <= 50 ? 0 : 1]}`).join('<em>·</em>')}${x.half ? `<em>·</em>반반이라 첫 답으로 정했어요` : ''}</p>
         </div>`; }).join('')}
         <div class="ts-style"><span>${S[0]}</span><p><small>덕질 스타일</small><b>${S[1]}</b> ${S[2]}</p></div>
       </section>`;
   }
+  // 사분면: 사람마다 점 하나 (지도 2장: 감상×결, 곡×발견). pp = [[답, 색 번호, 이름]]
+  const TS_MAPS = [[0, 3], [1, 2]];
+  function tsQuad(pp) {
+    const W = 300, P = 34, S = W - P * 2, xy = v => P + v / 100 * S;
+    const one = ([ax, ay], m) => {
+      const X = TS_AX[ax], Y = TS_AX[ay], seen = new Map();
+      const dots = pp.map(([t, ci, nm]) => { const a = tsAxes(t); let x = xy(a[ax].pos), y = xy(a[ay].pos); const k = Math.round(x / 8) + ':' + Math.round(y / 8), n = seen.get(k) || 0; seen.set(k, n + 1); x += n * 9; y -= n * 9;
+        return `<g class="tsq-dot" style="--d:${ci * 0.12}s"><circle cx="${x}" cy="${y}" r="15" fill="${MT_COL[ci % 6]}" stroke="#fff" stroke-width="3"/><text x="${x}" y="${y + 5}" text-anchor="middle">${esc([...nm][0] || '?')}</text></g>`; }).join('');
+      const corner = (cx, cy, a, b, anc) => `<text class="tsq-c" x="${cx}" y="${cy}" text-anchor="${anc}">${a.replace('파', '')}·${b.replace('파', '')}</text>`;
+      return `<svg class="tsq-svg" viewBox="0 0 ${W} ${W}"${m ? ' hidden' : ''} data-m="${m}" role="img" aria-label="${X.join('·')} × ${Y.join('·')} 취향 지도">
+        <rect class="tsq-q0" x="${P}" y="${P}" width="${S / 2}" height="${S / 2}"/><rect class="tsq-q1" x="${W / 2}" y="${P}" width="${S / 2}" height="${S / 2}"/>
+        <rect class="tsq-q1" x="${P}" y="${W / 2}" width="${S / 2}" height="${S / 2}"/><rect class="tsq-q0" x="${W / 2}" y="${W / 2}" width="${S / 2}" height="${S / 2}"/>
+        <line class="tsq-ax" x1="${P}" y1="${W / 2}" x2="${W - P}" y2="${W / 2}"/><line class="tsq-ax" x1="${W / 2}" y1="${P}" x2="${W / 2}" y2="${W - P}"/>
+        <text class="tsq-l" x="${P}" y="${W / 2 - 8}" text-anchor="start">${X[0]}</text><text class="tsq-l" x="${W - P}" y="${W / 2 - 8}" text-anchor="end">${X[1]}</text>
+        <text class="tsq-l" x="${W / 2}" y="${P - 10}" text-anchor="middle">${Y[0]}</text><text class="tsq-l" x="${W / 2}" y="${W - P + 22}" text-anchor="middle">${Y[1]}</text>
+        ${corner(P + 8, P + 18, X[0], Y[0], 'start')}${corner(W - P - 8, P + 18, X[1], Y[0], 'end')}${corner(P + 8, W - P - 10, X[0], Y[1], 'start')}${corner(W - P - 8, W - P - 10, X[1], Y[1], 'end')}
+        ${dots}</svg>`;
+    };
+    return `<div class="tsq"><div class="tsq-tabs">${TS_MAPS.map(([a, b], m) => `<button type="button" class="tsq-tab${m ? '' : ' on'}" data-m="${m}">${TS_AXN[a]} × ${TS_AXN[b]}</button>`).join('')}</div>
+      ${TS_MAPS.map(one).join('')}
+      ${pp.length > 1 ? `<div class="tsq-leg">${pp.map(([, ci, nm]) => `<span><i style="background:${MT_COL[ci % 6]}"></i>${esc(nm)}</span>`).join('')}</div>` : ''}</div>`;
+  }
+  function tsQuadBind() {
+    document.querySelectorAll('.tsq').forEach(q => q.onclick = ev => { const b = ev.target.closest('.tsq-tab'); if (!b) return;
+      q.querySelectorAll('.tsq-tab').forEach(x => x.classList.toggle('on', x === b)); q.querySelectorAll('.tsq-svg').forEach(x => { x.hidden = x.dataset.m !== b.dataset.m; }); });
+  }
   function tsBind() {
+    tsQuadBind();
     const box = document.getElementById('ts-quiz'); if (!box) return;
     const draw = () => { box.innerHTML = tsQuizHtml(); box.classList.remove('ts-in'); void box.offsetWidth; box.classList.add('ts-in'); };
+    const done = () => {
+      if (tsSt.i < TS_ORDER.length - 1) { tsSt.i++; draw(); return; }
+      boxWrite(TS_KEY, { a: tsEnc(tsSt.a), at: Date.now() }); tsSt = null;
+      const d = new URLSearchParams(location.hash.split('?')[1] || '').get('d'); location.hash = d ? '#/match?d=' + encodeURIComponent(d) : '#/match?r=1';
+    };
+    box.oninput = ev => {
+      const r = ev.target.closest('.ts-range'); if (!r) return;
+      tsSt.a[TS_ORDER[tsSt.i]] = +r.value; box.querySelector('.ts-now b').textContent = tsWord(+r.value, TS_Q[TS_ORDER[tsSt.i]]);
+    };
     box.onclick = ev => {
-      const b = ev.target.closest('[data-v]'); if (!b || !tsSt) return;
-      const qi = TS_ORDER[tsSt.i]; tsSt.a[qi] = +b.dataset.v;
-      b.classList.add('on');
-      setTimeout(() => {
-        if (tsSt.i < TS_ORDER.length - 1) { tsSt.i++; draw(); return; }
-        boxWrite(TS_KEY, { a: tsSt.a.join(''), at: Date.now() }); tsSt = null;
-        const d = new URLSearchParams(location.hash.split('?')[1] || '').get('d'); location.hash = d ? '#/match?d=' + encodeURIComponent(d) : '#/match?r=1';
-      }, 220);
+      if (!tsSt) return;
+      if (ev.target.closest('.ts-next')) { const qi = TS_ORDER[tsSt.i]; if (tsSt.a[qi] == null) tsSt.a[qi] = 50; done(); return; }
+      const b = ev.target.closest('[data-v]'); if (!b) return;
+      tsSt.a[8] = +b.dataset.v; b.classList.add('on'); setTimeout(done, 220);
     };
     const bk = document.getElementById('ts-back');
     if (bk) bk.onclick = () => { if (tsSt.i) { tsSt.i--; draw(); } else history.back(); };
     draw();
   }
   // 궁합: 답 9개 비교 (같은 쪽이면 가까울수록 1, 반대면 0)
-  const tsSim = (a, b) => { let s = 0; for (let i = 0; i < 8; i++) s += 1 - Math.abs(+a[i] - +b[i]) / 3; return (s + (a[8] === b[8] ? 1 : 0)) / 9; };
+  const tsSim = (a, b) => { const x = tsVals(a), y = tsVals(b); let s = 0; for (let i = 0; i < 8; i++) s += 1 - Math.abs(x[i] - y[i]) / 100; return (s + (a[16] === b[16] ? 1 : 0)) / 9; };
   const tsSameAx = (a, b) => { const x = tsAxes(a), y = tsAxes(b); return x.filter((v, k) => v.b === y[k].b).length; };
   const TS_REL = [[4, '🌲🌲', '거울 숲별', '취향 축 4개가 다 같아요. 서로의 플레이리스트를 믿어도 돼요'], [3, '🌿', '단짝 숲별', '거의 다 맞고 하나만 달라서 대화가 끊이지 않아요'], [2, '🧭', '서로 채워주는 짝꿍', '반은 같고 반은 달라서 서로 새 곡을 알려 줘요'], [0, '🔭', '정반대라 끌리는 사이', '취향이 정반대라 오히려 덕질이 두 배로 넓어져요']];
 
@@ -5260,7 +5301,7 @@
     if (d[0] !== '1') { const j = mtUn(d); return Array.isArray(j) ? j : []; }
     const four = t => t.match(/.{4}/g) || [];
     return d.slice(1).split('!').map(x => { const [n, s, u, f, w, h, g, m, t] = x.split('~'); let nm = ''; try { nm = decodeURIComponent(escape(atob((n || '').replace(/-/g, '+').replace(/_/g, '/')))); } catch (err) { /* 이름 없음 */ }
-      return { n: nm || '숲별', s: /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : '', u: u || '', f: four(f || ''), w: four(w || ''), h: four(h || ''), g: (g || '').split('.').filter(Boolean).map(t => t[0] === '*' ? t.slice(1) : String(parseInt(t, 36))), m: (m || '').split(''), t: /^[0-3]{8}[0-2]$/.test(t || '') ? t : '' }; });
+      return { n: nm || '숲별', s: /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}` : '', u: u || '', f: four(f || ''), w: four(w || ''), h: four(h || ''), g: (g || '').split('.').filter(Boolean).map(t => t[0] === '*' ? t.slice(1) : String(parseInt(t, 36))), m: (m || '').split(''), t: /^[0-9a-z]{16}[0-2]$/.test(t || '') ? t : '' }; });
   };
   const mtLink = list => location.origin + location.pathname + '#/match?d=' + mtPack(list);
   function mtCalc(list) {
@@ -5281,7 +5322,7 @@
       <div class="mt-acts"><a class="mt-go" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>친구랑 궁합 보기</a>
       <a class="mt-sub-btn" href="#/match?test=1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8L4 8.5"/><path d="M4 4v4.5h4.5"/></svg>테스트 다시 하기</a></div></section>`;
     const got = (q.get('d') ? mtUnpack(q.get('d')) : []).filter(p => p && typeof p.n === 'string').slice(0, MT_MAX)
-      .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), t: /^[0-3]{8}[0-2]$/.test(p.t || '') ? p.t : '', ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) }));
+      .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), t: /^[0-9a-z]{16}[0-2]$/.test(p.t || '') ? p.t : '', ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) }));
     const inList = got.findIndex(p => p.u === me.u);
     if (inList >= 0) got[inList] = me;
     const list = inList < 0 && mine && got.length && got.length < MT_MAX ? [...got, me] : got;
@@ -5312,8 +5353,9 @@
     const cards = [];
     const tp = list.map((p, i) => [p, i]).filter(([p]) => p.t);
     if (tp.length >= 2) {
+      cards.push(card1('🧭', '취향 사분면', tsQuad(tp.map(([p, i]) => [p.t, i, p.n]))));
       cards.push(card1('🧪', '우리 취향 유형', `<ul class="ts-who">${tp.map(([p, i]) => `<li>${mtAv(p, i)}<span><b>${esc(p.n)}</b>${tsName(p.t)} · ${tsStyle(p.t)[1]}</span></li>`).join('')}</ul>`));
-      const side = (t, i) => i === 8 ? +t[8] : +t[i] < 2 ? 0 : 1, lab = (i, v) => i === 8 ? TS_STYLE.o[v][1] : TS_Q[i].p[v];
+      const side = (t, i) => i === 8 ? +t[16] : tsVals(t)[i] <= 50 ? 0 : 1, lab = (i, v) => i === 8 ? TS_STYLE.o[v][1] : TS_Q[i].p[v];
       if (tp.length === 2) {
         const [[a], [b]] = tp, same = [], diff = [];
         for (let i = 0; i < 9; i++) { const x = side(a.t, i), y = side(b.t, i); (x === y ? same : diff).push(x === y ? `둘 다 <b>${lab(i, x)}</b>` : `${esc(a.n)} <b>${lab(i, x)}</b> · ${esc(b.n)} <b>${lab(i, y)}</b>`); }
