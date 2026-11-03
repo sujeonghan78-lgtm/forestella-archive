@@ -13,28 +13,24 @@
       </header>`;
   }
 
-  // 오늘은 무슨 날: 포레스텔라 기록에서 오늘 날짜(몇 년 전)와 같은 대표 한 줄 (큰 기념일 → 음반 → 곡 첫 무대 → 첫 공연 → 방송·공연)
+  // 오늘은 무슨 날: 큰 기념일 → 음반 발매 → 콘서트 첫 공연 중 하나 (생일은 배너로 충분해서 뺌)
   function todayDay() {
     const d = todayIso(), md = d.slice(5), y = +d.slice(0, 4), past = x => x && x.slice(5) === md && x.slice(0, 4) < d.slice(0, 4), n = x => y - +x.slice(0, 4);
+    const dot = x => x.split('-').map(Number).join('.');
     const A = ANNIVS.find(a => a[0] === md && a[1]);
-    if (A) return { ic: A[3], t: `${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]} ${y - A[1]}주년`, href: `#/days?m=${md.replace('-', '')}` };
-    const B = ANNIVS.find(a => a[0] === md && !a[1]);
-    if (B) return { ic: B[3], t: B[2], href: `#/days?m=${md.replace('-', '')}` };
+    if (A) return { ic: A[3], d: `${A[1]}.${dot(md)}`, t: `${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]} ${y - A[1]}주년`, href: `#/days?m=${md.replace('-', '')}` };
     const al = (data.albums || []).filter(a => past(a.date) && !/방송 음원/.test(a.kind || '')).sort((a, b) => !!a.member - !!b.member || a.date.localeCompare(b.date))[0];
-    if (al) return { ic: '💿', t: `${al.member ? `[${al.member.slice(1)}] ` : ''}'${al.name}' 발매 ${n(al.date)}주년`, href: albHref(al), img: al.img };
-    const so = [...data.songs.values()].filter(x => x.first && past(x.first.date) && !(soloOf(x) || []).length).sort((a, b) => stageN(b) - stageN(a))[0];
-    if (so) return { ic: '🎤', t: `'${so.name}' 첫 무대 ${n(so.first.date)}주년`, href: `#/song/${encodeURIComponent(so.key)}` };
+    if (al) return { ic: '💿', d: dot(al.date), t: `${al.member ? `[${al.member.slice(1)}] ` : ''}'${al.name}' 발매 ${n(al.date)}주년`, href: albHref(al) };
     const to = data.tours.find(x => past(x.dates[0]));
-    if (to) return { ic: '🎫', t: `${to.name} 첫 공연 ${n(to.dates[0])}주년`, href: `#/tour/${encodeURIComponent(to.id)}` };
-    const ev = data.events.filter(e => past(e.date) && ['TV', '공연'].includes(e.category) && !/^\[/.test(e.title)).sort((a, b) => b.songKeys.length - a.songKeys.length || a.date.localeCompare(b.date))[0];
-    if (ev) return { ic: ev.category === 'TV' ? '📺' : '🎶', pre: `${n(ev.date)}년 전 오늘`, t: ev.title, href: `#/e/${encodeURIComponent(ev.id)}` };
+    if (to) return { ic: '🎫', d: dot(to.dates[0]), t: `${to.name} 첫 공연 ${n(to.dates[0])}주년`, href: `#/tour/${encodeURIComponent(to.id)}` };
     return null;
   }
+  // 오늘이 포레스텔라 기념일이면 홈 제목 밑에 작은 글씨 한 줄 (예: 2018.11.3 'Mosaic' 발매 8주년)
   function todayBar() {
     if (!data) return '';
     const x = todayDay();
     if (!x) return '';
-    return `<a class="today-bar" href="${x.href}">${x.ic} ${esc(x.pre ? x.pre + ' · ' : '오늘은 ')}<b>${esc(x.t)}</b>${x.pre ? '' : '이에요'}</a>`;
+    return `<a class="today-bar" href="${x.href}">${x.ic} ${esc(x.d)} <b>${esc(x.t)}</b></a>`;
   }
 
   function soon(title, note) {
