@@ -85,6 +85,8 @@ for (let i = 0; i < ids.length && !stopped; i += 50) {
   const d = await api('videos', { part: 'snippet,contentDetails,statistics', id: ids.slice(i, i + 50).join(',') });
   for (const v of d.items) {
     const views = Number(v.statistics.viewCount || 0), t = v.snippet.title;
+    // 라디오 날마다 올리는 선곡표 영상([9/15(화) 세상의 모든 음악] 곡1/곡2…)은 출연이 아니라서 빼요
+    if (/^\[\d{1,2}\/\d{1,2}\s*\(.\)\s*(세상의\s*모든\s*음악|생생클래식)\]/.test(t)) continue;
     if (!NAME.test(t, chOf[v.id]) || views < (minOf[chOf[v.id]] ?? MIN_VIEWS)) continue;
     const up = kst(v.snippet.publishedAt), air = aired(t, up);
     add.push({ id: v.id, date: air || up, ...(air && air !== up && { up }), title: t, sec: sec(v.contentDetails.duration), views, bc: chOf[v.id] });
