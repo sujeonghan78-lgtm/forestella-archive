@@ -5231,7 +5231,7 @@
       </section>
       ${tsStatHtml(t)}
       <details class="ts-all"><summary>16가지 유형 모두 보기</summary><ul>${TS_TYPES.map((y, n) => { const bits = [n >> 3 & 1, n >> 2 & 1, n >> 1 & 1, n & 1], me = y === T;
-        return `<li${me ? ' class="me"' : ''}><span class="ts-mini">${bits.map((v, k) => TS_EN[k][v]).join('')}<small>${TS_READ(n)}</small></span><p><b>${y[1]}${me ? ' <em>나</em>' : ''}</b><small>${y[2]}</small></p></li>`; }).join('')}</ul></details>`;
+        return `<li${me ? ' class="me"' : ''}><span class="ts-mini">${bits.map((v, k) => TS_EN[k][v]).join('')}<small>${TS_READ(n)}</small></span><p><b>${y[1]}${me ? ' <em>나</em>' : ''}</b><small>${y[2]}</small></p></li>`; }).join('')}</ul><button type="button" class="mt-sub-btn ts-tbl-save" data-t="${t}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>4×4 유형표 이미지 저장</button></details>`;
   }
   // 사분면: 사람마다 점 하나 (지도 2장: 감상×결, 곡×발견). pp = [[답, 색 번호, 이름]]
   const TS_MAPS = [[0, 3], [1, 2]];
@@ -5300,7 +5300,38 @@
     c.textAlign = 'center'; c.fillStyle = '#fff'; c.font = `500 26px ${SANS}`; c.globalAlpha = .75; c.fillText('숲별 기록장 · 취향 테스트', 540, 1312); c.globalAlpha = 1;
     mtSave(cv, '숲별취향지도.png');
   }
+  // 16유형표 4×4 이미지: 줄 = 감상·곡(LO LA SO SA), 칸 = 발견·결(MC MP NC NP), 내 유형은 강조
+  async function tsTableImage(t) {
+    const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const c = cv.getContext('2d'), SANS = CARD_SANS, TH = mtTheme();
+    try { await Promise.race([document.fonts.load('800 60px "Nanum Myeongjo"'), new Promise(r => setTimeout(r, 1500))]); } catch (err) { /* 기본 글씨 */ }
+    const g = c.createLinearGradient(0, 0, 1080, 1350); g.addColorStop(0, TH.a); g.addColorStop(0.6, TH.b); g.addColorStop(1, TH.c); c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
+    const st = c.createLinearGradient(0, 0, 1080, 0); st.addColorStop(0, TH.g1); st.addColorStop(0.5, TH.g2); st.addColorStop(1, TH.g3); c.fillStyle = st; c.fillRect(0, 0, 1080, 14);
+    c.textAlign = 'center'; c.fillStyle = '#fff';
+    c.font = `600 32px ${SANS}`; c.globalAlpha = .8; c.fillText('FOREST TASTE TYPES', 540, 90); c.globalAlpha = 1;
+    c.font = `800 64px "Nanum Myeongjo", serif`; c.fillText('숲별 취향 유형 16', 540, 172);
+    const my = t ? tsIdx(t) : -1, L = 146, T0 = 292, W = 212, H = 220, G = 10;
+    const two = (a, b) => `${TS_EN[a[0]][a[1]]}${TS_EN[b[0]][b[1]]}`;
+    c.font = `700 30px ${SANS}`; c.globalAlpha = .9;
+    [0, 1, 2, 3].forEach(j => { c.fillText(two([2, j >> 1], [3, j & 1]), L + j * (W + G) + W / 2, T0 - 26); });
+    c.textAlign = 'right'; [0, 1, 2, 3].forEach(i => { c.fillText(two([0, i >> 1], [1, i & 1]), L - 18, T0 + i * (H + G) + H / 2 + 10); }); c.globalAlpha = 1;
+    const wrap = (txt, max) => { if (c.measureText(txt).width <= max) return [txt]; const w = txt.split(' '); let best = [txt]; for (let k = 1; k < w.length; k++) { const a = w.slice(0, k).join(' '), b = w.slice(k).join(' '); if (Math.max(c.measureText(a).width, c.measureText(b).width) <= max) { best = [a, b]; if (c.measureText(a).width >= c.measureText(b).width) break; } } return best; };
+    for (let n = 0; n < 16; n++) {
+      const i = n >> 2, j = n & 3, x = L + j * (W + G), y = T0 + i * (H + G), me = n === my;
+      c.fillStyle = me ? '#fff' : 'rgba(255,255,255,.9)'; c.beginPath(); c.roundRect(x, y, W, H, 26); c.fill();
+      if (me) { c.strokeStyle = TH.g1; c.lineWidth = 8; c.stroke(); }
+      const code = [n >> 3 & 1, n >> 2 & 1, n >> 1 & 1, n & 1].map((v, k) => TS_EN[k][v]).join('');
+      c.textAlign = 'center'; c.fillStyle = TH.b; c.font = `800 46px ${SANS}`; c.fillText(code, x + W / 2, y + 66);
+      c.fillStyle = '#8A988F'; c.font = `500 22px ${SANS}`; c.fillText(TS_READ(n), x + W / 2, y + 98);
+      c.fillStyle = '#1B2B22'; c.font = `700 25px ${SANS}`; const ln = wrap(TS_TYPES[n][1], W - 28); ln.forEach((s2, k) => c.fillText(s2, x + W / 2, y + 150 + k * 34 - (ln.length - 1) * 10));
+      if (me) { c.fillStyle = TH.b; c.beginPath(); c.roundRect(x + W / 2 - 34, y - 18, 68, 36, 18); c.fill(); c.fillStyle = '#fff'; c.font = `700 22px ${SANS}`; c.fillText('나', x + W / 2, y + 8); }
+    }
+    c.textAlign = 'center'; c.fillStyle = '#fff'; c.font = `500 24px ${SANS}`; c.globalAlpha = .85;
+    c.fillText(TS_AX.map((a, k) => `${TS_EN[k][0]}·${TS_EN[k][1]} ${a[0].replace(/파$/, '')}·${a[1].replace(/파$/, '')}`).join('   '), 540, 1268);
+    c.globalAlpha = .7; c.font = `500 26px ${SANS}`; c.fillText('숲별 기록장 · 취향 테스트', 540, 1318); c.globalAlpha = 1;
+    mtSave(cv, '숲별취향유형표.png');
+  }
   function tsQuadBind() {
+    document.querySelectorAll('.ts-tbl-save').forEach(b => b.onclick = () => tsTableImage(b.dataset.t || ''));
     const so = document.getElementById('ts-st-off');
     if (so) so.onchange = () => { const o = boxRead(TS_KEY) || {}; if (!o.a) return; o.noStat = so.checked; boxWrite(TS_KEY, o); tsSend(so.checked ? '빼기' : o.a); const sec = so.closest('.ts-st'); if (sec) { sec.outerHTML = tsStatHtml(o.a); tsQuadBind(); } };
     document.querySelectorAll('.ts-code').forEach(cd => cd.onclick = ev => {
@@ -5576,35 +5607,36 @@
       const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = file.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('이미지를 저장했어요'); }, 'image/png');
   }
 
-  // 금빛 뱃지 선물: 관리자가 서명한 링크(#/gift?k=기념키&e=만료&s=서명)를 연 폰에 금빛 뱃지를 넣어요. 링크는 하루만 열려요
+  // 기념일 하루 더: 관리자가 서명한 링크(#/gift?k=기념키&e=만료&s=서명)를 연 폰은 24시간 동안 그 기념일처럼 숨은 숲이 나와요 (링크는 만든 뒤 하루 안에, 폰마다 한 번)
   const giftMsg = (k, e) => new TextEncoder().encode(`gift:${k}:${e}`);
   const annivByKey = k => { const m = /^an-(\d\d)(\d\d)-(\d{4})$/.exec(k || ''); if (!m) return null; const A = ANNIVS.find(x => x[0] === `${m[1]}-${m[2]}`); if (!A) return null; const y = +m[3], n = A[1] ? y - A[1] : 0;
-    return { k, d: `${y}-${m[1]}-${m[2]}`, ic: A[3], name: A[1] ? `${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]} ${n}주년` : A[2] }; };
+    return { k, d: `${y}-${m[1]}-${m[2]}`, ic: A[3], since: A[1] ? `${A[1]}.${m[1]}.${m[2]}` : '', name: A[1] ? `${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]} ${n}주년` : A[2] }; };
   async function giftLink(k) {
     const key = await crypto.subtle.importKey('jwk', { ...adminJwk(), kty: 'EC', crv: 'P-256', ext: true }, ECDSA, false, ['sign']);
     const e = String(Date.now() + 864e5), sg = b64u(await crypto.subtle.sign(SIGN, key, giftMsg(k, e)));
     return location.origin + location.pathname + `#/gift?k=${k}&e=${e}&s=${sg}`;
   }
   function giftView() { return `<a class="back" href="#/days">‹ 함께한 기념일</a><section class="gift-box" id="gift-box"><p class="empty">선물 상자를 여는 중…</p></section>`; }
-  const giftJust = new Set();  // 이번에 막 받은 선물 (화면이 두 번 그려져도 '도착했어요'로)
-  async function giftCheck() {
+    async function giftCheck() {
     const box = document.getElementById('gift-box'); if (!box) return;
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), k = q.get('k'), e = q.get('e') || '', sg = q.get('s') || '', A = annivByKey(k);
     let ok = false;
     try { if (A && /^\d+$/.test(e) && crypto.subtle) for (const c of adminKeys()) { const pub = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: c.x, y: c.y, ext: true }, ECDSA, false, ['verify']); if (await crypto.subtle.verify(SIGN, pub, unb64u(sg), giftMsg(k, e))) { ok = true; break; } } } catch (err) { ok = false; }
-    const o = anvStore(), had = !!(o.bdg && o.bdg[k] && o.bdg[k].gold);
-    if (!ok) { box.innerHTML = `<p class="empty">선물 링크가 올바르지 않아요.</p>`; return; }
-    if (!had && +e < Date.now()) { box.innerHTML = `<p class="empty">선물 링크가 만료됐어요. 보내 준 분께 새 링크를 부탁해 주세요.</p>`; return; }
-    if (!had) giftJust.add(k);
-    if (!had) { o.bdg = { ...(o.bdg || {}), [k]: { ...((o.bdg || {})[k] || {}), ic: A.ic, name: A.name, d: A.d, gold: 1, gift: 1 } }; anvSave(o); }
-    box.innerHTML = `<div class="gift-card"><p class="gift-k">FOR YOU</p><div class="gift-badge">${A.ic}</div><h1>금빛 ${esc(A.name)} 뱃지</h1>
-      <p>${had && !giftJust.has(k) ? '이미 이 폰에 있는 뱃지예요.' : '숲에서 보낸 선물이 도착했어요. 이 폰에 뱃지를 넣어 두었어요.'}</p>
-      <a class="mt-go" href="#/card">숲별 카드에 달기</a></div>`;
+    if (!ok) { box.innerHTML = `<p class="empty">링크가 올바르지 않아요.</p>`; return; }
+    const o = anvStore(), r = o.replay, now = Date.now(), gold = !!(o.bdg && o.bdg[k] && o.bdg[k].gold);
+    const go = `<a class="mt-go" href="#/">숨은 숲 찾으러 가기</a>`, card = t => `<div class="gift-card"><p class="gift-k">FOR YOU</p><div class="gift-badge">${A.ic}</div><h1>${esc(A.name)}</h1>${t}</div>`;
+    if (gold) { box.innerHTML = card(`<p>이미 금빛 뱃지를 모았어요.</p><a class="mt-go" href="#/card">숲별 카드 보기</a>`); return; }
+    if (r && r.k === k && r.until > now) { box.innerHTML = card(`<p>오늘은 ${esc(A.name)} 숨은 숲이 나타나는 날이에요.<br>${new Date(r.until).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}까지 찾을 수 있어요.</p>${go}`); return; }
+    if ((o.replayed || {})[k]) { box.innerHTML = card(`<p>이미 한 번 열린 링크예요.</p>`); return; }
+    if (+e < now) { box.innerHTML = card(`<p>링크가 만료됐어요. 보내 준 분께 새 링크를 부탁해 주세요.</p>`); return; }
+    o.replay = { k, until: now + 864e5 }; o.replayed = { ...(o.replayed || {}), [k]: now }; o.seen = ''; anvSave(o);
+    box.innerHTML = card(`<p>숲에서 하루를 선물했어요.<br>지금부터 24시간 동안 ${esc(A.name)} 숨은 숲이 나타나요. 다 찾으면 금빛 뱃지예요.</p><a class="mt-go" href="#/" id="gift-go">숨은 숲 찾으러 가기</a>`);
+    const g = document.getElementById('gift-go'); if (g) g.onclick = ev => { ev.preventDefault(); location.replace(location.pathname + '#/'); location.reload(); };
   }
   document.addEventListener('click', async ev => {
     const b = ev.target.closest('.gift-make'); if (!b || !isAdmin()) return;
     b.disabled = true;
-    try { share(`🎁 숲별 기록장 선물이에요 (하루 안에 열어 주세요)`, await giftLink(b.dataset.k)); } catch (err) { toast('선물 링크를 만들지 못했어요'); }
+    try { share(`🎁 숲별 기록장에서 보내는 선물이에요 (하루 안에 열어 주세요)`, await giftLink(b.dataset.k)); } catch (err) { toast('선물 링크를 만들지 못했어요'); }
     b.disabled = false;
   });
   const routes = {
@@ -7998,7 +8030,8 @@
         <p>이 폰에 자동으로 모여요. 기념일에 들르면 여기에 남아요.</p>
       </div>
       <div class="dy-hero">${card.since ? `<small>포레스텔라와 함께한 지</small><b>D+${ddayOf(card.since).toLocaleString()}</b>` : `<small>숲별 기록장과 함께한 지</small><b>${fd}일</b>`}${annivToday() ? `<span>오늘은 ${esc(annivToday().name)}</span>${cheerBtn(annivToday())}` : ''}</div>
-      ${(() => { const q = (new URLSearchParams(location.hash.split('?')[1] || '').get('m') || '').replace(/^(\d\d)(\d\d)$/, '$1-$2'); const md = q || (annivToday() && !annivToday().my ? today.slice(5) : ''); return md ? annivMemory(md) : ''; })()}
+      ${(() => { const q = (new URLSearchParams(location.hash.split('?')[1] || '').get('m') || '').replace(/^(\d\d)(\d\d)$/, '$1-$2'); const A = annivToday(), md = q || (A && !A.my ? A.d.slice(5) : ''); return md ? annivMemory(md) : ''; })()}
+      ${isAdmin() ? (() => { const y = +today.slice(0, 4), rec = ANNIVS.map(x => [`${y}-${x[0]}`, x]).filter(([d]) => d <= today && ds(d, today) <= 30); return rec.length ? `<section class="mg"><h2 class="mg-h">🎁 기념일 하루 더 열어 주기 <small>관리자만 보여요</small></h2><p class="mt-sub">링크를 받은 폰은 24시간 동안 그 기념일처럼 숨은 숲이 나와요. 링크는 만든 뒤 하루 안에 열어야 하고, 폰마다 한 번만 돼요.</p>${rec.map(([d, x]) => `<button type="button" class="mt-sub-btn gift-make" data-k="an-${x[0].replace('-', '')}-${y}">${x[3]} ${dot(d)} ${esc(x[2])} 링크 만들기</button>`).join('')}</section>` : ''; })() : ''}
       <section class="mg"><h2 class="mg-h">나의 기념일</h2><div class="dy-list">${mine.map(x => x[1]).join('')}</div></section>
       <section class="mg"><h2 class="mg-h">포레스텔라 기념일</h2><div class="dy-list">${group.map(x => x[1]).join('')}</div></section>`;
   }
@@ -8021,9 +8054,7 @@
     const xs = M.m ? (data.xFeed || []).filter(p => p.cat === '생일' && p.m.includes(M.m)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4) : [];
     // 그해 그날 마지막까지 함께 축하한 숲별 수 (기능 생긴 2026년부터, 지난 날·오늘만)
     const cheers = []; for (let y = +todayIso().slice(0, 4); y >= 2026; y--) { const d = `${y}-${md}`; if (d > todayIso()) continue; const n = anvCheerN(`an-${md.replace('-', '')}-${y}`); if (n) cheers.push(`<div class="dy-row"><span class="dy-ic">${A[3]}</span><span class="dy-t"><b>${y}${A[1] ? ` · ${y - A[1]}주년` : ''}</b><small>${d === todayIso() ? '오늘 지금까지' : '그날'} <b>${n.toLocaleString()}명</b>이 함께 축하했어요</small></span></div>`); }
-    const gy = (() => { for (let y = +todayIso().slice(0, 4); y >= 2026; y--) if (`${y}-${md}` <= todayIso()) return y; return 0; })();
-    const gift = isAdmin() && gy ? `<button type="button" class="mt-sub-btn gift-make" data-k="an-${md.replace('-', '')}-${gy}">🎁 ${gy} 금빛 뱃지 선물 링크 만들기 <small>관리자만 보여요</small></button>` : '';
-    const html = sec('함께 축하한 숲별', cheers.join('') + gift)
+    const html = sec('함께 축하한 숲별', cheers.join(''))
       + sec('그날의 기록', evs.map(e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`).join(''))
       + sec(M.evq ? '결승 무대 곡' : '그때 부른 곡', songs.length ? `<div class="chips wrap">${songs.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>` : '')
       + sec('영상', vids.length ? `<div class="stack x-list">${vids.map(ytCard).join('')}</div>` : '')
@@ -8039,7 +8070,7 @@
     const d = todayIso(), a = ANNIVS.find(x => x[0] === d.slice(5));
     const sc = ((typeof card !== 'undefined' && card.since) || '').slice(0, 10);
     if (!a && sc && sc.slice(5) === d.slice(5) && sc < d) { const n = +d.slice(0, 4) - +sc.slice(0, 4); return { d, ic: '🌱', name: `입덕 ${n}주년`, since: sc.replace(/-/g, '.'), k: 'an-my-' + d.slice(0, 4), my: true }; }
-    if (!a) return null;
+    if (!a) { const r = anvStore().replay, B = r && r.until > Date.now() && annivByKey(r.k); return B || null; }
     const y = +d.slice(0, 4), n = a[1] ? y - a[1] : 0;
     const name = a[1] ? `${a[2] === '데뷔' || a[2] === '결성' ? '포레스텔라 ' + a[2] : a[2]} ${n}주년` : a[2];
     return { d, ic: a[3], name, since: a[1] ? `${a[1]}.${a[0].replace('-', '.')}` : '', k: 'an-' + a[0].replace('-', '') + '-' + y };
