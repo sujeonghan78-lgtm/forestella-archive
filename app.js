@@ -5482,11 +5482,12 @@
   function mtDexRecord(list, R, meAt) {
     if (R.none || list.length < 2) return [];
     const o = mtDex(), day = todayIso(), who = list.filter((_, i) => i !== meAt).map(p => p.n), w = who.slice(0, 2).join(', ') + (who.length > 2 ? L3(` 외 ${who.length - 2}명`, ` +${who.length - 2}`, ` ほか${who.length - 2}人`) : '');
-    const keys = [mtTierKey(list, R), ...(R.eggs || [])].filter(k => mtDexInfo(k)), fresh = keys.filter(k => !o[k]);
+    const aKey = list.length === 2 ? 'a' + MT_TYPES.findIndex(t => R.pct >= t[0]) : '';  // 둘 다 테스트했어도 % 칸도 같이 모여요
+    const keys = [mtTierKey(list, R), aKey, ...(R.eggs || [])].filter(k => mtDexInfo(k)), fresh = keys.filter(k => !o[k]);
     fresh.forEach(k => { o[k] = { d: day, w }; });
     if (list.length > 2 && meAt >= 0) (R.pe || []).filter(x => x[0] === meAt || x[1] === meAt).forEach(([i, j, pct, eg]) => {
       const two = [list[i], list[j]], other = list[i === meAt ? j : i].n;
-      [mtTierKey(two, { pct }), ...eg].filter(k => mtDexInfo(k) && !o[k]).forEach(k => { o[k] = { d: day, w: other }; fresh.push(k); });
+      [mtTierKey(two, { pct }), 'a' + MT_TYPES.findIndex(t => pct >= t[0]), ...eg].filter(k => mtDexInfo(k) && !o[k]).forEach(k => { o[k] = { d: day, w: other }; fresh.push(k); });
     });
     const ty = new Set(Array.isArray(o.ty) ? o.ty : []), n0 = ty.size; list.forEach(p => { if (p.t) ty.add(TS_TYPES.indexOf(tsType(p.t))); }); ty.delete(-1);
     if (fresh.length || ty.size !== n0) { o.ty = [...ty]; boxWrite(MT_DEX, o); }
@@ -5543,14 +5544,13 @@
     const close = () => { b.classList.remove('show'); setTimeout(() => b.remove(), 300); };
     b.querySelector('.mt-pop-x').onclick = close; b.querySelector('.mt-go').addEventListener('click', close); b.onclick = ev => { if (ev.target === b) close(); };
   }  // 이 셋은 결과 이름 자리를 바꿔요
-  const mtGen = s => !s ? -1 : s < '2021-11' ? 0 : s < '2022-11' ? 1 : s < '2024-07' ? 2 : s < '2025-05' ? 3 : 4;  // 원년·1기·2기·2.5기·3기
   function mtEggs(list, pct) {
     const e = [], same = (x, y) => x.length === y.length && x.every(v => y.includes(v));
     if (list.length === 2) {
       const [a, b] = list, ci = k => mtInter(a[k], b[k]).length;
       const tAx = a.t && b.t ? tsSameAx(a.t, b.t) : -1;
       if (tAx === 4 && a.t[16] === b.t[16] && a.m.length && same(a.m, b.m) && ci('h') >= 10 && ci('h') / Math.max(a.h.length, b.h.length) >= 0.8 && ci('g') >= 3) e.push('love');
-      if (!['f', 'w', 'h', 'g', 'm'].some(k => ci(k)) && tAx <= 0) e.push('zero');
+      if (!['f', 'w', 'h', 'g', 'm'].some(k => ci(k)) && tAx <= 0 && !(a.s && b.s && a.s.slice(0, 4) === b.s.slice(0, 4))) e.push('zero');  // 입덕한 해까지 달라야
       if (ci('g') >= 10) e.push('mate');
       if (ci('w') >= 3) e.push('wish');
       if (a.s && b.s) {
