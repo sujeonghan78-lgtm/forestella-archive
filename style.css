@@ -2253,3 +2253,4 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mt-ed .mt-merge { margin-top: 12px; }
 .mt-res-go { display: flex; justify-content: center; margin-top: 14px; text-decoration: none; }
 .mt-res-wait { text-align: center; margin-top: 12px; }
+.mt-cap { grid-column: 1 / -1; margin: 0 0 4px; font-size: 12.5px; color: #B4541A; line-height: 1.5; }
