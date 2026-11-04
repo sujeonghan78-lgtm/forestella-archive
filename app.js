@@ -5215,9 +5215,20 @@
     return `<section class="ts-st"><h2 class="ts-sum-h">숲별 통계 <small>${n.toLocaleString()}명 참여</small></h2>
       <p class="ts-st-me">${L3(`나와 같은 <b>${code(my)}</b>는 숲별의 <b>${myP}%</b> · 16유형 중 <b>${myR}위</b>`, `<b>${code(my)}</b> like me: <b>${myP}%</b> of fans · <b>#${myR}</b> of 16`, `私と同じ<b>${code(my)}</b>は全体の<b>${myP}%</b>・16タイプ中<b>${myR}位</b>`)}${myP <= 4 ? `<em>${L3('희귀 유형', 'Rare type', 'レアタイプ')}</em>` : ''}</p>
       <ol class="ts-st-rank">${list.map(k => bar(k, rank[0])).join('')}</ol>
+      <h3>${L3('숲별 취향 지도', 'Fan taste map', 'みんなの好みマップ')}</h3>${tsMapHtml(cnt, n, my)}
       <h3>축마다 숲별은</h3>${axes}
       <h3>덕질 스타일</h3><div class="ts-st-sty">${TS_STYLE.o.map(([, nm], i) => `<span${+t[16] === i ? ' class="me"' : ''}><b>${pc(sc[i])}%</b>${nm}</span>`).join('')}</div>
       ${opt}</section>`;
+  }
+  // 16유형 4×4 지도: 줄 = 감상·곡, 칸 = 발견·결. 진할수록 많이 모인 유형
+  function tsMapHtml(cnt, n, my) {
+    const mx = Math.max(1, ...cnt), sh = s => s.replace(/파$/, '');
+    const rl = r => `${sh(TS_AX[0][r >> 1])}<br>${sh(TS_AX[1][r & 1])}`, cl = c => `${sh(TS_AX[2][c >> 1])}<br>${sh(TS_AX[3][c & 1])}`;
+    const cell = k => { const a = cnt[k] / mx, p = Math.round(cnt[k] / n * 100);
+      return `<button type="button" class="tsm-c${k === my ? ' me' : ''}${cnt[k] ? '' : ' none'}" style="--a:${(0.08 + a * 0.82).toFixed(2)}" data-k="${k}" aria-label="${esc(TS_TYPES[k][1])} ${p}%"><span>${TS_TYPES[k][0]}</span><b>${p}%</b>${k === my ? `<em>${L3('나', 'Me', '私')}</em>` : ''}</button>`; };
+    return `<div class="tsm"><i></i>${[0, 1, 2, 3].map(c => `<small class="tsm-h">${cl(c)}</small>`).join('')}
+      ${[0, 1, 2, 3].map(r => `<small class="tsm-h tsm-r">${rl(r)}</small>${[0, 1, 2, 3].map(c => cell(r * 4 + c)).join('')}`).join('')}</div>
+      <p class="tsm-info">${L3('칸을 누르면 어떤 유형인지 보여요. 진할수록 숲별이 많이 모인 곳이에요', 'Tap a square to see the type. Darker means more fans', 'マスを押すとタイプが見えます。濃いほど多い')}</p>`;
   }
   function tsQuizHtml() {
     const n = tsSt.i, qi = TS_ORDER[n], tot = TS_ORDER.length;
@@ -5359,6 +5370,12 @@
   function tsQuadBind() {
     document.querySelectorAll('.ts-tbl-save').forEach(b => b.onclick = () => tsTableImage(b.dataset.t || ''));
     const so = document.getElementById('ts-st-off');
+    document.querySelectorAll('.tsm').forEach(m => m.onclick = ev => {
+      const b = ev.target.closest('.tsm-c'), info = m.nextElementSibling; if (!b || !info) return;
+      const k = +b.dataset.k, cd = [k >> 3 & 1, k >> 2 & 1, k >> 1 & 1, k & 1].map((v, i) => TS_EN[i][v]).join('');
+      m.querySelectorAll('.tsm-c').forEach(x => x.classList.toggle('sel', x === b));
+      info.innerHTML = `${TS_TYPES[k][0]} <b>${cd} ${esc(TS_TYPES[k][1])}</b> · ${b.querySelector('b').textContent}<br><small>${esc(TS_TYPES[k][2])}</small>`;
+    });
     if (so) so.onchange = () => { const o = boxRead(TS_KEY) || {}; if (!o.a) return; o.noStat = so.checked; boxWrite(TS_KEY, o); tsSend(so.checked ? '빼기' : o.a); const sec = so.closest('.ts-st'); if (sec) { sec.outerHTML = tsStatHtml(o.a); tsQuadBind(); } };
     document.querySelectorAll('.ts-code').forEach(cd => cd.onclick = ev => {
       const b = ev.target.closest('button'), tip = cd.nextElementSibling; if (!b || !tip) return;
