@@ -12,6 +12,7 @@
     // 아래 탭 · 더보기
     '홈': ['Home', 'ホーム'], '곡': ['Songs', '曲'], '공식 X': ['Official X', '公式X'], '유튜브': ['YouTube', 'YouTube'], '더보기': ['More', 'その他'],
     '‹ 더보기': ['‹ More', '‹ その他'], '‹ 홈': ['‹ Home', '‹ ホーム'], '‹ 보관함': ['‹ Saved', '‹ 保存'], '‹ 관리자 기기': ['‹ Admin', '‹ 管理者'],
+    '숲별 이야기': ['Fan stories', 'ファンの話'], '💬 숲별 이야기': ['💬 Fan stories', '💬 ファンの話'], '모두 보기 ›': ['See all ›', 'すべて見る ›'],
     '새 소식': ['What\'s new', 'お知らせ'], '🆕 새 소식': ['🆕 What\'s new', '🆕 お知らせ'], '팬 제보 현황': ['Fan reports', 'ファン情報'], '일정 등록': ['Add a schedule', '予定を登録'], '＋ 일정 등록': ['＋ Add a schedule', '＋ 予定を登録'],
     '의견': ['Feedback', 'ご意見'], '💬 의견 남기기': ['💬 Leave feedback', '💬 ご意見を送る'], '보관함': ['Saved', '保存'], '숲별 카드': ['Soopbyeol card', 'スッピョルカード'], '공연·행사': ['Shows & events', '公演・イベント'],
     '연표': ['Timeline', '年表'], '멤버 개인 활동': ['Members', 'メンバー個人活動'], '이 사이트에 대해': ['About this site', 'このサイトについて'], '콘서트': ['Concerts', 'コンサート'],
@@ -157,6 +158,33 @@
     '다들 아는 대표곡과 큰 공연장 무대를 좋아해요': ['Likes the well-known hits and big-venue stages', 'みんなが知る代表曲と大会場ステージが好き'], '숨은 명곡과 소극장·행사 무대를 찾아다녀요': ['Seeks out hidden gems and small-venue stages', '隠れ名曲と小劇場・イベントを探し回る'],
     '클래식 크로스오버와 외국어 곡에 끌려요': ['Drawn to classical crossover and foreign-language songs', 'クラシカル・クロスオーバーと外国語曲に惹かれる'], '록·팝 편곡과 한국어 곡을 더 자주 들어요': ['Listens more to rock/pop arrangements and Korean songs', 'ロック・ポップ編曲と韓国語曲をよく聴く'],
     '취향 테스트 메이트': ['Taste-test mates', 'テスト仲間'], '최애곡 메이트': ['Favorite-song mates', '最推し曲仲間'], '플레이리스트 메이트': ['Playlist mates', 'プレイリスト仲間'], '직관 메이트': ['Concert mates', '現場仲間'], '소취 동지': ['Wish-song buddies', '聴きたい曲の同志'], '같은 멤버 러버': ['Same-member lovers', '同じ推しメン'],
+    '플레이리스트를 바꿔 끼워도 아무도 모를 사이': ['You could swap playlists and nobody would notice', 'プレイリストを入れ替えても誰も気づかない仲'],
+    '옆자리 예약 메이트': ['Reserved-seat mates', '隣の席予約仲間'], '티켓팅 성공하면 옆자리는 무조건 이 사람': ['Win the ticketing and the seat next to you is theirs', 'チケットが取れたら隣の席は絶対この人'],
+    '같은 바람 맞는 사이': ['Same-breeze friends', '同じ風に吹かれる仲'], '같은 무대에서 같이 소름 돋는 사이': ['You get chills at the same stages', '同じステージで一緒に鳥肌が立つ仲'],
+    '겹치는 곡엔 같이 환호, 안 겹치는 곡은 영업 타임': ['Cheer together on shared songs, recommend the rest', '重なる曲では一緒に歓声、重ならない曲は布教タイム'],
+    '내가 모르는 명곡은 다 이 사람이 알아요': ['They know all the gems you don’t', '私の知らない名曲は全部この人が知ってる'],
+    '도토리 친구': ['Acorn buddies', 'どんぐり友だち'], '작지만 확실한 공통점이 있어요': ['Small but sure things in common', '小さいけど確かな共通点'],
+    '낙엽 친구': ['Fallen-leaf friends', '落ち葉友だち'], '가끔 겹치는 곡에 깜짝 반가운 사이': ['Delighted when a song overlaps now and then', 'たまに重なる曲にびっくり嬉しい仲'],
+    '달라서 더 재밌어요. 덕질 영역이 두 배': ['Different is more fun. Double the fandom', '違うからもっと楽しい。推し活の範囲が2倍'],
+    '다른 은하 숲별': ['Fans from another galaxy', '別の銀河のスッピョル'], '같은 포레, 다른 은하. 만나면 할 얘기가 산더미': ['Same Forestella, different galaxy. So much to talk about', '同じフォレ、違う銀河。話すことが山ほど'],
+    '한마음 숲': ['One-heart forest', '一心の森'], '다 같이 같은 곡에서 울고 웃는 모임': ['Laughing and crying at the same songs together', 'みんなで同じ曲で泣いて笑う集まり'],
+    '어느 공연을 가도 단체 사진 각': ['A group photo at every show', 'どの公演でも集合写真'], '떼창 구간에서 목소리가 딱 맞는 조합': ['Voices that match at every sing-along', '合唱パートで声がぴったり合う組み合わせ'],
+    '최애곡 돌려 듣기만 해도 하루가 가요': ['Swapping favorites takes a whole day', '最愛曲を回し聴きするだけで1日が終わる'], '취향이 다 달라서 단톡방이 조용할 날이 없어요': ['Everyone differs, so the group chat is never quiet', '好みが全員違うのでグループチャットが静かな日はない'],
+    '천생연분': ['Soulmates', '運命の相手'], '0% 평행우주 숲별': ['0% Parallel-universe fans', '0% パラレルワールドのスッピョル'], '평행우주 숲별': ['Parallel-universe fans', 'パラレルワールドのスッピョル'],
+    '200% 천생연분': ['200% Soulmates', '200% 運命の相手'], '취향도, 덕질 스타일도, 최애 멤버도, 플레이리스트도, 객석까지 같아요': ['Same taste, same style, same favorite member, same playlist, even the same seats', '好みも推し活スタイルも最推しもプレイリストも客席まで同じ'], '모든 게 다 같아야 열려요': ['Opens only if everything matches', 'すべてが同じなら開きます'],
+    '0% 평행우주 숲별': ['0% Parallel-universe fans', '0% パラレルワールドのスッピョル'], '같은 포레를 좋아하는데 어떻게 하나도 안 겹치죠?': ['Same Forestella, yet nothing overlaps. How?', '同じフォレが好きなのに、どうして何も重ならないの?'], '아무것도 안 겹치면…?': ['If nothing overlaps…?', '何も重ならなかったら…?'],
+    '직관 전우': ['Concert comrades', '現場の戦友'], '같은 객석에서 10번 넘게 함께했어요': ['Together in the audience 10+ times', '同じ客席で10回以上一緒でした'], '같은 객석에 자주 있었다면': ['If you were often in the same audience', '同じ客席によくいたなら'],
+    '모임 전원이 같은 취향 유형이에요': ['Everyone in the group has the same type', '全員が同じ好みタイプです'], '모임 모두가 같은 유형이면': ['If everyone has the same type', '全員が同じタイプなら'],
+    '소취 동맹': ['Wish-song alliance', '聴きたい曲同盟'], '이 곡 불러 줄 때까지 같이 기다려요': ['Waiting together until they sing it', 'この曲を歌ってくれるまで一緒に待とう'], '듣고 싶은 곡이 같다면': ['If you wish for the same songs', '聴きたい曲が同じなら'],
+    '기수 동기': ['Same-generation fans', '同期スッピョル'], '같은 시기에 입덕한 숲별 동기예요': ['You became fans in the same era', '同じ時期にファンになった同期です'], '입덕한 때가 비슷하면': ['If you became fans around the same time', 'ファンになった時期が近いなら'],
+    '숲별 선후배': ['Senior & junior fans', '先輩後輩スッピョル'], '입덕 차이 5년 이상! 선배님, 그때 얘기 해 주세요': ['5+ years apart! Senpai, tell me about those days', 'ファン歴の差5年以上! 先輩、あの頃の話を聞かせて'], '입덕 차이가 많이 나면': ['If your fan years are far apart', 'ファン歴の差が大きいなら'],
+    '4인 4색': ['Four colors of four', '4人4色'], '최애 멤버를 모으니 네 명이 다 모였어요. 우리 모임 포레스텔라 결성!': ['Your favorite members add up to all four. Forestella, assemble!', '最推しを集めたら4人そろいました。私たちの集まりでフォレステラ結成!'], '모임 최애 멤버를 모아 보면': ['If you gather everyone’s favorite member', 'みんなの最推しを集めたら'],
+    '단체 관람단': ['Group audience', '団体観覧団'], '모임 전원이 같이 간 공연이 있어요': ['There’s a show everyone went to', '全員が一緒に行った公演があります'], '모두 같은 객석에 있었다면': ['If everyone was in the same audience', '全員が同じ客席にいたなら'],
+    '같은 날 입덕한 운명': ['Same fan day, destiny', '同じ日にファンになった運命'], '입덕한 날이 똑같아요. 이건 운명이에요': ['You became fans on the very same day. It’s fate', 'ファンになった日がまったく同じ。これは運命'],
+    '딱 반반 숲별': ['Exactly-half fans', 'ちょうど半々のスッピョル'], '정확히 50%. 반은 같고 반은 달라요': ['Exactly 50%. Half same, half different', 'ぴったり50%。半分同じで半分違う'],
+    '럭키 77': ['Lucky 77', 'ラッキー77'], '정확히 77%! 오늘 뭔가 좋은 일이 생길 거예요': ['Exactly 77%! Something good is coming today', 'ぴったり77%! 今日はいいことがありそう'],
+    '혹시 같은 사람이 폰 두 개 쓰는 거 아니죠?': ['Wait, are you one person with two phones?', 'もしかして同じ人がスマホ2台使ってる?'], '딱 하나 달라서 수다가 끝이 안 나요': ['Just one difference, so the chat never ends', 'ひとつだけ違うからおしゃべりが終わらない'],
+    '반은 맞장구, 반은 "오 그 곡 뭐야?"': ['Half "same!", half "ooh, what song is that?"', '半分は相づち、半分は「その曲なに?」'], '취향은 정반대인데 이상하게 잘 통해요': ['Opposite tastes, yet you click', '好みは正反対なのに不思議と気が合う'],
     '거울 숲별': ['Mirror fans', '鏡のスッピョル'], '취향 축 4개가 다 같아요. 서로의 플레이리스트를 믿어도 돼요': ['All 4 axes match. You can trust each other\'s playlists', '好みの軸が4つとも同じ。お互いのプレイリストを信じてOK'],
     '단짝 숲별': ['Best-buddy fans', '親友スッピョル'], '거의 다 맞고 하나만 달라서 대화가 끊이지 않아요': ['Almost all match, one differs, so the talk never ends', 'ほとんど同じで一つだけ違うから話が尽きない'],
     '서로 채워주는 짝꿍': ['Complementary pair', '補い合うペア'], '반은 같고 반은 달라서 서로 새 곡을 알려 줘요': ['Half same, half different: you share new songs', '半分同じで半分違うから新しい曲を教え合える'],
@@ -224,6 +252,7 @@
     if ((m0 = k.match(/^(\d+)곡 중 (\d+)곡 맞혔어요$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}曲中${m0[2]}曲当たり` : `${m0[2]} of ${m0[1]} songs right`);
     if ((m0 = k.match(/^셋리 예측 (\d+)곡 중 (\d+)곡 맞혔어요$/))) return s.replace(k, lang === 'ja' ? `セトリ予想 ${m0[1]}曲中${m0[2]}曲当たり` : `Setlist guess: ${m0[2]} of ${m0[1]} right`);
     if ((m0 = k.match(/^고른 곡 (\d+)곡$/))) return s.replace(k, lang === 'ja' ? `選んだ曲 ${m0[1]}曲` : `${m0[1]} picked`);
+    if ((m0 = k.match(/^최근 (\d\d\.\d\d\.\d\d)$/))) return s.replace(k, lang === 'ja' ? `最近 ${m0[1]}` : `Latest ${m0[1]}`);
     if ((m0 = k.match(/^(\d+)점$/))) return s.replace(k, lang === 'ja' ? m0[1] + '点' : m0[1] + ' pts');
     if ((m0 = k.match(/^(\d{4})년 (\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? `${m0[1]}年${m0[2]}月` : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m0[2]-1] + ' ' + m0[1]);
     if ((m0 = k.match(/^(\d{1,2})월$/))) return s.replace(k, lang === 'ja' ? m0[1] + '月' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m0[1] - 1]);

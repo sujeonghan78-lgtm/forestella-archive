@@ -18,11 +18,11 @@
     const d = todayIso(), md = d.slice(5), y = +d.slice(0, 4), past = x => x && x.slice(5) === md && x.slice(0, 4) < d.slice(0, 4), n = x => y - +x.slice(0, 4);
     const dot = x => x.split('-').map(Number).join('.');
     const A = ANNIVS.find(a => a[0] === md && a[1]);
-    if (A) return { ic: A[3], d: `${A[1]}.${dot(md)}`, t: `${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]} ${y - A[1]}주년`, href: `#/days?m=${md.replace('-', '')}` };
+    if (A) return { ic: A[3], d: `${A[1]}.${dot(md)}`, t: anvNameL(`${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]} ${y - A[1]}주년`), href: `#/days?m=${md.replace('-', '')}` };
     const al = (data.albums || []).filter(a => past(a.date) && !/방송 음원/.test(a.kind || '')).sort((a, b) => !!a.member - !!b.member || a.date.localeCompare(b.date))[0];
-    if (al) return { ic: '💿', d: dot(al.date), t: `${al.member ? `[${al.member.slice(1)}] ` : ''}'${al.name}' 발매 ${n(al.date)}주년`, href: albHref(al) };
+    if (al) return { ic: '💿', d: dot(al.date), t: `${al.member ? `[${al.member.slice(1)}] ` : ''}'${al.name}' ${L3(`발매 ${n(al.date)}주년`, `release · ${n(al.date)} yr`, `発売${n(al.date)}周年`)}`, href: albHref(al) };
     const to = data.tours.find(x => past(x.dates[0]));
-    if (to) return { ic: '🎫', d: dot(to.dates[0]), t: `${to.name} 첫 공연 ${n(to.dates[0])}주년`, href: `#/tour/${encodeURIComponent(to.id)}` };
+    if (to) return { ic: '🎫', d: dot(to.dates[0]), t: `${to.name} ${L3(`첫 공연 ${n(to.dates[0])}주년`, `first show · ${n(to.dates[0])} yr`, `初公演${n(to.dates[0])}周年`)}`, href: `#/tour/${encodeURIComponent(to.id)}` };
     return null;
   }
   // 오늘이 포레스텔라 기념일이면 홈 제목 밑에 작은 글씨 한 줄 (예: 2018.11.3 'Mosaic' 발매 8주년)
@@ -164,7 +164,7 @@
   const boxWrite = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (err) { /* 저장 못 해도 괜찮아요 */ } if (KV_KEYS.includes(k)) kvTouch(); };
   // 이어 쓰기에 같이 싣는 이 폰 설정: 숲별 카드·카드 슬롯·나만 저장한 가사·준비물·비밀글 열쇠·취향 테스트 답 (사진·스티커는 빼요)
   // 보관함 곡 칸(box.s)에 'kv:키:JSON'으로 넣어서 Apps Script를 안 바꾸고 따라가요
-  const KV_KEYS = ['sb-card', 'sb-card-slots', 'sb-lyrics', 'sb-ready', 'sb-sec-key', 'sb-taste', 'sb-mt-rooms'];
+  const KV_KEYS = ['sb-card', 'sb-card-slots', 'sb-lyrics', 'sb-ready', 'sb-sec-key', 'sb-taste', 'sb-mt-rooms', 'sb-mt-dex'];
   const kvStrip = (k, v) => k === 'sb-card-slots' && Array.isArray(v) ? v.map(x => x && { ...x, photo: null, stk: [] }) : v;
   // 시트(보관함)에는 이름+숫자로 잠가서 'kvx:암호문' 한 줄로 올려요 (시트를 열어도 내용이 안 보여요). 예전 'kv:' 줄도 읽어요
   const kvB64 = u8 => { let t = ''; for (let i = 0; i < u8.length; i += 8192) t += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return btoa(t); };
@@ -4357,7 +4357,7 @@
           ${WAIT_ON() ? item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? String(goIds().length) : '') : ''}
           ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드')}
           ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국')}
-          ${isAdmin() ? item('#/match', '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>', '취향 궁합') : ''}`)}
+          ${matchOpen() ? item('#/match', '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>', '취향 궁합') : ''}`)}
         ${grp('아카이브', `
           ${item('#/concerts', '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', '콘서트')}
           ${item('#/local', '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', '공연·행사')}
@@ -4940,6 +4940,7 @@
     ['pins', '자주 쓰는 메뉴', () => { const g = pinsGot(); return `<section class="block pin-box home-pins"><div class="pin-h"><b>자주 쓰는 메뉴</b><a class="link-btn" href="#/more">${g.length ? '바꾸기' : '고르기'}</a></div>${g.length ? pinTiles(g) : '<p class="src-note">더보기에서 ☆를 눌러 메뉴를 골라 주세요.</p>'}</section>`; }, true],
     ['random', '오늘의 랜덤 무대', () => homeRandom()],
     ['members', '멤버별 활동', () => homeMembers()],
+    ['taste', '취향 테스트', () => homeTaste()],
     ['story', '숲별 이야기', () => homeStory()],
     ['wish', '듣고 싶은 곡 TOP 5', () => homeWish()],
     ['videos', '유튜브 새 영상', () => homeVideos()],
@@ -4956,6 +4957,15 @@
     if (!all.length) return '';
     return `<section class="block home-story"><div class="block-head"><h2 class="h2">💬 숲별 이야기${fresh.size ? ` <b class="news-cnt">NEW ${fresh.size}</b>` : ''}</h2><a class="more" href="#/story">모두 보기 ›</a></div>
       <div class="stack home-story-list">${all.slice(0, 3).map(l => storyRow(l, fresh)).join('')}</div></section>`;
+  }
+  // 취향 테스트: 안 했으면 해 보기, 했으면 내 유형 + 궁합 보기
+  const MATCH_OPEN = false;  // true면 모두에게 열려요 (false면 관리자 기기만)
+  const matchOpen = () => MATCH_OPEN || isAdmin();
+  function homeTaste() {
+    if (!matchOpen()) return '';
+    const t = tsRead();
+    return t ? `<a class="block home-taste" href="#/match"><span class="ht-ic">${tsType(t)[0]}</span><span class="ht-t"><small>${L3('내 숲별 취향 유형', 'My taste type', 'わたしの好みタイプ')}</small><b>${esc(tsType(t)[1])}</b></span><span class="ht-go">${L3('친구랑 궁합 보기', 'Match with friends', '友だちと相性')} ›</span></a>`
+      : `<a class="block home-taste" href="#/match?test=1"><span class="ht-ic">🧪</span><span class="ht-t"><b>${L3('나의 숲별 취향 유형은?', 'What’s my fan taste type?', 'わたしの好みタイプは?')}</b><small>${L3('9문항 · 1분', '9 questions · 1 min', '9問 · 1分')}</small></span><span class="ht-go">${L3('해 보기', 'Start', 'やってみる')} ›</span></a>`;
   }
   function homeWish() {
     const top = [...data.songs.values()].map(so => [so, wishN(so.key)]).filter(x => x[1] >= 3).sort((a, b) => b[1] - a[1] || a[0].name.localeCompare(b[0].name)).slice(0, 5);
@@ -5381,7 +5391,7 @@
   const tsSim = (a, b) => { const x = tsVals(a), y = tsVals(b); let s = 0; for (let i = 0; i < 8; i++) s += 1 - Math.abs(x[i] - y[i]) / 100; return (s + (a[16] === b[16] ? 1 : 0)) / 9; };
   // 같은 축: 글자가 같거나, 50 근처에서 갈렸어도 위치가 10 이내면 같은 걸로
   const tsSameAx = (a, b) => { const x = tsAxes(a), y = tsAxes(b); return x.filter((v, k) => v.b === y[k].b || Math.abs(v.pos - y[k].pos) <= 10).length; };
-  const TS_REL = [[4, '🌲🌲', '거울 숲별', '취향 축 4개가 다 같아요. 서로의 플레이리스트를 믿어도 돼요'], [3, '🌿', '단짝 숲별', '거의 다 맞고 하나만 달라서 대화가 끊이지 않아요'], [2, '🧭', '서로 채워주는 짝꿍', '반은 같고 반은 달라서 서로 새 곡을 알려 줘요'], [0, '🔭', '정반대라 끌리는 사이', '취향이 정반대라 오히려 덕질이 두 배로 넓어져요']];
+  const TS_REL = [[4, '🪞', '거울 숲별', '혹시 같은 사람이 폰 두 개 쓰는 거 아니죠?'], [3, '🌿', '단짝 숲별', '딱 하나 달라서 수다가 끝이 안 나요'], [2, '🧭', '서로 채워주는 짝꿍', '반은 맞장구, 반은 "오 그 곡 뭐야?"'], [0, '🧲', '정반대라 끌리는 사이', '취향은 정반대인데 이상하게 잘 통해요']];
 
   // ---------- 숲별 취향 궁합 (#/match) ----------
   // 서버 없이 링크에 기록을 담아요: ?d= 뒤에 [{n 이름, s 입덕일, f 최애곡, w 소취곡, h ♥곡, g 직관 일정, m 최애 멤버, u 번호}] (곡은 짧은 해시 5자)
@@ -5435,17 +5445,115 @@
   function mtPair(a, b) {
     let sum = 0, wt = 0; const got = {};
     MT_PARTS.forEach(([k, w]) => {
-      const v = k === 't' ? (a.t && b.t ? tsSim(a.t, b.t) : null) : k === 'g' ? (a.g.length && b.g.length ? [0, 0.6, 0.8, 1][Math.min(3, mtInter(a.g, b.g).length)] : null) : mtOv(a[k], b[k]);
+      const v = k === 't' ? (a.t && b.t ? Math.max(0, (tsSim(a.t, b.t) - 0.45) / 0.55) : null) : k === 'g' ? (a.g.length && b.g.length ? [0, 0.6, 0.8, 1][Math.min(3, mtInter(a.g, b.g).length)] : null) : mtOv(a[k], b[k]);
       if (v == null) return; got[k] = v; sum += v * w; wt += w;
     });
     if (!wt) return { pct: 0, got };
     const s = sum / wt;
-    return { pct: s >= 0.999 ? 100 : Math.round(32 + 66 * Math.sqrt(s)), got };
+    return { pct: s >= 0.999 ? 100 : Math.min(99, Math.round(100 * Math.pow(s, 0.85))), got };  // 하나도 안 겹치면 0%
   }
-  const MT_TYPES = [[95, '🌲🌲', '포레 취향 쌍둥이', '플레이리스트를 바꿔 들어도 모를 사이예요'], [80, '🌿', '같은 숲길 산책 메이트', '좋아하는 무대가 거의 다 겹쳐요'], [65, '🌳', '옆 나무 이웃', '반은 같고 반은 서로 추천해 주기 좋은 사이'], [50, '🧭', '서로의 숲 가이드', '서로 모르는 명곡을 알려 줄 수 있어요'], [0, '🔭', '다른 숲의 탐험가', '취향이 달라서 덕질이 두 배로 넓어져요']];
-  const MT_GROUP = [[96, '🌲', '한 그루 숲', '이 모임은 사실 한 사람이에요'], [75, '🧺', '같은 숲 소풍단', '어느 공연을 같이 가도 신나는 모임'], [60, '🎶', '숲속 합창단', '떼창 맞추기 딱 좋은 조합이에요'], [45, '🗺️', '각자 다른 숲길 원정대', '서로의 최애곡을 돌려 듣기 좋아요'], [0, '🔬', '숲 다양성 연구회', '취향이 다 달라서 이야기할 게 많아요']];
+  const MT_TYPES = [[90, '🌲🌲', '포레 취향 쌍둥이', '플레이리스트를 바꿔 끼워도 아무도 모를 사이'], [80, '🎫', '옆자리 예약 메이트', '티켓팅 성공하면 옆자리는 무조건 이 사람'], [70, '🌿', '같은 숲길 산책 메이트', '좋아하는 무대가 거의 다 겹쳐요'], [60, '🍃', '같은 바람 맞는 사이', '같은 무대에서 같이 소름 돋는 사이'], [50, '🌳', '옆 나무 이웃', '겹치는 곡엔 같이 환호, 안 겹치는 곡은 영업 타임'], [40, '🗺️', '서로의 숲 가이드', '내가 모르는 명곡은 다 이 사람이 알아요'], [30, '🌰', '도토리 친구', '작지만 확실한 공통점이 있어요'], [20, '🍂', '낙엽 친구', '가끔 겹치는 곡에 깜짝 반가운 사이'], [10, '🔭', '다른 숲의 탐험가', '달라서 더 재밌어요. 덕질 영역이 두 배'], [0, '🛰️', '다른 은하 숲별', '같은 포레, 다른 은하. 만나면 할 얘기가 산더미']];
+  const MT_GROUP = [[90, '🌲', '한마음 숲', '다 같이 같은 곡에서 울고 웃는 모임'], [75, '🧺', '같은 숲 소풍단', '어느 공연을 가도 단체 사진 각'], [60, '🎶', '숲속 합창단', '떼창 구간에서 목소리가 딱 맞는 조합'], [45, '🗺️', '각자 다른 숲길 원정대', '최애곡 돌려 듣기만 해도 하루가 가요'], [0, '🔬', '숲 다양성 연구회', '취향이 다 달라서 단톡방이 조용할 날이 없어요']];
+  // 이스터에그: [아이콘, 이름, 설명, 힌트(도감에서 못 봤을 때), 숨은 칸이면 1]
+  const MT_EGG = {
+    love: ['💍', '200% 천생연분', '취향도, 덕질 스타일도, 최애 멤버도, 플레이리스트도, 객석까지 같아요', '모든 게 다 같아야 열려요'],
+    zero: ['🪐', '0% 평행우주 숲별', '같은 포레를 좋아하는데 어떻게 하나도 안 겹치죠?', '아무것도 안 겹치면…?'],
+    mate: ['🎫', '직관 전우', '같은 객석에서 10번 넘게 함께했어요', '같은 객석에 자주 있었다면'],
+    tree: ['🌳', '한 그루 숲', '모임 전원이 같은 취향 유형이에요', '모임 모두가 같은 유형이면'],
+    wish: ['🙏', '소취 동맹', '이 곡 불러 줄 때까지 같이 기다려요', '듣고 싶은 곡이 같다면'],
+    gen: ['🎓', '기수 동기', '같은 시기에 입덕한 숲별 동기예요', '입덕한 때가 비슷하면'],
+    sen: ['🌱', '숲별 선후배', '입덕 차이 5년 이상! 선배님, 그때 얘기 해 주세요', '입덕 차이가 많이 나면'],
+    four: ['🎤', '4인 4색', '최애 멤버를 모으니 네 명이 다 모였어요. 우리 모임 포레스텔라 결성!', '모임 최애 멤버를 모아 보면'],
+    all: ['🏟️', '단체 관람단', '모임 전원이 같이 간 공연이 있어요', '모두 같은 객석에 있었다면'],
+    day: ['🎂', '같은 날 입덕한 운명', '입덕한 날이 똑같아요. 이건 운명이에요', '', 1],
+    half: ['🌗', '딱 반반 숲별', '정확히 50%. 반은 같고 반은 달라요', '', 1],
+    lucky: ['🍀', '럭키 77', '정확히 77%! 오늘 뭔가 좋은 일이 생길 거예요', '', 1],
+  };
+  const MT_EGG_TOP = ['love', 'zero', 'tree'];
+  // 궁합 도감: 결과를 볼 때마다 나온 칸이 이 폰에 모여요 { 칸: { d: 날짜, w: 누구랑 }, ty: [만난 취향 유형 번호] }
+  const MT_DEX = 'sb-mt-dex';
+  const mtDex = () => { const o = boxRead(MT_DEX); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; };
+  const mtDexAll = () => [...MT_TYPES.map((_, i) => 'a' + i), ...TS_REL.map((_, i) => 'b' + i), ...MT_GROUP.map((_, i) => 'c' + i), ...Object.keys(MT_EGG).filter(k => !MT_EGG[k][4])];
+  const mtDexInfo = k => { const n = +k.slice(1);
+    if (k[0] === 'a' && MT_TYPES[n]) return [MT_TYPES[n][1], MT_TYPES[n][2], MT_TYPES[n][3], n === MT_TYPES.length - 1 ? L3('10% 미만 궁합', 'Under 10%', '10%未満') : L3(`${MT_TYPES[n][0]}%대 궁합`, `${MT_TYPES[n][0]}s %`, `${MT_TYPES[n][0]}%台`)];
+    if (k[0] === 'b' && TS_REL[n]) return [TS_REL[n][1], TS_REL[n][2], TS_REL[n][3], n === TS_REL.length - 1 ? L3('둘 다 테스트 · 같은 축 0~1개', 'Both tested · 0–1 axes alike', '両方テスト・同じ軸0〜1個') : L3(`둘 다 테스트 · 같은 축 ${TS_REL[n][0]}개`, `Both tested · ${TS_REL[n][0]} axes alike`, `両方テスト・同じ軸${TS_REL[n][0]}個`)];
+    if (k[0] === 'c' && MT_GROUP[n]) return [MT_GROUP[n][1], MT_GROUP[n][2], MT_GROUP[n][3], n === MT_GROUP.length - 1 ? L3(`모임 ${MT_GROUP[n - 1][0]}% 미만`, `Group under ${MT_GROUP[n - 1][0]}%`, `グループ${MT_GROUP[n - 1][0]}%未満`) : L3(`모임 ${MT_GROUP[n][0]}% 이상`, `Group ${MT_GROUP[n][0]}%+`, `グループ${MT_GROUP[n][0]}%以上`)];
+    const e = MT_EGG[k]; return e ? [e[0], e[1], e[2], e[3]] : null; };
+  function mtDexRecord(list, R, meAt) {
+    if (R.none || list.length < 2) return [];
+    const o = mtDex(), day = todayIso(), who = list.filter((_, i) => i !== meAt).map(p => p.n), w = who.slice(0, 2).join(', ') + (who.length > 2 ? L3(` 외 ${who.length - 2}명`, ` +${who.length - 2}`, ` ほか${who.length - 2}人`) : '');
+    const keys = [mtTierKey(list, R), ...(R.eggs || [])].filter(k => mtDexInfo(k)), fresh = keys.filter(k => !o[k]);
+    fresh.forEach(k => { o[k] = { d: day, w }; });
+    if (list.length > 2 && meAt >= 0) (R.pe || []).filter(x => x[0] === meAt || x[1] === meAt).forEach(([i, j, pct, eg]) => {
+      const two = [list[i], list[j]], other = list[i === meAt ? j : i].n;
+      [mtTierKey(two, { pct }), ...eg].filter(k => mtDexInfo(k) && !o[k]).forEach(k => { o[k] = { d: day, w: other }; fresh.push(k); });
+    });
+    const ty = new Set(Array.isArray(o.ty) ? o.ty : []), n0 = ty.size; list.forEach(p => { if (p.t) ty.add(TS_TYPES.indexOf(tsType(p.t))); }); ty.delete(-1);
+    if (fresh.length || ty.size !== n0) { o.ty = [...ty]; boxWrite(MT_DEX, o); }
+    return fresh;
+  }
+  const mtDexN = () => { const o = mtDex(); return mtDexAll().filter(k => o[k]).length; };
+  function mtDexView() {
+    const o = mtDex(), all = mtDexAll(), got = all.filter(k => o[k]).length, hid = Object.keys(MT_EGG).filter(k => MT_EGG[k][4] && o[k]);
+    const cell = k => { const I = mtDexInfo(k), x = o[k];
+      return x ? `<li class="dx-c on"><span class="dx-ic">${I[0]}</span><b>${I[1]}</b><small>${I[2]}</small><em>${esc(x.d.slice(2).replace(/-/g, '.'))}${x.w ? ' · ' + esc(x.w) : ''}</em></li>`
+        : `<li class="dx-c"><span class="dx-ic">❔</span><b>???</b><small>${I[3]}</small></li>`; };
+    const sec = (h, ks) => `<section class="dx-s"><h2 class="mg-h">${h} <small>${ks.filter(k => o[k]).length}/${ks.length}</small></h2><ul class="dx-g">${ks.map(cell).join('')}</ul></section>`;
+    const ty = new Set(Array.isArray(o.ty) ? o.ty : []);
+    return `<a class="back" href="#/match">‹ ${L3('숲별 취향 궁합', 'Taste match', '好み相性')}</a>
+      <div class="dx-top"><h1 class="h1">📖 ${L3('숲별 궁합 도감', 'Match collection', '相性図鑑')}</h1><p class="dx-n"><b>${got}</b> / ${all.length}${hid.length ? ` <span class="dx-hid">+✨${hid.length}</span>` : ''}</p>
+        <div class="dx-bar"><i style="width:${got / all.length * 100}%"></i></div><p class="mt-sub">${L3('궁합 결과를 볼 때마다 나온 칸이 이 폰에 모여요. 아직 못 본 칸은 ???로 보여요.', 'Every match result you see fills a slot on this phone. Slots you haven\'t seen show as ???.', '相性結果を見るたびに、このスマホに集まります。まだの枠は???です。')}</p></div>
+      ${sec(L3('둘이 본 궁합', 'Pairs', 'ふたりの相性'), MT_TYPES.map((_, i) => 'a' + i))}
+      ${sec(L3('둘 다 취향 테스트 했을 때', 'Both took the test', 'ふたりともテスト済み'), TS_REL.map((_, i) => 'b' + i))}
+      ${sec(L3('숲별 모임', 'Groups', '集まり'), MT_GROUP.map((_, i) => 'c' + i))}
+      ${sec(L3('✨ 이스터에그', '✨ Easter eggs', '✨ イースターエッグ'), Object.keys(MT_EGG).filter(k => !MT_EGG[k][4]))}
+      ${hid.length ? `<section class="dx-s"><h2 class="mg-h">${L3('✨ 숨은 칸', '✨ Secret slots', '✨ 隠れ枠')} <small>${hid.length}</small></h2><ul class="dx-g">${hid.map(cell).join('')}</ul></section>` : ''}
+      <section class="dx-s"><h2 class="mg-h">${L3('만난 취향 유형', 'Taste types met', '出会った好みタイプ')} <small>${ty.size}/16</small></h2><ul class="dx-ty">${TS_TYPES.map((t, i) => ty.has(i) ? `<li class="on"><span>${t[0]}</span><b>${t[1]}</b></li>` : `<li><span>❔</span><b>???</b></li>`).join('')}</ul></section>`;
+  }
+  function mtEggPop(keys) {
+    if (!keys.length) return;
+    const k = keys[0], E = MT_EGG[k], b = document.createElement('div');
+    b.className = 'mt-pop'; b.setAttribute('role', 'dialog');
+    b.innerHTML = `<div class="mt-pop-in"><p class="mt-pop-k">${E[4] ? L3('✨ 숨은 칸 발견!', '✨ Secret slot found!', '✨ 隠れ枠を発見!') : L3('✨ 이스터에그 발견!', '✨ Easter egg found!', '✨ イースターエッグ発見!')}</p><div class="mt-pop-ic">${E[0]}</div><h2>${E[1]}</h2><p>${E[2]}</p>
+      ${keys.length > 1 ? `<p class="mt-pop-more">${L3('그리고', 'Also', 'さらに')} ${keys.slice(1).map(x => `${MT_EGG[x][0]} <b>${MT_EGG[x][1]}</b>`).join(' · ')}</p>` : ''}
+      <small>${L3('궁합 도감에 들어갔어요', 'Added to your collection', '図鑑に入りました')} · ${mtDexN()}/${mtDexAll().length}</small>
+      <div class="mt-pop-b"><a class="mt-go" href="#/match?dex=1">${L3('📖 도감 보기', '📖 See collection', '📖 図鑑を見る')}</a><button type="button" class="mt-sub-btn mt-pop-x">${L3('닫기', 'Close', '閉じる')}</button></div></div>`;
+    document.body.appendChild(b);
+    requestAnimationFrame(() => { b.classList.add('show'); const r = b.querySelector('.mt-pop-ic').getBoundingClientRect(); anvBurst(r.left + r.width / 2, r.top + r.height / 2, 20); });
+    const close = () => { b.classList.remove('show'); setTimeout(() => b.remove(), 300); };
+    b.querySelector('.mt-pop-x').onclick = close; b.querySelector('.mt-go').addEventListener('click', close); b.onclick = ev => { if (ev.target === b) close(); };
+  }  // 이 셋은 결과 이름 자리를 바꿔요
+  const mtGen = s => !s ? -1 : s < '2021-11' ? 0 : s < '2022-11' ? 1 : s < '2024-07' ? 2 : s < '2025-05' ? 3 : 4;  // 원년·1기·2기·2.5기·3기
+  function mtEggs(list, pct) {
+    const e = [], same = (x, y) => x.length === y.length && x.every(v => y.includes(v));
+    if (list.length === 2) {
+      const [a, b] = list, ci = k => mtInter(a[k], b[k]).length;
+      const tAx = a.t && b.t ? tsSameAx(a.t, b.t) : -1;
+      if (tAx === 4 && a.t[16] === b.t[16] && a.m.length && same(a.m, b.m) && ci('h') >= 10 && ci('h') / Math.max(a.h.length, b.h.length) >= 0.8 && ci('g') >= 3) e.push('love');
+      if (!['f', 'w', 'h', 'g', 'm'].some(k => ci(k)) && tAx <= 0) e.push('zero');
+      if (ci('g') >= 10) e.push('mate');
+      if (ci('w') >= 3) e.push('wish');
+      if (a.s && b.s) {
+        if (mtGen(a.s) === mtGen(b.s)) e.push('gen');
+        if (Math.abs(Date.parse(a.s) - Date.parse(b.s)) >= 5 * 365.25 * 864e5) e.push('sen');
+        if (a.s === b.s) e.push('day');
+      }
+    } else if (list.length > 2) {
+      if (list.every(p => p.t) && new Set(list.map(p => tsType(p.t))).size === 1) e.push('tree');
+      if (new Set(list.flatMap(p => p.m)).size >= 4) e.push('four');
+      if (list.reduce((acc, p) => mtInter(acc, p.g), list[0].g).length) e.push('all');
+    }
+    if (!e.includes('zero') && !e.includes('love')) { if (pct === 50) e.push('half'); if (pct === 77) e.push('lucky'); }
+    return e;
+  }
   const mtType = (pct, group) => (group ? MT_GROUP : MT_TYPES).find(t => pct >= t[0]);
   // 둘 다 취향 테스트를 했으면 관계 이름은 같은 축 수로
+  const mtTopEgg = R => MT_EGG_TOP.find(x => (R.eggs || []).includes(x));
+  const mtHeadR = (list, R) => { const k = mtTopEgg(R); return k ? [0, MT_EGG[k][0], MT_EGG[k][1].replace(/^\d+% /, ''), MT_EGG[k][2]] : mtHead(list, R.pct); };
+  const mtRibbon = R => (R.eggs || []).filter(k => k !== mtTopEgg(R));
+  const mtShowPct = R => (R.eggs || []).includes('love') ? 200 : R.pct;
+  // 도감 칸 번호: a(둘·%) b(둘 다 테스트) c(모임)
+  const mtTierKey = (list, R) => list.length > 2 ? 'c' + MT_GROUP.findIndex(t => R.pct >= t[0]) : list[0].t && list[1].t ? 'b' + TS_REL.findIndex(r => tsSameAx(list[0].t, list[1].t) >= r[0]) : 'a' + MT_TYPES.findIndex(t => R.pct >= t[0]);
   const mtHead = (list, pct) => list.length === 2 && list[0].t && list[1].t ? TS_REL.find(r => tsSameAx(list[0].t, list[1].t) >= r[0]) : mtType(pct, list.length > 2);
   const MT_COL = ['#1C7A5E', '#2C86CF', '#5BAF2E', '#1FA87A', '#24513A', '#2C5A8A', '#C77A1E', '#8A5CC2', '#C2506E', '#2E9AA8'];  // 10명방까지 색이 안 겹치게
   const mtAv = (p, i) => `<span class="mt-av" style="background:${MT_COL[i % MT_COL.length]}">${esc([...p.n][0] || '?')}</span>`;
@@ -5477,7 +5585,10 @@
     const keys = {}; pairs.forEach(p => Object.entries(p.got).forEach(([k, v]) => { keys[k] = (keys[k] || 0) + v / pairs.length; }));
     const tags = MT_PARTS.filter(([k]) => keys[k] >= 0.5).sort((a, b) => keys[b[0]] - keys[a[0]]).slice(0, 2).map(x => x[2]);
     const rec = list.length === 2 ? [[0, 1], [1, 0]].map(([x, y]) => [...new Set([...list[x].f, ...list[x].h])].filter(k => !list[y].h.includes(k) && !list[y].f.includes(k)).slice(0, 6)) : null;  // 2명: 서로 추천곡 (rec[0] = 0번이 좋아하는데 1번은 아직인 곡, 0번이 1번에게 추천)
-    return { pairs, pct, all, cnt, tags, none: !pv.length, rec };
+    const eggs = pv.length ? mtEggs(list, pct) : [];
+    // 모임 안 둘씩: 도감에 '둘 궁합' 칸·이스터에그도 모여요 (나랑 짝인 것만) [i, j, %, 이스터에그]
+    const pe = list.length > 2 ? pv.map(p => { const e = mtEggs([list[p.i], list[p.j]], p.pct); return [p.i, p.j, e.includes('zero') ? 0 : p.pct, e]; }) : [];
+    return { pairs, pct: eggs.includes('zero') ? 0 : pct, all, cnt, tags, none: !pv.length, rec, eggs, pe };
   }
   // 받은 링크 합치기: 붙여 넣은 글에서 궁합 링크를 모두 찾아 지금 사람들과 합쳐요 (같은 사람은 한 번만, 최대 6명)
   const mtMergeBox = (open, ppl) => `<details class="mt-merge"${open ? ' open' : ''} id="mt-merge"><summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>${L3('인원 추가', 'Add people', 'メンバーを追加')}</summary>
@@ -5515,7 +5626,7 @@
     return { v: 1, z, p: list.map(p => [p.n, p.t || '', (p.s || '').replace(/-/g, ''), p.m.join(''), p.u || '']), c: R.pct, x: R.none ? 1 : 0, tg: R.tags,
       pr: R.pairs.filter(p => Object.keys(p.got).length).sort((a, b) => b.pct - a.pct).slice(0, 5).map(p => [p.i, p.j, p.pct]),
       a: { f: R.all('f').slice(0, 20), w: R.all('w').slice(0, 20), h: R.all('h').slice(0, z === 2 ? 40 : 12), g: R.all('g').slice(0, z === 2 ? 30 : 6) },
-      n: { h: top('h', 8), g: top('g', 5) }, r: R.rec };
+      n: { h: top('h', 8), g: top('g', 5) }, r: R.rec, e: R.eggs || [], pe: (R.pe || []).map(x => x[3].length ? x : x.slice(0, 3)) };
   }
   const mtSumLink = (list, R, z, rn) => location.origin + location.pathname + '#/match?' + (rn ? 'rn=' + mtB64(rn) + '&' : '') + 'sm=' + mtB64(JSON.stringify(mtSumOf(list, R, z)));
   function mtFromSum(t) {
@@ -5525,7 +5636,8 @@
     const A = s.a || {}, N = s.n || {}, okT = new Set(MT_PARTS.map(x => x[2]));
     const R = { pct: Math.max(0, Math.min(100, +s.c || 0)), none: !!s.x, tags: str(s.tg).filter(x => okT.has(x)).slice(0, 2),
       pairs: (Array.isArray(s.pr) ? s.pr : []).filter(x => Array.isArray(x) && list[x[0]] && list[x[1]] && x[0] !== x[1]).map(([i, j, pct]) => ({ i, j, pct: Math.max(0, Math.min(100, +pct || 0)), got: { x: 1 } })),
-      all: k => str(A[k]), cnt: k => new Map(cnt(N[k])), rec: Array.isArray(s.r) ? s.r.map(str) : null };
+      all: k => str(A[k]), cnt: k => new Map(cnt(N[k])), rec: Array.isArray(s.r) ? s.r.map(str) : null, eggs: str(s.e).filter(k => Object.prototype.hasOwnProperty.call(MT_EGG, k)),
+      pe: (Array.isArray(s.pe) ? s.pe : []).filter(x => Array.isArray(x) && list[x[0]] && list[x[1]] && x[0] !== x[1]).slice(0, 45).map(x => [+x[0], +x[1], Math.max(0, Math.min(100, +x[2] || 0)), str(x[3]).filter(k => Object.prototype.hasOwnProperty.call(MT_EGG, k) && !['tree', 'four', 'all'].includes(k))]) };
     return { list, R, z: [2, 6, 10].includes(+s.z) ? +s.z : 6 };
   }
   const mtHeroHtml = (list, R, T, meAt, rn, group) => `
@@ -5533,14 +5645,15 @@
           ${rn ? `<p class="mt-room-t">🌲 ${esc(rn)}</p>` : ''}
           <div class="mt-avs">${list.map((p, i) => `<span class="mt-pp">${mtAv(p, i)}<small>${esc(p.n)}${i === meAt ? L3(' (나)', ' (me)', ' (私)') : ''}</small></span>`).join(group ? '' : '<span class="mt-x">×</span>')}</div>
           <p class="mt-lab">${group ? `${list.length}명의` : '우리의'} 숲별 취향 궁합</p>
-          ${R.none ? '' : `<p class="mt-pct"><b id="mt-num" data-n="${R.pct}">${R.pct}</b>%</p>`}
+          ${R.none ? '' : `<p class="mt-pct${(R.eggs || []).includes('love') ? ' mt-pct-love' : ''}"><b id="mt-num" data-n="${mtShowPct(R)}">${mtShowPct(R)}</b>%</p>`}
           <p class="mt-type"><span>${T[1]}</span>${T[2]}</p>
           <p class="mt-say">${T[3]}</p>
           ${R.tags.length ? `<div class="mt-tags">${R.tags.map(t => `<span>${t}</span>`).join('')}</div>` : ''}
+          ${mtRibbon(R).length ? `<div class="mt-eggs">${mtRibbon(R).map(k => `<span>✨ ${MT_EGG[k][0]} <b>${MT_EGG[k][1]}</b></span>`).join('')}</div>` : ''}
         </div>`;
   // 결과 카드: z = 방 크기 (2 가장 자세히 · 6 · 10 요약). 원래 기록(list)으로도, 결과 링크(sm=)로도 같은 화면
   function mtCards(list, R, z) {
-    const S = mtSong(), group = list.length > 2, T = R.none ? ['', '', '비교할 기록이 서로 달라요', '한 명은 테스트, 한 명은 ♥ 곡처럼 담은 게 달라서 아직 궁합을 잴 수 없어요. 같은 항목을 담아 다시 보내 봐요'] : mtHead(list, R.pct);
+    const S = mtSong(), group = list.length > 2, T = R.none ? ['', '', '비교할 기록이 서로 달라요', '한 명은 테스트, 한 명은 ♥ 곡처럼 담은 게 달라서 아직 궁합을 잴 수 없어요. 같은 항목을 담아 다시 보내 봐요'] : mtHeadR(list, R);
     const songs = ks => ks.map(k => S.get(k)).filter(Boolean);
     const chips = arr => `<div class="mt-chips">${arr.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>`;
     const card1 = (ic, t, body) => `<section class="mt-card"><h2><span>${MT_IC[ic] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${MT_IC[ic]}</svg>` : ''}</span>${t}</h2>${body}</section>`;
@@ -5604,13 +5717,14 @@
     return { cards, T };
   }
   function matchView() {
-    if (!isAdmin() && !/[?&]sm=/.test(location.hash)) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
+    if (!matchOpen() && !/[?&]sm=/.test(location.hash)) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(true), mine = !mtEmpty(me);
     if (q.get('test')) { if (!tsSt) tsSt = { i: 0, a: [] }; return `<section class="ts-wrap"><button type="button" class="back ts-backbtn" id="ts-back">‹ 이전</button><div id="ts-quiz" class="ts-in"></div></section>`; }
     if (q.get('r') && tsRead()) return `<a class="back" href="#/match">‹ 취향 궁합</a><section class="mt-res">${tsResultHtml(tsRead())}
       <div class="mt-acts"><a class="mt-go" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>친구랑 궁합 보기</a>
       <a class="mt-sub-btn" href="#/match?test=1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8L4 8.5"/><path d="M4 4v4.5h4.5"/></svg>테스트 다시 하기</a></div></section>`;
     if (q.get('sm')) return mtSumView(q);
+    if (q.get('dex')) return mtDexView();
     const got = (q.get('d') ? mtUnpack(q.get('d')) : []).filter(p => p && typeof p.n === 'string').slice(0, mtCap())
       .map(p => ({ n: String(p.n).slice(0, 12), s: /^\d{4}-\d\d-\d\d$/.test(p.s) ? p.s : '', u: String(p.u || ''), t: /^[0-9a-z]{16}[0-2]$/.test(p.t || '') ? p.t : '', ...Object.fromEntries(['f', 'w', 'h', 'g', 'm'].map(k => [k, Array.isArray(p[k]) ? p[k].map(String) : []])) })).filter(p => !mtNone(p));
     const inList = got.findIndex(p => mtIsMe(p.u, me));
@@ -5636,6 +5750,7 @@
       return `${back}
         <section class="mt-intro">
           <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><svg class="mt-venn" viewBox="0 0 120 72" aria-hidden="true"><circle cx="44" cy="36" r="30"/><circle cx="76" cy="36" r="30"/><path class="mt-venn-in" d="M60 11.1a30 30 0 0 1 0 49.8a30 30 0 0 1 0-49.8z"/><circle class="mt-venn-d" cx="34" cy="30" r="5"/><circle class="mt-venn-d b" cx="86" cy="42" r="5"/></svg><p class="mt-kick">FOREST MATCH</p><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
+          <a class="ts-mine dx-link" href="#/match?dex=1"><small>${L3('모은 궁합 결과', 'Results collected', '集めた結果')}</small><b>📖 ${L3('숲별 궁합 도감', 'Match collection', '相性図鑑')} ${mtDexN()}/${mtDexAll().length}</b><span>${L3('보기 ›', 'View ›', '見る ›')}</span></a>
           ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsType(tsRead())[1]}</b><span>결과 보기 ›</span></a>`
             : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
           ${from ? (mtIsMe(from.u, me) ? (room ? `${rn ? `<p class="mt-room-t">🌲 ${esc(rn)}</p>` : ''}<p class="mt-from">${mtAv(from, 0)} ${L3('내가 만든 숲별 모임이에요. 친구들이 보내 준 링크를 아래 칸에 한꺼번에 붙여 넣으면 모두 모여요.', 'This is your Soopbyeol group. Paste all the links your friends sent you below to bring everyone together.', '自分が作ったスッピョルの集まりです。友だちから届いたリンクを下にまとめて貼るとみんな集まります。')}</p>${mine ? mtMergeBox(true, [me]) : ''}` : `<p class="mt-from">${mtAv(from, 0)} 내가 만든 궁합 링크예요. 친구가 열면 둘의 궁합이 보여요.</p>`) : `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>`) : ''}
@@ -5669,22 +5784,24 @@
           <button type="button" class="mt-go" id="mt-share" data-n="${list.length}" data-room="${room && !iHost && meAt >= 0 ? esc(rn || host.n) : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>${room && !iHost && meAt >= 0 ? L3('방장에게 내 링크 보내기', 'Send my link to the host', '幹事に自分のリンクを送る') : myRoom ? L3('결과 링크 보내기', 'Share the result link', '結果リンクを送る') : list.length < mtCap() ? (group || meAt >= 0 ? '결과 링크 보내기 · 다음 사람도 넣을 수 있어요' : '결과 링크 보내기') : '결과 링크 보내기'}</button>
           ${R.none ? '' : `<button type="button" class="mt-sub-btn" id="mt-img"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>결과 이미지 저장</button>`}
           <a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 링크 새로 만들기</a>
+          <a class="mt-sub-btn" href="#/match?dex=1">📖 ${L3('궁합 도감', 'Collection', '相性図鑑')} <b id="mt-dex-n">${mtDexN()}/${mtDexAll().length}</b></a>
         </div>
       </section>`;
   }
   let mtList = [], mtCur = null, mtAdded = null;
   function mtSumView(q) {
-    const S0 = mtFromSum(q.get('sm')), back = isAdmin() ? `<a class="back" href="#/match">‹ ${L3('숲별 취향 궁합', 'Taste match', '好み相性')}</a>` : `<a class="back" href="#/">‹ ${L3('홈', 'Home', 'ホーム')}</a>`;
+    const S0 = mtFromSum(q.get('sm')), back = matchOpen() ? `<a class="back" href="#/match">‹ ${L3('숲별 취향 궁합', 'Taste match', '好み相性')}</a>` : `<a class="back" href="#/">‹ ${L3('홈', 'Home', 'ホーム')}</a>`;
     if (!S0) { mtCur = null; return `${back}<p class="empty">${L3('결과 링크가 잘렸거나 깨졌어요. 링크를 통째로 다시 받아 주세요.', 'This result link is broken. Ask for the whole link again.', '結果リンクが壊れています。もう一度まるごと受け取ってください。')}</p>`; }
     const { list, R, z } = S0, me = mtMe(true), meAt = list.findIndex(p => mtIsMe(p.u, me)), rn = mtRoomName(), group = list.length > 2, { cards, T } = mtCards(list, R, z);
     mtCur = { list, R, z };
     return `${back}
       <section class="mt-res${group ? ' mt-g' : ''}">${mtHeroHtml(list, R, T, meAt, rn, group)}
-        ${isAdmin() ? `<p class="mt-hint">${L3('방장이 보낸 결과 링크예요. 이 모임에 들어가고 싶으면 \'내 궁합 링크 보내기\'로 내 링크를 방장에게 보내 주세요.', 'This is the result the host shared. To join, send your own match link to the host.', '幹事が共有した結果リンクです。参加したいときは自分の相性リンクを幹事に送ってください。')}</p>` : ''}
+        ${matchOpen() ? `<p class="mt-hint">${L3('방장이 보낸 결과 링크예요. 이 모임에 들어가고 싶으면 \'내 궁합 링크 보내기\'로 내 링크를 방장에게 보내 주세요.', 'This is the result the host shared. To join, send your own match link to the host.', '幹事が共有した結果リンクです。参加したいときは自分の相性リンクを幹事に送ってください。')}</p>` : ''}
         ${cards.join('')}
         <div class="mt-acts">
           ${R.none ? '' : `<button type="button" class="mt-go" id="mt-img"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>결과 이미지 저장</button>`}
-          ${isAdmin() ? `<a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 궁합 링크 만들기</a>` : ''}
+          ${matchOpen() ? `<a class="mt-sub-btn" href="#/match?dex=1">📖 ${L3('궁합 도감', 'Collection', '相性図鑑')} <b id="mt-dex-n">${mtDexN()}/${mtDexAll().length}</b></a>` : ''}
+          ${matchOpen() ? `<a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 궁합 링크 만들기</a>` : ''}
         </div>
       </section>`;
   }
@@ -5735,11 +5852,18 @@
     if (mtAdded) { const box = document.getElementById('mt-merge'); if (box) { box.open = true; box.scrollIntoView({ block: 'start' }); } if (mtAdded.length) toast(L3(`${mtAdded.join(', ')} 님을 추가했어요`, `Added ${mtAdded.join(', ')}`, `${mtAdded.join('、')}さんを追加しました`)); mtAdded = null; }
     const im = document.getElementById('mt-img');
     if (im) im.onclick = () => mtImage();
+    if (mtCur && document.querySelector('.mt-res .mt-hero:not(.ts-hero)')) {
+      const fresh = mtDexRecord(mtCur.list, mtCur.R, mtCur.list.findIndex(p => mtIsMe(p.u, mtMe(true))));
+      const eg = fresh.filter(k => MT_EGG[k]).sort((x, y) => (MT_EGG[x][4] || 0) - (MT_EGG[y][4] || 0)), tr = fresh.filter(k => !MT_EGG[k]);
+      if (eg.length) setTimeout(() => mtEggPop(eg), 1100);
+      else if (tr.length) toast(L3(`📖 궁합 도감에 새 칸: ${mtDexInfo(tr[0])[1]}`, `📖 New in your collection: ${LT(mtDexInfo(tr[0])[1])}`, `📖 図鑑に新しい枠: ${LT(mtDexInfo(tr[0])[1])}`));
+      const dl = document.getElementById('mt-dex-n'); if (dl) dl.textContent = `${mtDexN()}/${mtDexAll().length}`;
+    }
     tsBind();
   }
   // 결과 이미지 (1080×1350): 위 큰 카드만
   async function mtImage() {
-    const LS = mtCur ? mtCur.list : mtList, R = mtCur ? mtCur.R : mtCalc(mtList), group = LS.length > 2, T = mtHead(LS, R.pct);
+    const LS = mtCur ? mtCur.list : mtList, R = mtCur ? mtCur.R : mtCalc(mtList), group = LS.length > 2, T = mtHeadR(LS, R);
     const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; const c = ctxL(cv);
     try { await Promise.race([document.fonts.load('800 60px "Nanum Myeongjo"'), new Promise(r => setTimeout(r, 1500))]); } catch (err) { /* 기본 글씨 */ }
     const g = c.createLinearGradient(0, 0, 1080, 1350); const TH = mtTheme(); g.addColorStop(0, TH.a); g.addColorStop(0.6, TH.b); g.addColorStop(1, TH.c);
@@ -5751,9 +5875,11 @@
     LS.forEach((p, i) => { const row = two && i >= per ? 1 : 0, k = row ? n - per : per, x = 540 - (k - 1) * gap / 2 + (row ? i - per : i) * gap, Y = two ? (row ? 330 : 165) : 270; c.fillStyle = MT_COL[i % MT_COL.length]; c.beginPath(); c.arc(x, Y, r, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 6; c.stroke(); c.fillStyle = '#fff'; c.font = `700 ${r}px ${SANS}`; (c.rawText || c.fillText).call(c, [...p.n][0] || '?', x, Y + r * 0.36); c.font = `600 ${two ? 26 : 30}px ${SANS}`; (c.rawText || c.fillText).call(c, p.n, x, Y + r + (two ? 36 : 50)); });
     if (n === 2) { c.font = `300 64px ${SANS}`; c.fillText('×', 540, 292); }
     c.font = `600 40px ${SANS}`; c.globalAlpha = .85; c.fillText(group ? `${n}명의 숲별 취향 궁합` : '우리의 숲별 취향 궁합', 540, 520); c.globalAlpha = 1;
-    c.font = `800 260px "Nanum Myeongjo", serif`; c.fillText(R.pct + '%', 540, 790);
+    c.font = `800 260px "Nanum Myeongjo", serif`; c.fillText(mtShowPct(R) + '%', 540, 790);
     c.font = `700 70px ${SANS}`; c.fillText(T[1] + ' ' + T[2], 540, 930);
     c.font = `500 40px ${SANS}`; c.globalAlpha = .9; c.fillText(T[3], 540, 1005); c.globalAlpha = 1;
+    const EG = mtRibbon(R).map(k => '✨ ' + MT_EGG[k][0] + ' ' + LT(MT_EGG[k][1]));
+    if (EG.length) { c.font = `700 34px ${SANS}`; c.fillStyle = '#FFE27A'; c.fillText(EG.slice(0, 3).join('   '), 540, 1180); c.fillStyle = '#fff'; }
     if (R.tags.length) { c.font = `600 34px ${SANS}`; const w = R.tags.map(t => c.measureText(t).width + 60), tot = w.reduce((a, b) => a + b, 0) + 20 * (w.length - 1); let x = 540 - tot / 2; R.tags.forEach((t, i) => { c.fillStyle = 'rgba(255,255,255,.2)'; c.beginPath(); c.roundRect(x, 1060, w[i], 70, 35); c.fill(); c.fillStyle = '#fff'; c.fillText(t, x + w[i] / 2, 1107); x += w[i] + 20; }); }
     c.font = `500 30px ${SANS}`; c.globalAlpha = .75; c.fillText('숲별 기록장 · 취향 궁합', 540, 1290); c.globalAlpha = 1;
     cv.toBlob(b => { if (!b) return; const file = new File([b], '숲별궁합.png', { type: 'image/png' }); const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -5772,10 +5898,12 @@
   }
   function giftView() { return `<a class="back" href="#/days">‹ 함께한 기념일</a><section class="gift-box" id="gift-box"><p class="empty">${L3('선물 상자를 여는 중…', 'Opening your gift…', 'プレゼントを開けています…')}</p></section>`; }
     // 기념일 이름 번역 (팬텀싱어 우승 9주년 → Phantom Singer win · 9th anniversary)
-  const anvNameL = nm => { const m = /^(.+?) (\d+)주년$/.exec(nm || ''), B = { '팬텀싱어 우승': ['Phantom Singer win', 'ファントムシンガー優勝'], '포레스텔라 데뷔': ['Forestella debut', 'フォレステラ デビュー'], '포레스텔라 결성': ['Forestella formed', 'フォレステラ結成'] };
-    if (!m) { const b = /^(.+) 생일$/.exec(nm || ''); return b ? L3(nm, `${b[1]}'s birthday`, `${b[1]} 誕生日`) : nm; }
+  const memL = n => { const L = window.SB_LANG; return (L && L.lang !== 'ko' && L.tr && L.tr(n)) || n; };
+  const anvNameL = nm => { const m = /^(.+?) (\d+)주년$/.exec(nm || ''), B = { '팬텀싱어 우승': ['Phantom Singer win', 'ファントムシンガー優勝'], '포레스텔라 데뷔': ['Forestella debut', 'フォレステラ デビュー'], '포레스텔라 결성': ['Forestella formed', 'フォレステラ結成'], '입덕': ['Fan anniversary', '推し活'] };
+    if (!m) { const b = /^(.+) 생일$/.exec(nm || ''); return b ? L3(nm, `${memL(b[1])}'s birthday`, `${memL(b[1])} 誕生日`) : nm; }
     const base = B[m[1]] || [m[1], m[1]], n = +m[2], th = n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th';
     return L3(nm, `${base[0]} · ${n}${th} anniversary`, `${base[1]} ${n}周年`); };
+  const anvBaseL = nm => anvNameL(nm + ' 1주년').replace(/ · 1st anniversary$| 1周年$/, '').replace(/ 1주년$/, '');
   async function giftCheck() {
     const box = document.getElementById('gift-box'); if (!box) return;
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), k = q.get('k'), e = q.get('e') || '', sg = q.get('s') || '', A = annivByKey(k);
@@ -7766,9 +7894,13 @@
   const ytThumbUrl = id => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`;
   const ytTitle = t => t.replace(/^포레스텔라\s*\(Forestella\)\s*/i, '');
   // 조회수: 1만 넘으면 '만', 1억 넘으면 '억' (소수 한 자리는 100만 아래·10억 아래만)
+  const VKIND = { 직캠: ['Fancam', '直カム'], 쇼츠: ['Shorts', 'ショート'], 비하인드: ['Behind', 'ビハインド'], 라이브: ['Live', 'ライブ'], 클립: ['Clip', 'クリップ'], '가사 영상': ['Lyric video', '歌詞動画'], 티저: ['Teaser', 'ティーザー'], 영상: ['Video', '映像'], 무대: ['Stage', 'ステージ'] };
+  const vKindL = k => VKIND[k] ? L3(k, VKIND[k][0], VKIND[k][1]) : k;
   function fmtViews(n) {
-    if (n >= 1e8) return `${+(n / 1e8).toFixed(n < 1e9 ? 1 : 0)}억`;
-    if (n >= 1e4) return `${(+(n / 1e4).toFixed(n < 1e6 ? 1 : 0)).toLocaleString()}만`;
+    const lg = (window.SB_LANG || {}).lang;
+    if (lg === 'en') return n >= 1e6 ? `${+(n / 1e6).toFixed(n < 1e7 ? 1 : 0)}M` : n >= 1e4 ? `${+(n / 1e3).toFixed(0)}K` : n.toLocaleString();
+    if (n >= 1e8) return `${+(n / 1e8).toFixed(n < 1e9 ? 1 : 0)}${lg === 'ja' ? '億' : '억'}`;
+    if (n >= 1e4) return `${(+(n / 1e4).toFixed(n < 1e6 ? 1 : 0)).toLocaleString()}${lg === 'ja' ? '万' : '만'}`;
     return n.toLocaleString();
   }
   const VIEW_STEPS = [1e5, 2e5, 3e5, 5e5, 1e6, 2e6, 3e6, 5e6, 1e7, 2e7, 3e7, 5e7, 1e8];
@@ -7797,7 +7929,7 @@
   function ytCard(v) {
     return `<a class="x-card yt-card" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener">
         <img src="${ytThumbUrl(v.id)}" alt="" loading="lazy" onerror="this.remove()">
-        <span class="x-text"><span class="x-date">${v.bc ? esc(v.bc) + ' · ' : v.ch ? esc(v.ch) + ' 채널 · ' : ''}${esc(v.kind)} · ${esc(v.date.replace(/-/g, '.'))}${v.views ? ` · ▶ ${fmtViews(v.views)}${v.wk > 0 ? ` <em class="vw-up">이번 주 +${fmtViews(v.wk)}</em>` : ''}` : ''}</span>${esc(ytTitle(v.title))}</span>
+        <span class="x-text"><span class="x-date">${v.bc ? esc(v.bc) + ' · ' : v.ch ? esc(L3(v.ch + ' 채널', memL(v.ch) + ' channel', memL(v.ch) + ' チャンネル')) + ' · ' : ''}${esc(vKindL(v.kind))} · ${esc(v.date.replace(/-/g, '.'))}${v.views ? ` · ▶ ${fmtViews(v.views)}${v.wk > 0 ? ` <em class="vw-up">${L3('이번 주', 'this week', '今週')} +${fmtViews(v.wk)}</em>` : ''}` : ''}</span>${esc(ytTitle(v.title))}</span>
       </a>`;
   }
   // 카드 목록: 처음 n개만 보이고 '더 보기'로 n개씩 펼쳐요
@@ -8170,29 +8302,29 @@
     const ds = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
     const dot = d => d.replace(/-/g, '.');
     const nextOf = mmdd => { let d = `${y}-${mmdd}`; if (d < today) d = `${y + 1}-${mmdd}`; return d; };
-    const dd = d => { const n = ds(today, d); return n === 0 ? '<em class="dy-today">오늘</em>' : `<span class="dy-dd">D-${n}</span>`; };
+    const dd = d => { const n = ds(today, d); return n === 0 ? `<em class="dy-today">${L3('오늘', 'Today', '今日')}</em>` : `<span class="dy-dd">D-${n}</span>`; };
     const row = (ic, title, sub, right) => `<div class="dy-row"><span class="dy-ic">${ic}</span><span class="dy-t"><b>${title}</b><small>${sub}</small></span>${right || ''}</div>`;
     const mine = [];
-    if (st.first) mine.push([st.first, row('🌲', st.firstOld ? '기념일 모으기 시작' : '숲별 기록장 첫 방문', `${dot(st.first)} · ${ds(st.first, today) + 1}일째`)]);
+    if (st.first) mine.push([st.first, row('🌲', st.firstOld ? L3('기념일 모으기 시작', 'Started collecting', '記念日の記録開始') : L3('숲별 기록장 첫 방문', 'First visit to Soopbyeol Archive', 'スッピョル記録帳 初訪問'), `${dot(st.first)} · ${(n => L3(`${n}일째`, `day ${n}`, `${n}日目`))(ds(st.first, today) + 1)}`)]);
     const sc = (card.since || '').slice(0, 10);
-    if (sc) { const nx = nextOf(sc.slice(5)), n = +nx.slice(0, 4) - +sc.slice(0, 4); mine.push([sc, row('🌱', '입덕한 날', `${dot(sc)} · D+${ddayOf(card.since)}`, n > 0 ? `<span class="dy-nx">${n}주년 ${dd(nx)}</span>` : '')]); }
+    if (sc) { const nx = nextOf(sc.slice(5)), n = +nx.slice(0, 4) - +sc.slice(0, 4); mine.push([sc, row('🌱', L3('입덕한 날', 'Became a fan', '推し始めた日'), `${dot(sc)} · D+${ddayOf(card.since)}`, n > 0 ? `<span class="dy-nx">${L3(`${n}주년`, `${n} yr`, `${n}周年`)} ${dd(nx)}</span>` : '')]); }
     const { first } = boxStats();
-    if (first) mine.push([first.date, row('🎫', '첫 직관', `${dot(first.date)} · <a href="#/e/${encodeURIComponent(first.id)}">${esc(first.title)}</a>`)]);
-    Object.entries(st.days || {}).forEach(([d, x]) => mine.push([d, row(x.ic, `${esc(x.name)} 함께함`, `${dot(d)}${(() => { const n = anvCheerN(/^입덕/.test(x.name) ? 'an-my-' + d.slice(0, 4) : `an-${d.slice(5).replace('-', '')}-${d.slice(0, 4)}`); return n ? ` · ${n.toLocaleString()}명이 함께 축하` : ''; })()}${(() => { const k = Object.keys(st.bdg || {}).find(k => st.bdg[k].d === d); return k ? ` · ${st.bdg[k].gold ? '금빛 뱃지' : '뱃지'} ${anvRank(k) ? anvRank(k) + '번째 수집자' : '받음'}` : ''; })()}`)]));
+    if (first) mine.push([first.date, row('🎫', L3('첫 직관', 'First show', '初現場'), `${dot(first.date)} · <a href="#/e/${encodeURIComponent(first.id)}">${esc(first.title)}</a>`)]);
+    Object.entries(st.days || {}).forEach(([d, x]) => mine.push([d, row(x.ic, esc(L3(`${x.name} 함께함`, `${anvNameL(x.name)} · joined`, `${anvNameL(x.name)} 参加`)), `${dot(d)}${(() => { const n = anvCheerN(/^입덕/.test(x.name) ? 'an-my-' + d.slice(0, 4) : `an-${d.slice(5).replace('-', '')}-${d.slice(0, 4)}`); return n ? ` · ${L3(`${n.toLocaleString()}명이 함께 축하`, `${n.toLocaleString()} celebrated`, `${n.toLocaleString()}人がお祝い`)}` : ''; })()}${(() => { const k = Object.keys(st.bdg || {}).find(k => st.bdg[k].d === d); return k ? ` · ${st.bdg[k].gold ? L3('금빛 뱃지', 'gold badge', '金色バッジ') : L3('뱃지', 'badge', 'バッジ')} ${anvRank(k) ? L3(anvRank(k) + '번째 수집자', '#' + anvRank(k) + ' collector', anvRank(k) + '番目の収集者') : L3('받음', 'earned', '獲得')}` : ''; })()}`)]));
     mine.sort((a, b) => b[0].localeCompare(a[0]));
-    const group = ANNIVS.map(([md, since, label, ic]) => { const nx = nextOf(md), n = since ? +nx.slice(0, 4) - since : 0; return [nx, `<a class="dy-a" href="#/days?m=${md.replace('-', '')}">` + row(ic, since ? `${label === '데뷔' || label === '결성' ? '포레스텔라 ' + label : label} ${n}주년` : label, since ? `${since}.${md.replace('-', '.')}` : md.replace(/^0?(\d+)-0?(\d+)$/, '$1월 $2일'), dd(nx)) + '</a>']; }).sort((a, b) => a[0].localeCompare(b[0]));
+    const group = ANNIVS.map(([md, since, label, ic]) => { const nx = nextOf(md), n = since ? +nx.slice(0, 4) - since : 0; return [nx, `<a class="dy-a" href="#/days?m=${md.replace('-', '')}">` + row(ic, esc(anvNameL(since ? `${label === '데뷔' || label === '결성' ? '포레스텔라 ' + label : label} ${n}주년` : label)), since ? `${since}.${md.replace('-', '.')}` : md.replace(/^0?(\d+)-0?(\d+)$/, (_, a, b) => L3(`${a}월 ${b}일`, `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][a - 1]} ${b}`, `${a}月${b}日`)), dd(nx)) + '</a>']; }).sort((a, b) => a[0].localeCompare(b[0]));
     const fd = st.first ? ds(st.first, today) + 1 : 1;
     return `
       <div class="about-top">
         <a class="back" href="#/more">‹ 더보기</a>
-        <h1 class="h1">함께한 기념일</h1>
-        <p>이 폰에 자동으로 모여요. 기념일에 들르면 여기에 남아요.</p>
+        <h1 class="h1">${L3('함께한 기념일', 'Our anniversaries', '一緒に迎えた記念日')}</h1>
+        <p>${L3('이 폰에 자동으로 모여요. 기념일에 들르면 여기에 남아요.', 'Saved on this phone automatically. Visit on an anniversary and it stays here.', 'このスマホに自動で記録されます。記念日に訪れるとここに残ります。')}</p>
       </div>
-      <div class="dy-hero">${card.since ? `<small>포레스텔라와 함께한 지</small><b>D+${ddayOf(card.since).toLocaleString()}</b>` : `<small>숲별 기록장과 함께한 지</small><b>${fd}일</b>`}${annivToday() ? `<span>오늘은 ${esc(annivToday().name)}</span>${cheerBtn(annivToday())}` : ''}</div>
+      <div class="dy-hero">${card.since ? `<small>${L3('포레스텔라와 함께한 지', 'With Forestella for', 'フォレステラと一緒に')}</small><b>D+${ddayOf(card.since).toLocaleString()}</b>` : `<small>${L3('숲별 기록장과 함께한 지', 'With Soopbyeol Archive for', 'スッピョル記録帳と一緒に')}</small><b>${L3(fd + '일', fd + (fd === 1 ? ' day' : ' days'), fd + '日')}</b>`}${annivToday() ? `<span>${esc(L3(`오늘은 ${annivToday().name}`, `Today: ${anvNameL(annivToday().name)}`, `今日は${anvNameL(annivToday().name)}`))}</span>${cheerBtn(annivToday())}` : ''}</div>
       ${(() => { const q = (new URLSearchParams(location.hash.split('?')[1] || '').get('m') || '').replace(/^(\d\d)(\d\d)$/, '$1-$2'); const A = annivToday(), md = q || (A && !A.my ? A.d.slice(5) : ''); return md ? annivMemory(md) : ''; })()}
-      ${isAdmin() ? (() => { const y = +today.slice(0, 4), rec = ANNIVS.map(x => [`${y}-${x[0]}`, x]).filter(([d]) => d <= today && ds(d, today) <= 30); return rec.length ? `<section class="mg"><h2 class="mg-h">🎁 기념일 하루 더 열어 주기 <small>관리자만 보여요</small></h2><p class="mt-sub">링크를 받은 폰은 24시간 동안 그 기념일처럼 숨은 숲이 나와요. 링크는 만든 뒤 하루 안에 열어야 하고, 폰마다 한 번만 돼요.</p>${rec.map(([d, x]) => `<button type="button" class="mt-sub-btn gift-make" data-k="an-${x[0].replace('-', '')}-${y}">${x[3]} ${dot(d)} ${esc(x[2])} 링크 만들기</button>`).join('')}</section>` : ''; })() : ''}
-      <section class="mg"><h2 class="mg-h">나의 기념일</h2><div class="dy-list">${mine.map(x => x[1]).join('')}</div></section>
-      <section class="mg"><h2 class="mg-h">포레스텔라 기념일</h2><div class="dy-list">${group.map(x => x[1]).join('')}</div></section>`;
+      ${isAdmin() ? (() => { const y = +today.slice(0, 4), rec = ANNIVS.map(x => [`${y}-${x[0]}`, x]).filter(([d]) => d <= today && ds(d, today) <= 30); return rec.length ? `<section class="mg"><h2 class="mg-h">${L3('🎁 기념일 하루 더 열어 주기', '🎁 Give one more anniversary day', '🎁 記念日をもう1日プレゼント')} <small>${L3('관리자만 보여요', 'Admin only', '管理者のみ')}</small></h2><p class="mt-sub">${L3('링크를 받은 폰은 24시간 동안 그 기념일처럼 숨은 숲이 나와요. 링크는 만든 뒤 하루 안에 열어야 하고, 폰마다 한 번만 돼요.', 'The phone that opens the link gets hidden forests for 24 hours, like on the day. Open within a day of making it; once per phone.', 'リンクを開いたスマホでは24時間、記念日のように隠れた森が出ます。作成から1日以内に開いてください。スマホごとに1回だけです。')}</p>${rec.map(([d, x]) => `<button type="button" class="mt-sub-btn gift-make" data-k="an-${x[0].replace('-', '')}-${y}">${x[3]} ${dot(d)} ${esc(L3(`${x[2]} 링크 만들기`, `${anvBaseL(x[2])} · make link`, `${anvBaseL(x[2])} リンク作成`))}</button>`).join('')}</section>` : ''; })() : ''}
+      <section class="mg"><h2 class="mg-h">${L3('나의 기념일', 'My anniversaries', 'わたしの記念日')}</h2><div class="dy-list">${mine.map(x => x[1]).join('')}</div></section>
+      <section class="mg"><h2 class="mg-h">${L3('포레스텔라 기념일', 'Forestella anniversaries', 'フォレステラの記念日')}</h2><div class="dy-list">${group.map(x => x[1]).join('')}</div></section>`;
   }
 
   // 기념일: 그날 하루 화면에 잎·별이 흩날리고, 가끔 뜨는 숨은 숲을 누르면 뱃지를 받아요
@@ -8212,15 +8344,15 @@
     const vids = M.vq ? (data.official || []).filter(v => M.vq.test(v.title) && (!M.from || v.date >= M.from) && (!M.to || v.date <= M.to)).sort((a, b) => b.views - a.views || a.date.localeCompare(b.date)).slice(0, 6) : [];
     const xs = M.m ? (data.xFeed || []).filter(p => p.cat === '생일' && p.m.includes(M.m)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4) : [];
     // 그해 그날 마지막까지 함께 축하한 숲별 수 (기능 생긴 2026년부터, 지난 날·오늘만)
-    const cheers = []; for (let y = +todayIso().slice(0, 4); y >= 2026; y--) { const d = `${y}-${md}`; if (d > todayIso()) continue; const n = anvCheerN(`an-${md.replace('-', '')}-${y}`); if (n) cheers.push(`<div class="dy-row"><span class="dy-ic">${A[3]}</span><span class="dy-t"><b>${y}${A[1] ? ` · ${y - A[1]}주년` : ''}</b><small>${d === todayIso() ? '오늘 지금까지' : '그날'} <b>${n.toLocaleString()}명</b>이 함께 축하했어요</small></span></div>`); }
-    const html = sec('함께 축하한 숲별', cheers.join(''))
-      + sec('그날의 기록', evs.map(e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`).join(''))
-      + sec(M.evq ? '결승 무대 곡' : '그때 부른 곡', songs.length ? `<div class="chips wrap">${songs.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>` : '')
-      + sec('영상', vids.length ? `<div class="stack x-list">${vids.map(ytCard).join('')}</div>` : '')
-      + sec('공식 X 생일 글', xs.length ? `<a class="more-link" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${encodeURIComponent(M.m)}">생일 축하 글 모아보기 ›</a>` : '')
-      + (M.prog ? `<a class="more-link" href="${progHref(M.prog)}">${esc(M.prog)} 모아보기 ›</a>` : '')
-      + (M.m ? `<a class="more-link" href="#/members?m=${encodeURIComponent(M.m)}">${esc(M.m)} 활동 보기 ›</a>` : '');
-    return html ? `<section class="mg dy-mem" id="dy-mem"><h2 class="mg-h">${A[3]} ${esc(A[1] ? `${A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]}의 추억` : A[2])}</h2>${html}</section>` : '';
+    const cheers = []; for (let y = +todayIso().slice(0, 4); y >= 2026; y--) { const d = `${y}-${md}`; if (d > todayIso()) continue; const n = anvCheerN(`an-${md.replace('-', '')}-${y}`); if (n) cheers.push(`<div class="dy-row"><span class="dy-ic">${A[3]}</span><span class="dy-t"><b>${y}${A[1] ? ` · ${(k => L3(`${k}주년`, `${k} yr`, `${k}周年`))(y - A[1])}` : ''}</b><small>${d === todayIso() ? L3(`오늘 지금까지 <b>${n.toLocaleString()}명</b>이 함께 축하했어요`, `<b>${n.toLocaleString()}</b> celebrated so far today`, `今日これまでに<b>${n.toLocaleString()}人</b>がお祝いしました`) : L3(`그날 <b>${n.toLocaleString()}명</b>이 함께 축하했어요`, `<b>${n.toLocaleString()}</b> celebrated that day`, `その日<b>${n.toLocaleString()}人</b>がお祝いしました`)}</small></span></div>`); }
+    const html = sec(L3('함께 축하한 숲별', 'Fans who celebrated', '一緒にお祝いしたファン'), cheers.join(''))
+      + sec(L3('그날의 기록', 'That day', 'その日の記録'), evs.map(e => `<a class="box-ev" href="#/e/${encodeURIComponent(e.id)}"><span>${fmtDate(e.date, false)}</span><b>${esc(e.title)}</b></a>`).join(''))
+      + sec(M.evq ? L3('결승 무대 곡', 'Songs from the finals', '決勝ステージの曲') : L3('그때 부른 곡', 'Songs from then', 'そのとき歌った曲'), songs.length ? `<div class="chips wrap">${songs.map(so => `<a class="chip" href="#/song/${encodeURIComponent(so.key)}">${esc(so.name)}</a>`).join('')}</div>` : '')
+      + sec(L3('영상', 'Videos', '映像'), vids.length ? `<div class="stack x-list">${vids.map(ytCard).join('')}</div>` : '')
+      + sec(L3('공식 X 생일 글', 'Official X birthday posts', '公式X 誕生日投稿'), xs.length ? `<a class="more-link" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${encodeURIComponent(M.m)}">${L3('생일 축하 글 모아보기 ›', 'All birthday posts ›', '誕生日投稿をまとめて見る ›')}</a>` : '')
+      + (M.prog ? `<a class="more-link" href="${progHref(M.prog)}">${esc(L3(`${M.prog} 모아보기 ›`, `${M.prog === '팬텀싱어' ? 'Phantom Singer' : M.prog} ›`, `${M.prog === '팬텀싱어' ? 'ファントムシンガー' : M.prog}をまとめて見る ›`))}</a>` : '')
+      + (M.m ? `<a class="more-link" href="#/members?m=${encodeURIComponent(M.m)}">${esc(L3(`${M.m} 활동 보기 ›`, `${memL(M.m)}'s activities ›`, `${memL(M.m)}の活動 ›`))}</a>` : '');
+    return html ? `<section class="mg dy-mem" id="dy-mem"><h2 class="mg-h">${A[3]} ${esc((nm => A[1] ? L3(`${nm}의 추억`, `Memories: ${anvBaseL(nm)}`, `${anvBaseL(nm)}の思い出`) : anvNameL(nm))(A[1] ? (A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]) : A[2]))}</h2>${html}</section>` : '';
   }
   const ANV_KEY = 'sb-anniv';
   const anvStore = () => { try { return JSON.parse(localStorage.getItem(ANV_KEY)) || {}; } catch (e) { return {}; } };
@@ -8245,7 +8377,7 @@
   // 수집 순서: 시트에 내 기록이 있으면 시각 순으로, 없으면 찾았을 때 센 번호
   const anvRank = k => { const f = (((data || {}).anniv || {})[k] || {}).f || {}, me = myUid(); if (me in f) return Object.values(f).filter(t => t < f[me]).length + 1; return ((anvStore().bdg || {})[k] || {}).n || 0; };
   const CHEER_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l5-13 8 8z"/><path d="M14 4v2M19 9h2M17.5 5.5l1.5-1.5M11 9.5c1-1.5 1-3 0-4.5M14.5 13c1.5-1 3-1 4.5 0"/></svg>';
-  const cheerBtn = a => { const on = !!(anvStore().cheer || {})[a.k], n = anvCheerN(a.k); return `<div class="anv-cheer"><button type="button" class="anv-cb${on ? ' on' : ''}" data-k="${a.k}"${on ? ' disabled' : ''}>${CHEER_IC}<span>${on ? '축하했어요' : '같이 축하하기'}</span></button><small class="anv-cn">${n ? `<b>${n.toLocaleString()}명</b>이 같이 축하하고 있어요` : '첫 번째로 축하해 주세요'}</small></div>`; };
+  const cheerBtn = a => { const on = !!(anvStore().cheer || {})[a.k], n = anvCheerN(a.k); return `<div class="anv-cheer"><button type="button" class="anv-cb${on ? ' on' : ''}" data-k="${a.k}"${on ? ' disabled' : ''}>${CHEER_IC}<span>${on ? L3('축하했어요', 'Celebrated', 'お祝いしました') : L3('같이 축하하기', 'Celebrate together', '一緒にお祝い')}</span></button><small class="anv-cn">${n ? L3(`<b>${n.toLocaleString()}명</b>이 같이 축하하고 있어요`, `<b>${n.toLocaleString()}</b> celebrating together`, `<b>${n.toLocaleString()}人</b>が一緒にお祝い中`) : L3('첫 번째로 축하해 주세요', 'Be the first to celebrate', '最初のお祝いをどうぞ')}</small></div>`; };
   // 같이 축하하기 (배너·함께한 기념일 화면 어디서 눌러도)
   document.addEventListener('click', ev => {
     const btn = ev.target.closest('.anv-cb'), a = annivToday();
@@ -8273,11 +8405,11 @@
     const b = document.createElement('div');
     const num = (a.name.match(/(\d+)주년/) || [])[1];
     b.className = 'anv-ban'; b.setAttribute('role', 'dialog');
-    b.innerHTML = `<button type="button" class="anv-x" aria-label="닫기">✕</button>
-      <div class="anv-top">${num ? `<span class="anv-num">${num}<small>th</small></span>` : `<span class="anv-num anv-numic">${a.ic}</span>`}<span class="anv-tt"><small>${a.since ? esc(a.since) + ' → 오늘' : 'HAPPY DAY'}</small><b>${esc(a.name)}</b><em>${a.my ? '포레스텔라와 함께한 날을 축하해요' : num ? `숲별들과 함께 맞는 ${num}번째 오늘` : '숲별 모두 같이 축하해요'}</em></span></div>
+    b.innerHTML = `<button type="button" class="anv-x" aria-label="${L3('닫기', 'Close', '閉じる')}">✕</button>
+      <div class="anv-top">${num ? `<span class="anv-num">${num}<small>th</small></span>` : `<span class="anv-num anv-numic">${a.ic}</span>`}<span class="anv-tt"><small>${a.since ? esc(a.since) + L3(' → 오늘', ' → today', ' → 今日') : 'HAPPY DAY'}</small><b>${esc(anvNameL(a.name))}</b><em>${a.my ? L3('포레스텔라와 함께한 날을 축하해요', 'Happy anniversary with Forestella', 'フォレステラと過ごした日々に乾杯') : num ? L3(`숲별들과 함께 맞는 ${num}번째 오늘`, `Our ${num}th today, together with fans`, `ファンと一緒に迎える${num}回目の今日`) : L3('숲별 모두 같이 축하해요', 'Let’s all celebrate together', 'みんなで一緒にお祝いしよう')}</em></span></div>
       ${cheerBtn(a)}
-      ${a.my ? '' : `<a class="anv-mem" href="#/days?m=${a.d.slice(5).replace('-', '')}">추억하러 가기 ›</a>`}
-      <div class="anv-foot"><span>숨은 숲 ${annivGoal(a)}개를 찾아보세요</span><a href="#/days">함께한 기념일 ›</a></div>`;
+      ${a.my ? '' : `<a class="anv-mem" href="#/days?m=${a.d.slice(5).replace('-', '')}">${L3('추억하러 가기 ›', 'Look back ›', '思い出を見る ›')}</a>`}
+      <div class="anv-foot"><span>${L3(`숨은 숲 ${annivGoal(a)}개를 찾아보세요`, `Find ${annivGoal(a)} hidden forests`, `隠れた森を${annivGoal(a)}個探そう`)}</span><a href="#/days">${L3('함께한 기념일 ›', 'Our anniversaries ›', '一緒に迎えた記念日 ›')}</a></div>`;
     document.body.appendChild(b);
     requestAnimationFrame(() => b.classList.add('show'));
     const close = () => { b.classList.remove('show'); setTimeout(() => b.remove(), 400); };
@@ -8301,7 +8433,7 @@
     document.body.appendChild(fall);
     const tg = document.createElement('button');
     tg.type = 'button'; tg.className = 'anv-tg';
-    const setOff = off => { fall.hidden = off; tg.classList.toggle('off', off); tg.setAttribute('aria-label', off ? '흩날림 켜기' : '흩날림 끄기'); tg.title = tg.getAttribute('aria-label'); };
+    const setOff = off => { fall.hidden = off; tg.classList.toggle('off', off); tg.setAttribute('aria-label', off ? L3('흩날림 켜기', 'Turn on falling leaves', '舞う葉をオン') : L3('흩날림 끄기', 'Turn off falling leaves', '舞う葉をオフ')); tg.title = tg.getAttribute('aria-label'); };
     tg.innerHTML = LEAF;
     tg.onclick = () => { const o = anvStore(); o.off = o.off === a.d ? '' : a.d; anvSave(o); setOff(o.off === a.d); };
     setOff(st.off === a.d);
@@ -8327,7 +8459,7 @@
       if (foundN() >= goal) return;
       if (document.hidden || !annivToday()) return next();
       const t = document.createElement('button');
-      t.type = 'button'; t.className = 'anv-stk'; t.setAttribute('aria-label', '숨은 숲');
+      t.type = 'button'; t.className = 'anv-stk'; t.setAttribute('aria-label', L3('숨은 숲', 'Hidden forest', '隠れた森'));
       t.style.left = (8 + Math.random() * 74) + '%'; t.style.top = (22 + Math.random() * 52) + '%';
       t.innerHTML = TREE;
       document.body.appendChild(t);
@@ -8355,10 +8487,10 @@
       const done = n >= goal, rk = (anvStore().bdg || {})[a.k];
       m.className = 'anv-got' + (done ? ' gold' : ''); m.setAttribute('role', 'status');
       m.innerHTML = done
-        ? `<span class="anv-gic">${a.ic}</span><span class="anv-gt"><b>숲 ${goal}개를 모두 찾았어요</b><small>금빛 ${esc(a.name)} 뱃지</small></span><a href="#/card">카드에 달기</a>`
+        ? `<span class="anv-gic">${a.ic}</span><span class="anv-gt"><b>${L3(`숲 ${goal}개를 모두 찾았어요`, `Found all ${goal} forests`, `森を${goal}個すべて見つけました`)}</b><small>${esc(L3(`금빛 ${a.name} 뱃지`, `Gold badge · ${anvNameL(a.name)}`, `金色 ${anvNameL(a.name)} バッジ`))}</small></span><a href="#/card">${L3('카드에 달기', 'Add to card', 'カードに付ける')}</a>`
         : first
-        ? `<span class="anv-gic">${a.ic}</span><span class="anv-gt"><b>${esc(a.name)} 뱃지</b><small>${rk && rk.n ? `${rk.n}번째 수집자 · ` : ''}숲 ${n}/${goal}</small></span><a href="#/card">카드에 달기</a>`
-        : `<span class="anv-gt"><b>숲 ${n}/${goal}</b><small>${goal - n}개 더 찾으면 금빛 뱃지</small></span>`;
+        ? `<span class="anv-gic">${a.ic}</span><span class="anv-gt"><b>${esc(L3(`${a.name} 뱃지`, `Badge · ${anvNameL(a.name)}`, `${anvNameL(a.name)} バッジ`))}</b><small>${rk && rk.n ? L3(`${rk.n}번째 수집자 · `, `#${rk.n} collector · `, `${rk.n}番目の収集者 · `) : ''}${L3('숲', 'Forests', '森')} ${n}/${goal}</small></span><a href="#/card">${L3('카드에 달기', 'Add to card', 'カードに付ける')}</a>`
+        : `<span class="anv-gt"><b>${L3('숲', 'Forests', '森')} ${n}/${goal}</b><small>${L3(`${goal - n}개 더 찾으면 금빛 뱃지`, `${goal - n} more for the gold badge`, `あと${goal - n}個で金色バッジ`)}</small></span>`;
       document.body.appendChild(m);
       requestAnimationFrame(() => m.classList.add('show'));
       const close = () => { m.classList.remove('show'); setTimeout(() => m.remove(), 300); };
