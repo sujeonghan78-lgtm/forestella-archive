@@ -190,6 +190,7 @@
     '같은 노래를 기다리는 두 마음': ['Two hearts waiting for the same song', '同じ歌を待つふたつの心'], '같은 계절에 숲에 들어온 사람': ['Those who entered the forest in the same season', '同じ季節に森に入った人'],
     '숲에 먼저 온 자와, 한참 뒤에 온 자': ['One who came first, one who came much later', '先に来た者と、ずっと後に来た者'], '네 개의 빛이 한자리에 모이면': ['When four lights gather in one place', '四つの光がひとつに集まれば'],
     '그날 그곳에, 모두가 있었다': ['That day, everyone was there', 'あの日あの場所に、みんながいた'],
+    '입덕 동기': ['Same-year fans', 'ファン歴の同期'], '같은 해에 숲에 들어온 입덕 동기예요': ['You both joined the forest the same year', '同じ年に森に入った同期です'], '같은 해에 숲에 들어온 사람': ['Those who entered the forest in the same year', '同じ年に森に入った人'],
     '거울 숲별': ['Mirror fans', '鏡のスッピョル'], '취향 축 4개가 다 같아요. 서로의 플레이리스트를 믿어도 돼요': ['All 4 axes match. You can trust each other\'s playlists', '好みの軸が4つとも同じ。お互いのプレイリストを信じてOK'],
     '단짝 숲별': ['Best-buddy fans', '親友スッピョル'], '거의 다 맞고 하나만 달라서 대화가 끊이지 않아요': ['Almost all match, one differs, so the talk never ends', 'ほとんど同じで一つだけ違うから話が尽きない'],
     '서로 채워주는 짝꿍': ['Complementary pair', '補い合うペア'], '반은 같고 반은 달라서 서로 새 곡을 알려 줘요': ['Half same, half different: you share new songs', '半分同じで半分違うから新しい曲を教え合える'],
