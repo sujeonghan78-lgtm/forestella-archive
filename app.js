@@ -5585,7 +5585,7 @@
     }
     const mem = R.all('m').map(i => CARD_MEMS[i]).filter(Boolean);
     if (mem.length && z !== 10) cards.push(card1('🎤', '같은 최애 멤버', `<p class="mt-big">${mem.join(' · ')}</p>`));
-    if (group) cards.push(card1('🤝', '제일 잘 맞는 짝꿍', `<ol class="mt-rank">${R.pairs.filter(p => Object.keys(p.got).length).sort((a, b) => b.pct - a.pct).slice(0, z === 10 ? 3 : 5).map(p => `<li>${mtAv(list[p.i], p.i)}${mtAv(list[p.j], p.j)}<span class="mt-rn">${esc(list[p.i].n)} × ${esc(list[p.j].n)}</span><b>${p.pct}%</b></li>`).join('')}</ol>`));
+    if (group) cards.push(card1('🤝', '제일 잘 맞는 짝꿍' + help(L3('모임 안의 두 사람씩 따로 궁합을 계산해서 높은 순으로 보여 줘요. 둘 다 담은 항목만 비교하고, 항목마다 무게가 달라요: 취향 테스트 40 · 최애곡 30 · ♥ 곡 25 · 직관 25 · 소취곡 10 · 최애 멤버 10. 곡은 겹친 비율, 직관은 같이 간 공연이 1번 60% · 2번 80% · 3번 이상 100%. 이 점수를 32~98%로 바꿔요 (완전히 같으면 100%).', 'Each pair in the group gets its own match score, highest first. Only items both people shared are compared, with weights: taste test 40 · favorite songs 30 · ♥ songs 25 · shows 25 · wish songs 10 · favorite member 10. Songs count by overlap; shows: 1 together 60%, 2 → 80%, 3+ → 100%. The score is scaled to 32–98% (100% if identical).', 'グループ内の2人ずつ相性を計算して高い順に表示します。2人とも入れた項目だけを比べ、重みは 好みテスト40・最愛曲30・♥曲25・現場25・聴きたい曲10・推しメンバー10。曲は重なった割合、現場は一緒に行った公演が1回60%・2回80%・3回以上100%。点数を32〜98%に換算します(完全一致は100%)。')), `<ol class="mt-rank">${R.pairs.filter(p => Object.keys(p.got).length).sort((a, b) => b.pct - a.pct).slice(0, z === 10 ? 3 : 5).map(p => `<li>${mtAv(list[p.i], p.i)}${mtAv(list[p.j], p.j)}<span class="mt-rn">${esc(list[p.i].n)} × ${esc(list[p.j].n)}</span><b>${p.pct}%</b></li>`).join('')}</ol>`));
     const ss = list.map((p, i) => [p, i]).filter(([p]) => p.s).sort((a, b) => a[0].s.localeCompare(b[0].s));
     if (ss.length >= 2) {
       const [o, oi] = ss[0], [y] = ss[ss.length - 1], d = Math.round((Date.parse(y.s) - Date.parse(o.s)) / 864e5);
@@ -5595,7 +5595,7 @@
     return { cards, T };
   }
   function matchView() {
-    if (!isAdmin()) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
+    if (!isAdmin() && !/[?&]sm=/.test(location.hash)) return `<a class="back" href="#/more">‹ 더보기</a><p class="empty">준비 중인 화면이에요.</p>`;
     const q = new URLSearchParams(location.hash.split('?')[1] || ''), me = mtMe(true), mine = !mtEmpty(me);
     if (q.get('test')) { if (!tsSt) tsSt = { i: 0, a: [] }; return `<section class="ts-wrap"><button type="button" class="back ts-backbtn" id="ts-back">‹ 이전</button><div id="ts-quiz" class="ts-in"></div></section>`; }
     if (q.get('r') && tsRead()) return `<a class="back" href="#/match">‹ 취향 궁합</a><section class="mt-res">${tsResultHtml(tsRead())}
@@ -5664,17 +5664,17 @@
   }
   let mtList = [], mtCur = null, mtAdded = null;
   function mtSumView(q) {
-    const S0 = mtFromSum(q.get('sm')), back = `<a class="back" href="#/match">‹ ${L3('숲별 취향 궁합', 'Taste match', '好み相性')}</a>`;
+    const S0 = mtFromSum(q.get('sm')), back = isAdmin() ? `<a class="back" href="#/match">‹ ${L3('숲별 취향 궁합', 'Taste match', '好み相性')}</a>` : `<a class="back" href="#/">‹ ${L3('홈', 'Home', 'ホーム')}</a>`;
     if (!S0) { mtCur = null; return `${back}<p class="empty">${L3('결과 링크가 잘렸거나 깨졌어요. 링크를 통째로 다시 받아 주세요.', 'This result link is broken. Ask for the whole link again.', '結果リンクが壊れています。もう一度まるごと受け取ってください。')}</p>`; }
     const { list, R, z } = S0, me = mtMe(true), meAt = list.findIndex(p => mtIsMe(p.u, me)), rn = mtRoomName(), group = list.length > 2, { cards, T } = mtCards(list, R, z);
     mtCur = { list, R, z };
     return `${back}
       <section class="mt-res${group ? ' mt-g' : ''}">${mtHeroHtml(list, R, T, meAt, rn, group)}
-        <p class="mt-hint">${L3('방장이 보낸 결과 링크예요. 이 모임에 들어가고 싶으면 \'내 궁합 링크 보내기\'로 내 링크를 방장에게 보내 주세요.', 'This is the result the host shared. To join, send your own match link to the host.', '幹事が共有した結果リンクです。参加したいときは自分の相性リンクを幹事に送ってください。')}</p>
+        ${isAdmin() ? `<p class="mt-hint">${L3('방장이 보낸 결과 링크예요. 이 모임에 들어가고 싶으면 \'내 궁합 링크 보내기\'로 내 링크를 방장에게 보내 주세요.', 'This is the result the host shared. To join, send your own match link to the host.', '幹事が共有した結果リンクです。参加したいときは自分の相性リンクを幹事に送ってください。')}</p>` : ''}
         ${cards.join('')}
         <div class="mt-acts">
           ${R.none ? '' : `<button type="button" class="mt-go" id="mt-img"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>결과 이미지 저장</button>`}
-          <a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 궁합 링크 만들기</a>
+          ${isAdmin() ? `<a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 궁합 링크 만들기</a>` : ''}
         </div>
       </section>`;
   }
