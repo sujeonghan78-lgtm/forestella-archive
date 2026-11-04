@@ -2333,4 +2333,3 @@ a.block.home-taste { display: flex; flex-direction: row; text-align: left; align
 .dx-ty li:not(.on) span { filter: grayscale(1); opacity: .5; }
 .mt-pop-b { flex-direction: column; }
 .mt-pop-b .mt-go, .mt-pop-b .mt-sub-btn { width: 100%; }
-.dx-moon { margin: 22px 0 4px; text-align: center; font-size: 12px; color: var(--muted); font-style: italic; opacity: .8; }

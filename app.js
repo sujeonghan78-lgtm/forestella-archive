@@ -5508,7 +5508,6 @@
       ${sec(L3('숲별 모임', 'Groups', '集まり'), MT_GROUP.map((_, i) => 'c' + i))}
       ${sec(L3('✨ 이스터에그', '✨ Easter eggs', '✨ イースターエッグ'), Object.keys(MT_EGG).filter(k => !MT_EGG[k][4]))}
       ${hid.length ? `<section class="dx-s"><h2 class="mg-h">${L3('✨ 숨은 칸', '✨ Secret slots', '✨ 隠れ枠')} <small>${hid.length}</small></h2><ul class="dx-g">${hid.map(cell).join('')}</ul></section>` : ''}
-      <p class="dx-moon">${L3('🌙 이 도감엔 아직 적히지 않은 페이지가 있대요…', '🌙 They say this book has pages not yet written…', '🌙 この図鑑には、まだ書かれていないページがあるらしい…')}</p>
       <section class="dx-s"><h2 class="mg-h">${L3('만난 취향 유형', 'Taste types met', '出会った好みタイプ')} <small>${ty.size}/16</small></h2><ul class="dx-ty">${TS_TYPES.map((t, i) => ty.has(i) ? `<li class="on"><span>${t[0]}</span><b>${t[1]}</b></li>` : `<li><span>❔</span><b>???</b></li>`).join('')}</ul></section>`;
   }
   function mtEggPop(keys) {
