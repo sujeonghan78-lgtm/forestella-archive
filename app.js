@@ -162,9 +162,9 @@
   const BOX_KEY = 'sb-box', BOX_USER = 'sb-box-user';
   const boxRead = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (err) { return null; } };
   const boxWrite = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (err) { /* 저장 못 해도 괜찮아요 */ } if (KV_KEYS.includes(k)) kvTouch(); };
-  // 이어 쓰기에 같이 싣는 이 폰 설정: 숲별 카드·카드 슬롯·나만 저장한 가사·준비물·비밀글 열쇠 (사진·스티커는 빼요)
+  // 이어 쓰기에 같이 싣는 이 폰 설정: 숲별 카드·카드 슬롯·나만 저장한 가사·준비물·비밀글 열쇠·취향 테스트 답 (사진·스티커는 빼요)
   // 보관함 곡 칸(box.s)에 'kv:키:JSON'으로 넣어서 Apps Script를 안 바꾸고 따라가요
-  const KV_KEYS = ['sb-card', 'sb-card-slots', 'sb-lyrics', 'sb-ready', 'sb-sec-key'];
+  const KV_KEYS = ['sb-card', 'sb-card-slots', 'sb-lyrics', 'sb-ready', 'sb-sec-key', 'sb-taste'];
   const kvStrip = (k, v) => k === 'sb-card-slots' && Array.isArray(v) ? v.map(x => x && { ...x, photo: null, stk: [] }) : v;
   // 시트(보관함)에는 이름+숫자로 잠가서 'kvx:암호문' 한 줄로 올려요 (시트를 열어도 내용이 안 보여요). 예전 'kv:' 줄도 읽어요
   const kvB64 = u8 => { let t = ''; for (let i = 0; i < u8.length; i += 8192) t += String.fromCharCode.apply(null, u8.subarray(i, i + 8192)); return btoa(t); };
@@ -5417,7 +5417,7 @@
   function mtMeAll() {
     const st = boxStats(), hs = so => mtHash(so.key);
     return {
-      n: (card.nick || '').trim().slice(0, 12) || '숲별',  // 이름 없으면 남에게도 '숲별'로 (예전엔 '나'라서 헷갈렸어요) s: card.since || '',
+      n: (card.nick || '').trim().slice(0, 12) || '숲별', s: card.since || '',  // 이름 없으면 남에게도 '숲별'로 (예전엔 '나'라서 헷갈렸어요)
       f: pickList('fav').map(hs).slice(0, 15), w: pickList('wish').map(hs).slice(0, 15),
       h: st.songs.map(hs).slice(0, 150), g: [...new Set(st.went.map(e => e.id))].slice(0, 200),
       m: CARD_MEMS.map((m, i) => card.mem.includes(m) ? String(i) : '').filter(Boolean), u: mtUid().replace(/[^\w-]/g, ''), t: tsRead(),
