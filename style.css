@@ -2222,13 +2222,34 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mt-ml-bad { margin: 2px 0; font-size: 12px; color: #B4541A; line-height: 1.5; }
 /* 내 숲별 모임 박스 */
 .mt-rooms { margin: 6px 0 4px; }
-.mt-rooms-g { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.mt-rb { position: relative; display: flex; flex-direction: column; justify-content: center; min-height: 64px; padding: 10px 28px 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card, #fff); box-sizing: border-box; }
-.mt-rb a { display: grid; gap: 3px; color: inherit; text-decoration: none; }
+.mt-rooms-g { display: grid; gap: 8px; }
+.mt-rb { position: relative; display: flex; flex-direction: column; justify-content: center; min-height: 56px; padding: 10px 40px 10px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--card, #fff); box-sizing: border-box; }
+.mt-rb a { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; color: inherit; text-decoration: none; }
 .mt-rb a::after { content: ''; position: absolute; inset: 0; border-radius: 14px; }
 .mt-rb b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mt-rb small { font-size: 12px; color: var(--mute, #6B7A70); }
-.mt-rb-x { position: absolute; top: 4px; right: 4px; z-index: 1; width: 26px; height: 26px; border: 0; background: none; color: var(--mute, #6B7A70); font-size: 16px; cursor: pointer; border-radius: 50%; }
+.mt-rb-x { position: absolute; top: 50%; margin-top: -14px; right: 8px; width: 28px !important; height: 28px !important; z-index: 1; width: 26px; height: 26px; border: 0; background: none; color: var(--mute, #6B7A70); font-size: 16px; cursor: pointer; border-radius: 50%; }
 .mt-rb-add { flex-direction: row; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px; border-style: dashed; background: none; font: inherit; font-size: 13.5px; font-weight: 700; color: var(--accent, #1C7A5E); cursor: pointer; }
 .mt-rb-add span { font-size: 18px; line-height: 1; }
 .mt-room-again { width: 100%; margin: 8px 0 0; }
+.mt-room-z { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.mt-room-z label { display: grid; gap: 2px; padding: 10px 6px; border: 1px solid var(--line); border-radius: 12px; text-align: center; cursor: pointer; }
+.mt-room-z label:has(input:checked) { border-color: var(--accent, #1C7A5E); background: var(--tint-1, #F1F6F2); }
+.mt-room-z input { position: absolute; opacity: 0; pointer-events: none; }
+.mt-room-z b { font-size: 13.5px; }
+.mt-room-z small { font-size: 11.5px; color: var(--mute, #6B7A70); }
+.mt-roster { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.mt-roster li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 12px; background: var(--card, #fff); }
+.mt-roster li b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+.mt-roster li small:not(:last-child) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-roster li small { font-size: 12px; color: var(--mute, #6B7A70); }
+.mt-roster li small:last-child, .mt-ro-x { margin-left: auto; }
+.mt-ro-x { width: 28px; height: 28px; border: 0; background: none; color: var(--mute, #6B7A70); font-size: 17px; cursor: pointer; border-radius: 50%; }
+.mt-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.mt-bars li { display: grid; grid-template-columns: 56px 1fr 22px; align-items: center; gap: 8px; font-size: 13px; }
+.mt-bars i { display: block; height: 10px; border-radius: 6px; background: var(--accent, #1C7A5E); min-width: 6px; }
+.mt-bars b { text-align: right; }
+.mt-rb-add { min-height: 48px; }
+.mt-ed .mt-merge { margin-top: 12px; }
+.mt-res-go { display: flex; justify-content: center; margin-top: 14px; text-decoration: none; }
+.mt-res-wait { text-align: center; margin-top: 12px; }

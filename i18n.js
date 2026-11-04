@@ -194,7 +194,8 @@
     if ((m = k.match(/^(.+) VS (.+)$/)) && VSO[m[1]] && VSO[m[2]]) return `${VSO[m[1]][i]} VS ${VSO[m[2]][i]}`;
     if ((m = k.match(/^완전 (.+)$/)) && SH[m[1]]) return lang === 'ja' ? `完全に${SH[m[1]][1]}` : `Totally ${SH[m[1]][0]}`;
     if ((m = k.match(/^(.+) 쪽$/)) && SH[m[1]]) return lang === 'ja' ? `やや${SH[m[1]][1]}` : `Leaning ${SH[m[1]][0]}`;
-    if ((m = k.match(/^(: |· )?(.+)·(.+) 반반$/)) && SH[m[2]] && SH[m[3]]) return `${m[1] || ''}${lang === 'ja' ? `${SH[m[2]][1]}・${SH[m[3]][1]} 半々` : `Half ${SH[m[2]][0]} / ${SH[m[3]][0]}`}`;
+    if ((m = k.match(/^(: |· )?(.+) 반반$/))) { const pr = m[2].split('·');  // '큰 공연장·소극장·행사'처럼 가운데 점이 여러 개여도 맞는 곳에서 나눠요
+      for (let i = 1; i < pr.length; i++) { const x = pr.slice(0, i).join('·'), y = pr.slice(i).join('·'); if (SH[x] && SH[y]) return `${m[1] || ''}${lang === 'ja' ? `${SH[x][1]}・${SH[y][1]} 半々` : `Half ${SH[x][0]} / ${SH[y][0]}`}`; } }
     if ((m = k.match(/^(×\s*)?([^·]+)·([^·]+)$/)) && SH[m[2]] && SH[m[3]]) return `${m[1] || ''}${SH[m[2]][i]}·${SH[m[3]][i]}`;
     if ((m = k.match(/^: (.+)$/)) && LB[m[1]]) return ': ' + LB[m[1]][i];
     if ((m = k.match(/^내 답: (.+)$/))) return (lang === 'ja' ? '私の答え: ' : 'My answers: ') + (LB[m[1]] ? LB[m[1]][i] : (trTaste(m[1]) || m[1]));
@@ -249,7 +250,7 @@
     if ((m = k.match(/^(.*\d)\s*\((일|월|화|수|목|금|토)\)(.*)$/)) && !/[가-힣]/.test(m[1] + m[3])) return s.replace(k, `${m[1]} (${DAY[m[2]][i]})${m[3]}`);
     return null;
   }
-  const SKIP = 'script,style,textarea,input,.ev-title,.d-title,.song-name,.x-text,.fan-title,.op-body,.lang-keep';
+  const SKIP = 'script,style,textarea,input,.ev-title,.d-title,.song-name,.x-text,.fan-title,.op-body,.lang-keep,.mt-av,.mt-roster b,.mt-pp small,.tsq-dot,.tsq-leg span';
   const orig = new WeakMap();
   function walk(root) {
     if (lang === 'ko' || !root) return;
