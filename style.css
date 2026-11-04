@@ -2335,3 +2335,11 @@ a.block.home-taste { display: flex; flex-direction: row; text-align: left; align
 .mt-pop-b .mt-go, .mt-pop-b .mt-sub-btn { width: 100%; }
 .dx-foot { display: block; margin: 18px auto 4px; text-align: center; font-size: 12.5px; color: var(--muted); text-decoration: none; }
 .dx-foot b { font-weight: 600; }
+/* 궁합 처음 안내 */
+.mt-guide { margin: 0 0 14px; padding: 12px 14px; border-radius: 14px; background: var(--heaf6ee, #eaf6ee); font-size: 13.5px; line-height: 1.55; }
+.mt-guide summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+.mt-guide h3 { margin: 14px 0 6px; font-size: 13.5px; }
+.gd-ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.gd-ol li { display: flex; gap: 8px; align-items: flex-start; }
+.gd-n { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--green, #3f8f4f); color: #fff; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.gd-p { margin: 0 0 6px; color: var(--ink); }

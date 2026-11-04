@@ -5493,6 +5493,26 @@
     return fresh;
   }
   const mtDexN = () => { const o = mtDex(); return mtDexAll().filter(k => o[k]).length; };
+  // 처음 쓰는 사람용 안내: 둘이 볼 때 · 모임으로 볼 때 · 링크에 담기는 것
+  function mtGuide() {
+    const first = !mtDexN() && !mtRooms().length, st = (n, t) => `<li><span class="gd-n">${n}</span><span>${t}</span></li>`;
+    return `<details class="mt-guide"${first ? ' open' : ''}><summary>💡 ${L3('처음이라면: 궁합은 이렇게 봐요', 'New here? How matching works', 'はじめての方へ: 相性の見方')}</summary>
+      <h3>👥 ${L3('친구랑 둘이 보기', 'With one friend', '友だちとふたりで')}</h3><ol class="gd-ol">
+        ${st(1, L3("아래에서 링크에 담을 것을 고르고 <b>'내 궁합 링크 보내기'</b>를 눌러 친구에게 보내요.", "Pick what to include below and tap <b>“Send my match link”</b> to send it to a friend.", "下で入れる項目を選び、<b>「自分の相性リンクを送る」</b>で友だちに送ります。"))}
+        ${st(2, L3('친구가 링크를 열면 <b>친구 폰에 있는 기록</b>과 비교해서 바로 둘의 궁합이 나와요. 친구도 ♥ 곡이나 취향 테스트가 있어야 해요.', 'When your friend opens it, it’s compared with <b>the records on their phone</b> and your match appears. They need ♥ songs or the taste test too.', '友だちが開くと<b>友だちのスマホの記録</b>と比べて、すぐに相性が出ます。友だちにも♥曲か好みテストが必要です。'))}
+        ${st(3, L3("친구가 <b>'결과 링크 보내기'</b>로 결과를 다시 보내 주면, 나도 같은 결과를 볼 수 있어요.", "Your friend can tap <b>“Share the result link”</b> so you see the same result.", "友だちが<b>「結果リンクを送る」</b>で返してくれれば、私も同じ結果を見られます。"))}
+      </ol>
+      <h3>🌲 ${L3('여럿이 모임으로 보기', 'As a group', 'みんなで集まりとして')}</h3><ol class="gd-ol">
+        ${st(1, L3("방장 한 명이 <b>'＋ 모임 만들기'</b>로 방을 만들어요 (2·6·10명방).", "One host creates a room with <b>“＋ Create group”</b> (2, 6 or 10 people).", "幹事ひとりが<b>「＋ 集まりを作る」</b>で部屋を作ります(2・6・10人)。"))}
+        ${st(2, L3("친구들은 각자 <b>'내 궁합 링크 보내기'</b>로 자기 링크를 방장에게 보내요. 단톡방에 올려도 돼요.", "Each friend sends their own link to the host with <b>“Send my match link”</b>. A group chat is fine.", "友だちはそれぞれ<b>「自分の相性リンクを送る」</b>で幹事にリンクを送ります。グループチャットでもOK。"))}
+        ${st(3, L3("방장은 <b>내 숲별 모임</b>에서 방을 눌러, 받은 링크를 한 명씩 붙여 넣고 <b>'추가'</b>를 눌러요.", "The host opens the room in <b>My groups</b>, pastes each link and taps <b>“Add”</b>.", "幹事は<b>私の集まり</b>で部屋を開き、届いたリンクを貼って<b>「追加」</b>を押します。"))}
+        ${st(4, L3("<b>'현재 결과 보기'</b> → <b>'결과 링크 보내기'</b>로 모두에게 결과를 나눠요.", "<b>“See the result”</b> → <b>“Share the result link”</b> to share it with everyone.", "<b>「今の結果を見る」</b>→<b>「結果リンクを送る」</b>でみんなに共有します。"))}
+      </ol>
+      <h3>🔒 ${L3('링크에 담기는 것', 'What’s in the links', 'リンクに入るもの')}</h3>
+      <p class="gd-p">${L3('<b>내 궁합 링크</b>: 이름과 아래에서 체크한 기록만 들어가요.<br><b>결과 링크</b>: 계산한 결과(이름·궁합 %·겹친 곡과 공연)만 들어가고, 각자의 ♥ 곡 전체는 안 들어가요.<br>서버에 저장하지 않아서 링크를 받은 사람만 볼 수 있어요.', '<b>My match link</b>: only your name and the items you check below.<br><b>Result link</b>: only the calculated result (names, match %, shared songs and shows), not everyone’s full ♥ list.<br>Nothing is stored on a server, so only people with the link can see it.', '<b>自分の相性リンク</b>: 名前と下でチェックした記録だけ。<br><b>結果リンク</b>: 計算した結果(名前・相性%・重なった曲と公演)だけで、各自の♥曲全部は入りません。<br>サーバーに保存しないので、リンクを受け取った人だけが見られます。')}</p>
+      <p class="gd-p">📖 ${L3('궁합 결과를 볼 때마다 <b>궁합 도감</b>에 칸이 모이고, 가끔 이스터에그도 나와요.', 'Every result fills your <b>Match collection</b>, and sometimes an easter egg appears.', '結果を見るたびに<b>相性図鑑</b>が埋まり、ときどきイースターエッグも。')}</p>
+    </details>`;
+  }
   function mtDexView() {
     const o = mtDex(), all = mtDexAll(), got = all.filter(k => o[k]).length, hid = Object.keys(MT_EGG).filter(k => MT_EGG[k][4] && o[k]);
     const cell = k => { const I = mtDexInfo(k), x = o[k];
@@ -5753,6 +5773,7 @@
           ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsType(tsRead())[1]}</b><span>결과 보기 ›</span></a>`
             : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
           ${from ? (mtIsMe(from.u, me) ? (room ? `${rn ? `<p class="mt-room-t">🌲 ${esc(rn)}</p>` : ''}<p class="mt-from">${mtAv(from, 0)} ${L3('내가 만든 숲별 모임이에요. 친구들이 보내 준 링크를 아래 칸에 한꺼번에 붙여 넣으면 모두 모여요.', 'This is your Soopbyeol group. Paste all the links your friends sent you below to bring everyone together.', '自分が作ったスッピョルの集まりです。友だちから届いたリンクを下にまとめて貼るとみんな集まります。')}</p>${mine ? mtMergeBox(true, [me]) : ''}` : `<p class="mt-from">${mtAv(from, 0)} 내가 만든 궁합 링크예요. 친구가 열면 둘의 궁합이 보여요.</p>`) : `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>`) : ''}
+          ${mtGuide()}
           ${mine ? `
             <div class="mt-mine">
               <label class="mt-nick">링크에 보일 이름 <input id="mt-nick" maxlength="12" value="${esc(card.nick || '')}" placeholder="숲별"></label>
@@ -5763,8 +5784,6 @@
               <button type="button" class="mt-go" id="mt-send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>내 궁합 링크 보내기</button>
               ${mtRoomsHtml()}
               <div class="mt-room-new" hidden><div class="mt-room-z" role="radiogroup">${[[2, L3('2명 짝꿍', '2 · Pair', '2人 ペア'), L3('가장 자세하게', 'Most detail', 'いちばん詳しく')], [6, L3('6명 모임', '6 · Group', '6人 グループ'), L3('둘씩 비교까지', 'Every pair', 'ペアごとに比較')], [10, L3('10명 큰 모임', '10 · Big', '10人 大グループ'), L3('요약 위주', 'Summary', 'まとめ中心')]].map(([z, a, b]) => `<label><input type="radio" name="mt-z" value="${z}"${z === 6 ? ' checked' : ''}><b>${a}</b><small>${b}</small></label>`).join('')}</div><input id="mt-room-n" maxlength="20" placeholder="${L3('모임 이름 (예: 부산콘 같이 간 숲별)', 'Group name (e.g. Busan concert crew)', '集まりの名前 (例: 釜山コン仲間)')}"><button type="button" class="mt-go" id="mt-room-go">${L3('모임 만들기', 'Create group', '集まりを作る')}</button></div>
-              <p class="mt-note">${L3("숲별 모임: 방장이 '모임 만들기'로 방을 만들어요. 친구들은 각자 '내 궁합 링크 보내기'로 자기 링크를 방장에게 보내고, 방장이 받은 링크를 방에 붙여 넣으면 결과가 나와요.", "Groups: the host creates a group. Each friend taps \"Send my match link\" and sends it to the host, and the host pastes the links into the group to see the result.", "集まり：幹事が「集まりを作る」で作ります。友だちはそれぞれ「自分の相性リンクを送る」で幹事にリンクを送り、幹事がまとめて貼ると結果が出ます。")}</p>
-              <p class="mt-note">${L3(`링크엔 체크한 것과 이름만 들어가요. ♥ 곡·직관처럼 많은 걸 담을수록 링크가 길어져요. 링크를 받은 사람만 볼 수 있어요.<br>친구가 내 링크를 열면 둘의 궁합이 나와요. 3명 이상은 '모임 만들기'로 방장이 모아요 (2·6·10명방).`, `Only the checked items and your name go into the link. The more you add (like ♥ songs or shows), the longer the link. Only people with the link can see it.<br>When a friend opens your link, you see your pair match. For 3 or more, the host gathers links with "Create group" (2, 6 or 10 people).`, `リンクにはチェックした項目と名前だけが入ります。♥曲や現場など多く入れるほどリンクが長くなります。リンクを受け取った人だけが見られます。<br>友だちがリンクを開くとふたりの相性が出ます。3人以上は幹事が「集まりを作る」で集めます(2・6・10人)。`)}</p>
             </div>` : `<p class="empty">아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.<br><a href="#/songs">곡 아카이브 가기</a></p>`}
           <a class="dx-foot" href="#/match?dex=1">📖 ${L3('숲별 궁합 도감', 'Match collection', '相性図鑑')} <b id="mt-dex-n">${mtDexN()}/${mtDexAll().length}</b> ›</a>
         </section>`;
