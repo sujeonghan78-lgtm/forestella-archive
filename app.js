@@ -5476,7 +5476,7 @@
     const cnt = k => { const m = new Map(); list.forEach(p => new Set(p[k]).forEach(x => m.set(x, (m.get(x) || 0) + 1))); return m; };
     const keys = {}; pairs.forEach(p => Object.entries(p.got).forEach(([k, v]) => { keys[k] = (keys[k] || 0) + v / pairs.length; }));
     const tags = MT_PARTS.filter(([k]) => keys[k] >= 0.5).sort((a, b) => keys[b[0]] - keys[a[0]]).slice(0, 2).map(x => x[2]);
-    const rec = list.length === 2 ? [[1, 0], [0, 1]].map(([x, y]) => [...new Set([...list[x].f, ...list[x].h])].filter(k => !list[y].h.includes(k) && !list[y].f.includes(k)).slice(0, 6)) : null;  // 2명: 서로 추천곡 (상대는 ♥했는데 나는 아직)
+    const rec = list.length === 2 ? [[0, 1], [1, 0]].map(([x, y]) => [...new Set([...list[x].f, ...list[x].h])].filter(k => !list[y].h.includes(k) && !list[y].f.includes(k)).slice(0, 6)) : null;  // 2명: 서로 추천곡 (rec[0] = 0번이 좋아하는데 1번은 아직인 곡, 0번이 1번에게 추천)
     return { pairs, pct, all, cnt, tags, none: !pv.length, rec };
   }
   // 받은 링크 합치기: 붙여 넣은 글에서 궁합 링크를 모두 찾아 지금 사람들과 합쳐요 (같은 사람은 한 번만, 최대 6명)
