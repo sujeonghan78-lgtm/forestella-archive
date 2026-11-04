@@ -5750,7 +5750,6 @@
       return `${back}
         <section class="mt-intro">
           <div class="mt-hero mt-hero-in"><i class="mt-stripe"></i><svg class="mt-venn" viewBox="0 0 120 72" aria-hidden="true"><circle cx="44" cy="36" r="30"/><circle cx="76" cy="36" r="30"/><path class="mt-venn-in" d="M60 11.1a30 30 0 0 1 0 49.8a30 30 0 0 1 0-49.8z"/><circle class="mt-venn-d" cx="34" cy="30" r="5"/><circle class="mt-venn-d b" cx="86" cy="42" r="5"/></svg><p class="mt-kick">FOREST MATCH</p><h1>숲별 취향 궁합</h1><p>나랑 취향이 얼마나 비슷할까?<br>링크를 보내면 친구 기록이랑 바로 비교돼요</p></div>
-          <a class="ts-mine dx-link" href="#/match?dex=1"><small>${L3('모은 궁합 결과', 'Results collected', '集めた結果')}</small><b>📖 ${L3('숲별 궁합 도감', 'Match collection', '相性図鑑')} ${mtDexN()}/${mtDexAll().length}</b><span>${L3('보기 ›', 'View ›', '見る ›')}</span></a>
           ${tsRead() ? `<a class="ts-mine" href="#/match?r=1"><small>나의 취향 유형</small><b>${tsType(tsRead())[1]}</b><span>결과 보기 ›</span></a>`
             : `<a class="ts-start" href="#/match?test=1${q.get('d') ? '&d=' + encodeURIComponent(q.get('d')) : ''}"><b>취향 테스트 먼저 해 볼래요?</b><small>9문항 · 1분이면 끝나요. 기록이 없어도 궁합을 볼 수 있어요</small></a>`}
           ${from ? (mtIsMe(from.u, me) ? (room ? `${rn ? `<p class="mt-room-t">🌲 ${esc(rn)}</p>` : ''}<p class="mt-from">${mtAv(from, 0)} ${L3('내가 만든 숲별 모임이에요. 친구들이 보내 준 링크를 아래 칸에 한꺼번에 붙여 넣으면 모두 모여요.', 'This is your Soopbyeol group. Paste all the links your friends sent you below to bring everyone together.', '自分が作ったスッピョルの集まりです。友だちから届いたリンクを下にまとめて貼るとみんな集まります。')}</p>${mine ? mtMergeBox(true, [me]) : ''}` : `<p class="mt-from">${mtAv(from, 0)} 내가 만든 궁합 링크예요. 친구가 열면 둘의 궁합이 보여요.</p>`) : `<p class="mt-from">${mtAv(from, 0)} <b>${esc(from.n)}</b> 님이 궁합 링크를 보냈어요. 내 기록이 있어야 비교할 수 있어요.</p>`) : ''}
@@ -5767,6 +5766,7 @@
               <p class="mt-note">${L3("숲별 모임: 방장이 '모임 만들기'로 방을 만들어요. 친구들은 각자 '내 궁합 링크 보내기'로 자기 링크를 방장에게 보내고, 방장이 받은 링크를 방에 붙여 넣으면 결과가 나와요.", "Groups: the host creates a group. Each friend taps \"Send my match link\" and sends it to the host, and the host pastes the links into the group to see the result.", "集まり：幹事が「集まりを作る」で作ります。友だちはそれぞれ「自分の相性リンクを送る」で幹事にリンクを送り、幹事がまとめて貼ると結果が出ます。")}</p>
               <p class="mt-note">${L3(`링크엔 체크한 것과 이름만 들어가요. ♥ 곡·직관처럼 많은 걸 담을수록 링크가 길어져요. 링크를 받은 사람만 볼 수 있어요.<br>여러 명이면 받은 사람이 열고 결과 링크를 다시 보내면 계속 이어져요 (최대 ${MT_MAX}명).`, `Only the checked items and your name go into the link. The more you add (like ♥ songs or shows), the longer the link. Only people with the link can see it.<br>For a group, each person opens it and sends the result link on (up to ${MT_MAX} people).`, `リンクにはチェックした項目と名前だけが入ります。♥曲や現場など多く入れるほどリンクが長くなります。リンクを受け取った人だけが見られます。<br>複数人なら、受け取った人が開いて結果リンクを送り直すとつながります(最大${MT_MAX}人)。`)}</p>
             </div>` : `<p class="empty">아직 비교할 기록이 없어요. 곡에 ♥나 💚 최애곡, 일정에 🎫 직관을 눌러 두면 궁합을 볼 수 있어요.<br><a href="#/songs">곡 아카이브 가기</a></p>`}
+          <a class="dx-foot" href="#/match?dex=1">📖 ${L3('숲별 궁합 도감', 'Match collection', '相性図鑑')} <b id="mt-dex-n">${mtDexN()}/${mtDexAll().length}</b> ›</a>
         </section>`;
     }
     const R = mtCalc(list), group = list.length > 2, z = mtRoomOf() ? mtCap() : list.length <= 2 ? 2 : MT_MAX, { cards, T } = mtCards(list, R, z);
@@ -5784,8 +5784,8 @@
           <button type="button" class="mt-go" id="mt-share" data-n="${list.length}" data-room="${room && !iHost && meAt >= 0 ? esc(rn || host.n) : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>${room && !iHost && meAt >= 0 ? L3('방장에게 내 링크 보내기', 'Send my link to the host', '幹事に自分のリンクを送る') : myRoom ? L3('결과 링크 보내기', 'Share the result link', '結果リンクを送る') : list.length < mtCap() ? (group || meAt >= 0 ? '결과 링크 보내기 · 다음 사람도 넣을 수 있어요' : '결과 링크 보내기') : '결과 링크 보내기'}</button>
           ${R.none ? '' : `<button type="button" class="mt-sub-btn" id="mt-img"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>결과 이미지 저장</button>`}
           <a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 링크 새로 만들기</a>
-          <a class="mt-sub-btn" href="#/match?dex=1">📖 ${L3('궁합 도감', 'Collection', '相性図鑑')} <b id="mt-dex-n">${mtDexN()}/${mtDexAll().length}</b></a>
         </div>
+        <a class="dx-foot" href="#/match?dex=1">📖 ${L3('숲별 궁합 도감', 'Match collection', '相性図鑑')} <b id="mt-dex-n">${mtDexN()}/${mtDexAll().length}</b> ›</a>
       </section>`;
   }
   let mtList = [], mtCur = null, mtAdded = null;
@@ -5800,9 +5800,9 @@
         ${cards.join('')}
         <div class="mt-acts">
           ${R.none ? '' : `<button type="button" class="mt-go" id="mt-img"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>결과 이미지 저장</button>`}
-          ${matchOpen() ? `<a class="mt-sub-btn" href="#/match?dex=1">📖 ${L3('궁합 도감', 'Collection', '相性図鑑')} <b id="mt-dex-n">${mtDexN()}/${mtDexAll().length}</b></a>` : ''}
           ${matchOpen() ? `<a class="mt-sub-btn" href="#/match"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>내 궁합 링크 만들기</a>` : ''}
         </div>
+        ${matchOpen() ? `<a class="dx-foot" href="#/match?dex=1">📖 ${L3('숲별 궁합 도감', 'Match collection', '相性図鑑')} <b id="mt-dex-n">${mtDexN()}/${mtDexAll().length}</b> ›</a>` : ''}
       </section>`;
   }
   function bindMatch() {

@@ -2333,3 +2333,5 @@ a.block.home-taste { display: flex; flex-direction: row; text-align: left; align
 .dx-ty li:not(.on) span { filter: grayscale(1); opacity: .5; }
 .mt-pop-b { flex-direction: column; }
 .mt-pop-b .mt-go, .mt-pop-b .mt-sub-btn { width: 100%; }
+.dx-foot { display: block; margin: 18px auto 4px; text-align: center; font-size: 12.5px; color: var(--muted); text-decoration: none; }
+.dx-foot b { font-weight: 600; }
