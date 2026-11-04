@@ -2356,3 +2356,4 @@ a.block.home-taste { display: flex; flex-direction: row; text-align: left; align
 .tsm-c em { position: absolute; top: -6px; right: -4px; font-style: normal; font-size: 9px; font-weight: 800; background: var(--ink); color: #fff; border-radius: 8px; padding: 1px 5px; }
 .tsm-info { margin: 8px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; min-height: 2.6em; }
 .tsm-info b { color: var(--ink); }
+.ts-st-re { margin-left: 8px; border: 1px solid var(--line); background: #fff; color: var(--green-d); font: inherit; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 9px; cursor: pointer; vertical-align: middle; }

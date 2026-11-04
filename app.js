@@ -5212,7 +5212,7 @@
     const top5 = rank.slice(0, 5), list = top5.includes(my) ? top5 : [...top5, my];
     const axes = [0, 1, 2, 3].map(k => { const r = all.filter(a => tsAxes(a)[k].b).length, l = n - r; return `<div class="ts-st-ax"><p><span>${TS_AX[k][0]} <b>${pc(l)}%</b></span><span><b>${pc(r)}%</b> ${TS_AX[k][1]}</span></p><div class="ts-st-bar"><i style="width:${pc(l)}%"></i></div></div>`; }).join('');
     const sc = [0, 0, 0]; all.forEach(a => sc[+a[16]]++);
-    return `<section class="ts-st"><h2 class="ts-sum-h">숲별 통계 <small>${n.toLocaleString()}명 참여</small></h2>
+    return `<section class="ts-st"><h2 class="ts-sum-h">숲별 통계 <small>${n.toLocaleString()}명 참여</small>${isAdmin() ? `<button type="button" class="ts-st-re" title="새로 받기">↻ 새로 받기</button>` : ''}</h2>
       <p class="ts-st-me">${L3(`나와 같은 <b>${code(my)}</b>는 숲별의 <b>${myP}%</b> · 16유형 중 <b>${myR}위</b>`, `<b>${code(my)}</b> like me: <b>${myP}%</b> of fans · <b>#${myR}</b> of 16`, `私と同じ<b>${code(my)}</b>は全体の<b>${myP}%</b>・16タイプ中<b>${myR}位</b>`)}${myP <= 4 ? `<em>${L3('희귀 유형', 'Rare type', 'レアタイプ')}</em>` : ''}</p>
       <ol class="ts-st-rank">${list.map(k => bar(k, rank[0])).join('')}</ol>
       <h3>${L3('숲별 취향 지도', 'Fan taste map', 'みんなの好みマップ')}</h3>${tsMapHtml(cnt, n, my)}
@@ -5370,6 +5370,7 @@
   function tsQuadBind() {
     document.querySelectorAll('.ts-tbl-save').forEach(b => b.onclick = () => tsTableImage(b.dataset.t || ''));
     const so = document.getElementById('ts-st-off');
+    document.querySelectorAll('.ts-st-re').forEach(b => b.onclick = () => { b.disabled = true; b.textContent = '받는 중…'; try { localStorage.removeItem('soopbyeol-data-v1'); } catch (e) {} location.reload(); });
     document.querySelectorAll('.tsm').forEach(m => m.onclick = ev => {
       const b = ev.target.closest('.tsm-c'), info = m.nextElementSibling; if (!b || !info) return;
       const k = +b.dataset.k, cd = [k >> 3 & 1, k >> 2 & 1, k >> 1 & 1, k & 1].map((v, i) => TS_EN[i][v]).join('');
