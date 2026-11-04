@@ -2229,12 +2229,12 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mt-rb b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mt-rb small { font-size: 12px; color: var(--mute, #6B7A70); }
 .mt-rb-x { position: absolute; top: 50%; margin-top: -14px; right: 8px; width: 28px !important; height: 28px !important; z-index: 1; width: 26px; height: 26px; border: 0; background: none; color: var(--mute, #6B7A70); font-size: 16px; cursor: pointer; border-radius: 50%; }
-.mt-rb-add { flex-direction: row; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px; border-style: dashed; background: none; font: inherit; font-size: 13.5px; font-weight: 700; color: var(--accent, #1C7A5E); cursor: pointer; }
+.mt-rb-add { flex-direction: row; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px; border-style: dashed; background: none; font: inherit; font-size: 13.5px; font-weight: 700; color: var(--green); cursor: pointer; }
 .mt-rb-add span { font-size: 18px; line-height: 1; }
 .mt-room-again { width: 100%; margin: 8px 0 0; }
 .mt-room-z { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .mt-room-z label { display: grid; gap: 2px; padding: 10px 6px; border: 1px solid var(--line); border-radius: 12px; text-align: center; cursor: pointer; }
-.mt-room-z label:has(input:checked) { border-color: var(--accent, #1C7A5E); background: var(--tint-1, #F1F6F2); }
+.mt-room-z label:has(input:checked) { border-color: var(--green); background: var(--tint-1, #F1F6F2); }
 .mt-room-z input { position: absolute; opacity: 0; pointer-events: none; }
 .mt-room-z b { font-size: 13.5px; }
 .mt-room-z small { font-size: 11.5px; color: var(--mute, #6B7A70); }
@@ -2247,7 +2247,7 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mt-ro-x { width: 28px; height: 28px; border: 0; background: none; color: var(--mute, #6B7A70); font-size: 17px; cursor: pointer; border-radius: 50%; }
 .mt-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
 .mt-bars li { display: grid; grid-template-columns: 56px 1fr 22px; align-items: center; gap: 8px; font-size: 13px; }
-.mt-bars i { display: block; height: 10px; border-radius: 6px; background: var(--accent, #1C7A5E); min-width: 6px; }
+.mt-bars i { display: block; height: 10px; border-radius: 6px; background: var(--green); min-width: 6px; }
 .mt-bars b { text-align: right; }
 .mt-rb-add { min-height: 48px; }
 .mt-ed .mt-merge { margin-top: 12px; }
@@ -2262,9 +2262,26 @@ a.wt-yes { display: flex; align-items: center; text-decoration: none; }
 .mt-split .on { color: var(--ink, #1E2A22); font-weight: 700; }
 .sp-bar { display: flex; height: 24px; border-radius: 12px; overflow: hidden; background: var(--tint-1, #F1F6F2); }
 .sp-bar i { display: flex; align-items: center; justify-content: center; min-width: 22px; font-style: normal; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; }
-.sp-bar .a { background: var(--accent, #1C7A5E); }
-.sp-bar .b { background: #2C86CF; }
+.sp-bar .a { background: var(--green); }
+.sp-bar .b { background: var(--h2c86cf, #2C86CF); }
 .sp-bar .h { background: var(--tint-2, #C9D9CE); color: var(--ink, #1E2A22); font-weight: 600; font-size: 11px; }
 .mt-card h2 { position: relative; flex-wrap: wrap; }
 .mt-card h2 span.help-pop { display: block; position: static; flex-basis: 100%; width: auto; height: auto; max-width: none; border-radius: 12px; background: #fff; box-shadow: 0 4px 14px rgba(28, 74, 56, 0.1); font-size: 12.5px; font-weight: 400; place-items: initial; }
 .mt-card h2 span.help-pop[hidden] { display: none; }
+/* 2명: 9문항 비교 선 */
+.pv-leg { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; margin: -2px 0 10px; }
+.pv-leg .mt-av { width: 22px; height: 22px; font-size: 11px; }
+.pv-leg small { margin-left: auto; color: var(--muted); }
+.mt-pv { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mt-pv li { position: relative; display: grid; grid-template-columns: 4.4em 1fr 4.4em; align-items: center; gap: 10px; min-height: 40px; font-size: 12px; color: var(--muted); }
+.mt-pv li.ok::after { content: '✓'; position: absolute; right: -6px; top: 2px; font-size: 11px; font-weight: 800; color: var(--green); }
+.pv-l { text-align: right; word-break: keep-all; line-height: 1.25; }
+.pv-r { word-break: keep-all; line-height: 1.25; }
+.pv-tr { position: relative; height: 4px; border-radius: 2px; background: var(--tint-2); }
+.mt-pv li.ok .pv-tr { background: var(--hcfefe0, #CFEFE0); }
+.pv-tr em { position: absolute; top: -4px; width: 2px; height: 12px; margin-left: -1px; background: var(--hc9d9ce, #C9D9CE); font-style: normal; }
+.pv-3 em { width: 8px; height: 8px; top: -2px; margin-left: -4px; border-radius: 50%; }
+.pv-3 em:nth-child(2) { font-size: 10.5px; line-height: 30px; text-indent: 0; white-space: nowrap; display: flex; justify-content: center; color: var(--muted); }
+.pv-dot { position: absolute; top: 50%; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.pv-dot.l { margin-left: -21px; }
+.pv-dot.r { margin-left: -3px; }

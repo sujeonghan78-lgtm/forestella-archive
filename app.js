@@ -5552,10 +5552,16 @@
       const side = (t, i) => { if (i === 8) return +t[16]; const v = tsVals(t)[i]; return v < 38 ? 0 : v > 62 ? 1 : 2; },
         lab = (i, v) => i === 8 ? TS_STYLE.o[v][1] : v === 2 ? `${tsShort(TS_Q[i], 0)}·${tsShort(TS_Q[i], 1)} 반반` : TS_Q[i].p[v];
       if (tp.length === 2) {
-        const [[a], [b]] = tp, same = [], diff = [];
-        for (let i = 0; i < 9; i++) { const x = side(a.t, i), y = side(b.t, i); (x === y ? same : diff).push(x === y ? `둘 다 <b>${lab(i, x)}</b>` : `${esc(a.n)} <b>${lab(i, x)}</b> · ${esc(b.n)} <b>${lab(i, y)}</b>`); }
-        cards.push(card1('🤝', `같은 답 <b>${same.length}개</b>`, same.length ? `<ul class="ts-lines">${same.map(x => `<li>${x}</li>`).join('')}</ul>` : '<p class="mt-sub">하나도 안 겹쳐요. 그래서 더 재밌어요</p>'));
-        if (diff.length) cards.push(card1('⚡', '여기선 갈렸어요', `<ul class="ts-lines">${diff.map(x => `<li>${x}</li>`).join('')}</ul>`));
+        // 2명: 문항마다 한 줄 선 위에 두 사람 점 (실제 답 위치), 같은 쪽이면 ✓
+        const [[a, ai], [b, bi]] = tp, SL = [L3('직관', 'Live', '現場'), L3('기록', 'Records', '記録'), L3('방구석', 'At home', 'おうち')];
+        const dot = (p, ci, x, up) => `<i class="pv-dot${up === 'r' ? ' r' : up ? ' l' : ''}" style="left:${6 + x * 0.88}%;background:${MT_COL[ci % MT_COL.length]}">${esc([...p.n][0] || '?')}</i>`;
+        let same = 0;
+        const rowsH = [...Array(9).keys()].map(i => { const ok = side(a.t, i) === side(b.t, i); if (ok) same++;
+          if (i === 8) { const xa = [0, 50, 100][+a.t[16]], xb = [0, 50, 100][+b.t[16]];
+            return `<li class="${ok ? 'ok' : ''}"><span class="pv-l">${SL[0]}</span><span class="pv-tr pv-3"><em style="left:6%"></em><em style="left:50%">${SL[1]}</em><em style="left:94%"></em>${dot(a, ai, xa, ok)}${dot(b, bi, xb, ok ? 'r' : false)}</span><span class="pv-r">${SL[2]}</span></li>`; }
+          const va = tsVals(a.t)[i], vb = tsVals(b.t)[i], near = Math.abs(va - vb) < 9;
+          return `<li class="${ok ? 'ok' : ''}"><span class="pv-l">${tsShort(TS_Q[i], 0)}</span><span class="pv-tr"><em style="left:50%"></em>${dot(a, ai, va, near)}${dot(b, bi, vb, near ? 'r' : false)}</span><span class="pv-r">${tsShort(TS_Q[i], 1)}</span></li>`; }).join('');
+        cards.push(card1('🤝', `${L3('9문항 비교', 'All 9 answers', '9問の比較')} · ${L3('같은 쪽', 'same side', '同じ側')} <b>${same}${L3('개', '', '問')}</b>`, `<div class="pv-leg">${mtAv(a, ai)} ${esc(a.n)} ${mtAv(b, bi)} ${esc(b.n)} <small>${L3('✓ 같은 쪽', '✓ same side', '✓ 同じ側')}</small></div><ul class="mt-pv">${rowsH}</ul>`));
       } else {
         // 문항마다 한 줄 막대: 왼쪽 답 | 반반(연한 칸) | 오른쪽 답, 칸 안에 사람 수
         const rows = [...Array(9).keys()].map(i => { const c = [0, 0, 0]; tp.forEach(([p]) => c[side(p.t, i)]++); return { i, c }; });
