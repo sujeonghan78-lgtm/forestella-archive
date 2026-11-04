@@ -5557,8 +5557,11 @@
         cards.push(card1('🤝', `같은 답 <b>${same.length}개</b>`, same.length ? `<ul class="ts-lines">${same.map(x => `<li>${x}</li>`).join('')}</ul>` : '<p class="mt-sub">하나도 안 겹쳐요. 그래서 더 재밌어요</p>'));
         if (diff.length) cards.push(card1('⚡', '여기선 갈렸어요', `<ul class="ts-lines">${diff.map(x => `<li>${x}</li>`).join('')}</ul>`));
       } else {
-        const rows = [...Array(9).keys()].map(i => { const c = [0, 0, 0]; tp.forEach(([p]) => c[side(p.t, i)]++); const o = [0, 1, 2].filter(v => c[v]).sort((x, y) => c[y] - c[x]); return { i, c, o }; }).sort((x, y) => Math.max(...y.c) - Math.max(...x.c));
-        cards.push(card1('📊', '우리 모임은', `<ul class="ts-lines">${rows.map(r => `<li>${r.o.length === 1 ? `모두 <b>${lab(r.i, r.o[0])}</b>` : r.o.map(v => `${lab(r.i, v)} <b>${r.c[v]}</b>`).join(' : ')}</li>`).join('')}</ul>`));
+        // 문항마다 한 줄 막대: 왼쪽 답 | 반반(연한 칸) | 오른쪽 답, 칸 안에 사람 수
+        const rows = [...Array(9).keys()].map(i => { const c = [0, 0, 0]; tp.forEach(([p]) => c[side(p.t, i)]++); return { i, c }; });
+        const seg = (n, cls, txt) => n ? `<i class="${cls}" style="flex:${n}">${txt}</i>` : '';
+        cards.push(card1('📊', '우리 모임은', `<ul class="mt-split">${rows.map(({ i, c }) => { const st = i === 8, SL = [L3('직관', 'Live', '現場'), L3('기록', 'Records', '記録'), L3('방구석', 'At home', 'おうち')], L = st ? SL[0] : tsShort(TS_Q[i], 0), Rr = st ? SL[2] : tsShort(TS_Q[i], 1);
+          return `<li><span class="sp-l${c[0] >= c[1] && c[0] ? ' on' : ''}">${L}</span><span class="sp-bar">${seg(c[0], 'a', c[0])}${seg(st ? c[1] : c[2], 'h', st ? `${SL[1]} ${c[1]}` : `${L3('반반', 'half', '半々')} ${c[2]}`)}${seg(st ? c[2] : c[1], 'b', st ? c[2] : c[1])}</span><span class="sp-r${(st ? c[2] : c[1]) > c[0] ? ' on' : ''}">${Rr}</span></li>`; }).join('')}</ul>`));
       }
     }
     const evs = R.all('g').map(id => data.byId.get(id)).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date)), EV = z === 2 ? 30 : 6;
