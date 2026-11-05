@@ -5954,6 +5954,7 @@
     { n: '눈', w: 300, slot: 160, o: { tree: 1, forest: 8, beads: 34, stars: 8, socks: 12, gifts: 1, snow: 1 } },
     { n: '별', w: 400, slot: 200, o: { tree: 1, forest: 10, beads: 34, stars: 8, socks: 12, gifts: 1, snow: 1, star: 1 } },
   ];
+  const TREE_OPEN = false; // false면 관리자 기기에만 보여요 (오픈할 때 true)
   const TREE_KEY = 'sb-tree';
   const kstDay = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
   const treeMine = () => boxRead(TREE_KEY) || { water: [] };
@@ -5968,6 +5969,7 @@
   }
   let treeApi = null;
   function treeView() {
+    if (!TREE_OPEN && !isAdmin()) return `<p class="empty">${L3('준비 중이에요 🌱', 'Coming soon 🌱', '準備中です 🌱')}</p>`;
     const st = treeState(), qs = new URLSearchParams(location.hash.split('?')[1] || ''), test = isAdmin() && qs.get('lv');
     const nx = st.next, pct = nx ? Math.round((st.water - st.lv.w) / (nx.w - st.lv.w) * 100) : 100;
     return `<section class="tree-page">
@@ -5977,7 +5979,7 @@
       <div class="tree-cv" id="tree-cv"><p class="tree-load">${L3('트리를 심는 중…', 'Planting the tree…', 'ツリーを植えています…')}</p></div>
       <div class="tree-btns"><button class="tree-water" id="tree-water" ${st.done ? 'disabled' : ''}>${st.done ? L3('💧 오늘 물 줬어요', '💧 Watered today', '💧 今日は水やり済み') : L3('💧 물 주기', '💧 Water', '💧 水をあげる')}</button></div>
       <p class="tree-note">${L3(`하루에 한 번 물을 줄 수 있어요. 숲별들이 준 물이 모이면 트리가 자라요.${st.myDays ? ` 나는 ${st.myDays}일 물 줬어요.` : ''}`, `You can water once a day. The tree grows with everyone's water.${st.myDays ? ` You've watered ${st.myDays} day(s).` : ''}`, `1日1回水をあげられます。みんなの水でツリーが育ちます。${st.myDays ? `${st.myDays}日水をあげました。` : ''}`)}</p>
-      ${test ? `<p class="tree-note">관리자 미리보기: Lv${test}</p>` : ''}
+      ${isAdmin() ? `<p class="tree-note">관리자 미리보기${TREE_OPEN ? '' : ' · 아직 나만 보여요 (물 주기는 이 폰에만 기록, 시트엔 안 감)'} · ${TREE_LV.map((l, k) => `<a href="#/tree?lv=${k + 1}">Lv${k + 1}</a>`).join(' ')} · <a href="#/tree">실제</a> · 하늘 ${['dawn', 'day', 'sunset', 'night'].map(k => `<a href="#/tree?lv=${test || st.i + 1}&sky=${k}">${{ dawn: '새벽', day: '낮', sunset: '노을', night: '밤' }[k]}</a>`).join(' ')}${test ? ` · 지금 Lv${test}` : ''}</p>` : ''}
     </section>`;
   }
   function bindTree() {
@@ -5992,7 +5994,7 @@
     if (b) b.onclick = () => {
       const t = treeState(); if (t.done) return;
       const mine = treeMine(), today = kstDay(); b.disabled = true;
-      formPost(`종류: 물\n누가: ${myUid()}`).then(() => {
+      (TREE_OPEN ? formPost(`종류: 물\n누가: ${myUid()}`) : Promise.resolve()).then(() => {
         boxWrite(TREE_KEY, Object.assign(mine, { water: [...new Set([...(mine.water || []), today])].slice(-120) }));
         if (treeApi) treeApi.water();
         const n = treeState(); b.textContent = L3('💧 오늘 물 줬어요', '💧 Watered today', '💧 今日は水やり済み');
