@@ -5957,6 +5957,8 @@
     { n: '눈', en: 'Snow', ja: '雪', w: 750, slot: 160, o: { tree: 1, beads: 34, stars: 8, socks: 12, gifts: 1, snow: 1 } },
     { n: '별', en: 'Star', ja: '星', w: 1000, slot: 200, o: { tree: 1, beads: 34, stars: 8, socks: 12, gifts: 1, snow: 1, star: 1 } },
   ];
+  // 내 트리 이름 (이 폰에만, sb-tree.name)
+  const treeName = () => (treeMine().name || '').trim() || L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー');
   const lvN = l => l ? L3(l.n, l.en || l.n, l.ja || l.n) : '';
   const TREE_OPEN = false; // false면 관리자 기기에만 보여요 (오픈할 때 true)
   const TREE_KEY = 'sb-tree';
@@ -6110,7 +6112,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return `<section class="tree-page">
       <div class="tree-cv" id="tree-cv"><p class="tree-load">${L3('트리를 심는 중…', 'Planting the tree…', 'ツリーを植えています…')}</p></div>
       <div class="tree-top">
-        <div class="tree-tline"><button class="tree-back" id="tree-back" aria-label="${L3('돌아가기', 'Back', '戻る')}">${TI.back}</button><h1 class="tree-h">🎄 ${L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー')} <small>Lv${st.i + 1} ${lvN(st.lv)}</small></h1>${treeOpened() || isAdmin() ? `<button class="tree-back tree-lt" id="tree-letters" aria-label="${L3('편지 보기', 'Letters', '手紙')}">${TI.letter}</button>` : ''}${adm}</div>
+        <div class="tree-tline"><button class="tree-back" id="tree-back" aria-label="${L3('돌아가기', 'Back', '戻る')}">${TI.back}</button><h1 class="tree-h"><button class="tree-name" id="tree-name" aria-label="${L3('트리 이름 바꾸기', 'Rename tree', '名前を変える')}">🎄 ${esc(treeName())} <svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button> <small>Lv${st.i + 1} ${lvN(st.lv)}</small></h1>${treeOpened() || isAdmin() ? `<button class="tree-back tree-lt" id="tree-letters" aria-label="${L3('편지 보기', 'Letters', '手紙')}">${TI.letter}</button>` : ''}${adm}</div>
         <div class="tree-week" aria-label="${L3('이번 주 물 준 날', 'Watered this week', '今週の水やり')}">${stamp}</div>
       </div>
       <div class="tree-bot">
@@ -6137,6 +6139,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };
     const o0 = document.getElementById('tree-orn0'); if (o0) o0.onclick = e => { e.preventDefault(); const m = treeMine(); delete m.torn; boxWrite(TREE_KEY, m); renderBase('tree'); };
+    const nm = document.getElementById('tree-name'); if (nm) nm.onclick = () => { const v = prompt(L3('트리 이름을 지어 주세요 (12자, 비우면 숲별 트리)', 'Name your tree (12 chars)', 'ツリーの名前(12字)'), (treeMine().name || '')); if (v == null) return; const m = treeMine(); m.name = v.trim().slice(0, 12); boxWrite(TREE_KEY, m); nm.firstChild.textContent = '🎄 ' + treeName() + ' '; toast(L3('이름을 바꿨어요', 'Renamed', '名前を変えました')); };
     const lt = document.getElementById('tree-letters'); if (lt) lt.onclick = () => treeLetters();
     const rs = document.getElementById('tree-reset'); if (rs) rs.onclick = e => { e.preventDefault(); const m = treeMine(); delete m.test; boxWrite(TREE_KEY, m); renderBase('tree'); };
     const b = document.getElementById('tree-water');
@@ -6161,7 +6164,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   function homeTree() {
     if (!TREE_OPEN && !isAdmin()) return '';
     const st = treeState(), nx = st.next, pct = nx ? Math.round((st.water - st.lv.w) / (nx.w - st.lv.w) * 100) : 100;
-    return `<section class="block home-tree" id="home-tree"><a class="ht-go" href="#/tree"><span class="ht-ic">🎄</span><span class="ht-t"><b>${L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー')}</b> <small>Lv${st.i + 1} ${lvN(st.lv)}</small><span class="ht-bar"><i style="width:${pct}%"></i></span><small>💧 ${st.water}${nx ? ` / ${nx.w}` : ''} · ${L3(`숲별 ${st.people}명`, `${st.people} fans`, `${st.people}人`)}${st.orn.length ? ` · 🎁 ${st.orn.length}` : ''}</small></span></a>
+    return `<section class="block home-tree" id="home-tree"><a class="ht-go" href="#/tree"><span class="ht-ic">🎄</span><span class="ht-t"><b>${esc(treeName())}</b> <small>Lv${st.i + 1} ${lvN(st.lv)}</small><span class="ht-bar"><i style="width:${pct}%"></i></span><small>💧 ${st.water}${nx ? ` / ${nx.w}` : ''} · ${L3(`숲별 ${st.people}명`, `${st.people} fans`, `${st.people}人`)}${st.orn.length ? ` · 🎁 ${st.orn.length}` : ''}</small></span></a>
       <button class="ht-w" id="ht-w" ${st.done ? 'disabled' : ''}>${TI.drop}<span>${st.done ? L3('내일 또', 'Tomorrow', 'また明日') : `${st.left}/${TREE_MAX}`}</span></button></section>`;
   }
   function bindHomeTree() {

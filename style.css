@@ -2464,3 +2464,5 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .ht-w span { font-size: 10px; font-weight: 700; }
 .ht-w:disabled { background: linear-gradient(160deg, #d9e2e8, #9aa8b2); }
 .tp-col { margin: 10px 0 2px; } .tp-col button { width: 26px; height: 26px; }
+.tree-name { border: 0; background: none; color: inherit; font: inherit; padding: 0; cursor: pointer; text-shadow: inherit; display: inline-flex; align-items: center; gap: 4px; }
+.tree-name svg { width: 13px; height: 13px; fill: none; stroke: rgba(255,255,255,.75); stroke-width: 2; stroke-linejoin: round; }
