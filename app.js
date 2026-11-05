@@ -4948,6 +4948,7 @@
   }
   const HOME_SECS = [
     ['pins', '자주 쓰는 메뉴', () => { const g = pinsGot(); return `<section class="block pin-box home-pins"><div class="pin-h"><b>자주 쓰는 메뉴</b><a class="link-btn" href="#/more">${g.length ? '바꾸기' : '고르기'}</a></div>${g.length ? pinTiles(g) : '<p class="src-note">더보기에서 ☆를 눌러 메뉴를 골라 주세요.</p>'}</section>`; }, true],
+    ['tree', '숲별 트리', () => homeTree()],
     ['random', '오늘의 랜덤 무대', () => homeRandom()],
     ['members', '멤버별 활동', () => homeMembers()],
     ['taste', '취향 테스트', () => homeTaste()],
@@ -5946,16 +5947,17 @@
   // ── 숲별 트리 (#/tree) ── 다 같이 물 주고(하루 5번까지) 트리를 키워요. 레벨은 이 목록 한 줄씩 (나중에 줄만 더하기)
   const TREE_MAX = 5; // 하루에 물 줄 수 있는 횟수
   const TREE_LV = [
-    { n: '씨앗', w: 0, slot: 0, o: {} },
-    { n: '새싹', w: 25, slot: 0, o: { sprout: 1 } },
-    { n: '아기 나무', w: 75, slot: 10, o: { tree: .32 } },
-    { n: '작은 나무', w: 150, slot: 25, o: { tree: .55 } },
-    { n: '트리', w: 250, slot: 50, o: { tree: 1 } },
-    { n: '구슬', w: 375, slot: 80, o: { tree: 1, beads: 30, stars: 6 } },
-    { n: '양말·선물', w: 550, slot: 120, o: { tree: 1, beads: 34, stars: 8, socks: 12, gifts: 1 } },
-    { n: '눈', w: 750, slot: 160, o: { tree: 1, beads: 34, stars: 8, socks: 12, gifts: 1, snow: 1 } },
-    { n: '별', w: 1000, slot: 200, o: { tree: 1, beads: 34, stars: 8, socks: 12, gifts: 1, snow: 1, star: 1 } },
+    { n: '씨앗', en: 'Seed', ja: 'タネ', w: 0, slot: 0, o: {} },
+    { n: '새싹', en: 'Sprout', ja: '芽', w: 25, slot: 0, o: { sprout: 1 } },
+    { n: '아기 나무', en: 'Sapling', ja: '若木', w: 75, slot: 10, o: { tree: .32 } },
+    { n: '작은 나무', en: 'Small tree', ja: '小さな木', w: 150, slot: 25, o: { tree: .55 } },
+    { n: '트리', en: 'Tree', ja: 'ツリー', w: 250, slot: 50, o: { tree: 1 } },
+    { n: '구슬', en: 'Baubles', ja: 'オーナメント', w: 375, slot: 80, o: { tree: 1, beads: 30, stars: 6 } },
+    { n: '양말·선물', en: 'Socks & gifts', ja: '靴下とプレゼント', w: 550, slot: 120, o: { tree: 1, beads: 34, stars: 8, socks: 12, gifts: 1 } },
+    { n: '눈', en: 'Snow', ja: '雪', w: 750, slot: 160, o: { tree: 1, beads: 34, stars: 8, socks: 12, gifts: 1, snow: 1 } },
+    { n: '별', en: 'Star', ja: '星', w: 1000, slot: 200, o: { tree: 1, beads: 34, stars: 8, socks: 12, gifts: 1, snow: 1, star: 1 } },
   ];
+  const lvN = l => l ? L3(l.n, l.en || l.n, l.ja || l.n) : '';
   const TREE_OPEN = false; // false면 관리자 기기에만 보여요 (오픈할 때 true)
   const TREE_KEY = 'sb-tree';
   const kstDay = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
@@ -5981,7 +5983,7 @@
   function treeHud(st) {
     const nx = st.next, pct = nx ? Math.round((st.water - st.lv.w) / (nx.w - st.lv.w) * 100) : 100;
     return `<div class="tl-row"><b>Lv${st.i + 1}</b><span class="tree-bar"><i style="width:${pct}%"></i></span><b>${nx ? 'Lv' + (st.i + 2) : 'MAX'}</b></div>
-      <p class="tl-num">💧 ${st.water}${nx ? ` / ${nx.w} · ${L3('다음', 'Next', '次')}: ${nx.n}` : ` · ${L3('다음 레벨 준비 중', 'Next level coming soon', '次のレベル準備中')}`}</p>
+      <p class="tl-num">💧 ${st.water}${nx ? ` / ${nx.w} · ${L3('다음', 'Next', '次')}: ${lvN(nx)}` : ` · ${L3('다음 레벨 준비 중', 'Next level coming soon', '次のレベル準備中')}`}</p>
       <p class="tl-ppl">🌟 ${L3(`숲별 ${st.people}명이 같이 키우는 중`, `${st.people} fans growing it together`, `${st.people}人で一緒に育て中`)}</p>`;
   }
   // ---- 오너먼트 달기 ----
@@ -6099,7 +6101,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return `<section class="tree-page">
       <div class="tree-cv" id="tree-cv"><p class="tree-load">${L3('트리를 심는 중…', 'Planting the tree…', 'ツリーを植えています…')}</p></div>
       <div class="tree-top">
-        <div class="tree-tline"><button class="tree-back" id="tree-back" aria-label="${L3('돌아가기', 'Back', '戻る')}">${TI.back}</button><h1 class="tree-h">🎄 ${L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー')} <small>Lv${st.i + 1} ${st.lv.n}</small></h1>${treeOpened() || isAdmin() ? `<button class="tree-back tree-lt" id="tree-letters" aria-label="${L3('편지 보기', 'Letters', '手紙')}">${TI.letter}</button>` : ''}${adm}</div>
+        <div class="tree-tline"><button class="tree-back" id="tree-back" aria-label="${L3('돌아가기', 'Back', '戻る')}">${TI.back}</button><h1 class="tree-h">🎄 ${L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー')} <small>Lv${st.i + 1} ${lvN(st.lv)}</small></h1>${treeOpened() || isAdmin() ? `<button class="tree-back tree-lt" id="tree-letters" aria-label="${L3('편지 보기', 'Letters', '手紙')}">${TI.letter}</button>` : ''}${adm}</div>
         <div class="tree-week" aria-label="${L3('이번 주 물 준 날', 'Watered this week', '今週の水やり')}">${stamp}</div>
       </div>
       <div class="tree-bot">
@@ -6137,7 +6139,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         if (treeApi) treeApi.water();
         const td = document.querySelector(`.tw-d[data-d="${today}"]`); if (td && !td.classList.contains('on')) { td.classList.add('on', 'pop'); td.querySelector('i').innerHTML = TI.drop; }
         const n = treeState(); b.querySelector('span').innerHTML = wlab(n); if (n.done) b.classList.add('done'); else b.disabled = false;
-        toast(n.i > t.i ? L3(`🎉 트리가 Lv${n.i + 1} ${n.lv.n}이 됐어요!`, `🎉 The tree reached Lv${n.i + 1}!`, `🎉 ツリーがLv${n.i + 1}になりました!`) : (n.done ? L3('💧 오늘 물은 다 줬어요! 내일 또 와 주세요', '💧 All done today! Come back tomorrow', '💧 今日の水やり完了!また明日') : L3(`💧 물을 줬어요! 오늘 ${n.left}번 더 줄 수 있어요`, `💧 Watered! ${n.left} more today`, `💧 水をあげました!今日はあと${n.left}回`)));
+        toast(n.i > t.i ? L3(`🎉 트리가 Lv${n.i + 1} ${lvN(n.lv)}이 됐어요!`, `🎉 The tree reached Lv${n.i + 1}!`, `🎉 ツリーがLv${n.i + 1}になりました!`) : (n.done ? L3('💧 오늘 물은 다 줬어요! 내일 또 와 주세요', '💧 All done today! Come back tomorrow', '💧 今日の水やり完了!また明日') : L3(`💧 물을 줬어요! 오늘 ${n.left}번 더 줄 수 있어요`, `💧 Watered! ${n.left} more today`, `💧 水をあげました!今日はあと${n.left}回`)));
         // 레벨 미리보기(?lv=)로 보고 있었으면 풀고, 레벨이 오르면 트리를 새로 그려요
         const q = new URLSearchParams(location.hash.split('?')[1] || ''), sk = q.get('sky');
         if (q.get('lv')) setTimeout(() => { location.hash = '#/tree' + (sk ? '?sky=' + sk : ''); }, 900);
@@ -6145,6 +6147,22 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         else { const hd = document.getElementById('tree-hud'); if (hd) hd.innerHTML = treeHud(n); }
       }).catch(() => { b.disabled = false; toast(L3('보내지 못했어요. 잠시 뒤 다시 눌러 주세요', 'Could not send. Try again shortly', '送信できませんでした。少し後でもう一度')); });
     };
+  }
+  // 홈 칸: 트리 레벨 + 바로 물 주기 (3D는 트리 화면에서만)
+  function homeTree() {
+    if (!TREE_OPEN && !isAdmin()) return '';
+    const st = treeState(), nx = st.next, pct = nx ? Math.round((st.water - st.lv.w) / (nx.w - st.lv.w) * 100) : 100;
+    return `<section class="block home-tree" id="home-tree"><a class="ht-go" href="#/tree"><span class="ht-ic">🎄</span><span class="ht-t"><b>${L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー')}</b> <small>Lv${st.i + 1} ${lvN(st.lv)}</small><span class="ht-bar"><i style="width:${pct}%"></i></span><small>💧 ${st.water}${nx ? ` / ${nx.w}` : ''} · ${L3(`숲별 ${st.people}명`, `${st.people} fans`, `${st.people}人`)}${st.orn.length ? ` · 🎁 ${st.orn.length}` : ''}</small></span></a>
+      <button class="ht-w" id="ht-w" ${st.done ? 'disabled' : ''}>${TI.drop}<span>${st.done ? L3('내일 또', 'Tomorrow', 'また明日') : `${st.left}/${TREE_MAX}`}</span></button></section>`;
+  }
+  function bindHomeTree() {
+    const b = document.getElementById('ht-w'); if (!b) return;
+    b.onclick = () => { const t = treeState(); if (t.done) return; const mine = treeMine(), today = kstDay(); b.disabled = true;
+      (TREE_OPEN ? formPost(`종류: 물\n누가: ${myUid()}`) : Promise.resolve()).then(() => {
+        boxWrite(TREE_KEY, TREE_OPEN ? Object.assign(mine, { water: [...new Set([...(mine.water || []), today])].slice(-120), wn: { d: today, n: t.todayN + 1 } }) : Object.assign(mine, { test: (mine.test || 0) + 1, tdays: [...new Set([...(mine.tdays || []), today])].slice(-14) }));
+        const n = treeState(); toast(n.i > t.i ? L3(`🎉 트리가 Lv${n.i + 1} ${lvN(n.lv)}이 됐어요!`, `🎉 The tree reached Lv${n.i + 1}!`, `🎉 ツリーがLv${n.i + 1}になりました!`) : L3(`💧 물을 줬어요!${n.left ? ` 오늘 ${n.left}번 더` : ''}`, `💧 Watered!${n.left ? ` ${n.left} more today` : ''}`, `💧 水をあげました!`));
+        const box = document.getElementById('home-tree'); if (box) { box.outerHTML = homeTree(); bindHomeTree(); }
+      }).catch(() => { b.disabled = false; toast(L3('보내지 못했어요. 잠시 뒤 다시 눌러 주세요', 'Could not send. Try again shortly', '送信できませんでした')); }); };
   }
   function giftView() { return `<a class="back" href="#/days">‹ 함께한 기념일</a><section class="gift-box" id="gift-box"><p class="empty">${L3('선물 상자를 여는 중…', 'Opening your gift…', 'プレゼントを開けています…')}</p></section>`; }
     // 기념일 이름 번역 (팬텀싱어 우승 9주년 → Phantom Singer win · 9th anniversary)
@@ -8464,9 +8482,8 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (name !== 'tree') treeFrom = location.hash || '#/';
     const full = name === 'tree' && (TREE_OPEN || isAdmin()); document.body.classList.toggle('tree-full', full);
     view.innerHTML = (full ? '' : ddayBadge(name)) + routes[name]() + (full || /^(opinion|admin|add|card)$/.test(name) ? '' : opBtn());
-    if (name === 'home' && (TREE_OPEN || isAdmin())) view.insertAdjacentHTML('beforeend', `<a class="tree-fab" href="#/tree" aria-label="숲별 트리">🎄</a>`);
     fillSyncNote(name);
-    if (name === 'home') { bindHome(); bindHomeEdit(); }
+    if (name === 'home') { bindHome(); bindHomeEdit(); bindHomeTree(); }
     if (name === 'search') bindSearch();
     if (name === 'songs') bindSongs();
     if (name === 'releases') bindReleases();

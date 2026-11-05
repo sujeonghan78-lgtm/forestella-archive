@@ -2451,3 +2451,15 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tl-item .tp-msg { font-size: 14px; }
 .tl-hide { margin-top: 6px; border: 0; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; padding: 0; cursor: pointer; }
 .tree-tline .tree-lt { margin-right: 2px; }
+.block.home-tree { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 12px; padding: 14px 14px 14px 16px; border-radius: 20px; background: linear-gradient(135deg, #1f4d3c, #2f6f53 60%, #3d8a62); color: #fff; box-shadow: 0 6px 18px rgba(31,94,62,.22); }
+.home-tree .ht-go { flex: 1; width: auto; min-width: 0; display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.ht-ic { font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.ht-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ht-t b { font-size: 15px; } .ht-t small { font-size: 12px; opacity: .85; }
+.ht-t b + small { display: inline; color: #c9f5b0; font-weight: 700; }
+.ht-bar { height: 6px; border-radius: 4px; background: rgba(255,255,255,.22); overflow: hidden; }
+.ht-bar i { display: block; height: 100%; background: linear-gradient(90deg, #7fd8ff, #a6e98a); }
+.home-tree .ht-w { flex: none; margin: 0; width: 58px; height: 58px; border-radius: 50%; border: 0; background: linear-gradient(160deg, #7fd8ff, #2f86e0); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; box-shadow: 0 0 0 4px rgba(255,255,255,.16), inset 0 2px 0 rgba(255,255,255,.4); cursor: pointer; padding: 0; }
+.ht-w svg { width: 22px; height: 22px; fill: #fff; } .ht-w svg .hl { fill: none; stroke: none; }
+.ht-w span { font-size: 10px; font-weight: 700; }
+.ht-w:disabled { background: linear-gradient(160deg, #d9e2e8, #9aa8b2); }
