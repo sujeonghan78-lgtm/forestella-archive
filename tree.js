@@ -3,6 +3,7 @@ import * as T from './lib/three.module.min.js';
 import { GLTFLoader } from './lib/GLTFLoader.js';
 
 // 하늘: 폰 시간 기준 새벽·낮·노을·밤
+let DROP = null, SPLASH = null;
 export function skyNow(d = new Date()) {
   const h = d.getHours() + d.getMinutes() / 60;
   return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 19 ? 'sunset' : 'night';
@@ -122,7 +123,7 @@ export async function mount(el, opt) {
   const hh = Math.max(top, 1), dist = L.tree ? 4.2 + 9.8 * L.tree : 3.4;
   const cam = new T.PerspectiveCamera(34, W0() / H0(), .05, 200);
   let tilt = .12; // 위아래 보는 각도 (손가락 위아래로 바꿈)
-  const aim = () => { const portrait = W0() / H0() < .8, dd = dist * (portrait ? 1.08 : 1), ty = hh * .47; cam.position.set(0, ty + Math.sin(tilt) * dd, Math.cos(tilt) * dd); cam.lookAt(0, ty, 0); };
+  const aim = () => { const asp = W0() / H0(), dd = dist * (asp < .8 ? Math.max(1.08, .68 / asp) : 1), ty = hh * (asp < .6 ? .42 : .47); cam.position.set(0, ty + Math.sin(tilt) * dd, Math.cos(tilt) * dd); cam.lookAt(0, ty, 0); };
   aim();
   // 손가락으로 돌리기 + 천천히 혼자 돌기
   let rot = .3, v = .003, drag = null, sway = 0, alive = true;
@@ -139,11 +140,19 @@ export async function mount(el, opt) {
     if (!document.body.contains(cvs)) { api.destroy(); return; }
     if (drag == null) { rot += v; v += (.003 - v) * .02; }
     spin.rotation.y = rot; spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
-    for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i]; dp.position.y -= .09; if (dp.position.y < top * .6) { sc.remove(dp); drops.splice(i, 1); } }
+    for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i];
+      if (dp.userData.wait > 0) { dp.userData.wait--; continue; } dp.visible = true;
+      if (dp.userData.sp != null) { dp.userData.sp++; dp.scale.setScalar(1 + dp.userData.sp * .25); dp.material.opacity = .7 - dp.userData.sp * .07; if (dp.userData.sp > 9) { sc.remove(dp); drops.splice(i, 1); } continue; }
+      dp.userData.vy += .006; dp.position.y -= dp.userData.vy;
+      if (dp.position.y < dp.userData.end) { dp.geometry = SPLASH; dp.material = dp.material.clone(); dp.scale.set(1, 1, 1); dp.userData.sp = 0; } }
     r.render(sc, cam); requestAnimationFrame(loop);
   })();
   const api = {
-    water() { sway = 1; const m = fm(0x6ec6ff, { roughness: .2, transparent: true, opacity: .85 }); for (let k = 0; k < 9; k++) { const dp = new T.Mesh(new T.IcosahedronGeometry(.09, 0), m); dp.scale.y = 1.4; dp.position.set((Math.random() - .5) * 1.4, top + 1.2 + Math.random() * 1.5, (Math.random() - .5) * 1.4 + .6); sc.add(dp); drops.push(dp); } },
+    water() { // 작은 물방울 40개가 비처럼 차례로 떨어지고 톡 퍼져요
+      sway = 1; const m = fm(0x7fd0ff, { roughness: .15, transparent: true, opacity: .85 }), w = Math.max(1.2, hh * .38), r0 = .028 * Math.max(1, hh / 3);
+      if (!DROP || DROP.r !== r0) { DROP = new T.IcosahedronGeometry(r0, 0); DROP.r = r0; SPLASH = new T.RingGeometry(r0 * .6, r0 * 1.4, 10); SPLASH.rotateX(-Math.PI / 2); }
+      for (let k = 0; k < 40; k++) { const dp = new T.Mesh(DROP, m); dp.scale.y = 1.6; const x = (Math.random() - .5) * 2 * w, z = (Math.random() - .5) * 2 * w * .7 + w * .2;
+        dp.position.set(x, hh * 1.25 + Math.random() * hh * .3, z); dp.visible = false; dp.userData = { wait: Math.floor(Math.random() * 45), vy: .02 + Math.random() * .02, end: Math.max(.02, (1 - Math.min(1, Math.hypot(x, z) / (w * 1.3))) * hh * .8) }; sc.add(dp); drops.push(dp); } },
     destroy() { alive = false; removeEventListener('resize', onResize); try { r.dispose(); } catch (err) { /* 괜찮아요 */ } cvs.remove(); },
   };
   return api;

@@ -2359,15 +2359,46 @@ a.block.home-taste { display: flex; flex-direction: row; text-align: left; align
 .ts-st-re { margin-left: 8px; border: 1px solid var(--line); background: #fff; color: var(--green-d); font: inherit; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 9px; cursor: pointer; vertical-align: middle; }
 
 /* 숲별 트리 */
-.tree-page { padding-bottom: 8px; }
-.tree-h { font-size: 20px; margin: 6px 0 2px; }
-.tree-h small { font-size: 14px; font-weight: 600; color: var(--green); margin-left: 4px; }
-.tree-sub { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
-.tree-bar { height: 8px; border-radius: 6px; background: var(--line); overflow: hidden; margin-bottom: 10px; }
-.tree-bar i { display: block; height: 100%; background: var(--grad); border-radius: 6px; }
-.tree-cv { position: relative; height: min(62vh, 520px); border-radius: 18px; overflow: hidden; background: #1d3a4a; }
+.tree-page { position: fixed; inset: 0; z-index: 60; background: #1d3a4a; overflow: hidden; color: #fff; }
+body.tree-full .tabs, body.tree-full .dday-badge, body.tree-full .op-fab { display: none !important; }
+body.tree-full { overflow: hidden; }
+.tree-cv { position: absolute; inset: 0; }
+.tree-cv canvas { display: block; }
 .tree-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; padding: 20px; text-align: center; color: #fff; font-size: 14px; }
-.tree-btns { display: flex; gap: 10px; justify-content: center; margin: 12px 0 6px; }
-.tree-btns button { border: 0; border-radius: 22px; padding: 11px 22px; font-size: 15px; font-weight: 700; background: var(--green-2); color: #fff; cursor: pointer; }
-.tree-btns button:disabled { background: var(--line); color: var(--muted); cursor: default; }
-.tree-note { text-align: center; color: var(--muted); font-size: 12px; margin: 4px 0; }
+.tree-top, .tree-bot { position: absolute; left: 0; right: 0; padding: 10px 14px; pointer-events: none; }
+.tree-top { top: 0; padding-top: calc(10px + env(safe-area-inset-top)); background: linear-gradient(rgba(0,0,0,.38), rgba(0,0,0,0)); }
+.tree-bot { bottom: 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.45)); text-align: center; }
+.tree-top a, .tree-top button, .tree-top details, .tree-bot button { pointer-events: auto; }
+.tree-tline { display: flex; align-items: center; gap: 10px; }
+.tree-back { width: 38px; height: 38px; flex: none; border: 0; border-radius: 50%; background: rgba(255,255,255,.22); color: #fff; font-size: 24px; line-height: 1; padding: 0 0 3px; cursor: pointer; backdrop-filter: blur(6px); }
+.tree-h { flex: 1; font-size: 17px; margin: 0; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.tree-h small { font-size: 13px; font-weight: 700; color: #c9f5b0; margin-left: 4px; }
+.tree-week { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+.tw-d { width: 38px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tw-d i { width: 32px; height: 32px; border-radius: 50%; border: 2px dashed rgba(255,255,255,.45); display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 16px; background: rgba(255,255,255,.08); }
+.tw-d.on i { border: 2px solid #7fd0ff; background: rgba(127,208,255,.25); transform: rotate(-8deg); }
+.tw-d.today i { box-shadow: 0 0 0 3px rgba(255,214,90,.55); }
+.tw-d small { font-size: 10px; opacity: .85; }
+.tw-d.pop i { animation: tw-pop .5s cubic-bezier(.2,1.6,.4,1); }
+@keyframes tw-pop { 0% { transform: scale(2.2) rotate(-25deg); opacity: 0; } 100% { transform: scale(1) rotate(-8deg); opacity: 1; } }
+.tree-adm { position: relative; }
+.tree-adm summary { list-style: none; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+.tree-adm summary::-webkit-details-marker { display: none; }
+.tree-adm > div { position: absolute; right: 0; top: 44px; width: 250px; background: rgba(20,32,40,.92); border-radius: 12px; padding: 8px 12px; font-size: 12px; }
+.tree-adm p { margin: 5px 0; }
+.tree-adm a { color: #c9f5b0; }
+.tl-row { display: flex; align-items: center; gap: 8px; font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.tree-bar { flex: 1; height: 10px; border-radius: 6px; background: rgba(255,255,255,.25); overflow: hidden; }
+.tree-bar i { display: block; height: 100%; background: linear-gradient(90deg, #7fd0ff, #8fd968); border-radius: 6px; transition: width .6s; }
+.tl-num, .tl-ppl { margin: 4px 0 0; font-size: 12.5px; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.tl-ppl { opacity: .85; }
+.tree-btns { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 10px 0 4px; }
+.tree-water { width: 84px; height: 84px; border-radius: 50%; border: 4px solid rgba(255,255,255,.85); background: radial-gradient(circle at 35% 30%, #9be0ff, #3a9be0); color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(0,0,0,.35); padding: 0; }
+.tree-water b { font-size: 30px; line-height: 1; }
+.tree-water span { font-size: 12px; font-weight: 700; margin-top: 2px; }
+.tree-water:active { transform: scale(.94); }
+.tree-water.done, .tree-water:disabled { background: radial-gradient(circle at 35% 30%, #c9d2d8, #8a979f); }
+.tree-gift, .tree-gap { width: 48px; height: 48px; }
+.tree-gift { border-radius: 50%; border: 0; background: rgba(255,255,255,.22); font-size: 22px; cursor: pointer; }
+.tree-note { margin: 2px 0 0; font-size: 11px; opacity: .75; }
+body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bottom)); }
