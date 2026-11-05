@@ -2403,3 +2403,5 @@ body.tree-full { overflow: hidden; }
 .tree-note { margin: 2px 0 0; font-size: 11px; opacity: .75; }
 body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bottom)); }
 .tree-fab { position: fixed; right: 16px; bottom: calc(var(--tabs-h) + 16px + env(safe-area-inset-bottom)); z-index: 40; width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #8fd968, #2f7a3a); box-shadow: 0 4px 14px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; font-size: 26px; text-decoration: none; }
+.tree-const { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); padding: 8px 16px; border-radius: 20px; background: rgba(10,20,40,.55); color: #fff3c8; font-size: 15px; font-weight: 700; pointer-events: none; animation: tc-fade 3.2s ease forwards; white-space: nowrap; }
+@keyframes tc-fade { 0% { opacity: 0; transform: translate(-50%, 8px); } 15%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }

@@ -83,6 +83,17 @@ const GIFTS = [ // x, z, 색, 리본, 크기, 높이, 위에 얹기
   [-.3, 2.6, 0xf4f4f0, 0xe5484d, .4, .34], [.6, 2.7, 0xd8343e, 0x3fae6a, .34, .3],
   [-1.9, 1.5, 0x7fd0e8, 0xffffff, .36, .3, .5], [2.0, 1.6, 0xf5c83c, 0x5b8def, .34, .28, .46],
 ];
+// 실제 별자리 (대략 모양, 왼쪽 아래가 0,0). o = 하늘 자리, s = 크기, e = 잇는 선
+const CONST = [
+  { n: '북두칠성', o: [-5, 9.5], s: 1, p: [[0, 0], [1.1, .2], [2, .1], [3, .5], [3.2, 1.6], [4.4, 1.8], [4.6, .7]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]] },
+  { n: '카시오페이아', o: [1.2, 12], s: .95, p: [[0, 1], [1, 0], [2, .8], [3, 0], [4, 1]], e: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+  { n: '오리온', o: [-2, 15], s: 1.05, p: [[0, 3], [2.4, 3.2], [.9, 1.6], [1.2, 1.5], [1.5, 1.4], [.2, 0], [2.4, .2], [1.2, 3.9]], e: [[0, 7], [7, 1], [0, 2], [1, 4], [2, 3], [3, 4], [2, 5], [4, 6]] },
+  { n: '거문고자리', o: [-5.2, 14.5], s: 1, p: [[0, 1.6], [.3, .9], [.9, 1], [.6, 0], [1.2, .1]], e: [[0, 1], [1, 2], [1, 3], [2, 4], [3, 4]] },
+  { n: '백조자리', o: [2.4, 16], s: 1.1, p: [[0, 2.2], [1, 1.2], [2.1, 0], [.1, .5], [2, 2]], e: [[0, 1], [1, 2], [3, 1], [1, 4]] },
+  { n: '작은곰자리', o: [-4.8, 20], s: 1, p: [[0, 0], [.8, .4], [1.5, .6], [2.2, .5], [2.4, 1.2], [3.1, 1.4], [3, .6]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]] },
+  { n: '쌍둥이자리', o: [1, 20.5], s: 1, p: [[0, 3], [.9, 3.1], [.1, 1.5], [-.1, 0], [1, 1.6], [1.4, .1]], e: [[0, 1], [0, 2], [2, 3], [1, 4], [4, 5]] },
+  { n: '사자자리', o: [-2.4, 25], s: 1.1, p: [[0, 0], [0, .8], [.4, 1.4], [1, 1.5], [1.3, 1], [2.5, .7], [3.6, .4], [2.6, 0]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 6], [6, 7], [7, 0]] },
+];
 const BC = [0xe8453c, 0xff9a3c, 0xf5c83c, 0xb7e07a, 0x7fd0e8, 0x3f6fe0, 0x9b6ee8, 0xff8fc0, 0xf4f4f0, 0xd4a94a];
 const SC = [0xd8343e, 0x2f6fd8, 0x8a5ad8, 0xff8fc0, 0xf0a030];
 
@@ -102,11 +113,23 @@ export async function mount(el, opt) {
   const d = new T.DirectionalLight(sky === 'sunset' ? 0xffc29a : sky === 'dawn' ? 0xffd6e4 : night ? 0xe8f0ff : 0xfff1dc, night ? 1.5 : 2.2); d.position.set(4, 9, 6); d.castShadow = true; d.shadow.mapSize.set(1024, 1024); Object.assign(d.shadow.camera, { left: -6, right: 6, top: 8, bottom: -2 }); sc.add(d);
   const rim = new T.DirectionalLight(0x9fe6d6, .6); rim.position.set(-5, 4, -6); sc.add(rim);
   const L = opt.lv; seed = 9;
-  // 하늘 별 = 물 준 숲별 수 (최대 400개)
-  // 하늘 별 = 숲별들이 준 물 (물 한 번에 점 별 하나, 400개까지). 낮엔 안 보이고 새벽·노을·밤에 보여요
-  const starPos = () => { const y = 4 + rnd() * 26; return [(rnd() - .5) * (40 + y), y, -18 - rnd() * 6]; };
-  if (starA) { const p = [], n = Math.min(400, Math.max(20, opt.water || 0)); for (let k = 0; k < n; k++) p.push(...starPos()); const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, new T.PointsMaterial({ color: 0xfff3c8, size: .15, transparent: true, opacity: starA, fog: false }))); }
-  const skyStar = () => { if (!starA) return null; const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(starPos(), 3)); const pt = new T.Points(g, new T.PointsMaterial({ color: 0xfff3c8, size: .9, transparent: true, opacity: starA, fog: false })); sc.add(pt); return pt; };
+  // 하늘 별 = 숲별들이 준 물 (물 한 번에 점 별 하나). 먼저 별자리 점을 차례로 채우고, 다 채운 별자리는 연한 선으로 이어요.
+  // 낮엔 안 보이고 새벽·노을·밤에 보여요
+  const SKY_Z = -20, CP = []; CONST.forEach((c, ci) => c.p.forEach(([x, y]) => CP.push({ ci, v: new T.Vector3(c.o[0] + x * c.s, c.o[1] + 2.5 + y * c.s, SKY_Z) })));
+  const starPos = () => { const y = 4 + rnd() * 30; return [(rnd() - .5) * (30 + y), y, -22 - rnd() * 6]; };
+  const ptM = sz => new T.PointsMaterial({ color: 0xfff3c8, size: sz, transparent: true, opacity: starA, fog: false });
+  const lineM = new T.LineBasicMaterial({ color: 0xcfe0ff, transparent: true, opacity: starA * .35, fog: false });
+  const drawLines = ci => { const c = CONST[ci], base = CP.findIndex(q => q.ci === ci), p = []; c.e.forEach(([i, j]) => p.push(CP[base + i].v, CP[base + j].v)); sc.add(new T.LineSegments(new T.BufferGeometry().setFromPoints(p), lineM)); };
+  const done = ci => CP.every((q, k) => q.ci !== ci || k < wn);
+  let wn = opt.water || 0;
+  if (starA) {
+    const cp = CP.slice(0, wn).map(q => q.v); if (cp.length) sc.add(new T.Points(new T.BufferGeometry().setFromPoints(cp), ptM(.24)));
+    CONST.forEach((c, ci) => { if (done(ci)) drawLines(ci); });
+    const p = [], n = Math.min(400, Math.max(20, wn - CP.length)); for (let k = 0; k < n; k++) p.push(...starPos());
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, ptM(.15)));
+  }
+  const label = txt => { const d = document.createElement('div'); d.className = 'tree-const'; d.textContent = '✨ ' + txt; el.appendChild(d); setTimeout(() => d.remove(), 3200); };
+  const skyStar = () => { const k = wn++; if (!starA) return null; const q = CP[k], pt = new T.Points(new T.BufferGeometry().setFromPoints([q ? q.v : new T.Vector3(...starPos())]), ptM(1.1)); pt.userData.min = q ? .24 : .15; sc.add(pt); if (q && done(q.ci)) { drawLines(q.ci); label(CONST[q.ci].n); } return pt; };
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
@@ -134,7 +157,7 @@ export async function mount(el, opt) {
   const hh = Math.max(top, 1), dist = L.tree ? 4.2 + 9.8 * L.tree : 3.4;
   const cam = new T.PerspectiveCamera(34, W0() / H0(), .05, 200);
   let tilt = .12, zoom = 1, ly = null, look = 0; // 위아래 각도, 확대(두 손가락), 확대했을 때 보는 높이
-  const aim = () => { const asp = W0() / H0(), dd = dist * (asp < .8 ? Math.max(1.08, .68 / asp) : 1) * zoom, ty0 = hh * (asp < .6 ? .42 : .47), ty = zoom < .95 && ly != null ? ly : ty0; cam.position.set(0, ty + Math.sin(tilt) * dd, Math.cos(tilt) * dd); cam.lookAt(0, ty + look * dd * .9, -look * dd * .2); };
+  const aim = () => { const asp = W0() / H0(), dd = dist * (asp < .8 ? Math.max(1.08, .68 / asp) : 1) * zoom, ty0 = hh * (asp < .6 ? .42 : .47), ty = zoom < .95 && ly != null ? ly : ty0; cam.position.set(0, ty + Math.sin(tilt) * dd, Math.cos(tilt) * dd); cam.lookAt(0, ty + look * dd * .6, -look * dd * .15); };
   aim();
   // 손가락으로 돌리기 + 천천히 혼자 돌기
   let rot = .3, v = .003, drag = null, sway = 0, alive = true;
@@ -162,7 +185,7 @@ export async function mount(el, opt) {
     if (!alive) return;
     if (!document.body.contains(cvs)) { api.destroy(); return; }
     if (drag == null) { rot += v; v += (.003 - v) * .02; }
-    for (let i = pops.length - 1; i >= 0; i--) { const o = pops[i]; o.material.size = Math.max(.15, o.material.size * .975); if (o.material.size <= .15) pops.splice(i, 1); }
+    for (let i = pops.length - 1; i >= 0; i--) { const o = pops[i]; const mn = o.userData.min || .15; o.material.size = Math.max(mn, o.material.size * .975); if (o.material.size <= mn) pops.splice(i, 1); }
     spin.rotation.y = rot; spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
     for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i];
       if (dp.userData.wait > 0) { dp.userData.wait--; continue; } dp.visible = true;
