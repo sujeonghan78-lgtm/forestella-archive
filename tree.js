@@ -249,7 +249,10 @@ export async function mount(el, opt) {
         dp.position.set(x, hh * 1.25 + Math.random() * hh * .3, z); dp.visible = false; dp.userData = { wait: Math.floor(Math.random() * 45), vy: .02 + Math.random() * .02, end: Math.max(.02, (1 - Math.min(1, Math.hypot(x, z) / (w * 1.3))) * hh * .8) }; sc.add(dp); drops.push(dp); } },
     place(o) { placing = { o: Object.assign({}, o, { spot: null }), m: null, spot: null }; v = 0; return !!hangOrn; },
     placed() { return placing && placing.spot ? placing.spot.map((x, i) => +x.toFixed(i === 2 ? 2 : 3)) : null; },
-    cancel() { if (placing && placing.m) spin.remove(placing.m); placing = null; },
+    move(id) { const m = ORN.find(x => x.userData.orn.id === id); if (!m || !hangOrn) return false; const o = m.userData.orn, p = m.position;
+      const sp = o.spot ? o.spot.slice() : [Math.atan2(p.z, p.x), Math.max(0, Math.min(1, p.y / top)), 1, 0];
+      ORN.splice(ORN.indexOf(m), 1); placing = { o, m, spot: sp, orig: o.spot ? o.spot.slice() : null, origPos: p.clone(), origQ: m.quaternion.clone() }; v = 0; return true; },
+    cancel() { if (placing && placing.m) { if (placing.origPos) { const p = placing; p.o.spot = p.orig; p.m.scale.setScalar(1); p.m.position.copy(p.origPos); p.m.quaternion.copy(p.origQ); if (p.orig) p.m.scale.setScalar(p.orig[2]); ORN.push(p.m); } else spin.remove(placing.m); } placing = null; },
     commit() { if (placing && placing.m) ORN.push(placing.m); placing = null; },
     add(o) { if (!hangOrn) return; const m = hangOrn(o); if (m) ORN.push(m); },
     recolor(id, from, to) { const a = new T.Color(OC[from]), b = OC[to]; ORN.filter(m => m.userData.orn.id === id).forEach(m => { m.userData.orn.color = to; m.traverse(c => { if (c.material && c.material.color && c.material.color.equals(a)) c.material.color.set(b); }); }); },
