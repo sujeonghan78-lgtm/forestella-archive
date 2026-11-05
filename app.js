@@ -6239,13 +6239,20 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return `<section class="block home-tree" id="home-tree"><a class="ht-go" href="#/tree"><span class="ht-ic">🎄</span><span class="ht-t"><b>${esc(treeName())}</b> <small>Lv${st.i + 1} ${lvN(st.lv)}</small><span class="ht-bar"><i style="width:${pct}%"></i></span><small>💧 ${st.water}${nx ? ` / ${nx.w}` : ''} · ${L3(`숲별 ${st.people}명`, `${st.people} fans`, `${st.people}人`)}${st.orn.length ? ` · 🎁 ${st.orn.length}` : ''}</small></span></a>
       <button class="ht-w" id="ht-w" ${st.done ? 'disabled' : ''}>${TI.drop}<span>${st.done ? L3('내일 또', 'Tomorrow', 'また明日') : `${st.left}/${TREE_MAX}`}</span></button></section>`;
   }
+  const treeFab = () => { const t = treeState(); return `<button type="button" class="tree-fab${t.done ? ' done' : ''}" id="tree-fab" aria-label="${L3('트리에 물 주기', 'Water the tree', 'ツリーに水やり')}"><svg viewBox="0 0 24 24"><path d="M12 3c3.5 4.4 6 7.7 6 10.6A6 6 0 0 1 6 13.6C6 10.7 8.5 7.4 12 3z"/></svg><em>${t.done ? '✓' : t.left}</em></button>`; };
   function bindHomeTree() {
-    const b = document.getElementById('ht-w'); if (!b) return;
-    b.onclick = () => { const t = treeState(); if (t.done) return; const mine = treeMine(), today = kstDay(); b.disabled = true;
+    const view = document.getElementById('view');
+    if (view && (TREE_OPEN || isAdmin()) && !document.getElementById('tree-fab')) view.insertAdjacentHTML('beforeend', treeFab());
+    const f = document.getElementById('tree-fab');
+    if (f) f.onclick = () => { if (treeState().done) { location.hash = '#/tree'; return; } f.classList.add('pop'); htWater(f); };
+    const b = document.getElementById('ht-w'); if (b) b.onclick = () => htWater(b);
+  }
+  function htWater(b) {
+    { const t = treeState(); if (t.done) return; const mine = treeMine(), today = kstDay(); b.disabled = true;
       (TREE_OPEN ? formPost(`종류: 물\n누가: ${myUid()}`) : Promise.resolve()).then(() => {
         boxWrite(TREE_KEY, TREE_OPEN ? Object.assign(mine, { water: [...new Set([...(mine.water || []), today])].slice(-120), wn: { d: today, n: t.todayN + 1 } }) : Object.assign(mine, { test: (mine.test || 0) + 1, tdays: [...new Set([...(mine.tdays || []), today])].slice(-14) }));
         const n = treeState(); toast(n.i > t.i ? L3(`🎉 트리가 Lv${n.i + 1} ${lvN(n.lv)}이 됐어요!`, `🎉 The tree reached Lv${n.i + 1}!`, `🎉 ツリーがLv${n.i + 1}になりました!`) : L3(`💧 물을 줬어요!${n.left ? ` 오늘 ${n.left}번 더` : ''}`, `💧 Watered!${n.left ? ` ${n.left} more today` : ''}`, `💧 水をあげました!`));
-        const box = document.getElementById('home-tree'); if (box) { box.outerHTML = homeTree(); bindHomeTree(); }
+        const box = document.getElementById('home-tree'); if (box) box.outerHTML = homeTree(); const fb = document.getElementById('tree-fab'); if (fb) fb.remove(); bindHomeTree();
       }).catch(() => { b.disabled = false; toast(L3('보내지 못했어요. 잠시 뒤 다시 눌러 주세요', 'Could not send. Try again shortly', '送信できませんでした')); }); };
   }
   function giftView() { return `<a class="back" href="#/days">‹ 함께한 기념일</a><section class="gift-box" id="gift-box"><p class="empty">${L3('선물 상자를 여는 중…', 'Opening your gift…', 'プレゼントを開けています…')}</p></section>`; }
