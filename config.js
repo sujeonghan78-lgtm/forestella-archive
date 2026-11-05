@@ -21,6 +21,10 @@ window.CONFIG = {
   boxApi: 'https://script.google.com/macros/s/AKfycbwYlE1fytf4V0tpm9HkRHvGZqA7Pnv6YwwM2Cek6cKHPFg_RpxCev9vhv8ZdBF3e5Fkfg/exec',
   // 의견 '처리했어요' 표시는 관리자 기기(#/admin에서 만든 열쇠)의 서명만 인정해요. 여기는 확인용 공개 열쇠예요.
   // 관리자 기기가 여러 대면 줄을 더해요
+  // 숲별 트리: 오너먼트 글은 이 공개 열쇠(+관리자·쓴 사람)로 잠가요. 여는 날 treeSecret에 비밀 열쇠를 넣어 배포하면 모든 폰에서 열려요
+  treeKey: { x: "fZRH4h-Qz8t0oWIzaSNzy33yXsY2CooM225kAmvRthM", y: "kt4kdz6bsU7fZaf3HOCXMxFIbeJyGMobDXK91-KR2Hg" },
+  treeOpen: '2026-12-24T00:00:00+09:00',
+  treeSecret: null,
   adminKeys: [
     { x: "hH6GY2b1cKRyeOZw2fB4N6ATdnayMeX49cNyN0BN85g", y: "YJFmSOEKMzmmJseemhAOcaFqnlrWybmXQaLWbdkPVt8" },
     { x: "CbodUyYm9EYGu3_cXa_vZpv5dHOWIKoSenvolDJbbq8", y: "vWgQiPAv-8U_6RXRs_TOkwOdPrnhX6WnDRytlcKqMsg" },

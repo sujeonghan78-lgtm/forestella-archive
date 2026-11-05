@@ -95,6 +95,8 @@ const CONST = [
   { n: '사자자리', o: [-2.4, 25], s: 1.1, p: [[0, 0], [0, .8], [.4, 1.4], [1, 1.5], [1.3, 1], [2.5, .7], [3.6, .4], [2.6, 0]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 6], [6, 7], [7, 0]] },
 ];
 const BC = [0xe8453c, 0xff9a3c, 0xf5c83c, 0xb7e07a, 0x7fd0e8, 0x3f6fe0, 0x9b6ee8, 0xff8fc0, 0xf4f4f0, 0xd4a94a];
+// 숲별 오너먼트 색 8가지 (app.js 색 고르기와 같은 순서)
+export const OC = [0xe8453c, 0xff9a3c, 0xf5c83c, 0x8fd968, 0x7fd0e8, 0x3f6fe0, 0x9b6ee8, 0xff8fc0];
 const SC = [0xd8343e, 0x2f6fd8, 0x8a5ad8, 0xff8fc0, 0xf0a030];
 
 // el 안에 트리를 그려요. opt: { lv: {tree,forest,beads,socks,snow,star,gifts}, people, sky }
@@ -133,24 +135,35 @@ export async function mount(el, opt) {
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
-  let top = 1; const pops = [];
+  let top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [];
   if (!L.tree) { // 씨앗·새싹
     const soil = new T.Mesh(new T.CylinderGeometry(.55, .65, .14, 9), fm(0x6e4a2c, { roughness: 1 })); soil.position.y = .07; spin.add(soil);
     if (L.sprout) { const st = new T.Mesh(new T.CylinderGeometry(.035, .045, .55, 6), fm(0x4e8f3a)); st.position.y = .4; spin.add(st); [-1, 1].forEach(k => { const lf = new T.Mesh(new T.IcosahedronGeometry(.2, 1), fm(0x7fd468)); lf.scale.set(1.5, .35, .75); lf.position.set(k * .2, .68, 0); lf.rotation.z = k * .4; spin.add(lf); }); top = .9; }
     else { const sd = new T.Mesh(new T.IcosahedronGeometry(.2, 1), fm(0xa06d40)); sd.scale.set(1, .8, 1); sd.position.y = .22; spin.add(sd); top = .5; }
   } else {
-    const t = (SNOWY || PLAIN).clone(); t.scale.setScalar(L.tree); spin.add(t); top = H * L.tree; t.updateMatrixWorld(true);
+    t = (SNOWY || PLAIN).clone(); t.scale.setScalar(L.tree); spin.add(t); top = H * L.tree; t.updateMatrixWorld(true);
     const rc = new T.Raycaster(), hs = top;
     // 겉면 자리 + 그 자리의 바깥 방향
-    const surf = (y, a, off) => { rc.set(new T.Vector3(Math.cos(a) * 12, y, Math.sin(a) * 12), new T.Vector3(-Math.cos(a), 0, -Math.sin(a))); const h = rc.intersectObject(t, false)[0]; if (!h) return null; const nrm = h.face.normal.clone().transformDirection(t.matrixWorld); return { p: h.point.add(nrm.clone().multiplyScalar(off)), n: nrm }; };
+    surf = (y, a, off) => { rc.set(new T.Vector3(Math.cos(a) * 12, y, Math.sin(a) * 12), new T.Vector3(-Math.cos(a), 0, -Math.sin(a))); const h = rc.intersectObject(t, false)[0]; if (!h) return null; const nrm = h.face.normal.clone().transformDirection(t.matrixWorld); return { p: h.point.add(nrm.clone().multiplyScalar(off)), n: nrm }; };
     const hang = (o, s) => { o.position.copy(s.p); o.lookAt(s.p.clone().add(s.n)); o.rotateZ((rnd() - .5) * .5); o.castShadow = true; spin.add(o); };
     const ft = FT * L.tree, nB = L.beads || 0, nS = L.socks || 0, nSt = L.stars || 0, used = [];
     // 빈 자리 찾기: 다른 장식과 gap 이상 떨어진 겉면 (여러 번 시도)
     const spot = (gap, off) => { for (let tr = 0; tr < 14; tr++) { const y = ft + .3 * L.tree + rnd() * (hs - ft - 1.0 * L.tree), s = surf(y, rnd() * 6.283, off); if (s && used.every(u => u.p.distanceTo(s.p) > u.r + gap)) return s; } return null; };
+    // 숲별 오너먼트 (opt.orns: [{id, shape 0구슬·1양말·2별, color, spot [각도, 높이 비율, 크기, 회전] 또는 null, nick}])
+    // 자리를 고른 것 먼저 달고, 사이트 장식은 그 둘레 빈 곳에, 자리 없이 바구니에서 온 건 마지막에 빈 곳에 달아요
+    const OB = 1.25 * Math.max(L.tree, .55);
+    ornMake = (o, sz) => o.shape === 1 ? sock(.3 * sz, OC[o.color] || OC[0]) : o.shape === 2 ? star5(.11 * sz, OC[o.color] || OC[2]) : bead(.11 * sz, OC[o.color] || OC[0]);
+    ornOff = (o, sz) => (o.shape === 0 ? .1 : .06) * sz;
+    const at0 = f => { const ry = spin.rotation.y, rz = spin.rotation.z; spin.rotation.set(0, 0, 0); spin.updateMatrixWorld(true); try { return f(); } finally { spin.rotation.set(0, ry, rz); spin.updateMatrixWorld(true); } };
+    hangOrn = (o, m) => at0(() => { const sz = OB * (o.spot ? o.spot[2] : 1), s = o.spot ? surf(o.spot[1] * top, o.spot[0], ornOff(o, sz)) : spot(.13 * sz, ornOff(o, sz)); if (!s) return null;
+      m = m || ornMake(o, sz); m.position.copy(s.p); m.lookAt(s.p.clone().add(s.n)); m.rotateZ(o.spot ? o.spot[3] : (rnd() - .5) * .5);
+      m.userData.orn = o; m.traverse(c => { c.castShadow = true; c.userData.orn = o; }); if (!m.parent) spin.add(m); used.push({ p: s.p, r: .13 * sz }); return m; });
+    (opt.orns || []).filter(o => o.spot).forEach(o => { const m = hangOrn(o); if (m) ORN.push(m); });
     for (let k = 0; k < nB + nS + nSt; k++) {
       const sz = (.7 + rnd() * .5) * Math.max(L.tree, .55), kind = k < nB ? 0 : k < nB + nS ? 1 : 2, r = (kind === 1 ? .2 : .11) * sz, s = spot(r + .05, kind === 0 ? .09 * sz : kind === 1 ? .06 * sz : .05 * sz); if (!s) continue;
       used.push({ p: s.p, r }); hang(kind === 0 ? bead(.1 * sz, BC[Math.floor(rnd() * BC.length)]) : kind === 1 ? sock(.3 * sz, SC[Math.floor(rnd() * SC.length)]) : star5(.1 * sz, [0xf5c83c, 0xdfe4ea, 0xff8fc0][k % 3]), s);
     }
+    (opt.orns || []).filter(o => !o.spot).forEach(o => { const m = hangOrn(o); if (m) ORN.push(m); });
     if (L.star) { const st = star5(.48, 0xffcf3a); st.material.emissive = new T.Color(0xd09000); st.material.emissiveIntensity = night ? .9 : .3; st.position.set(0, top + .25, 0); spin.add(st); }
     if (L.gifts) GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { const g = gift(x, z, c, q, h, rc, i); if (up) g.position.y = up; sc.add(g); });
   }
@@ -166,25 +179,57 @@ export async function mount(el, opt) {
   const pts = new Map(); let pinch = 0;
   const pd = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
   const setZoom = z => { const was = zoom; zoom = Math.max(.3, Math.min(1.25, z)); if (zoom < .95 && ly == null) ly = hh * .5; if (zoom >= .95) ly = null; if (was !== zoom) aim(); };
-  cvs.addEventListener('pointerdown', e => { pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { pinch = pd(); drag = null; } else { drag = e.clientX; dragY = e.clientY; } });
-  addEventListener('pointermove', e => {
+  // 오너먼트 달기: place()로 시작하면 트리를 톡 눌러 자리를 고르고, 한 손가락으로 겉면을 따라 옮기고, 두 손가락으로 크기·방향을 바꿔요
+  let placing = null, moving = false, tap0 = null, tw = 0;
+  const rcP = new T.Raycaster(), ndc = e => { const b = cvs.getBoundingClientRect(); return new T.Vector2((e.clientX - b.left) / b.width * 2 - 1, -(e.clientY - b.top) / b.height * 2 + 1); };
+  const scr = o => { const p = o.getWorldPosition(new T.Vector3()).project(cam), b = cvs.getBoundingClientRect(); return { x: b.left + (p.x + 1) / 2 * b.width, y: b.top + (1 - p.y) / 2 * b.height, p }; };
+  const hitTree = e => { if (!t) return null; rcP.setFromCamera(ndc(e), cam); const h = rcP.intersectObject(t, false)[0]; if (!h) return null; const lp = spin.worldToLocal(h.point.clone()); return [Math.atan2(lp.z, lp.x), Math.max(0, Math.min(1, lp.y / top))]; };
+  const setPlace = (a, h) => { if (!placing || !hangOrn) return; const p = placing; p.spot = [a, h, p.spot ? p.spot[2] : 1, p.spot ? p.spot[3] : 0];
+    if (!p.m) { p.m = ornMake(p.o, OBs()); p.m.scale.setScalar(p.spot[2]); }
+    p.o.spot = p.spot; const sz = p.spot[2]; p.m.scale.setScalar(1); hangOrn(p.o, p.m); p.m.scale.setScalar(sz); p.m.position.add(new T.Vector3()); if (opt.onPlace) opt.onPlace(p.spot); };
+  const OBs = () => 1.25 * Math.max(L.tree || .55, .55);
+  const twist = () => { const [a, b] = [...pts.values()]; return Math.atan2(b.y - a.y, b.x - a.x); };
+  cvs.addEventListener('pointerdown', e => { pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2) { pinch = pd(); tw = twist(); drag = null; moving = false; tap0 = null; return; }
+    tap0 = { x: e.clientX, y: e.clientY, at: Date.now() }; moving = false;
+    if (placing && placing.m) { const q = scr(placing.m); if (Math.hypot(q.x - e.clientX, q.y - e.clientY) < 48) { moving = true; return; } }
+    drag = e.clientX; dragY = e.clientY; });
+  const onMove = e => {
     if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pts.size === 2) { const d2 = pd(); if (pinch) setZoom(zoom * pinch / d2); pinch = d2; return; }
-    if (drag == null) return; const dx = e.clientX - drag, dy = e.clientY - dragY; rot += dx * .01; v = dx * .0015; drag = e.clientX; dragY = e.clientY;
+    if (pts.size === 2) { const d2 = pd(), a2 = twist();
+      if (placing && placing.m && placing.spot) { if (pinch) placing.spot[2] = Math.max(.7, Math.min(1.5, placing.spot[2] * d2 / pinch)); placing.spot[3] += a2 - tw; setPlace(placing.spot[0], placing.spot[1]); }
+      else if (pinch) setZoom(zoom * pinch / d2);
+      pinch = d2; tw = a2; return; }
+    if (moving) { const h = hitTree(e); if (h) setPlace(h[0], h[1]); return; }
+    if (drag == null) return; const dx = e.clientX - drag, dy = e.clientY - dragY; rot += dx * .01; v = placing ? 0 : dx * .0015; drag = e.clientX; dragY = e.clientY;
     if (zoom < .95) ly = Math.max(hh * .08, Math.min(hh * 1.02, ly + dy * .012 * Math.max(1, hh / 4))); // 확대 중엔 위아래로 밀면 보는 높이가 바뀌어요
     else if (look > 0 || (tilt <= -.05 && dy < 0)) look = Math.max(0, Math.min(1, look - dy * .004)); // 끝까지 위로 밀면 하늘을 올려다봐요
     else tilt = Math.max(-.05, Math.min(1.1, tilt + dy * .006));
-    aim(); });
-  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) drag = null; else { const [p] = pts.values(); drag = p.x; dragY = p.y; } };
+    aim(); };
+  addEventListener('pointermove', onMove);
+  const up = e => {
+    const tp = tap0 && pts.size === 1 && Math.hypot(e.clientX - tap0.x, e.clientY - tap0.y) < 10 && Date.now() - tap0.at < 450; tap0 = null;
+    pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) { drag = null; moving = false; } else { const [p] = pts.values(); drag = p.x; dragY = p.y; }
+    if (!tp || e.target !== cvs) return;
+    if (placing) { const h = hitTree(e); if (h) setPlace(h[0], h[1]); return; }
+    rcP.setFromCamera(ndc(e), cam); const hit = rcP.intersectObjects(ORN, true)[0]; if (hit && opt.onTap) opt.onTap(hit.object.userData.orn); };
   addEventListener('pointerup', up); addEventListener('pointercancel', up);
   cvs.addEventListener('wheel', e => { e.preventDefault(); setZoom(zoom * (e.deltaY > 0 ? 1.1 : .9)); }, { passive: false });
-  const drops = [];
+  const drops = []; let frame = 0;
+  // 확대하면 가까운 오너먼트 위에 이름표가 떠요 (앞쪽에 보이는 것 중 화면 가운데에 가까운 8개)
+  const tagBox = document.createElement('div'); tagBox.className = 'tree-tags'; el.appendChild(tagBox);
+  const tags = () => { if (zoom > .62 || placing || !ORN.length) { if (tagBox.childElementCount) tagBox.innerHTML = ''; return; }
+    const b = cvs.getBoundingClientRect(), list = [];
+    ORN.forEach(m => { const w = m.getWorldPosition(new T.Vector3()), out = new T.Vector3(w.x, 0, w.z); if (out.dot(cam.position.clone().sub(w).setY(0)) <= 0) return; const p = w.clone().project(cam); if (Math.abs(p.x) > .95 || Math.abs(p.y) > .9) return; list.push({ m, x: (p.x + 1) / 2 * b.width, y: (1 - p.y) / 2 * b.height, d: Math.hypot(p.x, p.y) }); });
+    list.sort((a, c) => a.d - c.d); tagBox.innerHTML = '';
+    list.slice(0, 8).forEach(q => { const d = document.createElement('span'); d.textContent = q.m.userData.orn.nick || ''; d.style.left = q.x + 'px'; d.style.top = q.y + 'px'; tagBox.appendChild(d); }); };
   const onResize = () => { r.setSize(W0(), H0()); cam.aspect = W0() / H0(); cam.updateProjectionMatrix(); aim(); };
   addEventListener('resize', onResize);
   (function loop() {
     if (!alive) return;
     if (!document.body.contains(cvs)) { api.destroy(); return; }
-    if (drag == null) { rot += v; v += (.003 - v) * .02; }
+    if (drag == null && !placing) { rot += v; v += (.003 - v) * .02; }
+    if (++frame % 6 === 0) tags();
     for (let i = pops.length - 1; i >= 0; i--) { const o = pops[i]; const mn = o.userData.min || .15; o.material.size = Math.max(mn, o.material.size * .975); if (o.material.size <= mn) pops.splice(i, 1); }
     spin.rotation.y = rot; spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
     for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i];
@@ -200,7 +245,13 @@ export async function mount(el, opt) {
       if (!DROP || DROP.r !== r0) { DROP = new T.IcosahedronGeometry(r0, 0); DROP.r = r0; SPLASH = new T.RingGeometry(r0 * .6, r0 * 1.4, 10); SPLASH.rotateX(-Math.PI / 2); }
       for (let k = 0; k < 40; k++) { const dp = new T.Mesh(DROP, m); dp.scale.y = 1.6; const x = (Math.random() - .5) * 2 * w, z = (Math.random() - .5) * 2 * w * .7 + w * .2;
         dp.position.set(x, hh * 1.25 + Math.random() * hh * .3, z); dp.visible = false; dp.userData = { wait: Math.floor(Math.random() * 45), vy: .02 + Math.random() * .02, end: Math.max(.02, (1 - Math.min(1, Math.hypot(x, z) / (w * 1.3))) * hh * .8) }; sc.add(dp); drops.push(dp); } },
-    destroy() { alive = false; removeEventListener('resize', onResize); try { r.dispose(); } catch (err) { /* 괜찮아요 */ } cvs.remove(); },
+    place(o) { placing = { o: Object.assign({}, o, { spot: null }), m: null, spot: null }; v = 0; return !!hangOrn; },
+    placed() { return placing && placing.spot ? placing.spot.map((x, i) => +x.toFixed(i === 2 ? 2 : 3)) : null; },
+    cancel() { if (placing && placing.m) spin.remove(placing.m); placing = null; },
+    commit() { if (placing && placing.m) ORN.push(placing.m); placing = null; },
+    add(o) { if (!hangOrn) return; const m = hangOrn(o); if (m) ORN.push(m); },
+    remove(id) { ORN.filter(m => m.userData.orn.id === id).forEach(m => { spin.remove(m); ORN.splice(ORN.indexOf(m), 1); }); },
+    destroy() { alive = false; removeEventListener('resize', onResize); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); removeEventListener('pointermove', onMove); try { r.dispose(); } catch (err) { /* 괜찮아요 */ } cvs.remove(); },
   };
   return api;
 }

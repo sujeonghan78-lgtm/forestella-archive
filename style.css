@@ -2370,7 +2370,8 @@ body.tree-full { overflow: hidden; }
 .tree-bot { bottom: 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.45)); text-align: center; }
 .tree-top a, .tree-top button, .tree-top details, .tree-bot button { pointer-events: auto; }
 .tree-tline { display: flex; align-items: center; gap: 10px; }
-.tree-back { width: 38px; height: 38px; flex: none; border: 0; border-radius: 50%; background: rgba(255,255,255,.22); color: #fff; font-size: 24px; line-height: 1; padding: 0 0 3px; cursor: pointer; backdrop-filter: blur(6px); }
+.tree-back, .tree-adm summary { list-style: none; width: 40px; height: 40px; flex: none; border: 1px solid rgba(255,255,255,.35); border-radius: 50%; background: rgba(255,255,255,.16); color: #fff; padding: 0; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+.tree-back svg, .tree-adm summary svg, .tree-gift svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tree-h { flex: 1; font-size: 17px; margin: 0; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .tree-h small { font-size: 13px; font-weight: 700; color: #c9f5b0; margin-left: 4px; }
 .tree-week { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
@@ -2382,7 +2383,7 @@ body.tree-full { overflow: hidden; }
 .tw-d.pop i { animation: tw-pop .5s cubic-bezier(.2,1.6,.4,1); }
 @keyframes tw-pop { 0% { transform: scale(2.2) rotate(-25deg); opacity: 0; } 100% { transform: scale(1) rotate(-8deg); opacity: 1; } }
 .tree-adm { position: relative; }
-.tree-adm summary { list-style: none; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+
 .tree-adm summary::-webkit-details-marker { display: none; }
 .tree-adm > div { position: absolute; right: 0; top: 44px; width: 250px; background: rgba(20,32,40,.92); border-radius: 12px; padding: 8px 12px; font-size: 12px; }
 .tree-adm p { margin: 5px 0; }
@@ -2393,15 +2394,52 @@ body.tree-full { overflow: hidden; }
 .tl-num, .tl-ppl { margin: 4px 0 0; font-size: 12.5px; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
 .tl-ppl { opacity: .85; }
 .tree-btns { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 10px 0 4px; }
-.tree-water { width: 84px; height: 84px; border-radius: 50%; border: 4px solid rgba(255,255,255,.85); background: radial-gradient(circle at 35% 30%, #9be0ff, #3a9be0); color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(0,0,0,.35); padding: 0; }
-.tree-water b { font-size: 30px; line-height: 1; }
-.tree-water span { font-size: 12px; font-weight: 700; margin-top: 2px; }
+.tree-water { width: 86px; height: 86px; border-radius: 50%; border: 0; background: linear-gradient(160deg, #7fd8ff 0%, #3a9be8 55%, #2a6fd0 100%); color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; box-shadow: 0 0 0 5px rgba(255,255,255,.18), 0 10px 24px rgba(20,70,140,.45), inset 0 2px 0 rgba(255,255,255,.45), inset 0 -6px 14px rgba(0,40,110,.25); padding: 0; transition: transform .12s; }
+.tree-water svg { width: 30px; height: 30px; fill: rgba(255,255,255,.95); stroke: none; filter: drop-shadow(0 2px 3px rgba(0,50,120,.35)); }
+.tree-water svg .hl { fill: none; stroke: #7fc4f2; stroke-width: 1.6; stroke-linecap: round; }
+.tree-water span { font-size: 11px; font-weight: 700; letter-spacing: .2px; line-height: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tree-water span i { font-style: normal; font-size: 6px; letter-spacing: 2px; opacity: .9; }
 .tree-water:active { transform: scale(.94); }
-.tree-water.done, .tree-water:disabled { background: radial-gradient(circle at 35% 30%, #c9d2d8, #8a979f); }
-.tree-gift, .tree-gap { width: 48px; height: 48px; }
-.tree-gift { border-radius: 50%; border: 0; background: rgba(255,255,255,.22); font-size: 22px; cursor: pointer; }
+.tree-water.done, .tree-water:disabled { background: linear-gradient(160deg, #d9e2e8, #9aa8b2); box-shadow: 0 0 0 5px rgba(255,255,255,.12), 0 8px 18px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.4); }
+.tree-gift { width: 56px; height: 56px; }
+.tree-gift { border-radius: 18px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.16); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.tree-gift small { font-size: 9.5px; font-weight: 700; }
+.tree-gift svg { width: 22px; height: 22px; }
 .tree-note { margin: 2px 0 0; font-size: 11px; opacity: .75; }
 body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bottom)); }
 .tree-fab { position: fixed; right: 16px; bottom: calc(var(--tabs-h) + 16px + env(safe-area-inset-bottom)); z-index: 40; width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #8fd968, #2f7a3a); box-shadow: 0 4px 14px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; font-size: 26px; text-decoration: none; }
 .tree-const { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); padding: 8px 16px; border-radius: 20px; background: rgba(10,20,40,.55); color: #fff3c8; font-size: 15px; font-weight: 700; pointer-events: none; animation: tc-fade 3.2s ease forwards; white-space: nowrap; }
 @keyframes tc-fade { 0% { opacity: 0; transform: translate(-50%, 8px); } 15%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+.tree-basket { margin: 0 auto 8px; width: max-content; max-width: 100%; padding: 5px 12px; border-radius: 14px; background: rgba(0,0,0,.35); font-size: 12px; }
+.tree-tags { position: absolute; inset: 0; pointer-events: none; }
+.tree-tags span { position: absolute; transform: translate(-50%, -150%); padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,.9); color: #2a3a2a; font-size: 11px; font-weight: 700; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.tree-sheet { position: absolute; inset: 0; z-index: 5; background: rgba(0,0,0,.35); display: flex; align-items: flex-end; }
+.ts-in { width: 100%; max-height: 88%; overflow: auto; background: var(--bg, #fff); color: var(--ink, #222); border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+.ts-in h2 { margin: 0 0 6px; font-size: 17px; }
+.ts-l { margin: 10px 0 5px; font-size: 12px; color: var(--muted, #777); font-weight: 700; }
+.ts-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.ts-row button { border: 1px solid var(--line, #ddd); background: transparent; color: inherit; border-radius: 16px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+.ts-row button.on { border-color: var(--green, #3a8a4a); background: rgba(80,160,90,.14); font-weight: 700; }
+.ts-col button { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid transparent; }
+.ts-col button.on { border-color: var(--ink, #222); box-shadow: 0 0 0 2px #fff inset; }
+.ts-in input, .ts-in textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line, #ddd); border-radius: 12px; font: inherit; font-size: 14px; background: transparent; color: inherit; }
+.ts-cnt { margin: 3px 0 0; text-align: right; font-size: 11px; color: var(--muted, #888); }
+.ts-note { margin: 8px 0 0; font-size: 12px; color: var(--muted, #777); line-height: 1.5; }
+.ts-btns, .tree-placebar div { display: flex; gap: 10px; margin-top: 12px; }
+.ts-btns button, .tree-placebar button { flex: 1; border: 0; border-radius: 22px; padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer; background: var(--line, #e5e5e5); color: var(--ink, #222); }
+.ts-btns .ts-go, .tree-placebar #tp-ok { background: var(--green-2, #3a8a4a); color: #fff; }
+.ts-btns button:disabled, .tree-placebar button:disabled { opacity: .45; }
+.tree-page.placing .tree-bot, .tree-page.placing .tree-week { display: none; }
+.tree-placebar { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.55)); text-align: center; }
+.tree-placebar p { margin: 0; font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.tree-pop { position: absolute; left: 16px; right: 16px; top: 34%; z-index: 4; background: var(--bg, #fff); color: var(--ink, #222); border-radius: 16px; padding: 14px 16px; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+.tp-x { position: absolute; right: 8px; top: 6px; border: 0; background: none; font-size: 16px; color: var(--muted, #888); cursor: pointer; }
+.tp-who { margin: 0 20px 8px 0; font-size: 13px; }
+.tp-who i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.tp-msg { margin: 0; font-size: 15px; line-height: 1.55; white-space: pre-wrap; word-break: break-all; }
+.tp-msg small { display: block; margin-top: 6px; font-size: 11px; color: var(--muted, #888); }
+.tp-del { margin-top: 10px; border: 0; background: none; color: var(--muted, #888); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0; }
+
+.tw-d.on i { background: linear-gradient(160deg, #7fd8ff, #2f86e0); border: 2px solid rgba(255,255,255,.85); }
+.tw-d i svg { width: 15px; height: 15px; fill: #fff; }
+.tw-d i svg .hl { fill: none; stroke: none; }
