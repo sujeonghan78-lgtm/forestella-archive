@@ -540,6 +540,7 @@
 
   // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
   const NEWS = [
+    { d: '2026-11-05', t: '숲별 트리가 열렸어요 🎄', s: '숲별들이 같이 물을 주면 트리가 자라요(하루 5번). 물을 줄 때마다 하늘에 별이 뜨고 별자리가 완성돼요. 오너먼트에 편지를 달면 12월 24일 0시에 한 번에 열려요.', a: '#/tree' },
     { d: '2026-11-04', t: '취향 궁합 · 숲별 모임 💞', s: '내 궁합 링크를 친구에게 보내면 둘의 궁합이 나와요. 여럿이면 방장이 모임(2·6·10명)을 만들어 링크를 모으고 결과를 나눠요. 결과를 볼 때마다 궁합 도감이 채워지고, 숨은 이스터에그도 있어요.', a: '#/match' },
     { d: '2026-11-04', t: '숲별 취향 테스트 🧪', s: '9문항이면 1분! 나의 포레 취향 유형 16가지 중 하나를 찾아요. 홈이나 더보기의 \'취향 궁합\'에서 해 볼 수 있어요.', a: '#/match?test=1' },
     { d: '2026-11-03', t: '오늘은 무슨 날 · 조회수 소식 📈', s: '홈 제목 아래에 오늘이 무슨 날인지(발매·첫 공연 n주년 등) 나오고, 유튜브 조회수가 많이 오른 영상 소식도 보여요. 유튜브 화면은 조회수순으로도 볼 수 있어요.', a: '#/' },
@@ -5961,7 +5962,7 @@
   const treeName = () => (treeMine().name || '').trim() || L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー');
   const lvN = l => l ? L3(l.n, l.en || l.n, l.ja || l.n) : '';
   const tAdm = () => { try { if (localStorage.getItem('sb-tree-user')) return false; } catch (e) {} return isAdmin(); }; // 관리자 폰에서 '일반 화면' 고르면 false
-  const TREE_OPEN = false; // false면 관리자 기기에만 보여요 (오픈할 때 true)
+  const TREE_OPEN = true; // false면 관리자 기기에만 보여요 (오픈할 때 true)
   const TREE_KEY = 'sb-tree';
   const kstDay = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
   const treeMine = () => boxRead(TREE_KEY) || { water: [] };
