@@ -6160,8 +6160,8 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (!TREE_OPEN && !isAdmin()) return `<a class="back" href="#/more">‹ ${L3('더보기', 'More', 'もっと見る')}</a><p class="empty">${L3('준비 중이에요 🌱', 'Coming soon 🌱', '準備中です 🌱')}</p>`;
     const st = treeState(), qs = new URLSearchParams(location.hash.split('?')[1] || ''), test = isAdmin() && qs.get('lv'), mine = treeMine();
     const days = new Set([...((data && data.tree && data.tree.by[myUid()]) || []), ...(mine.water || []), ...(mine.tdays || [])]), today = kstDay();
-    // 콘서트까지 이어지는 도장 길: 시작일(config.treeStart)부터 12/24·25까지 하루 한 칸, 오늘 칸으로 스크롤
-    const CF = window.CONFIG || {}, cDays = CF.treeConcert || ['2026-12-24', '2026-12-25'], start = CF.treeStart || today, path = [];
+    // 콘서트까지 이어지는 도장 길: 내가 처음 물 준 날부터 12/24·25까지 하루 한 칸, 오늘 칸으로 스크롤
+    const CF = window.CONFIG || {}, cDays = CF.treeConcert || ['2026-12-24', '2026-12-25'], start = [...days].sort()[0] || today, path = []; // 내가 처음 물 준 날이 1일차
     for (let t0 = Date.parse(start < today ? start : today), k = 0; k < 120; k++) { const d = new Date(t0 + k * 864e5).toISOString().slice(0, 10); path.push(d); if (d >= cDays[cDays.length - 1]) break; }
     const DN = L3('일월화수목금토', 'SMTWTFS', '日月火水木金土');
     // 한 줄 점 길: 하루 = 작은 점, 물 준 날 파랑, 오늘 크게, 끝은 🎤
