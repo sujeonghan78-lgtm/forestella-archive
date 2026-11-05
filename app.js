@@ -5987,7 +5987,7 @@
     const nx = st.next, pct = nx ? Math.round((st.water - st.lv.w) / (nx.w - st.lv.w) * 100) : 100;
     return `<div class="tl-row"><b>Lv${st.i + 1}</b><span class="tree-bar"><i style="width:${pct}%"></i></span><b>${nx ? 'Lv' + (st.i + 2) : 'MAX'}</b></div>
       <p class="tl-num">💧 ${st.water}${nx ? ` / ${nx.w} · ${L3('다음', 'Next', '次')}: ${lvN(nx)}` : ` · ${L3('다음 레벨 준비 중', 'Next level coming soon', '次のレベル準備中')}`}</p>
-      <p class="tl-ppl">🌟 ${L3(`숲별 ${st.people}명이 같이 키우는 중`, `${st.people} fans growing it together`, `${st.people}人で一緒に育て中`)}</p>`;
+      <p class="tl-ppl">🌟 ${L3(`숲별 ${st.people}명이 같이 키우는 중`, `${st.people} fans growing it together`, `${st.people}人で一緒に育て中`)}${st.slot ? ` · 🎁 ${L3('오너먼트', 'Ornaments', 'オーナメント')} ${st.hung.length}/${st.slot}` : ''}</p>`;
   }
   // ---- 오너먼트 달기 ----
   const ORN_MAX = 3; // 한 명당 달 수 있는 오너먼트 수
