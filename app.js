@@ -4377,6 +4377,7 @@
           ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일')}
           ${item('#/days', '<path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/>', '함께한 기념일', annivToday() && '오늘')}`)}
         ${grp('숲별 소통', `
+          ${TREE_OPEN || isAdmin() ? item('#/tree', '<path d="M12 3l5 7h-3l4 6H6l4-6H7z"/><path d="M12 16v5"/>', '숲별 트리', !TREE_OPEN && '나만') : ''}
           ${item('#/story', '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>', '숲별 이야기', nNew(storyUnread().length) && 'NEW ' + nNew(storyUnread().length))}
           ${item('#/news', '<path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/>', '새 소식', nNew(newsUnread().length) && 'NEW ' + nNew(newsUnread().length))}
           ${item('#/opinion', '<path d="M4 5h16v11H9l-5 4z"/>', '의견')}
@@ -8351,6 +8352,7 @@
     if (name !== 'tree') treeFrom = location.hash || '#/';
     const full = name === 'tree' && (TREE_OPEN || isAdmin()); document.body.classList.toggle('tree-full', full);
     view.innerHTML = (full ? '' : ddayBadge(name)) + routes[name]() + (full || /^(opinion|admin|add|card)$/.test(name) ? '' : opBtn());
+    if (name === 'home' && (TREE_OPEN || isAdmin())) view.insertAdjacentHTML('beforeend', `<a class="tree-fab" href="#/tree" aria-label="숲별 트리">🎄</a>`);
     fillSyncNote(name);
     if (name === 'home') { bindHome(); bindHomeEdit(); }
     if (name === 'search') bindSearch();
