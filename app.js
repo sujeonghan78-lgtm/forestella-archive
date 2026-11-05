@@ -5975,6 +5975,7 @@
     // 오너먼트: 시트 + 아직 시트에 안 온 내 것(오픈 전 관리자는 이 폰 시험용만). 자리 수만큼 먼저 온 순서로 걸고 나머지는 바구니
     const ids = new Set((t.orn || []).map(o => o.id)), del = new Set(mine.ornDel || []);
     const orn = (!TREE_OPEN && isAdmin() ? (mine.torn || []) : (t.orn || []).concat((mine.orn || []).filter(o => !ids.has(o.id)))).filter(o => !del.has(o.id));
+    const oc = mine.ornCol || {}; orn.forEach(o => { if (oc[o.id] != null && o.by === me) o.color = oc[o.id]; });
     const slot = TREE_LV[i].slot, myOrnToday = orn.some(o => o.by === me && kstDay(o.at || 0) === today);
     return { water, people, i, lv: TREE_LV[i], next: TREE_LV[i + 1], done, left, todayN, myDays: new Set([...got, ...(mine.water || [])]).size, orn, hung: orn.slice(0, slot), basket: orn.slice(slot), slot, myOrnToday };
   }
@@ -6003,9 +6004,17 @@
     box.innerHTML = `<button class="tp-x" aria-label="${L3('닫기', 'Close', '閉じる')}">✕</button>
       <p class="tp-who"><i style="background:${ORN_C[o.color] || ORN_C[0]}"></i><b>${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}</b> → ${o.to === '포레' ? L3('포레스텔라에게', 'To Forestella', 'フォレステラへ') : L3('숲별에게', 'To fans', 'ファンへ')}${d ? ` · ${d}` : ''}</p>
       <p class="tp-msg">🔒 ${L3('12월 24일 0시에 열려요', 'Opens Dec 24, 00:00 KST', '12月24日0時に開きます')}</p>
+      ${mine ? `<div class="ts-row ts-col tp-col">${ORN_C.map((c, k) => `<button data-k="${k}" class="${k === o.color ? 'on' : ''}" style="background:${c}" aria-label="${k + 1}"></button>`).join('')}</div>` : ''}
       ${mine ? `<button class="tp-del">${L3('내 오너먼트 떼기', 'Remove mine', '外す')}</button>` : isAdmin() ? `<button class="tp-del tp-adm">${L3('숨기기 (관리자)', 'Hide (admin)', '非表示')}</button>` : ''}`;
     pg.appendChild(box); box.querySelector('.tp-x').onclick = () => box.remove();
     treeRead(o).then(txt => { if (txt == null || !box.isConnected) return; const m = box.querySelector('.tp-msg'); m.textContent = txt; if (!treeOpened()) m.insertAdjacentHTML('beforeend', `<small>${mine ? L3('나만 미리 볼 수 있어요', 'Only you can see this until it opens', '開くまで自分だけ見られます') : L3('관리자 미리보기', 'Admin preview', '管理者プレビュー')}</small>`); });
+    box.querySelectorAll('.tp-col button').forEach(b => { b.onclick = () => { const c = +b.dataset.k; if (c === o.color) return; const old = o.color, adm = !TREE_OPEN && isAdmin();
+      box.querySelectorAll('.tp-col button').forEach(x => { x.disabled = true; });
+      (adm ? Promise.resolve() : formPost(`종류: 오너먼트색\n번호: ${o.id}\n누가: ${myUid()}\n색: ${c}`)).then(() => {
+        const mm = treeMine(); if (adm) (mm.torn || []).forEach(x => { if (x.id === o.id) x.color = c; }); else mm.ornCol = Object.assign(mm.ornCol || {}, { [o.id]: c }); boxWrite(TREE_KEY, mm);
+        o.color = c; if (treeApi) treeApi.recolor(o.id, old, c); box.querySelector('.tp-who i').style.background = ORN_C[c];
+        box.querySelectorAll('.tp-col button').forEach(x => { x.disabled = false; x.classList.toggle('on', +x.dataset.k === c); }); toast(L3('색을 바꿨어요', 'Color changed', '色を変えました'));
+      }).catch(() => { box.querySelectorAll('.tp-col button').forEach(x => { x.disabled = false; }); }); }; });
     const ah = box.querySelector('.tp-adm'); if (ah) ah.onclick = () => { if (!confirm(L3('이 오너먼트를 모두에게서 숨길까요?', 'Hide this ornament for everyone?', '非表示にしますか?'))) return; ah.disabled = true; (TREE_OPEN ? sendEvMark('or' + o.id, '숨김') : Promise.resolve()).then(() => { const mm = treeMine(); mm.ornDel = [...new Set([...(mm.ornDel || []), o.id])]; boxWrite(TREE_KEY, mm); box.remove(); if (treeApi) treeApi.remove(o.id); toast(L3('숨겼어요', 'Hidden', '非表示にしました')); }).catch(() => { ah.disabled = false; }); };
     const dl = box.querySelector('.tp-del:not(.tp-adm)'); if (dl) dl.onclick = () => { if (!confirm(L3('이 오너먼트를 뗄까요?', 'Remove this ornament?', '外しますか?'))) return;
       const mm = treeMine(); (TREE_OPEN ? formPost(`종류: 오너먼트삭제\n번호: ${o.id}\n누가: ${myUid()}`) : Promise.resolve()).then(() => {
@@ -6123,7 +6132,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = isAdmin() && qs.get('sky') || undefined;
     let ok = true; try { const c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (err) { ok = false; }
     if (!ok) { el.innerHTML = `<p class="tree-load">${L3('이 폰에선 3D 트리를 볼 수 없어요. 물 주기는 할 수 있어요!', '3D tree is not supported here, but you can still water!', 'この端末では3Dツリーを表示できませんが、水やりはできます!')}</p>`; }
-    else import('./tree.js?v=9').then(m => m.mount(el, { lv: lv.o, people: st.people, water: st.water, sky, orns: st.hung.map(o => Object.assign({}, o, { nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
+    else import('./tree.js?v=10').then(m => m.mount(el, { lv: lv.o, people: st.people, water: st.water, sky, orns: st.hung.map(o => Object.assign({}, o, { nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
     const bk = document.getElementById('tree-back'); if (bk) bk.onclick = () => { location.hash = treeFrom || '#/more'; };
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };

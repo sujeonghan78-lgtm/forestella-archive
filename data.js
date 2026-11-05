@@ -216,7 +216,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && r.type !== '기념' && r.type !== '취향' && r.type !== '물' && r.type !== '오너먼트' && r.type !== '오너먼트삭제' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요|기념|취향|물|오너먼트|오너먼트삭제)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && r.type !== '기념' && r.type !== '취향' && r.type !== '물' && r.type !== '오너먼트' && r.type !== '오너먼트삭제' && r.type !== '오너먼트색' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요|기념|취향|물|오너먼트|오너먼트삭제|오너먼트색)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -699,6 +699,8 @@
           const d = at ? new Date(at + 9 * 3600e3).toISOString().slice(0, 10) : ''; if (d && day.has(r.by + '|' + d)) return; seen.add(id); if (d) day.add(r.by + '|' + d);
           const sp = line0(r, '자리').split(',').map(Number), spot = sp.length === 4 && sp.every(isFinite) ? sp : null;
           treeAll.orn.push({ id, by: r.by, at, shape: Math.max(0, ['구슬', '양말', '별'].indexOf(line0(r, '모양'))), color: Math.min(7, Math.max(0, +line0(r, '색') || 0)), to: line0(r, '받는이') === '포레' ? '포레' : '숲별', nick: line0(r, '닉네임').slice(0, 12), spot, sec: r.message || '' }); });
+        // 단 사람이 나중에 색을 바꾸면(종류: 오너먼트색 번호/누가/색) 마지막 것으로
+        const byId = new Map(treeAll.orn.map(o => [o.id, o])); all.forEach(r => { if (r.type !== '오너먼트색' || !r.by) return; const o = byId.get(line0(r, '번호')), c = +line0(r, '색'); if (o && o.by === r.by && c >= 0 && c <= 7) o.color = c; });
         treeAll.orn.sort((a, b) => (a.at || 0) - (b.at || 0)); }
       // 신고 3명 이상 → 자동 숨김 (관리자가 복구한 건 빼고). 숨겨진 글 수로 기기 글쓰기 막기
       const flagged = [];
