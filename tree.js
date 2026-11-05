@@ -70,6 +70,17 @@ export function sock(sz, c) {
   const cuff = new T.Mesh(new T.BoxGeometry(sz * .6, sz * .22, sz * .38), fm(0xf4f4f0)); cuff.position.y = sz * .55; g.add(cuff);
   return g;
 }
+export function snowman(sz, c = 0xd8343e) { // 눈사람 (목도리 색 = c)
+  const g = new T.Group(), w = fm(0xfbfdff, { roughness: .8 }), blk = fm(0x1d1d22);
+  const b1 = new T.Mesh(new T.IcosahedronGeometry(sz * .5, 1), w); b1.position.y = sz * .5; const b2 = new T.Mesh(new T.IcosahedronGeometry(sz * .36, 1), w); b2.position.y = sz * 1.15; g.add(b1, b2);
+  [-1, 1].forEach(k => { const e = new T.Mesh(new T.SphereGeometry(sz * .045, 6, 4), blk); e.position.set(k * sz * .12, sz * 1.25, sz * .32); g.add(e); });
+  const nose = new T.Mesh(new T.ConeGeometry(sz * .06, sz * .3, 6), fm(0xff8a2a)); nose.rotation.x = Math.PI / 2; nose.position.set(0, sz * 1.16, sz * .47); g.add(nose);
+  const sf = new T.Mesh(new T.TorusGeometry(sz * .3, sz * .07, 5, 10), fm(c)); sf.rotation.x = Math.PI / 2; sf.position.y = sz * .86; g.add(sf);
+  const tail = new T.Mesh(new T.BoxGeometry(sz * .12, sz * .35, sz * .05), fm(c)); tail.position.set(sz * .18, sz * .7, sz * .28); tail.rotation.z = .2; g.add(tail);
+  const hb = new T.Mesh(new T.CylinderGeometry(sz * .3, sz * .3, sz * .04, 10), blk); hb.position.y = sz * 1.46; const ht = new T.Mesh(new T.CylinderGeometry(sz * .2, sz * .2, sz * .3, 10), blk); ht.position.y = sz * 1.62;
+  const hr = new T.Mesh(new T.CylinderGeometry(sz * .205, sz * .205, sz * .06, 10), fm(0x2e9a5e)); hr.position.y = sz * 1.5; g.add(hb, ht, hr);
+  return g;
+}
 function gift(x, z, c, q, h, rc, i) { // 상자 + 리본 + 위 리본 매듭
   const g = new T.Group();
   const b = new T.Mesh(new T.BoxGeometry(q, h, q * (.8 + (i % 3) * .1)), fm(c, { roughness: .6 })); b.castShadow = b.receiveShadow = true; g.add(b);
@@ -183,10 +194,10 @@ export async function mount(el, opt) {
     // 숲별 오너먼트 (opt.orns: [{id, shape 0구슬·1양말·2별, color, spot [각도, 높이 비율, 크기, 회전] 또는 null, nick}])
     // 자리를 고른 것 먼저 달고, 사이트 장식은 그 둘레 빈 곳에, 자리 없이 바구니에서 온 건 마지막에 빈 곳에 달아요
     const OB = 1.25 * Math.max(L.tree, .55);
-    ornMake = (o, sz) => o.shape === 1 ? sock(.3 * sz, OC[o.color] || OC[0]) : o.shape === 2 ? star5(.11 * sz, OC[o.color] || OC[2]) : bead(.11 * sz, OC[o.color] || OC[0]);
-    ornOff = (o, sz) => (o.shape === 0 ? .1 : .06) * sz;
+    ornMake = (o, sz) => o.shape === 3 ? (() => { const g = new T.Group(), s = snowman(.26 * sz, OC[o.color] || OC[0]); s.position.y = -.22 * sz; g.add(s); return g; })() : o.shape === 1 ? sock(.3 * sz, OC[o.color] || OC[0]) : o.shape === 2 ? star5(.11 * sz, OC[o.color] || OC[2]) : bead(.11 * sz, OC[o.color] || OC[0]);
+    ornOff = (o, sz) => (o.shape === 0 ? .1 : o.shape === 3 ? .1 : .06) * sz;
     const at0 = f => { const ry = spin.rotation.y, rz = spin.rotation.z; spin.rotation.set(0, 0, 0); spin.updateMatrixWorld(true); try { return f(); } finally { spin.rotation.set(0, ry, rz); spin.updateMatrixWorld(true); } };
-    hangOrn = (o, m) => at0(() => { const sz = OB * (o.spot ? o.spot[2] : 1), s = o.spot ? surf(o.spot[1] * top, o.spot[0], ornOff(o, sz)) : spot(.13 * sz, ornOff(o, sz)); if (!s) return null;
+    hangOrn = (o, m) => at0(() => { const sz = OB * (o.spot ? o.spot[2] : 1), s = o.spot ? surf(Math.min(o.spot[1], .86) * top, o.spot[0], ornOff(o, sz)) : spot(.13 * sz, ornOff(o, sz)); if (!s) return null;
       m = m || ornMake(o, sz); m.position.copy(s.p); m.lookAt(s.p.clone().add(s.n)); m.rotateZ(o.spot ? o.spot[3] : (rnd() - .5) * .5);
       m.userData.orn = o; m.traverse(c => { c.castShadow = true; c.userData.orn = o; }); if (!m.parent) spin.add(m); used.push({ p: s.p, r: .13 * sz }); return m; });
     (opt.orns || []).filter(o => o.spot).forEach(o => { const m = hangOrn(o); if (m) ORN.push(m); });
@@ -196,8 +207,13 @@ export async function mount(el, opt) {
     }
     (opt.orns || []).filter(o => !o.spot).forEach(o => { const m = hangOrn(o); if (m) ORN.push(m); });
     if (L.star) { const st = star5(.48, 0xffcf3a); st.material.emissive = new T.Color(0xd09000); st.material.emissiveIntensity = night ? .9 : .3; st.position.set(0, top + .25, 0); spin.add(st); }
+    if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); sc.add(sm); }
     if (L.gifts) GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { const g = gift(x, z, c, q, h, rc, i); if (up) g.position.y = up; sc.add(g); });
   }
+  // 눈 내리기 (눈 레벨부터): 작은 눈송이가 천천히 내려요. 별이 가려지지 않게 적게
+  let snowP = null;
+  if (L.snow) { const n = 500, p = new Float32Array(n * 3); for (let k = 0; k < n; k++) { p[k * 3] = (Math.random() - .5) * 26; p[k * 3 + 1] = Math.random() * 16; p[k * 3 + 2] = (Math.random() - .5) * 22; }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(p, 3)); snowP = new T.Points(g, new T.PointsMaterial({ color: 0xffffff, size: .07, transparent: true, opacity: .85, depthWrite: false })); sc.add(snowP); }
   const hh = Math.max(top, 1), dist = L.tree ? 4.2 + 9.8 * L.tree : 3.4;
   const cam = new T.PerspectiveCamera(34, W0() / H0(), .05, 200);
   let tilt = .12, zoom = 1, ly = null, look = 0; // 위아래 각도, 확대(두 손가락), 확대했을 때 보는 높이
@@ -214,7 +230,8 @@ export async function mount(el, opt) {
   let placing = null, moving = false, tap0 = null, tw = 0;
   const rcP = new T.Raycaster(), ndc = e => { const b = cvs.getBoundingClientRect(); return new T.Vector2((e.clientX - b.left) / b.width * 2 - 1, -(e.clientY - b.top) / b.height * 2 + 1); };
   const scr = o => { const p = o.getWorldPosition(new T.Vector3()).project(cam), b = cvs.getBoundingClientRect(); return { x: b.left + (p.x + 1) / 2 * b.width, y: b.top + (1 - p.y) / 2 * b.height, p }; };
-  const hitTree = e => { if (!t) return null; rcP.setFromCamera(ndc(e), cam); const h = rcP.intersectObject(t, false)[0]; if (!h) return null; const lp = spin.worldToLocal(h.point.clone()); return [Math.atan2(lp.z, lp.x), Math.max(0, Math.min(1, lp.y / top))]; };
+  const hitTree = e => { if (!t) return null; rcP.setFromCamera(ndc(e), cam); const h = rcP.intersectObject(t, false)[0]; if (!h) return null; const lp = spin.worldToLocal(h.point.clone()); const hr_ = lp.y / top; if (hr_ > .86) return null; // 꼭대기 별 자리엔 못 달아요
+    return [Math.atan2(lp.z, lp.x), Math.max(0, Math.min(1, hr_))]; };
   const setPlace = (a, h) => { if (!placing || !hangOrn) return; const p = placing; p.spot = [a, h, p.spot ? p.spot[2] : 1, p.spot ? p.spot[3] : 0];
     if (!p.m) { p.m = ornMake(p.o, OBs()); p.m.scale.setScalar(p.spot[2]); }
     p.o.spot = p.spot; const sz = p.spot[2]; p.m.scale.setScalar(1); hangOrn(p.o, p.m); p.m.scale.setScalar(sz); p.m.position.add(new T.Vector3()); if (opt.onPlace) opt.onPlace(p.spot); };
@@ -263,6 +280,7 @@ export async function mount(el, opt) {
     if (++frame % 6 === 0) tags();
     for (let i = pops.length - 1; i >= 0; i--) { const o = pops[i]; const mn = o.userData.min || .15; o.material.size = Math.max(mn, o.material.size * .985); if (o.material.size <= mn) pops.splice(i, 1); }
     for (let i = fx.length - 1; i >= 0; i--) if (!fx[i]()) fx.splice(i, 1);
+    if (snowP) { const a = snowP.geometry.attributes.position, tm = performance.now() / 1000; for (let k = 0; k < a.count; k++) { let y = a.getY(k) - .012 - (k % 5) * .002; if (y < 0) y = 16; a.setY(k, y); a.setX(k, a.getX(k) + Math.sin(tm + k) * .003); } a.needsUpdate = true; }
     skyG.rotation.y = skyRot; spin.rotation.y = rot; spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
     for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i];
       if (dp.userData.wait > 0) { dp.userData.wait--; continue; } dp.visible = true;
@@ -302,7 +320,7 @@ export function preview(el, o) {
   const sc = new T.Scene(), cam = new T.PerspectiveCamera(30, W() / Hh(), .01, 20); cam.position.set(0, 0, 2.1); cam.lookAt(0, 0, 0);
   sc.add(new T.HemisphereLight(0xffffff, 0x50605a, 1.8)); const d = new T.DirectionalLight(0xfff4e0, 2.4); d.position.set(1.5, 2, 2.5); sc.add(d);
   const g = new T.Group(); sc.add(g); let m = null, ry = .5, rx = .15, vy = .01, drag = null, alive = true;
-  const set = q => { if (m) g.remove(m); m = q.shape === 1 ? sock(.42, OC[q.color]) : q.shape === 2 ? star5(.2, OC[q.color]) : bead(.2, OC[q.color]); g.add(m); };
+  const set = q => { if (m) g.remove(m); m = q.shape === 3 ? (() => { const g = new T.Group(), s = snowman(.36, OC[q.color]); s.position.y = -.32; g.add(s); return g; })() : q.shape === 1 ? sock(.42, OC[q.color]) : q.shape === 2 ? star5(.2, OC[q.color]) : bead(.2, OC[q.color]); g.add(m); };
   set(o);
   r.domElement.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; r.domElement.setPointerCapture(e.pointerId); });
   r.domElement.addEventListener('pointermove', e => { if (!drag) return; vy = (e.clientX - drag.x) * .012; ry += vy; rx = Math.max(-1.2, Math.min(1.2, rx + (e.clientY - drag.y) * .012)); drag = { x: e.clientX, y: e.clientY }; });
