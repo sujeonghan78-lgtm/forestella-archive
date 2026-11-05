@@ -2443,3 +2443,11 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tw-d.on i { background: linear-gradient(160deg, #7fd8ff, #2f86e0); border: 2px solid rgba(255,255,255,.85); }
 .tw-d i svg { width: 15px; height: 15px; fill: #fff; }
 .tw-d i svg .hl { fill: none; stroke: none; }
+.tree-letters .ts-in { max-height: 92%; }
+.tree-letters h2 small { font-size: 13px; color: var(--muted); font-weight: 600; }
+.tl-chips { margin: 8px 0 10px; }
+.tl-item { padding: 12px 0; border-top: 1px solid var(--line); }
+.tl-item .tp-who { margin-bottom: 5px; }
+.tl-item .tp-msg { font-size: 14px; }
+.tl-hide { margin-top: 6px; border: 0; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; padding: 0; cursor: pointer; }
+.tree-tline .tree-lt { margin-right: 2px; }

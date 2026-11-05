@@ -695,7 +695,7 @@
       { const del = new Set(), day = new Set(), seen = new Set(); treeAll.orn = [];
         const all = buildReports(toObjects(raw.reports), true);
         all.forEach(r => { if (r.type === '오너먼트삭제' && r.by) del.add(line0(r, '번호') + '|' + r.by); });
-        all.forEach(r => { if (r.type !== '오너먼트' || !r.by) return; const id = line0(r, '번호'), at = tsMs(r.time); if (!id || seen.has(id) || del.has(id + '|' + r.by)) return;
+        all.forEach(r => { if (r.type !== '오너먼트' || !r.by) return; const id = line0(r, '번호'), at = tsMs(r.time); if (!id || seen.has(id) || del.has(id + '|' + r.by) || (window.SB_EV_HIDE || new Set()).has('or' + id)) return;
           const d = at ? new Date(at + 9 * 3600e3).toISOString().slice(0, 10) : ''; if (d && day.has(r.by + '|' + d)) return; seen.add(id); if (d) day.add(r.by + '|' + d);
           const sp = line0(r, '자리').split(',').map(Number), spot = sp.length === 4 && sp.every(isFinite) ? sp : null;
           treeAll.orn.push({ id, by: r.by, at, shape: Math.max(0, ['구슬', '양말', '별'].indexOf(line0(r, '모양'))), color: Math.min(7, Math.max(0, +line0(r, '색') || 0)), to: line0(r, '받는이') === '포레' ? '포레' : '숲별', nick: line0(r, '닉네임').slice(0, 12), spot, sec: r.message || '' }); });

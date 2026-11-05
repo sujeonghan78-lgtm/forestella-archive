@@ -6001,12 +6001,32 @@
     box.innerHTML = `<button class="tp-x" aria-label="${L3('닫기', 'Close', '閉じる')}">✕</button>
       <p class="tp-who"><i style="background:${ORN_C[o.color] || ORN_C[0]}"></i><b>${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}</b> → ${o.to === '포레' ? L3('포레스텔라에게', 'To Forestella', 'フォレステラへ') : L3('숲별에게', 'To fans', 'ファンへ')}${d ? ` · ${d}` : ''}</p>
       <p class="tp-msg">🔒 ${L3('12월 24일 0시에 열려요', 'Opens Dec 24, 00:00 KST', '12月24日0時に開きます')}</p>
-      ${mine ? `<button class="tp-del">${L3('내 오너먼트 떼기', 'Remove mine', '外す')}</button>` : ''}`;
+      ${mine ? `<button class="tp-del">${L3('내 오너먼트 떼기', 'Remove mine', '外す')}</button>` : isAdmin() ? `<button class="tp-del tp-adm">${L3('숨기기 (관리자)', 'Hide (admin)', '非表示')}</button>` : ''}`;
     pg.appendChild(box); box.querySelector('.tp-x').onclick = () => box.remove();
     treeRead(o).then(txt => { if (txt == null || !box.isConnected) return; const m = box.querySelector('.tp-msg'); m.textContent = txt; if (!treeOpened()) m.insertAdjacentHTML('beforeend', `<small>${mine ? L3('나만 미리 볼 수 있어요', 'Only you can see this until it opens', '開くまで自分だけ見られます') : L3('관리자 미리보기', 'Admin preview', '管理者プレビュー')}</small>`); });
-    const dl = box.querySelector('.tp-del'); if (dl) dl.onclick = () => { if (!confirm(L3('이 오너먼트를 뗄까요?', 'Remove this ornament?', '外しますか?'))) return;
+    const ah = box.querySelector('.tp-adm'); if (ah) ah.onclick = () => { if (!confirm(L3('이 오너먼트를 모두에게서 숨길까요?', 'Hide this ornament for everyone?', '非表示にしますか?'))) return; ah.disabled = true; (TREE_OPEN ? sendEvMark('or' + o.id, '숨김') : Promise.resolve()).then(() => { const mm = treeMine(); mm.ornDel = [...new Set([...(mm.ornDel || []), o.id])]; boxWrite(TREE_KEY, mm); box.remove(); if (treeApi) treeApi.remove(o.id); toast(L3('숨겼어요', 'Hidden', '非表示にしました')); }).catch(() => { ah.disabled = false; }); };
+    const dl = box.querySelector('.tp-del:not(.tp-adm)'); if (dl) dl.onclick = () => { if (!confirm(L3('이 오너먼트를 뗄까요?', 'Remove this ornament?', '外しますか?'))) return;
       const mm = treeMine(); (TREE_OPEN ? formPost(`종류: 오너먼트삭제\n번호: ${o.id}\n누가: ${myUid()}`) : Promise.resolve()).then(() => {
         mm.ornDel = [...new Set([...(mm.ornDel || []), o.id])].slice(-50); boxWrite(TREE_KEY, mm); box.remove(); if (treeApi) treeApi.remove(o.id); toast(L3('오너먼트를 뗐어요', 'Removed', '外しました')); }); };
+  }
+  // 📜 편지 모아 보기: 연 날부터 모두에게, 그 전엔 관리자만(미리 읽고 숨기기)
+  function treeLetters(k = '') {
+    const pg = document.querySelector('.tree-page'); if (!pg) return;
+    document.querySelectorAll('.tree-sheet,.tree-pop').forEach(x => x.remove());
+    const st = treeState(), list = st.orn.filter(o => !k || o.to === k).slice().reverse(), adm = isAdmin();
+    const sh = document.createElement('div'); sh.className = 'tree-sheet tree-letters';
+    sh.innerHTML = `<div class="ts-in"><h2>📜 ${L3('숲별 트리 편지', 'Tree letters', 'ツリーの手紙')} <small>${st.orn.length}</small></h2>
+      ${treeOpened() ? '' : `<p class="ts-note">${L3('관리자 미리보기예요. 12월 24일 0시에 모두에게 열려요.', 'Admin preview. Opens to everyone on Dec 24.', '管理者プレビュー')}</p>`}
+      <div class="ts-row tl-chips">${[['', L3('전체', 'All', 'すべて')], ['포레', L3('포레스텔라에게', 'To Forestella', 'フォレステラへ')], ['숲별', L3('숲별에게', 'To fans', 'ファンへ')]].map(([v, n]) => `<button data-k="${v}" class="${v === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="tl-list">${list.length ? list.map(o => `<div class="tl-item" data-id="${esc(o.id)}"><p class="tp-who"><i style="background:${ORN_C[o.color] || ORN_C[0]}"></i><b>${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}</b> → ${o.to === '포레' ? L3('포레스텔라에게', 'To Forestella', 'フォレステラへ') : L3('숲별에게', 'To fans', 'ファンへ')}${o.at ? ` · ${kstDay(o.at).slice(5).replace('-', '.')}` : ''}</p><p class="tp-msg">🔒</p>${adm ? `<button class="tl-hide">${L3('숨기기', 'Hide', '非表示')}</button>` : ''}</div>`).join('') : `<p class="ts-note">${L3('아직 걸린 오너먼트가 없어요', 'No ornaments yet', 'まだありません')}</p>`}</div>
+      <div class="ts-btns"><button class="ts-cancel">${L3('닫기', 'Close', '閉じる')}</button></div></div>`;
+    pg.appendChild(sh);
+    sh.querySelector('.ts-cancel').onclick = () => sh.remove();
+    sh.querySelectorAll('.tl-chips button').forEach(b => { b.onclick = () => treeLetters(b.dataset.k); });
+    list.forEach(o => { const it = sh.querySelector(`.tl-item[data-id="${CSS.escape(o.id)}"]`); if (!it) return;
+      treeRead(o).then(t => { if (t != null) it.querySelector('.tp-msg').textContent = t; });
+      const hb = it.querySelector('.tl-hide'); if (hb) hb.onclick = () => { if (!confirm(L3('이 오너먼트를 모두에게서 숨길까요?', 'Hide this ornament for everyone?', '非表示にしますか?'))) return; hb.disabled = true;
+        (TREE_OPEN ? sendEvMark('or' + o.id, '숨김') : Promise.resolve()).then(() => { if (!TREE_OPEN) { const mm = treeMine(); mm.ornDel = [...new Set([...(mm.ornDel || []), o.id])]; boxWrite(TREE_KEY, mm); } it.remove(); if (treeApi) treeApi.remove(o.id); toast(L3('숨겼어요. 5~10분쯤 뒤 모두에게서 빠져요.', 'Hidden. It disappears for everyone in 5–10 min.', '非表示にしました')); }).catch(() => { hb.disabled = false; }); }; });
   }
   function treeOrnSheet() {
     const st = treeState(), adm = !TREE_OPEN && isAdmin();
@@ -6061,6 +6081,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const TI = { // 트리 화면 아이콘
     back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
     gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>',
+    letter: '<svg viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>',
     gift: '<svg viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="11.5" rx="2"/><path d="M2.5 9h19M12 9v11.5"/><path d="M12 9c-1.5-3.5-5.5-4.5-6-2s4 2 6 2c2 0 6.5.5 6-2s-4.5-1.5-6 2z"/></svg>',
     drop: '<svg viewBox="0 0 24 24"><path d="M12 2.8c3.4 4.3 6.6 8 6.6 11.6a6.6 6.6 0 0 1-13.2 0C5.4 10.8 8.6 7.1 12 2.8z"/><path class="hl" d="M9 14.6a3 3 0 0 0 2.6 3"/></svg>',
   };
@@ -6078,7 +6099,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return `<section class="tree-page">
       <div class="tree-cv" id="tree-cv"><p class="tree-load">${L3('트리를 심는 중…', 'Planting the tree…', 'ツリーを植えています…')}</p></div>
       <div class="tree-top">
-        <div class="tree-tline"><button class="tree-back" id="tree-back" aria-label="${L3('돌아가기', 'Back', '戻る')}">${TI.back}</button><h1 class="tree-h">🎄 ${L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー')} <small>Lv${st.i + 1} ${st.lv.n}</small></h1>${adm}</div>
+        <div class="tree-tline"><button class="tree-back" id="tree-back" aria-label="${L3('돌아가기', 'Back', '戻る')}">${TI.back}</button><h1 class="tree-h">🎄 ${L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー')} <small>Lv${st.i + 1} ${st.lv.n}</small></h1>${treeOpened() || isAdmin() ? `<button class="tree-back tree-lt" id="tree-letters" aria-label="${L3('편지 보기', 'Letters', '手紙')}">${TI.letter}</button>` : ''}${adm}</div>
         <div class="tree-week" aria-label="${L3('이번 주 물 준 날', 'Watered this week', '今週の水やり')}">${stamp}</div>
       </div>
       <div class="tree-bot">
@@ -6105,6 +6126,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };
     const o0 = document.getElementById('tree-orn0'); if (o0) o0.onclick = e => { e.preventDefault(); const m = treeMine(); delete m.torn; boxWrite(TREE_KEY, m); renderBase('tree'); };
+    const lt = document.getElementById('tree-letters'); if (lt) lt.onclick = () => treeLetters();
     const rs = document.getElementById('tree-reset'); if (rs) rs.onclick = e => { e.preventDefault(); const m = treeMine(); delete m.test; boxWrite(TREE_KEY, m); renderBase('tree'); };
     const b = document.getElementById('tree-water');
     if (b) b.onclick = () => {
