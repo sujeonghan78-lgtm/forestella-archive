@@ -6102,11 +6102,13 @@
   }
   // 내가 준 물로 별자리가 완성되면 축하 창
   const CONST_EN = { 북두칠성: 'the Big Dipper', 카시오페이아: 'Cassiopeia', 오리온: 'Orion', 거문고자리: 'Lyra', 백조자리: 'Cygnus', 작은곰자리: 'Ursa Minor', 쌍둥이자리: 'Gemini', 사자자리: 'Leo' };
+  const CONST_JA = { 북두칠성: '北斗七星', 카시오페이아: 'カシオペヤ座', 오리온: 'オリオン座', 거문고자리: 'こと座', 백조자리: 'はくちょう座', 작은곰자리: 'こぐま座', 쌍둥이자리: 'ふたご座', 사자자리: 'しし座' };
+  const cName = n => L3(n, CONST_EN[n] || n, CONST_JA[n] || n);
   function treeConst(name) {
     const pg = document.querySelector('.tree-page'); if (!pg) return; document.querySelectorAll('.tree-pop').forEach(x => x.remove());
     const box = document.createElement('div'); box.className = 'tree-pop tree-cong';
-    box.innerHTML = `<p class="tc-big">🌌</p><h2>${L3(`${name} 완성!`, `${CONST_EN[name] || name} complete!`, `${name} 完成!`)}</h2>
-      <p class="tp-msg">${L3(`숲별들이 모은 물로 ${name}${(name.charCodeAt(name.length - 1) - 0xAC00) % 28 ? '이' : '가'} 하늘에 떠올랐어요.<br>마지막 별은 내가 켰어요 ✨`, `Everyone's water lit up ${CONST_EN[name] || name}.<br>You lit the last star ✨`, `みんなの水で${name}が空に浮かびました。<br>最後の星はあなたが灯しました ✨`)}</p>
+    box.innerHTML = `<p class="tc-big">🌌</p><h2>${L3(`${name} 완성!`, `${CONST_EN[name] || name} complete!`, `${CONST_JA[name] || name} 完成!`)}</h2>
+      <p class="tp-msg">${L3(`숲별들이 모은 물로 ${name}${(name.charCodeAt(name.length - 1) - 0xAC00) % 28 ? '이' : '가'} 하늘에 떠올랐어요.<br>마지막 별은 내가 켰어요 ✨`, `Everyone's water lit up ${CONST_EN[name] || name}.<br>You lit the last star ✨`, `みんなの水で${CONST_JA[name] || name}が空に浮かびました。<br>最後の星はあなたが灯しました ✨`)}</p>
       <div class="ts-btns"><button class="ts-go">${L3('하늘 보기', 'See the sky', '空を見る')}</button></div>`;
     pg.appendChild(box); box.querySelector('.ts-go').onclick = () => box.remove();
   }
@@ -6204,7 +6206,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = qs.get('sky') || undefined;
     let ok = true; try { const c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (err) { ok = false; }
     if (!ok) { el.innerHTML = `<p class="tree-load">${L3('이 폰에선 3D 트리를 볼 수 없어요. 물 주기는 할 수 있어요!', '3D tree is not supported here, but you can still water!', 'この端末では3Dツリーを表示できませんが、水やりはできます!')}</p>`; }
-    else import('./tree.js?v=22').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, orns: st.hung.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
+    else import('./tree.js?v=23').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, cName, orns: st.hung.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
     const bk = document.getElementById('tree-back'); if (bk) bk.onclick = () => { location.hash = treeFrom || '#/more'; };
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };

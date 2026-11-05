@@ -169,7 +169,7 @@ export async function mount(el, opt) {
   // 하늘을 돌려 그 별이 앞에 오게 (가까운 쪽으로)
   const skyTo = (a, n) => { const from = skyRot; let d = (a - from) % 6.2832; if (d > 3.1416) d -= 6.2832; if (d < -3.1416) d += 6.2832; let f = 0; fx.push(() => { f++; const k = Math.min(1, f / n), e = k * k * (3 - 2 * k); skyRot = from + d * e; return k < 1; }); };
   const skyStar = () => { const before = lit(); wn++; const q = lit() > before ? CP[lit() - 1] : null, fin = q && done(q.ci);
-    const after = () => { if (fin) { drawLines(q.ci); label(CONST[q.ci].n); setTimeout(() => { if (alive && opt.onConst) opt.onConst(CONST[q.ci].n); }, 1400); } };
+    const after = () => { if (fin) { drawLines(q.ci); label(opt.cName ? opt.cName(CONST[q.ci].n) : CONST[q.ci].n); setTimeout(() => { if (alive && opt.onConst) opt.onConst(CONST[q.ci].n); }, 1400); } };
     if (!starA) { after(); return null; }
     if (q) { skyTo(Math.atan2(q.v.x, -q.v.z), 50); lookTo(.8, 50, () => shoot(q.v, () => { dot(q.v, true); after(); setTimeout(() => { if (alive && drag == null) lookTo(0, 70); }, fin ? 4200 : 1800); })); }
     else dot(seenPos(), false);
