@@ -24,6 +24,8 @@ window.CONFIG = {
   // 숲별 트리: 오너먼트 글은 이 공개 열쇠(+관리자·쓴 사람)로 잠가요. 여는 날 treeSecret에 비밀 열쇠를 넣어 배포하면 모든 폰에서 열려요
   treeKey: { x: "fZRH4h-Qz8t0oWIzaSNzy33yXsY2CooM225kAmvRthM", y: "kt4kdz6bsU7fZaf3HOCXMxFIbeJyGMobDXK91-KR2Hg" },
   treeOpen: '2026-12-24T00:00:00+09:00',
+  treeStart: '2026-11-05',  // 트리 시작일 (도장 길 첫 칸). 오픈하는 날로 바꿔요
+  treeConcert: ['2026-12-24', '2026-12-25'],
   treeSecret: null,
   adminKeys: [
     { x: "hH6GY2b1cKRyeOZw2fB4N6ATdnayMeX49cNyN0BN85g", y: "YJFmSOEKMzmmJseemhAOcaFqnlrWybmXQaLWbdkPVt8" },

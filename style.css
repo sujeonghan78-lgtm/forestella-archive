@@ -2374,7 +2374,8 @@ body.tree-full { overflow: hidden; }
 .tree-back svg, .tree-adm summary svg, .tree-gift svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tree-h { flex: 1; font-size: 17px; margin: 0; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .tree-h small { font-size: 13px; font-weight: 700; color: #c9f5b0; margin-left: 4px; }
-.tree-week { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+.tree-week { display: flex; gap: 6px; margin: 8px -14px 0; padding: 4px 14px 2px; overflow-x: auto; scrollbar-width: none; pointer-events: auto; scroll-snap-type: x proximity; }
+.tree-week::-webkit-scrollbar { display: none; }
 .tw-d { width: 38px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .tw-d i { width: 32px; height: 32px; border-radius: 50%; border: 2px dashed rgba(255,255,255,.45); display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 16px; background: rgba(255,255,255,.08); }
 .tw-d.on i { border: 2px solid #7fd0ff; background: rgba(127,208,255,.25); transform: rotate(-8deg); }
@@ -2479,3 +2480,10 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-cong .tc-big { margin: 0; font-size: 40px; }
 .tree-cong .tp-msg { font-size: 14px; color: var(--ink-2); }
 @keyframes tc-pop { 0% { transform: scale(.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.tw-d { flex: none; position: relative; scroll-snap-align: center; }
+.tw-d:not(:last-child)::after { content: ''; position: absolute; top: 17px; left: 36px; width: 8px; border-top: 2px dotted rgba(255,255,255,.35); }
+.tw-d small { text-align: center; line-height: 1.2; }
+.tw-d.past:not(.on) i { opacity: .45; }
+.tw-d.cc i { border: 2px solid #ffd65a; background: rgba(255,214,90,.25); font-size: 15px; }
+.tree-dday { margin: 8px 0 0; text-align: center; font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,.45); }
+.tree-dday b { display: inline-block; margin-left: 4px; padding: 2px 10px; border-radius: 12px; background: linear-gradient(90deg, #ffd65a, #ff9a6a); color: #3a2400; font-size: 14px; text-shadow: none; }
