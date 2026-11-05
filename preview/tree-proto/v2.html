@@ -1,0 +1,73 @@
+<!doctype html><html><head><meta charset=utf-8>
+<style>body{margin:0;background:#F3F8F4;font-family:system-ui,sans-serif;color:#14231C;width:780px}
+h1{font-size:22px;text-align:center;margin:16px 0 2px}p{text-align:center;color:#5B6B63;font-size:13px;margin:0 0 10px}
+.g{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 14px 12px}.g4{grid-template-columns:repeat(4,1fr)}
+.c{background:#fff;border:1px solid #E3EDE7;border-radius:14px;overflow:hidden;text-align:center;padding-bottom:8px}
+.c img{width:100%;display:block}.c b{display:block;font-size:14px;margin-top:6px}.c i{font-style:normal;color:#5B6B63;font-size:11px}</style></head><body>
+<h1>🌲 숲별 트리 · 레벨 9단계 (밤)</h1><p>숲(둘레 나무)과 별(물 준 숲별 수)이 같이 늘어요</p><div class=g id=g></div>
+<h1 style="font-size:18px">🕐 시간에 따라 바뀌는 하늘 (Lv9)</h1><div class="g g4" id=g2></div>
+<script type=module>
+import * as T from './three.module.min.js';
+const LV=[ // name, water, tiers, scale, forest, lights, deco, snow, star, ornaments, basket
+ ['씨앗',0,0,0,0,0,0,0,0,0,0],['새싹',10,0,0,0,0,0,0,0,0,2],['묘목',30,2,.42,1,0,0,0,0,6,4],['작은 나무',60,3,.6,2,0,0,0,0,18,5],
+ ['트리',100,5,1,3,0,0,0,0,36,6],['전구',150,5,1,4,1,0,0,0,56,4],['리본·방울',220,5,1,6,1,1,0,0,80,5],['눈',300,5,1,8,1,1,1,0,100,3],['별',400,5,1,10,1,1,1,1,120,0]];
+const SKY={dawn:['#a99ad8','#f7c6cf',.25],day:['#6fbfee','#dff3fb',0],sunset:['#4b3f86','#f6a06a',.35],night:['#0b1730','#1f4c4a',1]};
+const r=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});r.setPixelRatio(2);
+let seed;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const M=(c,o={})=>new T.MeshStandardMaterial(Object.assign({color:c,flatShading:true,roughness:.85},o));
+function skyTex(a,b){const c=document.createElement('canvas');c.width=2;c.height=256;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,a);g.addColorStop(1,b);x.fillStyle=g;x.fillRect(0,0,2,256);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;return t}
+function fir(g,x,z,s,shade){const cols=[0x1d6b45,0x23804f,0x2c9a5e];for(let i=0;i<3;i++){const h=1.1*s,rad=(1-i*.25)*.8*s;const m=new T.Mesh(new T.ConeGeometry(rad,h,7),M(cols[i]).clone());m.material.color.multiplyScalar(shade);m.position.set(x,(.25+i*.55)*s+h/2,z);g.add(m)}
+ const t=new T.Mesh(new T.CylinderGeometry(.08*s,.1*s,.4*s,5),M(0x6b4528));t.position.set(x,.2*s,z);g.add(t)}
+function tierGeo(rad,h){const seg=12,geo=new T.ConeGeometry(rad,h,seg,2).toNonIndexed(),p=geo.attributes.position;
+ for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const a=Math.atan2(z,x),k=Math.round((a+Math.PI)/(2*Math.PI)*seg)%2;
+  if(y<-h/2+.01&&Math.hypot(x,z)>.01){const f=k?1.18:.92;x*=f;z*=f;y-=k?.18*h:0}
+  p.setXYZ(i,x+(rnd()-.5)*.05*rad,y,z+(rnd()-.5)*.05*rad)}geo.computeVertexNormals();return geo}
+function scene(L,sky){seed=11;const [nm,w,tiers,s,forest,lights,deco,snow,star,orn,basket]=L,[ca,cb,starA]=SKY[sky],night=sky=='night';
+ const sc=new T.Scene();sc.background=skyTex(ca,cb);
+ sc.add(new T.HemisphereLight(night?0x9fb8ff:0xffffff,0x3a5a4a,night?.9:1.5));const d=new T.DirectionalLight(sky=='sunset'?0xffb07a:sky=='dawn'?0xffd0e0:0xfff4e0,night?1.1:2.2);d.position.set(4,8,6);sc.add(d);
+ // stars (= 숲별)
+ if(starA){const n=40+orn*2,pos=[];for(let i=0;i<n;i++)pos.push((rnd()-.5)*40,6+rnd()*14,-14-rnd()*4);const sg=new T.BufferGeometry();sg.setAttribute('position',new T.Float32BufferAttribute(pos,3));sc.add(new T.Points(sg,new T.PointsMaterial({color:0xfff6d0,size:.12,transparent:true,opacity:starA})))}
+ // hill
+ const hg=new T.CircleGeometry(9,18,0).toNonIndexed();hg.rotateX(-Math.PI/2);const hp=hg.attributes.position;for(let i=0;i<hp.count;i++){const rr=Math.hypot(hp.getX(i),hp.getZ(i));hp.setY(i,Math.max(0,.5-rr*.06)+(rr>1?(rnd()-.5)*.15:0)-.3)}hg.computeVertexNormals();sc.add(new T.Mesh(hg,M(snow?0xffffff:0xe6eff2)));
+ // forest ring
+ for(let i=0;i<forest;i++){const a=Math.PI*(.15+.7*((i*0.618)%1))+Math.PI,rad=4.2+(i%3)*1.4;fir(sc,Math.cos(a)*rad*1.3,Math.sin(a)*rad-1.5,.9+(i%3)*.3,.85-(i%3)*.12)}
+ const g=new T.Group();sc.add(g);let top=0;
+ if(tiers==0){ // seed / sprout
+  const soil=new T.Mesh(new T.CylinderGeometry(.5,.6,.12,8),M(0x7a5232));soil.position.y=.2;g.add(soil);
+  if(w==0){const sd=new T.Mesh(new T.IcosahedronGeometry(.18,0),M(0x9a6b43));sd.scale.set(1,.8,1);sd.position.y=.33;g.add(sd);top=.5}
+  else{const st=new T.Mesh(new T.CylinderGeometry(.03,.04,.5,5),M(0x4e8f3a));st.position.y=.5;g.add(st);[-1,1].forEach(k=>{const lf=new T.Mesh(new T.IcosahedronGeometry(.18,0),M(0x6cc96a));lf.scale.set(1.6,.35,.8);lf.position.set(k*.2,.78,0);lf.rotation.z=k*.4;g.add(lf)});top=.9}
+ }else{const tr=new T.Mesh(new T.CylinderGeometry(.26*s,.34*s,.9*s,7),M(0x744a2b));tr.position.y=.45*s;g.add(tr);
+  const cols=[0x1a6e45,0x1f804f,0x269259,0x2fa463,0x3bb56e];let y=.7*s;
+  for(let i=0;i<tiers;i++){const f=1-i/(tiers),rad=(2.0*f+.3)*s,h=(1.75-i*.1)*s;const m=new T.Mesh(tierGeo(rad,h),M(cols[i+5-tiers]));m.position.y=y+h/2;m.rotation.y=i*.7;g.add(m);
+   if(snow){const sn=new T.Mesh(new T.ConeGeometry(rad*.45,h*.32,10),M(0xffffff));sn.position.y=y+h*.86;sn.rotation.y=i;g.add(sn)}
+   y+=h*.62}top=y+.5*s;
+  const surf=(t,a)=>{const yy=.7*s+t*(top-.7*s-.4*s),f=1-(yy-.7*s)/(top-.7*s);return new T.Vector3(Math.cos(a)*(1.95*f+.27)*s*.93,yy,Math.sin(a)*(1.95*f+.27)*s*.93)};
+  if(lights){const lc=night?[0xfff1a8,0xffd36b]:[0xffe9a0,0xffcf6a];for(let i=0;i<90;i++){const t=i/90;const p=surf(t,t*Math.PI*14);const l=new T.Mesh(new T.SphereGeometry(.055,6,4),new T.MeshBasicMaterial({color:lc[i%2]}));l.position.copy(p);g.add(l);
+    if(night){const gl=new T.Mesh(new T.SphereGeometry(.13,6,4),new T.MeshBasicMaterial({color:0xffd36b,transparent:true,opacity:.25}));gl.position.copy(p);g.add(gl)}}}
+  if(deco){const pts=[];for(let i=0;i<=60;i++){const t=.05+i/60*.85;pts.push(surf(t,-t*Math.PI*8+1).multiplyScalar(1.02))}g.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts),120,.06,4),M(0xd8343e)));
+   for(let i=0;i<28;i++){const p=surf(.08+rnd()*.8,rnd()*6.28);const b=new T.Mesh(new T.IcosahedronGeometry(.16,1),M(i%2?0xe8c25a:0xd9dee6,{metalness:.6,roughness:.3}));b.position.copy(p);g.add(b)}}
+  // fan ornaments: 4 shapes x 6 colors on spiral
+  const OC=[0xff6b8b,0x5b8def,0xb07cf0,0x47c9a7,0xffa94d,0xf4f4f4];
+  const heart=new T.Shape();heart.moveTo(0,-.12);heart.bezierCurveTo(-.22,.02,-.12,.18,0,.07);heart.bezierCurveTo(.12,.18,.22,.02,0,-.12);
+  const stS=new T.Shape();for(let i=0;i<10;i++){const rr=i%2?.07:.16,a=i/10*6.283+1.571;i?stS.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):stS.moveTo(Math.cos(a)*rr,Math.sin(a)*rr)}
+  for(let i=0;i<orn;i++){const t=.06+.84*((i*0.381966)%1),a=i*2.39996;const p=surf(t,a).multiplyScalar(1.04);const k=i%4,mat=M(OC[(i*5)%6],{roughness:.4,metalness:.2});let o;
+   if(k==0)o=new T.Mesh(new T.IcosahedronGeometry(.14*Math.max(s,.6),1),mat);
+   else if(k==1){o=new T.Mesh(new T.ExtrudeGeometry(stS,{depth:.05,bevelEnabled:false}),mat)}
+   else if(k==2){o=new T.Mesh(new T.ExtrudeGeometry(heart,{depth:.06,bevelEnabled:false}),mat)}
+   else{o=new T.Group();for(let q=0;q<3;q++){const bar=new T.Mesh(new T.BoxGeometry(.3,.04,.03),M(0xffffff,{emissive:0x6688aa}));bar.rotation.z=q*1.047;o.add(bar)}}
+   o.position.copy(p);o.lookAt(p.x*2,p.y,p.z*2);if(s<.7)o.scale.setScalar(.8);g.add(o)}
+  if(star){const sh=new T.Shape();for(let i=0;i<10;i++){const rr=i%2?.2:.48,a=i/10*6.283+1.571;i?sh.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):sh.moveTo(Math.cos(a)*rr,Math.sin(a)*rr)}
+   const st=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.14,bevelEnabled:true,bevelSize:.03,bevelThickness:.03,bevelSegments:1}),M(0xffc93c,{emissive:0xb07800,emissiveIntensity:night?1:.4}));st.position.set(0,top+.25,-.07);g.add(st);
+   [.9,1.5].forEach((rr,j)=>{const gl=new T.Mesh(new T.CircleGeometry(rr,20),new T.MeshBasicMaterial({color:0xffe08a,transparent:true,opacity:night?.22-j*.1:.1}));gl.position.set(0,top+.25,-.2);sc.add(gl)})}
+  if(deco)[[1.9,1.1,0xe5484d],[-1.7,1.3,0x5b8def],[.4,2.1,0xf2a33a],[-2.4,-.2,0xb07cf0]].forEach(([x,z,c],i)=>{const q=.5+(i%2)*.15;const b=new T.Mesh(new T.BoxGeometry(q,q,q),M(c));b.position.set(x,q/2-.05,z);b.rotation.y=i;sc.add(b);const rb=new T.Mesh(new T.BoxGeometry(q+.02,q+.02,.09),M(0xffffff));rb.position.copy(b.position);rb.rotation.y=i;sc.add(rb)})}
+ // basket
+ if(basket){const bx=new T.Group();const bk=new T.Mesh(new T.CylinderGeometry(.42,.32,.36,8,1,true),M(0xb07a45,{side:T.DoubleSide}));bk.position.y=.18;bx.add(bk);const hd=new T.Mesh(new T.TorusGeometry(.38,.035,4,10,Math.PI),M(0x8a5a30));hd.position.y=.36;bx.add(hd);
+  for(let i=0;i<basket;i++){const b=new T.Mesh(new T.IcosahedronGeometry(.11,1),M([0xff6b8b,0x5b8def,0xb07cf0,0x47c9a7,0xffa94d][i%5]));b.position.set(Math.cos(i*2.4)*.2,.36,Math.sin(i*2.4)*.2);bx.add(b)}
+  const bs=tiers?Math.max(1,s*1.4):.9;bx.scale.setScalar(bs);bx.position.set(tiers?2.6*Math.max(s,.6):1.1,0,tiers?1.2:.5);sc.add(bx)}
+ const h=Math.max(top,1.2),dist=[4.2,4.2,7.5,9.5,15,15,15,15,15.5][LV.indexOf(L)];const cam=new T.PerspectiveCamera(38,300/360,.1,100);cam.position.set(0,h*.5+dist*.12,dist);cam.lookAt(0,h*.48,0);
+ return [sc,cam]}
+function shot(L,sky){r.setSize(300,360);const [sc,cam]=scene(L,sky);r.render(sc,cam);return r.domElement.toDataURL()}
+document.getElementById('g').innerHTML=LV.map((L,i)=>`<div class=c><img src="${shot(L,'night')}"><b>Lv${i+1} ${L[0]}</b><i>물 ${L[1]} · 오너먼트 ${L[9]}${L[10]?` · 🧺 ${L[10]}`:''}</i></div>`).join('');
+document.getElementById('g2').innerHTML=[['dawn','새벽 5~7시'],['day','낮 7~17시'],['sunset','노을 17~19시'],['night','밤 19~5시']].map(([k,n])=>`<div class=c><img src="${shot(LV[8],k)}"><b>${n}</b></div>`).join('');
+document.title='done';
+</script></body></html>
