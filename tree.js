@@ -86,7 +86,7 @@ export async function mount(el, opt) {
   r.setPixelRatio(Math.min(2, devicePixelRatio || 1)); r.setSize(W0(), H0());
   r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.outputColorSpace = T.SRGBColorSpace;
   r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
-  el.appendChild(r.domElement); r.domElement.style.touchAction = 'pan-y'; r.domElement.style.display = 'block';
+  el.appendChild(r.domElement); r.domElement.style.touchAction = 'none'; r.domElement.style.display = 'block';
   const sc = new T.Scene(), sky = opt.sky || skyNow(), [s0, s1, starA] = SKY[sky], night = sky === 'night';
   { const cv = document.createElement('canvas'); cv.width = 2; cv.height = 256; const x = cv.getContext('2d'), gr = x.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, s0); gr.addColorStop(1, s1); x.fillStyle = gr; x.fillRect(0, 0, 2, 256); const tx = new T.CanvasTexture(cv); tx.colorSpace = T.SRGBColorSpace; sc.background = tx; }
   sc.add(new T.HemisphereLight(night ? 0xc8dcff : 0xffffff, 0x40504a, night ? 1.1 : 1.6));
@@ -121,13 +121,15 @@ export async function mount(el, opt) {
   }
   const hh = Math.max(top, 1), dist = L.tree ? 4.2 + 9.8 * L.tree : 3.4;
   const cam = new T.PerspectiveCamera(34, W0() / H0(), .05, 200);
-  const aim = () => { const portrait = W0() / H0() < .8, dd = dist * (portrait ? 1.08 : 1); cam.position.set(0, hh * .5 + dd * .1, dd); cam.lookAt(0, hh * .47, 0); };
+  let tilt = .12; // 위아래 보는 각도 (손가락 위아래로 바꿈)
+  const aim = () => { const portrait = W0() / H0() < .8, dd = dist * (portrait ? 1.08 : 1), ty = hh * .47; cam.position.set(0, ty + Math.sin(tilt) * dd, Math.cos(tilt) * dd); cam.lookAt(0, ty, 0); };
   aim();
   // 손가락으로 돌리기 + 천천히 혼자 돌기
   let rot = .3, v = .003, drag = null, sway = 0, alive = true;
   const cvs = r.domElement;
-  cvs.addEventListener('pointerdown', e => { drag = e.clientX; });
-  addEventListener('pointermove', e => { if (drag == null) return; const dx = e.clientX - drag; rot += dx * .01; v = dx * .0015; drag = e.clientX; });
+  let dragY = 0;
+  cvs.addEventListener('pointerdown', e => { drag = e.clientX; dragY = e.clientY; });
+  addEventListener('pointermove', e => { if (drag == null) return; const dx = e.clientX - drag; rot += dx * .01; v = dx * .0015; drag = e.clientX; tilt = Math.max(-.05, Math.min(1.1, tilt + (e.clientY - dragY) * .006)); dragY = e.clientY; aim(); });
   addEventListener('pointerup', () => { drag = null; });
   const drops = [];
   const onResize = () => { r.setSize(W0(), H0()); cam.aspect = W0() / H0(); cam.updateProjectionMatrix(); aim(); };
