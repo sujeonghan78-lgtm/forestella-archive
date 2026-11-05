@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset=utf-8><style>body{margin:0;background:#F3F8F4;width:780px;font-family:system-ui}.g{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px}img{width:100%;border-radius:14px;display:block}</style></head><body><div class=g id=g></div>
+<script type=module>
+import * as T from './three.module.min.js';
+const r=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});r.setPixelRatio(2);r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;r.toneMapping=T.ACESFilmicToneMapping;r.toneMappingExposure=1.05;r.outputColorSpace=T.SRGBColorSpace;
+let seed=5;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+function facet(geo,base,vary=.07){geo=geo.toNonIndexed();const p=geo.attributes.position,n=p.count,c=new Float32Array(n*3),col=new T.Color(base);for(let i=0;i<n;i+=3){const k=1+(rnd()-.5)*2*vary;for(let j=0;j<3;j++){c[(i+j)*3]=col.r*k;c[(i+j)*3+1]=col.g*k;c[(i+j)*3+2]=col.b*k}}geo.setAttribute('color',new T.BufferAttribute(c,3));geo.computeVertexNormals();return geo}
+const VM=()=>new T.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:.9});
+function tier(R,h,col){const seg=9,geo=new T.ConeGeometry(R,h,seg,3,false);const p=geo.attributes.position;const map=new Map();
+ for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const key=x.toFixed(3)+','+y.toFixed(3)+','+z.toFixed(3);if(!map.has(key)){const rr=Math.hypot(x,z),a=Math.atan2(z,x),t=(y+h/2)/h;let f=1,dy=0;
+   if(t<.01&&rr>.01){const tip=Math.round((a+Math.PI)/(2*Math.PI)*seg*2)%2;f=tip?1.12:.86;dy=tip?-.16*h:-.02*h}else if(t>.01&&t<.99){f=1+.12*Math.sin(t*Math.PI)+(rnd()-.5)*.08;dy=(rnd()-.5)*.06*h}
+   map.set(key,[x*f,y+dy,z*f])}const v=map.get(key);p.setXYZ(i,v[0],v[1],v[2])}
+ const m=new T.Mesh(facet(geo,col),VM());m.castShadow=m.receiveShadow=true;return m}
+function tree(s=1,tiers=4){const g=new T.Group();const tr=new T.Mesh(facet(new T.CylinderGeometry(.32*s,.5*s,1.1*s,7),0xb57a48,.05),VM());tr.position.y=.55*s;tr.castShadow=true;g.add(tr);
+ const cols=[0x4f9c3c,0x5aab44,0x67ba4c,0x78c957,0x8ad663];let y=.95*s;const top=[];
+ for(let i=0;i<tiers;i++){const f=1-i/tiers,R=(1.55*f+.45)*s,h=(1.5-i*.12)*s;const m=tier(R,h,cols[i]);m.position.y=y+h/2;m.rotation.y=i*.6;g.add(m);top.push([y,R,h]);y+=h*.58}
+ const tip=tier(.5*s,1.0*s,cols[4]);tip.position.y=y+.45*s;g.add(tip);return [g,y+.95*s,top]}
+function scene(kind,sky){const sc=new T.Scene();const SK={night:['#152a4a','#2c5a5a'],day:['#bfe3f5','#eef8f3']}[sky];
+ const c=document.createElement('canvas');c.width=2;c.height=256;const x=c.getContext('2d'),gr=x.createLinearGradient(0,0,0,256);gr.addColorStop(0,SK[0]);gr.addColorStop(1,SK[1]);x.fillStyle=gr;x.fillRect(0,0,2,256);const tx=new T.CanvasTexture(c);tx.colorSpace=T.SRGBColorSpace;sc.background=tx;
+ const night=sky=='night';sc.add(new T.HemisphereLight(night?0xaac4ff:0xffffff,night?0x30404a:0x8a9a80,night?1.1:1.6));
+ const d=new T.DirectionalLight(night?0xcfe0ff:0xfff1dc,night?1.4:2.4);d.position.set(5,9,6);d.castShadow=true;d.shadow.mapSize.set(1024,1024);Object.assign(d.shadow.camera,{left:-6,right:6,top:8,bottom:-2});d.shadow.radius=6;sc.add(d);
+ const rim=new T.DirectionalLight(night?0x7fd8c8:0xffffff,.6);rim.position.set(-6,4,-5);sc.add(rim);
+ const hill=new T.Mesh(facet(new T.CylinderGeometry(7,7.5,.6,14,1),night?0xdfe8f2:0xf6fbff,.03),VM());hill.position.y=-.3;hill.receiveShadow=true;sc.add(hill);
+ const [t,top,tiers]=tree(1,4);sc.add(t);
+ if(kind=='full'){ // lights + baubles + star, tidy
+  t.updateMatrixWorld(true);const rc=new T.Raycaster();const surf=(tt,a,off=.04)=>{const yy=1.05+tt*(top-2.0);const o=new T.Vector3(Math.cos(a)*6,yy,Math.sin(a)*6);rc.set(o,new T.Vector3(-Math.cos(a),0,-Math.sin(a)));const h=rc.intersectObject(t,true)[0];if(!h)return new T.Vector3(0,yy,0);return h.point.add(new T.Vector3(Math.cos(a),0,Math.sin(a)).multiplyScalar(off))};
+  for(let i=0;i<70;i++){const tt=i/70,p=surf(tt,tt*Math.PI*11);const l=new T.Mesh(new T.SphereGeometry(.05,8,6),new T.MeshBasicMaterial({color:0xffe59a}));l.position.copy(p);sc.add(l);if(night){const gl=new T.Mesh(new T.SphereGeometry(.12,8,6),new T.MeshBasicMaterial({color:0xffd36b,transparent:true,opacity:.22}));gl.position.copy(p);sc.add(gl)}}
+  const OC=[0xe85a6a,0x5b8def,0xf2b84b,0xb07cf0,0xf6f6f6,0x47c9a7];for(let i=0;i<34;i++){const tt=.06+.84*rnd(),a=rnd()*6.283;const p=surf(tt,a,.12);const o=new T.Mesh(new T.IcosahedronGeometry(.15,1),new T.MeshStandardMaterial({color:OC[i%6],roughness:.25,metalness:.35}));o.position.copy(p);o.castShadow=true;sc.add(o)}
+  const sh=new T.Shape();for(let i=0;i<10;i++){const rr=i%2?.2:.46,a=i/10*6.283+1.571;i?sh.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):sh.moveTo(Math.cos(a)*rr,Math.sin(a)*rr)}
+  const st=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.14,bevelEnabled:true,bevelSize:.04,bevelThickness:.04,bevelSegments:1}),new T.MeshStandardMaterial({color:0xffcf4a,emissive:0xc08a00,emissiveIntensity:night?.9:.3,flatShading:true,metalness:.3,roughness:.4}));st.position.set(0,top+.15,-.07);sc.add(st);
+  [[1.5,.9,0xe5484d],[-1.3,1.2,0x5b8def],[.3,1.8,0xf2a33a]].forEach(([x,z,c],i)=>{const q=.5+(i%2)*.15;const b=new T.Mesh(new T.BoxGeometry(q,q,q),new T.MeshStandardMaterial({color:c,roughness:.6,flatShading:true}));b.position.set(x,q/2,z);b.rotation.y=i*.7;b.castShadow=true;sc.add(b);const rb=new T.Mesh(new T.BoxGeometry(q+.02,q+.02,.1),new T.MeshStandardMaterial({color:0xffffff}));rb.position.copy(b.position);rb.rotation.y=b.rotation.y;sc.add(rb)})}
+ const cam=new T.PerspectiveCamera(34,300/380,.1,100);cam.position.set(0,top*.55,top*2.1+3);cam.lookAt(0,top*.46,0);return [sc,cam]}
+const sh=(k,s)=>{r.setSize(300,380);const [sc,c]=scene(k,s);r.render(sc,c);return r.domElement.toDataURL()};
+document.getElementById('g').innerHTML=[['plain','day'],['full','day'],['plain','night'],['full','night']].map(([k,s])=>`<img src="${sh(k,s)}">`).join('');document.title='done';
+</script></body></html>
