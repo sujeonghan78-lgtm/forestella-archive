@@ -6163,8 +6163,9 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const CF = window.CONFIG || {}, cDays = CF.treeConcert || ['2026-12-24', '2026-12-25'], start = CF.treeStart || today, path = [];
     for (let t0 = Date.parse(start < today ? start : today), k = 0; k < 120; k++) { const d = new Date(t0 + k * 864e5).toISOString().slice(0, 10); path.push(d); if (d >= cDays[cDays.length - 1]) break; }
     const DN = L3('일월화수목금토', 'SMTWTFS', '日月火水木金土');
-    const stamp = path.map(d => { const c = cDays.includes(d), dn = DN[new Date(d + 'T00:00:00Z').getUTCDay()];
-      return `<span class="tw-d${d === today ? ' today' : ''}${days.has(d) ? ' on' : ''}${c ? ' cc' : ''}${d < today ? ' past' : ''}" data-d="${d}"><i>${c ? '🎤' : days.has(d) ? TI.drop : ''}</i><small>${+d.slice(5, 7)}.${+d.slice(8)}<br>${dn}</small></span>`; }).join('');
+    // 한 줄 점 길: 하루 = 작은 점, 물 준 날 파랑, 오늘 크게, 끝은 🎤
+    const stamp = path.filter(d => !cDays.includes(d)).map(d => `<i class="tr-d${d === today ? ' today' : ''}${days.has(d) ? ' on' : ''}${d < today ? ' past' : ''}" data-d="${d}"></i>`).join('') + `<b class="tr-end">🎤</b>`;
+    const md = d => `${+d.slice(5, 7)}.${+d.slice(8)}`;
     const dd = Math.round((Date.parse(cDays[0] + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 864e5);
     const dTxt = dd > 0 ? `D-${dd}` : dd === 0 || cDays.includes(today) ? 'D-DAY' : '';
     const adm = isAdmin() ? `<details class="tree-adm"><summary aria-label="관리자">${TI.gear}</summary><div>
@@ -6177,7 +6178,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       <div class="tree-top">
         <div class="tree-tline"><button class="tree-back" id="tree-back" aria-label="${L3('돌아가기', 'Back', '戻る')}">${TI.back}</button><h1 class="tree-h"><button class="tree-name" id="tree-name" aria-label="${L3('트리 이름 바꾸기', 'Rename tree', '名前を変える')}">🎄 ${esc(treeName())} <svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button> <small>Lv${st.i + 1} ${lvN(st.lv)}</small></h1>${treeOpened() || isAdmin() ? `<button class="tree-back tree-lt" id="tree-letters" aria-label="${L3('편지 보기', 'Letters', '手紙')}">${TI.letter}</button>` : ''}${adm}</div>
         ${dTxt ? `<p class="tree-dday">🎄 ${L3('연말 콘서트까지', 'Year-end concert', '年末コンサートまで')} <b>${dTxt}</b></p>` : ''}
-        <div class="tree-week" id="tree-week" aria-label="${L3('콘서트까지 물 준 날', 'Days watered until the concert', 'コンサートまでの水やり')}">${stamp}</div>
+        <div class="tree-road" aria-label="${L3('콘서트까지 물 준 날', 'Days watered until the concert', 'コンサートまでの水やり')}"><div class="tr-line">${stamp}</div><p class="tr-lab"><span>${md(path[0])}</span><span>${L3(`물 준 날 ${[...days].filter(d => d >= path[0]).length}일`, `${[...days].filter(d => d >= path[0]).length} days watered`, `水やり${[...days].filter(d => d >= path[0]).length}日`)}</span><span>${md(cDays[0])}</span></p></div>
       </div>
       <div class="tree-bot">
         ${st.basket.length ? `<button class="tree-basket" id="tree-basket">🧺 ${L3(`오너먼트 ${st.basket.length}개가 기다려요`, `${st.basket.length} ornament(s) waiting`, `オーナメント${st.basket.length}個が待っています`)}${(() => { const nl = TREE_LV.find(l => l.slot >= st.orn.length); return nl ? ` · ${L3(`물 ${nl.w - st.water}개 더 주면 다 걸려요`, `${nl.w - st.water} more water to hang all`, `あと水${nl.w - st.water}個で全部飾れます`)}` : ''; })()} ›</button>` : ''}
@@ -6198,13 +6199,12 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = isAdmin() && qs.get('sky') || undefined;
     let ok = true; try { const c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (err) { ok = false; }
     if (!ok) { el.innerHTML = `<p class="tree-load">${L3('이 폰에선 3D 트리를 볼 수 없어요. 물 주기는 할 수 있어요!', '3D tree is not supported here, but you can still water!', 'この端末では3Dツリーを表示できませんが、水やりはできます!')}</p>`; }
-    else import('./tree.js?v=17').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, orns: st.hung.map(o => Object.assign({}, o, { nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
+    else import('./tree.js?v=18').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, orns: st.hung.map(o => Object.assign({}, o, { nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
     const bk = document.getElementById('tree-back'); if (bk) bk.onclick = () => { location.hash = treeFrom || '#/more'; };
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };
     const o0 = document.getElementById('tree-orn0'); if (o0) o0.onclick = e => { e.preventDefault(); const m = treeMine(); delete m.torn; boxWrite(TREE_KEY, m); renderBase('tree'); };
     const nm = document.getElementById('tree-name'); if (nm) nm.onclick = () => { const v = prompt(L3('트리 이름을 지어 주세요 (12자, 비우면 숲별 트리)', 'Name your tree (12 chars)', 'ツリーの名前(12字)'), (treeMine().name || '')); if (v == null) return; const m = treeMine(); m.name = v.trim().slice(0, 12); boxWrite(TREE_KEY, m); nm.firstChild.textContent = '🎄 ' + treeName() + ' '; toast(L3('이름을 바꿨어요', 'Renamed', '名前を変えました')); };
-    { const wk = document.getElementById('tree-week'), td = wk && wk.querySelector('.tw-d.today'); if (td) wk.scrollLeft = Math.max(0, td.offsetLeft - wk.clientWidth / 2 + td.offsetWidth / 2); }
     const osw = document.getElementById('tree-openshow'); if (osw) osw.onclick = e => { e.preventDefault(); const d = osw.closest('details'); if (d) d.open = false; treeOpenShow(); };
     const bk2 = document.getElementById('tree-basket'); if (bk2) bk2.onclick = () => treeBasket();
     const lt = document.getElementById('tree-letters'); if (lt) lt.onclick = () => treeLetters();
@@ -6216,7 +6216,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       (TREE_OPEN ? formPost(`종류: 물\n누가: ${myUid()}`) : Promise.resolve()).then(() => {
         boxWrite(TREE_KEY, TREE_OPEN ? Object.assign(mine, { water: [...new Set([...(mine.water || []), today])].slice(-120), wn: { d: today, n: t.todayN + 1 } }) : Object.assign(mine, { test: (mine.test || 0) + (+(document.getElementById('tree-n') || {}).value || 1), tdays: [...new Set([...(mine.tdays || []), today])].slice(-14) }));
         if (treeApi) treeApi.water(TREE_OPEN ? 1 : (+(document.getElementById('tree-n') || {}).value || 1));
-        const td = document.querySelector(`.tw-d[data-d="${today}"]`); if (td && !td.classList.contains('on')) { td.classList.add('on', 'pop'); td.querySelector('i').innerHTML = TI.drop; }
+        const td = document.querySelector(`.tr-d[data-d="${today}"]`); if (td && !td.classList.contains('on')) td.classList.add('on', 'pop');
         const n = treeState(); b.querySelector('span').innerHTML = wlab(n); if (n.done) b.classList.add('done'); else b.disabled = false;
         toast(n.i > t.i ? L3(`🎉 트리가 Lv${n.i + 1} ${lvN(n.lv)}이 됐어요!`, `🎉 The tree reached Lv${n.i + 1}!`, `🎉 ツリーがLv${n.i + 1}になりました!`) : (n.done ? L3('💧 오늘 물은 다 줬어요! 내일 또 와 주세요', '💧 All done today! Come back tomorrow', '💧 今日の水やり完了!また明日') : L3(`💧 물을 줬어요! 오늘 ${n.left}번 더 줄 수 있어요`, `💧 Watered! ${n.left} more today`, `💧 水をあげました!今日はあと${n.left}回`)));
         // 레벨 미리보기(?lv=)로 보고 있었으면 풀고, 레벨이 오르면 트리를 새로 그려요
