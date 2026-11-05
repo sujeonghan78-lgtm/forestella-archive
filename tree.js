@@ -141,7 +141,7 @@ export async function mount(el, opt) {
   const lineM = new T.LineBasicMaterial({ color: 0xcfe0ff, transparent: true, opacity: starA * .35, fog: false });
   const drawLines = ci => { const c = CONST[ci], base = CP.findIndex(q => q.ci === ci), p = []; c.e.forEach(([i, j]) => p.push(CP[base + i].v, CP[base + j].v)); skyG.add(new T.LineSegments(new T.BufferGeometry().setFromPoints(p), lineM)); };
   let wn = opt.water || 0;
-  const lit = () => Math.min(CP.length, Math.floor(wn / STEP)), done = ci => CP.every((q, k) => q.ci !== ci || k < lit());
+  const lit = () => Math.min(CP.length, wn <= 200 ? Math.floor(wn / STEP) : Math.floor(200 / STEP) + Math.floor((wn - 200) / 100)) // 200번 뒤로는 물 100번에 별 하나, done = ci => CP.every((q, k) => q.ci !== ci || k < lit());
   if (starA) {
     const cp = CP.slice(0, lit()).map(q => q.v); if (cp.length) skyG.add(new T.Points(new T.BufferGeometry().setFromPoints(cp), ptM(.26)));
     CONST.forEach((c, ci) => { if (done(ci)) drawLines(ci); });
