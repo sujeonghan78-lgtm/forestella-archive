@@ -86,10 +86,10 @@ const GIFTS = [ // x, z, 색, 리본, 크기, 높이, 위에 얹기
 // 실제 별자리 (대략 모양, 왼쪽 아래가 0,0). o = 하늘 자리, s = 크기, e = 잇는 선
 const CONST = [
   { n: '북두칠성', o: [-5, 9.5], s: 1, p: [[0, 0], [1.1, .2], [2, .1], [3, .5], [3.2, 1.6], [4.4, 1.8], [4.6, .7]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]] },
-  { n: '카시오페이아', o: [1.2, 12], s: .95, p: [[0, 1], [1, 0], [2, .8], [3, 0], [4, 1]], e: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+  { n: '카시오페이아', o: [.6, 12.5], s: .9, p: [[0, 1], [1, 0], [2, .8], [3, 0], [4, 1]], e: [[0, 1], [1, 2], [2, 3], [3, 4]] },
   { n: '오리온', o: [-2, 15], s: 1.05, p: [[0, 3], [2.4, 3.2], [.9, 1.6], [1.2, 1.5], [1.5, 1.4], [.2, 0], [2.4, .2], [1.2, 3.9]], e: [[0, 7], [7, 1], [0, 2], [1, 4], [2, 3], [3, 4], [2, 5], [4, 6]] },
   { n: '거문고자리', o: [-5.2, 14.5], s: 1, p: [[0, 1.6], [.3, .9], [.9, 1], [.6, 0], [1.2, .1]], e: [[0, 1], [1, 2], [1, 3], [2, 4], [3, 4]] },
-  { n: '백조자리', o: [2.4, 16], s: 1.1, p: [[0, 2.2], [1, 1.2], [2.1, 0], [.1, .5], [2, 2]], e: [[0, 1], [1, 2], [3, 1], [1, 4]] },
+  { n: '백조자리', o: [2.2, 16.5], s: 1, p: [[0, 2.2], [1, 1.2], [2.1, 0], [.1, .5], [2, 2]], e: [[0, 1], [1, 2], [3, 1], [1, 4]] },
   { n: '작은곰자리', o: [-4.8, 20], s: 1, p: [[0, 0], [.8, .4], [1.5, .6], [2.2, .5], [2.4, 1.2], [3.1, 1.4], [3, .6]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]] },
   { n: '쌍둥이자리', o: [1, 20.5], s: 1, p: [[0, 3], [.9, 3.1], [.1, 1.5], [-.1, 0], [1, 1.6], [1.4, .1]], e: [[0, 1], [0, 2], [2, 3], [1, 4], [4, 5]] },
   { n: '사자자리', o: [-2.4, 25], s: 1.1, p: [[0, 0], [0, .8], [.4, 1.4], [1, 1.5], [1.3, 1], [2.5, .7], [3.6, .4], [2.6, 0]], e: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 6], [6, 7], [7, 0]] },
@@ -131,13 +131,31 @@ export async function mount(el, opt) {
     if (p.length) { const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, ptM(.13))); }
   }
   const label = txt => { const d = document.createElement('div'); d.className = 'tree-const'; d.textContent = '✨ ' + txt; el.appendChild(d); setTimeout(() => d.remove(), 3200); };
-  const skyStar = () => { const before = lit(); wn++; if (!starA) return null; const q = lit() > before ? CP[lit() - 1] : null;
-    const pt = new T.Points(new T.BufferGeometry().setFromPoints([q ? q.v : new T.Vector3(...starPos())]), ptM(q ? 1.6 : .7)); pt.userData.min = q ? .26 : .13; sc.add(pt);
-    if (q && done(q.ci)) { drawLines(q.ci); label(CONST[q.ci].n); } return pt; };
+  // 반짝임: 둥근 빛(스프라이트)이 크게 켜졌다가 천천히 작아져요
+  const GLOW = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,250,225,1)'); g.addColorStop(.25, 'rgba(255,240,190,.55)'); g.addColorStop(1, 'rgba(255,230,160,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(cv); })();
+  const glow = (pos, size, life) => { const s = new T.Sprite(new T.SpriteMaterial({ map: GLOW, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: starA })); s.position.copy(pos); s.scale.setScalar(size); sc.add(s); let f = 0;
+    fx.push(() => { f++; const k = f / life; s.scale.setScalar(size * (1 - k * .8)); s.material.opacity = starA * (1 - k); if (k >= 1) { sc.remove(s); return false; } return true; }); };
+  const dot = (pos, big) => { const pt = new T.Points(new T.BufferGeometry().setFromPoints([pos]), ptM(big ? 2.4 : 1.4)); pt.userData.min = big ? .26 : .13; sc.add(pt); pops.push(pt); glow(pos, big ? 3.2 : 1.8, big ? 110 : 80); };
+  // 별똥별: 하늘 위 한쪽에서 꼬리를 끌며 날아와 별자리 자리에 박혀요
+  const shoot = (to, done_) => { const from = new T.Vector3(to.x + (rnd() < .5 ? -1 : 1) * (9 + rnd() * 5), to.y + 7 + rnd() * 4, SKY_Z - 2), N = 14, hist = [];
+    const head = new T.Points(new T.BufferGeometry().setFromPoints([from]), ptM(1.2)); sc.add(head);
+    const tg = new T.BufferGeometry().setFromPoints(Array(N).fill(from)), tail = new T.Line(tg, new T.LineBasicMaterial({ color: 0xfff3c8, transparent: true, opacity: starA * .8, fog: false })); sc.add(tail);
+    let f = 0; const L = 70;
+    fx.push(() => { f++; const k = Math.min(1, f / L), e = 1 - Math.pow(1 - k, 2), p = from.clone().lerp(to, e); head.geometry.setFromPoints([p]); hist.unshift(p); if (hist.length > N) hist.pop();
+      tg.setFromPoints(hist.concat(Array(N - hist.length).fill(hist[hist.length - 1]))); tail.material.opacity = starA * .8 * (k < .85 ? 1 : (1 - k) / .15);
+      if (k >= 1) { sc.remove(head); sc.remove(tail); done_(); return false; } return true; }); };
+  // 카메라가 천천히 하늘을 올려다봤다가 돌아와요 (별자리 별이 켜질 때)
+  const lookTo = (to, n, then) => { const from = look; let f = 0; fx.push(() => { f++; const k = Math.min(1, f / n), e = k * k * (3 - 2 * k); look = from + (to - from) * e; if (zoom >= .95) aim(); if (k >= 1) { if (then) then(); return false; } return true; }); };
+  const skyStar = () => { const before = lit(); wn++; const q = lit() > before ? CP[lit() - 1] : null, fin = q && done(q.ci);
+    const after = () => { if (fin) { drawLines(q.ci); label(CONST[q.ci].n); setTimeout(() => { if (alive && opt.onConst) opt.onConst(CONST[q.ci].n); }, 1400); } };
+    if (!starA) { after(); return null; }
+    if (q) { lookTo(.8, 50, () => shoot(q.v, () => { dot(q.v, true); after(); setTimeout(() => { if (alive && drag == null) lookTo(0, 70); }, fin ? 4200 : 1800); })); }
+    else dot(new T.Vector3(...starPos()), false);
+    return null; };
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
-  let top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [];
+  let top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [];
   if (!L.tree) { // 씨앗·새싹
     const soil = new T.Mesh(new T.CylinderGeometry(.55, .65, .14, 9), fm(0x6e4a2c, { roughness: 1 })); soil.position.y = .07; spin.add(soil);
     if (L.sprout) { const st = new T.Mesh(new T.CylinderGeometry(.035, .045, .55, 6), fm(0x4e8f3a)); st.position.y = .4; spin.add(st); [-1, 1].forEach(k => { const lf = new T.Mesh(new T.IcosahedronGeometry(.2, 1), fm(0x7fd468)); lf.scale.set(1.5, .35, .75); lf.position.set(k * .2, .68, 0); lf.rotation.z = k * .4; spin.add(lf); }); top = .9; }
@@ -232,7 +250,8 @@ export async function mount(el, opt) {
     if (!document.body.contains(cvs)) { api.destroy(); return; }
     if (drag == null && !placing) { rot += v; v += (.003 - v) * .02; }
     if (++frame % 6 === 0) tags();
-    for (let i = pops.length - 1; i >= 0; i--) { const o = pops[i]; const mn = o.userData.min || .15; o.material.size = Math.max(mn, o.material.size * .975); if (o.material.size <= mn) pops.splice(i, 1); }
+    for (let i = pops.length - 1; i >= 0; i--) { const o = pops[i]; const mn = o.userData.min || .15; o.material.size = Math.max(mn, o.material.size * .985); if (o.material.size <= mn) pops.splice(i, 1); }
+    for (let i = fx.length - 1; i >= 0; i--) if (!fx[i]()) fx.splice(i, 1);
     spin.rotation.y = rot; spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
     for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i];
       if (dp.userData.wait > 0) { dp.userData.wait--; continue; } dp.visible = true;
@@ -243,7 +262,7 @@ export async function mount(el, opt) {
   })();
   const api = {
     water(k = 1) { // 작은 물방울 40개가 비처럼 차례로 떨어지고 톡 퍼져요, 그다음 준 물만큼 별 (여러 개면 차례로)
-      sway = 1; for (let j = 0; j < Math.min(k, 60); j++) setTimeout(() => { if (!alive) return; const st = skyStar(); if (st) pops.push(st); }, 1100 + j * 160); const m = fm(0x7fd0ff, { roughness: .15, transparent: true, opacity: .85 }), w = Math.max(1.2, hh * .38), r0 = .028 * Math.max(1, hh / 3);
+      sway = 1; for (let j = 0; j < Math.min(k, 60); j++) setTimeout(() => { if (alive) skyStar(); }, 1100 + j * 160); const m = fm(0x7fd0ff, { roughness: .15, transparent: true, opacity: .85 }), w = Math.max(1.2, hh * .38), r0 = .028 * Math.max(1, hh / 3);
       if (!DROP || DROP.r !== r0) { DROP = new T.IcosahedronGeometry(r0, 0); DROP.r = r0; SPLASH = new T.RingGeometry(r0 * .6, r0 * 1.4, 10); SPLASH.rotateX(-Math.PI / 2); }
       for (let k = 0; k < 40; k++) { const dp = new T.Mesh(DROP, m); dp.scale.y = 1.6; const x = (Math.random() - .5) * 2 * w, z = (Math.random() - .5) * 2 * w * .7 + w * .2;
         dp.position.set(x, hh * 1.25 + Math.random() * hh * .3, z); dp.visible = false; dp.userData = { wait: Math.floor(Math.random() * 45), vy: .02 + Math.random() * .02, end: Math.max(.02, (1 - Math.min(1, Math.hypot(x, z) / (w * 1.3))) * hh * .8) }; sc.add(dp); drops.push(dp); } },

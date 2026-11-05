@@ -2474,3 +2474,8 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .bk-item span:last-child { margin-left: auto; font-size: 12px; color: var(--muted); }
 .bk-n { width: 20px; font-size: 11px; color: var(--muted); }
 .ts-in .ts-l { margin: 8px 0 4px; } .ts-in input, .ts-in textarea { margin-top: 9px; padding: 9px 12px; } .ts-in h2 { margin-bottom: 2px; } .ts-in .ts-row button { padding: 6px 12px; } .ts-in .ts-col button { width: 28px; height: 28px; padding: 0; }
+.tree-cong { text-align: center; top: 28%; padding: 20px 18px 16px; animation: tc-pop .45s cubic-bezier(.2,1.5,.4,1); }
+.tree-cong h2 { margin: 2px 0 8px; font-size: 19px; }
+.tree-cong .tc-big { margin: 0; font-size: 40px; }
+.tree-cong .tp-msg { font-size: 14px; color: var(--ink-2); }
+@keyframes tc-pop { 0% { transform: scale(.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
