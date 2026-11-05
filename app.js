@@ -5971,13 +5971,13 @@
     // 오늘 준 횟수: 시트에 온 것과 이 폰 기록 중 큰 쪽 (시트에 아직 안 온 만큼 더해서 보여줘요)
     const sheetN = (t.by[me] || []).filter(d => d === today).length, localN = mine.wn && mine.wn.d === today ? mine.wn.n : 0;
     const extra = Math.max(0, localN - sheetN), todayN = Math.max(sheetN, localN);
-    const tw = !TREE_OPEN && tAdm() ? (mine.test || 0) : 0; // 관리자 시험용 물 (이 폰에만)
+    const tw = !TREE_OPEN && isAdmin() ? (mine.test || 0) : 0; // 관리자 시험용 물 (이 폰에만)
     const water = t.water + extra + tw, people = t.people + (extra && !got.size ? 1 : 0);
     let i = 0; TREE_LV.forEach((l, k) => { if (water >= l.w) i = k; });
-    const done = !(!TREE_OPEN && tAdm()) && todayN >= TREE_MAX, left = Math.max(0, TREE_MAX - todayN);
+    const done = !(!TREE_OPEN && isAdmin()) && todayN >= TREE_MAX, left = Math.max(0, TREE_MAX - todayN);
     // 오너먼트: 시트 + 아직 시트에 안 온 내 것(오픈 전 관리자는 이 폰 시험용만). 자리 수만큼 먼저 온 순서로 걸고 나머지는 바구니
     const ids = new Set((t.orn || []).map(o => o.id)), del = new Set(mine.ornDel || []);
-    const orn = (!TREE_OPEN && tAdm() ? (mine.torn || []) : (t.orn || []).concat((mine.orn || []).filter(o => !ids.has(o.id)))).filter(o => !del.has(o.id));
+    const orn = (!TREE_OPEN && isAdmin() ? (mine.torn || []) : (t.orn || []).concat((mine.orn || []).filter(o => !ids.has(o.id)))).filter(o => !del.has(o.id));
     const oc = mine.ornCol || {}, os = mine.ornSpot || {}; orn.forEach(o => { if (oc[o.id] != null && o.by === me) o.color = oc[o.id]; if (os[o.id] && o.by === me) o.spot = os[o.id]; });
     const slot = TREE_LV[i].slot, myOrn = orn.filter(o => o.by === me).length;
     return { water, people, i, lv: TREE_LV[i], next: TREE_LV[i + 1], done, left, todayN, myDays: new Set([...got, ...(mine.water || [])]).size, orn, hung: orn.slice(0, slot), basket: orn.slice(slot), slot, myOrn };
@@ -6014,7 +6014,7 @@
       ${mine ? `<button class="tp-del">${L3('내 오너먼트 떼기', 'Remove mine', '外す')}</button>` : tAdm() ? `<button class="tp-del tp-adm">${L3('숨기기 (관리자)', 'Hide (admin)', '非表示')}</button>` : ''}`;
     pg.appendChild(box); box.querySelector('.tp-x').onclick = () => box.remove();
     treeRead(o).then(txt => { if (txt == null || !box.isConnected) return; const m = box.querySelector('.tp-msg'); m.textContent = txt; if (!treeOpened()) m.insertAdjacentHTML('beforeend', `<small>${mine ? L3('나만 미리 볼 수 있어요', 'Only you can see this until it opens', '開くまで自分だけ見られます') : L3('관리자 미리보기', 'Admin preview', '管理者プレビュー')}</small>`); });
-    box.querySelectorAll('.tp-col button').forEach(b => { b.onclick = () => { const c = +b.dataset.k; if (c === o.color) return; const old = o.color, adm = !TREE_OPEN && tAdm();
+    box.querySelectorAll('.tp-col button').forEach(b => { b.onclick = () => { const c = +b.dataset.k; if (c === o.color) return; const old = o.color, adm = !TREE_OPEN && isAdmin();
       box.querySelectorAll('.tp-col button').forEach(x => { x.disabled = true; });
       (adm ? Promise.resolve() : formPost(`종류: 오너먼트색\n번호: ${o.id}\n누가: ${myUid()}\n색: ${c}`)).then(() => {
         const mm = treeMine(); if (adm) (mm.torn || []).forEach(x => { if (x.id === o.id) x.color = c; }); else mm.ornCol = Object.assign(mm.ornCol || {}, { [o.id]: c }); boxWrite(TREE_KEY, mm);
@@ -6060,7 +6060,7 @@
     sh.querySelectorAll('.bk-item').forEach(b => { b.onclick = () => { sh.remove(); treeCard(st.basket[+b.dataset.k]); }; });
   }
   function treeOrnSheet() {
-    const st = treeState(), adm = !TREE_OPEN && tAdm();
+    const st = treeState(), adm = !TREE_OPEN && isAdmin();
     if (st.myOrn >= ORN_MAX && !adm) { toast(L3(`오너먼트는 한 명당 ${ORN_MAX}개까지예요. 하나를 떼면 다시 달 수 있어요 🎁`, `Up to ${ORN_MAX} ornaments each 🎁`, `1人${ORN_MAX}個までです 🎁`)); return; }
     if (treeOpened()) { toast(L3('편지가 열렸어요! 이제 오너먼트는 못 달아요', 'Letters are open now', '手紙が開きました')); return; }
     const full = st.hung.length >= st.slot || !treeApi, pg = document.querySelector('.tree-page'); if (!pg) return;
@@ -6118,7 +6118,7 @@
       <div class="ts-btns"><button class="ts-cancel">${L3('나중에', 'Later', 'あとで')}</button><button class="ts-go">${L3('자리 고르기', 'Pick a spot', '場所を選ぶ')}</button></div>`;
     pg.appendChild(box);
     box.querySelector('.ts-cancel').onclick = () => box.remove();
-    box.querySelector('.ts-go').onclick = () => { box.remove(); if (!treeApi.move(o.id)) return; treePlaceBar(sp => { const adm = !TREE_OPEN && tAdm();
+    box.querySelector('.ts-go').onclick = () => { box.remove(); if (!treeApi.move(o.id)) return; treePlaceBar(sp => { const adm = !TREE_OPEN && isAdmin();
       (adm ? Promise.resolve() : formPost(`종류: 오너먼트자리\n번호: ${o.id}\n누가: ${me}\n자리: ${sp.join(',')}`)).then(() => {
         const mm = treeMine(); if (adm) (mm.torn || []).forEach(x => { if (x.id === o.id) x.spot = sp; }); else mm.ornSpot = Object.assign(mm.ornSpot || {}, { [o.id]: sp }); boxWrite(TREE_KEY, mm);
         treeApi.commit(); toast(L3('🎁 오너먼트를 달았어요!', '🎁 Hung!', '🎁 飾りました!')); setTimeout(treeAskSpot, 600); }).catch(() => { treeApi.cancel(); toast(L3('보내지 못했어요. 잠시 뒤 다시 해 주세요', 'Could not send', '送信できませんでした')); }); });
@@ -6138,7 +6138,7 @@
     }
   }
   function treeSend(o, spot) {
-    const mm = treeMine(), adm = !TREE_OPEN && tAdm();
+    const mm = treeMine(), adm = !TREE_OPEN && isAdmin();
     mySecKey().then(k => opSeal(o.text, [(window.CONFIG || {}).treeKey, k])).then(sec => {
       const rec = { id: o.id, by: o.by, at: o.at, shape: o.shape, color: o.color, to: o.to, nick: o.nick, spot, sec };
       return (adm ? Promise.resolve() : formPost(`종류: 오너먼트\n번호: ${o.id}\n누가: ${o.by}\n모양: ${ORN_S[o.shape]}\n색: ${o.color}\n받는이: ${o.to}\n닉네임: ${o.nick}\n자리: ${spot ? spot.join(',') : ''}\n내용: ${sec}`)).then(() => {
@@ -6159,7 +6159,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     drop: '<svg viewBox="0 0 24 24"><path d="M12 2.8c3.4 4.3 6.6 8 6.6 11.6a6.6 6.6 0 0 1-13.2 0C5.4 10.8 8.6 7.1 12 2.8z"/><path class="hl" d="M9 14.6a3 3 0 0 0 2.6 3"/></svg>',
   };
   function treeView() {
-    if (!TREE_OPEN && !tAdm()) return `<a class="back" href="#/more">‹ ${L3('더보기', 'More', 'もっと見る')}</a><p class="empty">${L3('준비 중이에요 🌱', 'Coming soon 🌱', '準備中です 🌱')}</p>`;
+    if (!TREE_OPEN && !isAdmin()) return `<a class="back" href="#/more">‹ ${L3('더보기', 'More', 'もっと見る')}</a><p class="empty">${L3('준비 중이에요 🌱', 'Coming soon 🌱', '準備中です 🌱')}</p>`;
     const st = treeState(), qs = new URLSearchParams(location.hash.split('?')[1] || ''), test = tAdm() && qs.get('lv'), mine = treeMine();
     const days = new Set([...((data && data.tree && data.tree.by[myUid()]) || []), ...(mine.water || []), ...(mine.tdays || [])]), today = kstDay();
     // 콘서트까지 이어지는 도장 길: 내가 처음 물 준 날부터 12/24·25까지 하루 한 칸, 오늘 칸으로 스크롤
@@ -6233,7 +6233,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   }
   // 홈 칸: 트리 레벨 + 바로 물 주기 (3D는 트리 화면에서만)
   function homeTree() {
-    if (!TREE_OPEN && !tAdm()) return '';
+    if (!TREE_OPEN && !isAdmin()) return '';
     const st = treeState(), nx = st.next, pct = nx ? Math.round((st.water - st.lv.w) / (nx.w - st.lv.w) * 100) : 100;
     return `<section class="block home-tree" id="home-tree"><a class="ht-go" href="#/tree"><span class="ht-ic">🎄</span><span class="ht-t"><b>${esc(treeName())}</b> <small>Lv${st.i + 1} ${lvN(st.lv)}</small><span class="ht-bar"><i style="width:${pct}%"></i></span><small>💧 ${st.water}${nx ? ` / ${nx.w}` : ''} · ${L3(`숲별 ${st.people}명`, `${st.people} fans`, `${st.people}人`)}${st.orn.length ? ` · 🎁 ${st.orn.length}` : ''}</small></span></a>
       <button class="ht-w" id="ht-w" ${st.done ? 'disabled' : ''}>${TI.drop}<span>${st.done ? L3('내일 또', 'Tomorrow', 'また明日') : `${st.left}/${TREE_MAX}`}</span></button></section>`;
