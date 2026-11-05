@@ -3,7 +3,7 @@ import * as T from './lib/three.module.min.js';
 import { GLTFLoader } from './lib/GLTFLoader.js';
 
 // 하늘: 폰 시간 기준 새벽·낮·노을·밤
-let DROP = null, SPLASH = null;
+let DROP = null, SPLASH = null, SKYSTAR = null;
 export function skyNow(d = new Date()) {
   const h = d.getHours() + d.getMinutes() / 60;
   return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 19 ? 'sunset' : 'night';
@@ -97,25 +97,20 @@ export async function mount(el, opt) {
   el.appendChild(r.domElement); r.domElement.style.touchAction = 'none'; r.domElement.style.display = 'block';
   const sc = new T.Scene(), sky = opt.sky || skyNow(), [s0, s1, starA] = SKY[sky], night = sky === 'night';
   { const cv = document.createElement('canvas'); cv.width = 2; cv.height = 256; const x = cv.getContext('2d'), gr = x.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, s0); gr.addColorStop(1, s1); x.fillStyle = gr; x.fillRect(0, 0, 2, 256); const tx = new T.CanvasTexture(cv); tx.colorSpace = T.SRGBColorSpace; sc.background = tx; }
+  sc.fog = new T.Fog(s1, 16, 48); // 땅 끝이 하늘에 스며들게
   sc.add(new T.HemisphereLight(night ? 0xc8dcff : 0xffffff, 0x40504a, night ? 1.1 : 1.6));
   const d = new T.DirectionalLight(sky === 'sunset' ? 0xffc29a : sky === 'dawn' ? 0xffd6e4 : night ? 0xe8f0ff : 0xfff1dc, night ? 1.5 : 2.2); d.position.set(4, 9, 6); d.castShadow = true; d.shadow.mapSize.set(1024, 1024); Object.assign(d.shadow.camera, { left: -6, right: 6, top: 8, bottom: -2 }); sc.add(d);
   const rim = new T.DirectionalLight(0x9fe6d6, .6); rim.position.set(-5, 4, -6); sc.add(rim);
   const L = opt.lv; seed = 9;
   // 하늘 별 = 물 준 숲별 수 (최대 400개)
-  if (starA) { const p = [], n = Math.min(400, 20 + (opt.people || 0)); for (let k = 0; k < n; k++) p.push((rnd() - .5) * 44, 4 + rnd() * 18, -18); const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, new T.PointsMaterial({ color: 0xfff3c8, size: .15, transparent: true, opacity: starA }))); }
-  const hill = new T.Mesh(new T.CylinderGeometry(10, 10.5, .6, 24), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
+  // 하늘 별 = 숲별들이 준 물 (물 한 번에 별 하나, 400개까지). 낮에도 보이게 금색
+  const starM = fm(0xffd54a, { emissive: 0xffc83a, emissiveIntensity: night ? 1 : .6, roughness: .4, fog: false, transparent: true, opacity: night ? 1 : sky === 'day' ? .5 : .8 }), skyStar = () => { const st = new T.Mesh(SKYSTAR || (SKYSTAR = star5(.18, 0).geometry), starM); const y = 8 + rnd() * 34; st.position.set((rnd() - .5) * (24 + y * 1.2), y, -14 - rnd() * 10); st.lookAt(0, 4, 20); st.rotation.z = rnd(); sc.add(st); return st; };
+  for (let k = 0; k < Math.min(400, opt.water || 0); k++) skyStar();
+  if (starA) { const p = []; for (let k = 0; k < 120; k++) p.push((rnd() - .5) * 44, 4 + rnd() * 18, -18); const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, new T.PointsMaterial({ color: 0xfff3c8, size: .08, transparent: true, opacity: starA * .6 }))); }
+  const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false), SNOWY = null;
-  // 뒤쪽 숲: 단순한 뾰족 나무·동그란 나무 (레벨마다 늘어나요)
-  const FG = [0x4f7f5a, 0x5e8f62, 0x6f9a6a], fz = new T.Color(s1);
-  for (let k = 0; k < (L.forest || 0) * 2; k++) {
-    const g = new T.Group(), a = Math.PI * (1.05 + .9 * ((k * .618) % 1)), rad = 7 + (k % 3) * 1.8, sz = .7 + (k % 4) * .18, col = new T.Color(FG[k % 3]).lerp(fz, .25 + (k % 3) * .1);
-    const tk = new T.Mesh(new T.CylinderGeometry(.08 * sz, .1 * sz, .5 * sz, 5), fm(new T.Color(0x8a6a4a).lerp(fz, .3))); tk.position.y = .25 * sz; g.add(tk);
-    if (k % 3 === 2) { const b = new T.Mesh(new T.IcosahedronGeometry(.55 * sz, 0), fm(col)); b.position.y = .9 * sz; g.add(b); }
-    else [0, 1, 2].forEach(j => { const c = new T.Mesh(new T.ConeGeometry((.6 - j * .15) * sz, .7 * sz, 6), fm(col)); c.position.y = (.7 + j * .42) * sz; g.add(c); });
-    g.position.set(Math.cos(a) * rad * 1.2, 0, Math.sin(a) * rad - 2); g.rotation.y = k; sc.add(g);
-  }
   const spin = new T.Group(); sc.add(spin);
-  let top = 1, addStar = null; const pops = [];
+  let top = 1; const pops = [];
   if (!L.tree) { // 씨앗·새싹
     const soil = new T.Mesh(new T.CylinderGeometry(.55, .65, .14, 9), fm(0x6e4a2c, { roughness: 1 })); soil.position.y = .07; spin.add(soil);
     if (L.sprout) { const st = new T.Mesh(new T.CylinderGeometry(.035, .045, .55, 6), fm(0x4e8f3a)); st.position.y = .4; spin.add(st); [-1, 1].forEach(k => { const lf = new T.Mesh(new T.IcosahedronGeometry(.2, 1), fm(0x7fd468)); lf.scale.set(1.5, .35, .75); lf.position.set(k * .2, .68, 0); lf.rotation.z = k * .4; spin.add(lf); }); top = .9; }
@@ -126,33 +121,40 @@ export async function mount(el, opt) {
     // 겉면 자리 + 그 자리의 바깥 방향
     const surf = (y, a, off) => { rc.set(new T.Vector3(Math.cos(a) * 12, y, Math.sin(a) * 12), new T.Vector3(-Math.cos(a), 0, -Math.sin(a))); const h = rc.intersectObject(t, false)[0]; if (!h) return null; const nrm = h.face.normal.clone().transformDirection(t.matrixWorld); return { p: h.point.add(nrm.clone().multiplyScalar(off)), n: nrm }; };
     const hang = (o, s) => { o.position.copy(s.p); o.lookAt(s.p.clone().add(s.n)); o.rotateZ((rnd() - .5) * .5); o.castShadow = true; spin.add(o); };
-    const ft = FT * L.tree, nB = L.beads || 0, nS = L.socks || 0, used = [];
+    const ft = FT * L.tree, nB = L.beads || 0, nS = L.socks || 0, nSt = L.stars || 0, used = [];
     // 빈 자리 찾기: 다른 장식과 gap 이상 떨어진 겉면 (여러 번 시도)
     const spot = (gap, off) => { for (let tr = 0; tr < 14; tr++) { const y = ft + .3 * L.tree + rnd() * (hs - ft - 1.0 * L.tree), s = surf(y, rnd() * 6.283, off); if (s && used.every(u => u.p.distanceTo(s.p) > u.r + gap)) return s; } return null; };
-    for (let k = 0; k < nB + nS; k++) {
-      const sz = (.7 + rnd() * .5) * Math.max(L.tree, .55), sock_ = k >= nB, r = (sock_ ? .2 : .11) * sz, s = spot(r + .05, sock_ ? .06 * sz : .09 * sz); if (!s) continue;
-      used.push({ p: s.p, r }); hang(sock_ ? sock(.3 * sz, SC[Math.floor(rnd() * SC.length)]) : bead(.1 * sz, BC[Math.floor(rnd() * BC.length)]), s);
+    for (let k = 0; k < nB + nS + nSt; k++) {
+      const sz = (.7 + rnd() * .5) * Math.max(L.tree, .55), kind = k < nB ? 0 : k < nB + nS ? 1 : 2, r = (kind === 1 ? .2 : .11) * sz, s = spot(r + .05, kind === 0 ? .09 * sz : kind === 1 ? .06 * sz : .05 * sz); if (!s) continue;
+      used.push({ p: s.p, r }); hang(kind === 0 ? bead(.1 * sz, BC[Math.floor(rnd() * BC.length)]) : kind === 1 ? sock(.3 * sz, SC[Math.floor(rnd() * SC.length)]) : star5(.1 * sz, [0xf5c83c, 0xdfe4ea, 0xff8fc0][k % 3]), s);
     }
-    // 물 한 번 = 작은 별 하나 (120개까지, 그 뒤로는 별이 더 반짝여요)
-    const SW = Math.max(L.tree, .55), glow = Math.min(1, Math.max(0, ((opt.water || 0) - 120) / 280));
-    const starM = [0xffd54a, 0xfff3c8, 0xffb84a].map(c => fm(c, { emissive: c, emissiveIntensity: (night ? .5 : .15) + glow * .6, roughness: .4 }));
-    addStar = pop => { const s = spot(.07 * SW, .04 * SW); if (!s) return; const st = star5(.065 * SW, 0); st.material = starM[Math.floor(rnd() * 3)]; used.push({ p: s.p, r: .06 * SW }); hang(st, s); if (pop) { st.scale.setScalar(.01); pops.push(st); } };
-    for (let k = 0; k < Math.min(120, opt.water || 0); k++) addStar(false);
     if (L.star) { const st = star5(.48, 0xffcf3a); st.material.emissive = new T.Color(0xd09000); st.material.emissiveIntensity = night ? .9 : .3; st.position.set(0, top + .25, 0); spin.add(st); }
     if (L.gifts) GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { const g = gift(x, z, c, q, h, rc, i); if (up) g.position.y = up; sc.add(g); });
   }
   const hh = Math.max(top, 1), dist = L.tree ? 4.2 + 9.8 * L.tree : 3.4;
   const cam = new T.PerspectiveCamera(34, W0() / H0(), .05, 200);
-  let tilt = .12; // 위아래 보는 각도 (손가락 위아래로 바꿈)
-  const aim = () => { const asp = W0() / H0(), dd = dist * (asp < .8 ? Math.max(1.08, .68 / asp) : 1), ty = hh * (asp < .6 ? .42 : .47); cam.position.set(0, ty + Math.sin(tilt) * dd, Math.cos(tilt) * dd); cam.lookAt(0, ty, 0); };
+  let tilt = .12, zoom = 1, ly = null, look = 0; // 위아래 각도, 확대(두 손가락), 확대했을 때 보는 높이
+  const aim = () => { const asp = W0() / H0(), dd = dist * (asp < .8 ? Math.max(1.08, .68 / asp) : 1) * zoom, ty0 = hh * (asp < .6 ? .42 : .47), ty = zoom < .95 && ly != null ? ly : ty0; cam.position.set(0, ty + Math.sin(tilt) * dd, Math.cos(tilt) * dd); cam.lookAt(0, ty + look * dd * .9, -look * dd * .2); };
   aim();
   // 손가락으로 돌리기 + 천천히 혼자 돌기
   let rot = .3, v = .003, drag = null, sway = 0, alive = true;
   const cvs = r.domElement;
   let dragY = 0;
-  cvs.addEventListener('pointerdown', e => { drag = e.clientX; dragY = e.clientY; });
-  addEventListener('pointermove', e => { if (drag == null) return; const dx = e.clientX - drag; rot += dx * .01; v = dx * .0015; drag = e.clientX; tilt = Math.max(-.05, Math.min(1.1, tilt + (e.clientY - dragY) * .006)); dragY = e.clientY; aim(); });
-  addEventListener('pointerup', () => { drag = null; });
+  const pts = new Map(); let pinch = 0;
+  const pd = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  const setZoom = z => { const was = zoom; zoom = Math.max(.3, Math.min(1.25, z)); if (zoom < .95 && ly == null) ly = hh * .5; if (zoom >= .95) ly = null; if (was !== zoom) aim(); };
+  cvs.addEventListener('pointerdown', e => { pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { pinch = pd(); drag = null; } else { drag = e.clientX; dragY = e.clientY; } });
+  addEventListener('pointermove', e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2) { const d2 = pd(); if (pinch) setZoom(zoom * pinch / d2); pinch = d2; return; }
+    if (drag == null) return; const dx = e.clientX - drag, dy = e.clientY - dragY; rot += dx * .01; v = dx * .0015; drag = e.clientX; dragY = e.clientY;
+    if (zoom < .95) ly = Math.max(hh * .08, Math.min(hh * 1.02, ly + dy * .012 * Math.max(1, hh / 4))); // 확대 중엔 위아래로 밀면 보는 높이가 바뀌어요
+    else if (look > 0 || (tilt <= -.05 && dy < 0)) look = Math.max(0, Math.min(1, look - dy * .004)); // 끝까지 위로 밀면 하늘을 올려다봐요
+    else tilt = Math.max(-.05, Math.min(1.1, tilt + dy * .006));
+    aim(); });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) drag = null; else { const [p] = pts.values(); drag = p.x; dragY = p.y; } };
+  addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  cvs.addEventListener('wheel', e => { e.preventDefault(); setZoom(zoom * (e.deltaY > 0 ? 1.1 : .9)); }, { passive: false });
   const drops = [];
   const onResize = () => { r.setSize(W0(), H0()); cam.aspect = W0() / H0(); cam.updateProjectionMatrix(); aim(); };
   addEventListener('resize', onResize);
@@ -171,7 +173,7 @@ export async function mount(el, opt) {
   })();
   const api = {
     water() { // 작은 물방울 40개가 비처럼 차례로 떨어지고 톡 퍼져요, 그다음 별 하나
-      sway = 1; if (addStar) setTimeout(() => { if (alive) addStar(true); }, 1100); const m = fm(0x7fd0ff, { roughness: .15, transparent: true, opacity: .85 }), w = Math.max(1.2, hh * .38), r0 = .028 * Math.max(1, hh / 3);
+      sway = 1; setTimeout(() => { if (!alive) return; const st = skyStar(); st.scale.setScalar(.01); pops.push(st); }, 1100); const m = fm(0x7fd0ff, { roughness: .15, transparent: true, opacity: .85 }), w = Math.max(1.2, hh * .38), r0 = .028 * Math.max(1, hh / 3);
       if (!DROP || DROP.r !== r0) { DROP = new T.IcosahedronGeometry(r0, 0); DROP.r = r0; SPLASH = new T.RingGeometry(r0 * .6, r0 * 1.4, 10); SPLASH.rotateX(-Math.PI / 2); }
       for (let k = 0; k < 40; k++) { const dp = new T.Mesh(DROP, m); dp.scale.y = 1.6; const x = (Math.random() - .5) * 2 * w, z = (Math.random() - .5) * 2 * w * .7 + w * .2;
         dp.position.set(x, hh * 1.25 + Math.random() * hh * .3, z); dp.visible = false; dp.userData = { wait: Math.floor(Math.random() * 45), vy: .02 + Math.random() * .02, end: Math.max(.02, (1 - Math.min(1, Math.hypot(x, z) / (w * 1.3))) * hh * .8) }; sc.add(dp); drops.push(dp); } },
