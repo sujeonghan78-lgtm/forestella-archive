@@ -2410,7 +2410,7 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-fab { position: fixed; right: 16px; bottom: calc(var(--tabs-h) + 16px + env(safe-area-inset-bottom)); z-index: 40; width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #8fd968, #2f7a3a); box-shadow: 0 4px 14px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; font-size: 26px; text-decoration: none; }
 .tree-const { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); padding: 8px 16px; border-radius: 20px; background: rgba(10,20,40,.55); color: #fff3c8; font-size: 15px; font-weight: 700; pointer-events: none; animation: tc-fade 3.2s ease forwards; white-space: nowrap; }
 @keyframes tc-fade { 0% { opacity: 0; transform: translate(-50%, 8px); } 15%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
-.tree-basket { margin: 0 auto 8px; width: max-content; max-width: 100%; padding: 5px 12px; border-radius: 14px; background: rgba(0,0,0,.35); font-size: 12px; }
+.tree-basket { display: block; border: 1px solid rgba(255,255,255,.25); color: #fff; cursor: pointer; pointer-events: auto; margin: 0 auto 8px; width: max-content; max-width: 100%; padding: 5px 12px; border-radius: 14px; background: rgba(0,0,0,.35); font-size: 12px; }
 .tree-tags { position: absolute; inset: 0; pointer-events: none; }
 .tree-tags span { position: absolute; transform: translate(-50%, -150%); padding: 2px 7px; border-radius: 10px; background: rgba(255,255,255,.9); color: #2a3a2a; font-size: 11px; font-weight: 700; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 .tree-sheet { position: absolute; inset: 0; z-index: 5; background: rgba(0,0,0,.35); display: flex; align-items: flex-end; }
@@ -2466,3 +2466,7 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tp-col { margin: 10px 0 2px; } .tp-col button { width: 26px; height: 26px; }
 .tree-name { border: 0; background: none; color: inherit; font: inherit; padding: 0; cursor: pointer; text-shadow: inherit; display: inline-flex; align-items: center; gap: 4px; }
 .tree-name svg { width: 13px; height: 13px; fill: none; stroke: rgba(255,255,255,.75); stroke-width: 2; stroke-linejoin: round; }
+.bk-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 2px; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.bk-item i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.bk-item span:last-child { margin-left: auto; font-size: 12px; color: var(--muted); }
+.bk-n { width: 20px; font-size: 11px; color: var(--muted); }

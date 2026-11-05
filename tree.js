@@ -115,23 +115,25 @@ export async function mount(el, opt) {
   const d = new T.DirectionalLight(sky === 'sunset' ? 0xffc29a : sky === 'dawn' ? 0xffd6e4 : night ? 0xe8f0ff : 0xfff1dc, night ? 1.5 : 2.2); d.position.set(4, 9, 6); d.castShadow = true; d.shadow.mapSize.set(1024, 1024); Object.assign(d.shadow.camera, { left: -6, right: 6, top: 8, bottom: -2 }); sc.add(d);
   const rim = new T.DirectionalLight(0x9fe6d6, .6); rim.position.set(-5, 4, -6); sc.add(rim);
   const L = opt.lv; seed = 9;
-  // 하늘 별 = 숲별들이 준 물 (물 한 번에 점 별 하나). 먼저 별자리 점을 차례로 채우고, 다 채운 별자리는 연한 선으로 이어요.
-  // 낮엔 안 보이고 새벽·노을·밤에 보여요
-  const SKY_Z = -20, CP = []; CONST.forEach((c, ci) => c.p.forEach(([x, y]) => CP.push({ ci, v: new T.Vector3(c.o[0] + x * c.s, c.o[1] + 2.5 + y * c.s, SKY_Z) })));
+  // 하늘 별 = 숲별들이 준 물: 물 한 번에 작은 점 별 하나, 물 STEP번마다 별자리 별이 하나씩 켜져요(북두칠성부터 차례로).
+  // 다 채운 별자리는 연한 선으로 잇고 이름이 잠깐 떠요. 낮엔 안 보이고 새벽·노을·밤에 보여요
+  const STEP = opt.cStep || 20, SKY_Z = -20, CP = []; CONST.forEach((c, ci) => c.p.forEach(([x, y]) => CP.push({ ci, v: new T.Vector3(c.o[0] + x * c.s, c.o[1] + 2.5 + y * c.s, SKY_Z) })));
   const starPos = () => { const y = 4 + rnd() * 30; return [(rnd() - .5) * (30 + y), y, -22 - rnd() * 6]; };
   const ptM = sz => new T.PointsMaterial({ color: 0xfff3c8, size: sz, transparent: true, opacity: starA, fog: false });
   const lineM = new T.LineBasicMaterial({ color: 0xcfe0ff, transparent: true, opacity: starA * .35, fog: false });
   const drawLines = ci => { const c = CONST[ci], base = CP.findIndex(q => q.ci === ci), p = []; c.e.forEach(([i, j]) => p.push(CP[base + i].v, CP[base + j].v)); sc.add(new T.LineSegments(new T.BufferGeometry().setFromPoints(p), lineM)); };
-  const done = ci => CP.every((q, k) => q.ci !== ci || k < wn);
   let wn = opt.water || 0;
+  const lit = () => Math.min(CP.length, Math.floor(wn / STEP)), done = ci => CP.every((q, k) => q.ci !== ci || k < lit());
   if (starA) {
-    const cp = CP.slice(0, wn).map(q => q.v); if (cp.length) sc.add(new T.Points(new T.BufferGeometry().setFromPoints(cp), ptM(.24)));
+    const cp = CP.slice(0, lit()).map(q => q.v); if (cp.length) sc.add(new T.Points(new T.BufferGeometry().setFromPoints(cp), ptM(.26)));
     CONST.forEach((c, ci) => { if (done(ci)) drawLines(ci); });
-    const p = [], n = Math.min(400, Math.max(0, wn - CP.length)); for (let k = 0; k < n; k++) p.push(...starPos());
-    if (p.length) { const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, ptM(.15))); }
+    const p = [], n = Math.min(400, wn - lit()); for (let k = 0; k < n; k++) p.push(...starPos());
+    if (p.length) { const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, ptM(.13))); }
   }
   const label = txt => { const d = document.createElement('div'); d.className = 'tree-const'; d.textContent = '✨ ' + txt; el.appendChild(d); setTimeout(() => d.remove(), 3200); };
-  const skyStar = () => { const k = wn++; if (!starA) return null; const q = CP[k], pt = new T.Points(new T.BufferGeometry().setFromPoints([q ? q.v : new T.Vector3(...starPos())]), ptM(1.1)); pt.userData.min = q ? .24 : .15; sc.add(pt); if (q && done(q.ci)) { drawLines(q.ci); label(CONST[q.ci].n); } return pt; };
+  const skyStar = () => { const before = lit(); wn++; if (!starA) return null; const q = lit() > before ? CP[lit() - 1] : null;
+    const pt = new T.Points(new T.BufferGeometry().setFromPoints([q ? q.v : new T.Vector3(...starPos())]), ptM(q ? 1.6 : .7)); pt.userData.min = q ? .26 : .13; sc.add(pt);
+    if (q && done(q.ci)) { drawLines(q.ci); label(CONST[q.ci].n); } return pt; };
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
