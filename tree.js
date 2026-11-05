@@ -127,8 +127,8 @@ export async function mount(el, opt) {
   if (starA) {
     const cp = CP.slice(0, wn).map(q => q.v); if (cp.length) sc.add(new T.Points(new T.BufferGeometry().setFromPoints(cp), ptM(.24)));
     CONST.forEach((c, ci) => { if (done(ci)) drawLines(ci); });
-    const p = [], n = Math.min(400, Math.max(20, wn - CP.length)); for (let k = 0; k < n; k++) p.push(...starPos());
-    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, ptM(.15)));
+    const p = [], n = Math.min(400, Math.max(0, wn - CP.length)); for (let k = 0; k < n; k++) p.push(...starPos());
+    if (p.length) { const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); sc.add(new T.Points(g, ptM(.15))); }
   }
   const label = txt => { const d = document.createElement('div'); d.className = 'tree-const'; d.textContent = '✨ ' + txt; el.appendChild(d); setTimeout(() => d.remove(), 3200); };
   const skyStar = () => { const k = wn++; if (!starA) return null; const q = CP[k], pt = new T.Points(new T.BufferGeometry().setFromPoints([q ? q.v : new T.Vector3(...starPos())]), ptM(1.1)); pt.userData.min = q ? .24 : .15; sc.add(pt); if (q && done(q.ci)) { drawLines(q.ci); label(CONST[q.ci].n); } return pt; };
@@ -240,8 +240,8 @@ export async function mount(el, opt) {
     r.render(sc, cam); requestAnimationFrame(loop);
   })();
   const api = {
-    water() { // 작은 물방울 40개가 비처럼 차례로 떨어지고 톡 퍼져요, 그다음 별 하나
-      sway = 1; setTimeout(() => { if (!alive) return; const st = skyStar(); if (st) pops.push(st); }, 1100); const m = fm(0x7fd0ff, { roughness: .15, transparent: true, opacity: .85 }), w = Math.max(1.2, hh * .38), r0 = .028 * Math.max(1, hh / 3);
+    water(k = 1) { // 작은 물방울 40개가 비처럼 차례로 떨어지고 톡 퍼져요, 그다음 준 물만큼 별 (여러 개면 차례로)
+      sway = 1; for (let j = 0; j < Math.min(k, 60); j++) setTimeout(() => { if (!alive) return; const st = skyStar(); if (st) pops.push(st); }, 1100 + j * 160); const m = fm(0x7fd0ff, { roughness: .15, transparent: true, opacity: .85 }), w = Math.max(1.2, hh * .38), r0 = .028 * Math.max(1, hh / 3);
       if (!DROP || DROP.r !== r0) { DROP = new T.IcosahedronGeometry(r0, 0); DROP.r = r0; SPLASH = new T.RingGeometry(r0 * .6, r0 * 1.4, 10); SPLASH.rotateX(-Math.PI / 2); }
       for (let k = 0; k < 40; k++) { const dp = new T.Mesh(DROP, m); dp.scale.y = 1.6; const x = (Math.random() - .5) * 2 * w, z = (Math.random() - .5) * 2 * w * .7 + w * .2;
         dp.position.set(x, hh * 1.25 + Math.random() * hh * .3, z); dp.visible = false; dp.userData = { wait: Math.floor(Math.random() * 45), vy: .02 + Math.random() * .02, end: Math.max(.02, (1 - Math.min(1, Math.hypot(x, z) / (w * 1.3))) * hh * .8) }; sc.add(dp); drops.push(dp); } },
