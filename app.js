@@ -5996,7 +5996,8 @@
   const treeOpenAt = () => Date.parse((window.CONFIG || {}).treeOpen || '2026-12-24T00:00:00+09:00');
   const treeOpened = () => !!(window.CONFIG || {}).treeSecret && Date.now() >= treeOpenAt();
   async function treeRead(o) { // 연 날 이후엔 모두, 그 전엔 쓴 사람·관리자만
-    const sec = (window.CONFIG || {}).treeSecret, key = sec && Date.now() >= treeOpenAt() ? [Object.assign({}, (window.CONFIG || {}).treeKey, { d: sec.d || sec })] : [];
+    let ask = null; try { ask = isAdmin() && JSON.parse(localStorage.getItem('sb-tree-sk') || 'null'); } catch (e) {} // 관리자 폰: 미리 읽기 열쇠
+    const sec = (window.CONFIG || {}).treeSecret || ask, key = sec && (ask || Date.now() >= treeOpenAt()) ? [Object.assign({}, (window.CONFIG || {}).treeKey, { d: sec.d || sec })] : [];
     if (o.plain) return o.plain;
     try { return await opOpen(o.sec, key); } catch (err) { return null; }
   }
@@ -6172,7 +6173,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const adm = isAdmin() ? `<details class="tree-adm"><summary aria-label="관리자">${TI.gear}</summary><div>
       <p>${TREE_OPEN ? '관리자' : '아직 나만 보여요 (물은 이 폰에만, 시트엔 안 감)'}</p>
       <p>${TREE_LV.map((l, k) => `<a href="#/tree?lv=${k + 1}">Lv${k + 1}</a>`).join(' ')} · <a href="#/tree">실제</a>${test ? ` · 지금 Lv${test}` : ''}</p>
-      <p><a href="#" id="tree-openshow">편지 열리는 순간 미리보기</a></p><p>하늘 ${['dawn', 'day', 'sunset', 'night'].map(k => `<a href="#/tree?${test ? 'lv=' + test + '&' : ''}sky=${k}">${{ dawn: '새벽', day: '낮', sunset: '노을', night: '밤' }[k]}</a>`).join(' ')}</p>
+      <p><a href="#" id="tree-openshow">편지 열리는 순간 미리보기</a></p><p>글 미리 읽기 열쇠 <a href="#" onclick="event.preventDefault();const v=prompt('트리열쇠 파일 내용({x,y,d}) 붙여넣기, 빈칸이면 지우기');if(v===null)return;try{v.trim()?localStorage.setItem('sb-tree-sk',JSON.stringify(JSON.parse(v))):localStorage.removeItem('sb-tree-sk');alert('됐어요')}catch(e){alert('형식이 달라요')}">${localStorage.getItem('sb-tree-sk') ? '넣음 ✓' : '넣기'}</a></p><p>하늘 ${['dawn', 'day', 'sunset', 'night'].map(k => `<a href="#/tree?${test ? 'lv=' + test + '&' : ''}sky=${k}">${{ dawn: '새벽', day: '낮', sunset: '노을', night: '밤' }[k]}</a>`).join(' ')}</p>
       ${TREE_OPEN ? '' : `<p>물 수 <input id="tree-set" type="number" min="0" step="1" value="${st.water}" style="width:70px"> <button id="tree-set-go">적용</button> · <a href="#" id="tree-reset">0으로</a></p><p>물 주기 한 번에 <select id="tree-n">${[1, 10, 30, 50].map(n => `<option>${n}</option>`).join('')}</select>개 · 시험 오너먼트 ${(mine.torn || []).length}개 <a href="#" id="tree-orn0">지우기</a></p>`}</div></details>` : '';
     return `<section class="tree-page">
       <div class="tree-cv" id="tree-cv"><p class="tree-load">${L3('트리를 심는 중…', 'Planting the tree…', 'ツリーを植えています…')}</p></div>
