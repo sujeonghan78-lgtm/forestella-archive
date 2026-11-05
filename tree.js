@@ -261,3 +261,20 @@ export async function mount(el, opt) {
   };
   return api;
 }
+
+// 오너먼트 작성 창 미리보기: 모양·색을 바꾸면 바로 바뀌고, 손가락으로 돌려 볼 수 있어요
+export function preview(el, o) {
+  const r = new T.WebGLRenderer({ antialias: true, alpha: true }), W = () => el.clientWidth || 200, Hh = () => el.clientHeight || 180;
+  r.setPixelRatio(Math.min(2, devicePixelRatio || 1)); r.setSize(W(), Hh()); r.toneMapping = T.ACESFilmicToneMapping; r.outputColorSpace = T.SRGBColorSpace;
+  el.appendChild(r.domElement); r.domElement.style.touchAction = 'none';
+  const sc = new T.Scene(), cam = new T.PerspectiveCamera(30, W() / Hh(), .01, 20); cam.position.set(0, 0, 2.1); cam.lookAt(0, 0, 0);
+  sc.add(new T.HemisphereLight(0xffffff, 0x50605a, 1.8)); const d = new T.DirectionalLight(0xfff4e0, 2.4); d.position.set(1.5, 2, 2.5); sc.add(d);
+  const g = new T.Group(); sc.add(g); let m = null, ry = .5, rx = .15, vy = .01, drag = null, alive = true;
+  const set = q => { if (m) g.remove(m); m = q.shape === 1 ? sock(.42, OC[q.color]) : q.shape === 2 ? star5(.2, OC[q.color]) : bead(.2, OC[q.color]); g.add(m); };
+  set(o);
+  r.domElement.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; r.domElement.setPointerCapture(e.pointerId); });
+  r.domElement.addEventListener('pointermove', e => { if (!drag) return; vy = (e.clientX - drag.x) * .012; ry += vy; rx = Math.max(-1.2, Math.min(1.2, rx + (e.clientY - drag.y) * .012)); drag = { x: e.clientX, y: e.clientY }; });
+  r.domElement.addEventListener('pointerup', () => { drag = null; vy = Math.max(-.05, Math.min(.05, vy)); });
+  (function loop() { if (!alive || !document.body.contains(r.domElement)) { alive = false; try { r.dispose(); } catch (err) { /* 괜찮아요 */ } return; } if (!drag) { ry += vy; vy += (.01 - vy) * .03; } g.rotation.set(rx, ry, 0); r.render(sc, cam); requestAnimationFrame(loop); })();
+  return { set, destroy() { alive = false; try { r.dispose(); } catch (err) { /* 괜찮아요 */ } r.domElement.remove(); } };
+}
