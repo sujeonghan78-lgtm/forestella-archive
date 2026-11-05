@@ -266,6 +266,8 @@ export async function mount(el, opt) {
       if (!DROP || DROP.r !== r0) { DROP = new T.IcosahedronGeometry(r0, 0); DROP.r = r0; SPLASH = new T.RingGeometry(r0 * .6, r0 * 1.4, 10); SPLASH.rotateX(-Math.PI / 2); }
       for (let k = 0; k < 40; k++) { const dp = new T.Mesh(DROP, m); dp.scale.y = 1.6; const x = (Math.random() - .5) * 2 * w, z = (Math.random() - .5) * 2 * w * .7 + w * .2;
         dp.position.set(x, hh * 1.25 + Math.random() * hh * .3, z); dp.visible = false; dp.userData = { wait: Math.floor(Math.random() * 45), vy: .02 + Math.random() * .02, end: Math.max(.02, (1 - Math.min(1, Math.hypot(x, z) / (w * 1.3))) * hh * .8) }; sc.add(dp); drops.push(dp); } },
+    celebrate() { // 편지가 열리는 순간: 하늘을 올려다보면 별똥별이 쏟아져요
+      lookTo(.8, 50, () => { for (let k = 0; k < 14; k++) setTimeout(() => { if (!alive) return; const to = new T.Vector3((rnd() - .5) * 10, 8 + rnd() * 14, SKY_Z); shoot(to, () => { if (starA) dot(to, k % 3 === 0); }); }, k * 220); setTimeout(() => { if (alive && drag == null) lookTo(0, 80); }, 5200); }); },
     place(o) { placing = { o: Object.assign({}, o, { spot: null }), m: null, spot: null }; v = 0; return !!hangOrn; },
     placed() { return placing && placing.spot ? placing.spot.map((x, i) => +x.toFixed(i === 2 ? 2 : 3)) : null; },
     move(id) { const m = ORN.find(x => x.userData.orn.id === id); if (!m || !hangOrn) return false; const o = m.userData.orn, p = m.position;

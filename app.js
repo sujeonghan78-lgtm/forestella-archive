@@ -6086,6 +6086,16 @@
       treeApi.place(o); treePlaceBar(sp => treeSend(o, sp));
     };
   }
+  // 12/24 0시 편지가 열린 뒤 처음 들어오면: 별똥별이 쏟아지고 축하 창 → 편지 보기
+  function treeOpenShow() {
+    if (treeApi && treeApi.celebrate) treeApi.celebrate();
+    setTimeout(() => { const pg = document.querySelector('.tree-page'); if (!pg) return; document.querySelectorAll('.tree-pop').forEach(x => x.remove());
+      const n = treeState().orn.length, box = document.createElement('div'); box.className = 'tree-pop tree-cong';
+      box.innerHTML = `<p class="tc-big">🎄</p><h2>${L3('편지가 열렸어요!', 'The letters are open!', '手紙が開きました!')}</h2>
+        <p class="tp-msg">${L3(`숲별들이 트리에 걸어 둔 편지 ${n}개가 한꺼번에 열렸어요.<br>오너먼트를 눌러 읽어 보세요 ✨`, `${n} letters on the tree are open now.<br>Tap an ornament to read ✨`, `ツリーの手紙${n}通が開きました。<br>オーナメントをタップして読んでね ✨`)}</p>
+        <div class="ts-btns"><button class="ts-cancel">${L3('트리 보기', 'See the tree', 'ツリーを見る')}</button><button class="ts-go">📜 ${L3('편지 모아 보기', 'All letters', '手紙を見る')}</button></div>`;
+      pg.appendChild(box); box.querySelector('.ts-cancel').onclick = () => box.remove(); box.querySelector('.ts-go').onclick = () => { box.remove(); treeLetters(); }; }, 4200);
+  }
   // 내가 준 물로 별자리가 완성되면 축하 창
   const CONST_EN = { 북두칠성: 'the Big Dipper', 카시오페이아: 'Cassiopeia', 오리온: 'Orion', 거문고자리: 'Lyra', 백조자리: 'Cygnus', 작은곰자리: 'Ursa Minor', 쌍둥이자리: 'Gemini', 사자자리: 'Leo' };
   function treeConst(name) {
@@ -6160,7 +6170,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const adm = isAdmin() ? `<details class="tree-adm"><summary aria-label="관리자">${TI.gear}</summary><div>
       <p>${TREE_OPEN ? '관리자' : '아직 나만 보여요 (물은 이 폰에만, 시트엔 안 감)'}</p>
       <p>${TREE_LV.map((l, k) => `<a href="#/tree?lv=${k + 1}">Lv${k + 1}</a>`).join(' ')} · <a href="#/tree">실제</a>${test ? ` · 지금 Lv${test}` : ''}</p>
-      <p>하늘 ${['dawn', 'day', 'sunset', 'night'].map(k => `<a href="#/tree?${test ? 'lv=' + test + '&' : ''}sky=${k}">${{ dawn: '새벽', day: '낮', sunset: '노을', night: '밤' }[k]}</a>`).join(' ')}</p>
+      <p><a href="#" id="tree-openshow">편지 열리는 순간 미리보기</a></p><p>하늘 ${['dawn', 'day', 'sunset', 'night'].map(k => `<a href="#/tree?${test ? 'lv=' + test + '&' : ''}sky=${k}">${{ dawn: '새벽', day: '낮', sunset: '노을', night: '밤' }[k]}</a>`).join(' ')}</p>
       ${TREE_OPEN ? '' : `<p>물 수 <input id="tree-set" type="number" min="0" step="1" value="${st.water}" style="width:70px"> <button id="tree-set-go">적용</button> · <a href="#" id="tree-reset">0으로</a></p><p>물 주기 한 번에 <select id="tree-n">${[1, 10, 30, 50].map(n => `<option>${n}</option>`).join('')}</select>개 · 시험 오너먼트 ${(mine.torn || []).length}개 <a href="#" id="tree-orn0">지우기</a></p>`}</div></details>` : '';
     return `<section class="tree-page">
       <div class="tree-cv" id="tree-cv"><p class="tree-load">${L3('트리를 심는 중…', 'Planting the tree…', 'ツリーを植えています…')}</p></div>
@@ -6188,13 +6198,14 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = isAdmin() && qs.get('sky') || undefined;
     let ok = true; try { const c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (err) { ok = false; }
     if (!ok) { el.innerHTML = `<p class="tree-load">${L3('이 폰에선 3D 트리를 볼 수 없어요. 물 주기는 할 수 있어요!', '3D tree is not supported here, but you can still water!', 'この端末では3Dツリーを表示できませんが、水やりはできます!')}</p>`; }
-    else import('./tree.js?v=15').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, orns: st.hung.map(o => Object.assign({}, o, { nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(treeAskSpot, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
+    else import('./tree.js?v=16').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, orns: st.hung.map(o => Object.assign({}, o, { nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
     const bk = document.getElementById('tree-back'); if (bk) bk.onclick = () => { location.hash = treeFrom || '#/more'; };
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };
     const o0 = document.getElementById('tree-orn0'); if (o0) o0.onclick = e => { e.preventDefault(); const m = treeMine(); delete m.torn; boxWrite(TREE_KEY, m); renderBase('tree'); };
     const nm = document.getElementById('tree-name'); if (nm) nm.onclick = () => { const v = prompt(L3('트리 이름을 지어 주세요 (12자, 비우면 숲별 트리)', 'Name your tree (12 chars)', 'ツリーの名前(12字)'), (treeMine().name || '')); if (v == null) return; const m = treeMine(); m.name = v.trim().slice(0, 12); boxWrite(TREE_KEY, m); nm.firstChild.textContent = '🎄 ' + treeName() + ' '; toast(L3('이름을 바꿨어요', 'Renamed', '名前を変えました')); };
     { const wk = document.getElementById('tree-week'), td = wk && wk.querySelector('.tw-d.today'); if (td) wk.scrollLeft = Math.max(0, td.offsetLeft - wk.clientWidth / 2 + td.offsetWidth / 2); }
+    const osw = document.getElementById('tree-openshow'); if (osw) osw.onclick = e => { e.preventDefault(); const d = osw.closest('details'); if (d) d.open = false; treeOpenShow(); };
     const bk2 = document.getElementById('tree-basket'); if (bk2) bk2.onclick = () => treeBasket();
     const lt = document.getElementById('tree-letters'); if (lt) lt.onclick = () => treeLetters();
     const rs = document.getElementById('tree-reset'); if (rs) rs.onclick = e => { e.preventDefault(); const m = treeMine(); delete m.test; boxWrite(TREE_KEY, m); renderBase('tree'); };

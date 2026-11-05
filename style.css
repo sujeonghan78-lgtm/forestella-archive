@@ -2487,3 +2487,4 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tw-d.cc i { border: 2px solid #ffd65a; background: rgba(255,214,90,.25); font-size: 15px; }
 .tree-dday { margin: 8px 0 0; text-align: center; font-size: 13px; text-shadow: 0 1px 3px rgba(0,0,0,.45); }
 .tree-dday b { display: inline-block; margin-left: 4px; padding: 2px 10px; border-radius: 12px; background: linear-gradient(90deg, #ffd65a, #ff9a6a); color: #3a2400; font-size: 14px; text-shadow: none; }
+.tree-h { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
