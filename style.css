@@ -2357,3 +2357,17 @@ a.block.home-taste { display: flex; flex-direction: row; text-align: left; align
 .tsm-info { margin: 8px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; min-height: 2.6em; }
 .tsm-info b { color: var(--ink); }
 .ts-st-re { margin-left: 8px; border: 1px solid var(--line); background: #fff; color: var(--green-d); font: inherit; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 9px; cursor: pointer; vertical-align: middle; }
+
+/* 숲별 트리 */
+.tree-page { padding-bottom: 8px; }
+.tree-h { font-size: 20px; margin: 6px 0 2px; }
+.tree-h small { font-size: 14px; font-weight: 600; color: var(--green); margin-left: 4px; }
+.tree-sub { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.tree-bar { height: 8px; border-radius: 6px; background: var(--line); overflow: hidden; margin-bottom: 10px; }
+.tree-bar i { display: block; height: 100%; background: var(--grad); border-radius: 6px; }
+.tree-cv { position: relative; height: min(62vh, 520px); border-radius: 18px; overflow: hidden; background: #1d3a4a; }
+.tree-load { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; padding: 20px; text-align: center; color: #fff; font-size: 14px; }
+.tree-btns { display: flex; gap: 10px; justify-content: center; margin: 12px 0 6px; }
+.tree-btns button { border: 0; border-radius: 22px; padding: 11px 22px; font-size: 15px; font-weight: 700; background: var(--green-2); color: #fff; cursor: pointer; }
+.tree-btns button:disabled { background: var(--line); color: var(--muted); cursor: default; }
+.tree-note { text-align: center; color: var(--muted); font-size: 12px; margin: 4px 0; }
