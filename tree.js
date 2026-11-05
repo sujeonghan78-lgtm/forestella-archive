@@ -270,7 +270,7 @@ export async function mount(el, opt) {
     const b = cvs.getBoundingClientRect(), list = [];
     ORN.forEach(m => { const w = m.getWorldPosition(new T.Vector3()), out = new T.Vector3(w.x, 0, w.z); if (out.dot(cam.position.clone().sub(w).setY(0)) <= 0) return; const p = w.clone().project(cam); if (Math.abs(p.x) > .95 || Math.abs(p.y) > .9) return; list.push({ m, x: (p.x + 1) / 2 * b.width, y: (1 - p.y) / 2 * b.height, d: Math.hypot(p.x, p.y) }); });
     list.sort((a, c) => a.d - c.d); tagBox.innerHTML = '';
-    list.slice(0, 8).forEach(q => { const d = document.createElement('span'); d.textContent = q.m.userData.orn.nick || ''; d.style.left = q.x + 'px'; d.style.top = q.y + 'px'; tagBox.appendChild(d); }); };
+    list.slice(0, 8).forEach(q => { const d = document.createElement('span'); d.textContent = q.m.userData.orn.nick || ''; if (q.m.userData.orn.mine) d.className = 'me'; d.style.left = q.x + 'px'; d.style.top = q.y + 'px'; tagBox.appendChild(d); }); };
   const onResize = () => { r.setSize(W0(), H0()); cam.aspect = W0() / H0(); cam.updateProjectionMatrix(); aim(); };
   addEventListener('resize', onResize);
   (function loop() {
