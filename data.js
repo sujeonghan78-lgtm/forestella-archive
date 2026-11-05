@@ -254,6 +254,7 @@
     return { events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, places, views, sheets: JSON.stringify(s) + (window.CONFIG.dataVer || ''), savedAt: Date.now() };
   }
 
+  window.sbDataRefresh = () => { try { localStorage.removeItem(CACHE_KEY); } catch (e) {} location.reload(); }; // 새로 불러오기
   function readCache() {
     try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch (e) { return null; }
   }
