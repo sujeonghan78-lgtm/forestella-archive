@@ -146,11 +146,13 @@ export async function mount(el, opt) {
       if (k >= 1) { sc.remove(head); sc.remove(tail); done_(); return false; } return true; }); };
   // 카메라가 천천히 하늘을 올려다봤다가 돌아와요 (별자리 별이 켜질 때)
   const lookTo = (to, n, then) => { const from = look; let f = 0; fx.push(() => { f++; const k = Math.min(1, f / n), e = k * k * (3 - 2 * k); look = from + (to - from) * e; if (zoom >= .95) aim(); if (k >= 1) { if (then) then(); return false; } return true; }); };
+  // 지금 화면에 보이는 하늘 자리 (위쪽 빈 하늘, 트리 뒤 먼 곳)
+  const seenPos = () => { for (let k = 0; k < 12; k++) { const nx = (rnd() - .5) * 1.7, ny = .12 + rnd() * .43; if (Math.abs(nx) < .42 && ny < .45) continue; const n = new T.Vector3(nx, ny, .5).unproject(cam), dir = n.sub(cam.position).normalize(); if (dir.z > -.05) continue; const tt = (-24 - cam.position.z) / dir.z, p = cam.position.clone().add(dir.multiplyScalar(tt)); if (p.y > 3) return p; } return new T.Vector3(...starPos()); };
   const skyStar = () => { const before = lit(); wn++; const q = lit() > before ? CP[lit() - 1] : null, fin = q && done(q.ci);
     const after = () => { if (fin) { drawLines(q.ci); label(CONST[q.ci].n); setTimeout(() => { if (alive && opt.onConst) opt.onConst(CONST[q.ci].n); }, 1400); } };
     if (!starA) { after(); return null; }
     if (q) { lookTo(.8, 50, () => shoot(q.v, () => { dot(q.v, true); after(); setTimeout(() => { if (alive && drag == null) lookTo(0, 70); }, fin ? 4200 : 1800); })); }
-    else dot(new T.Vector3(...starPos()), false);
+    else dot(seenPos(), false);
     return null; };
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false), SNOWY = null;
