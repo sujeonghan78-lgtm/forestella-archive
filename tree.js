@@ -366,6 +366,7 @@ export async function mount(el, opt) {
     placed() { return placing && placing.spot ? placing.spot.map((x, i) => +x.toFixed(i === 2 ? 2 : 3)) : null; },
     addPola(o, g) { (opt.polas = opt.polas || [])[g] = o; this.polaPage(Math.floor(g / 15)); },
     polaPick(cb) { pPick = cb; this.polaPage(pgCur); },
+    polaOn() { return PSLOT.length > 0; },
     polaPages() { return Math.max(1, Math.ceil((opt.polas || []).length / 15)); },
     polaPage(pg) { if (!PSLOT.length) return; pgCur = pg; const L_ = opt.polas || [];
       PSLOT.forEach((c, i) => { const o = L_[pg * 15 + i], k = ORN.indexOf(c); if (k >= 0) ORN.splice(k, 1); const pic = c.userData.pic;
