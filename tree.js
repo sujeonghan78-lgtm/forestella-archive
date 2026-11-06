@@ -34,6 +34,7 @@ async function loadTree() {
   g.computeBoundingBox(); const k = H / g.boundingBox.max.y; g.scale(k, k, k);
   FT = f0 * TS * k; SRC = g;
 }
+const PTEX = {};
 let seed = 9; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const fm = (c, o = {}) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: .75, flatShading: true }, o));
 // 면마다 살짝 다른 색 (아래 진초록 → 위 연두), snow면 윗면을 눈으로
@@ -192,7 +193,7 @@ export async function mount(el, opt) {
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false, L.dk || 0), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
-  let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [], LIGHTS = [], FLY = [];
+  let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [], LIGHTS = [], FLY = [], PSLOT = [];
   if (!L.tree) { // 씨앗·새싹
     const soil = new T.Mesh(new T.CylinderGeometry(.55, .65, .14, 9), fm(0x6e4a2c, { roughness: 1 })); soil.position.y = .07; spin.add(soil);
     if (L.sprout) { const st = new T.Mesh(new T.CylinderGeometry(.035, .045, .55, 6), fm(0x4e8f3a)); st.position.y = .4; spin.add(st); [-1, 1].forEach(k => { const lf = new T.Mesh(new T.IcosahedronGeometry(.2, 1), fm(0x7fd468)); lf.scale.set(1.5, .35, .75); lf.position.set(k * .2, .68, 0); lf.rotation.z = k * .4; spin.add(lf); }); top = .9; }
@@ -226,16 +227,16 @@ export async function mount(el, opt) {
       const y = ft + rnd() * (top * .86 - ft), s = surf(y, rnd() * 6.283, .06); if (!s) continue;
       const sp = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: k % 3 ? 0xfff6d0 : 0xffffff, transparent: true, depthWrite: false, depthTest: false, blending: T.AdditiveBlending, fog: false, opacity: 0 }));
       sp.position.copy(s.p); sp.scale.setScalar(.11 + rnd() * .06); sp.userData.n = s.n.clone().normalize(); sp.userData.k = .5 + rnd() * .4; spin.add(sp); GLIT.push(sp); }
-    if (L.pola) { // 폴라로이드 줄 (초안): 겉면에서 살짝 띄운 끈에 사진 카드를 집게로 매달아요
+    if (L.pola) { // 폴라로이드 줄: 겉면에서 살짝 띄운 끈에 15칸, 숲별이 고른 사진을 쪽마다 바꿔 걸어요 (빈 칸은 하얀 판)
       const P = [], N = []; for (let k = 0; k <= 120; k++) { const f = k / 120, s = surf(ft + .2 + f * (top * .8 - ft - .2), 1.2 + f * 6.283 * 1.8, .16); if (s) { P.push(s.p); N.push(s.n.clone().normalize()); } }
       if (P.length > 10) {
         const cu = new T.CatmullRomCurve3(P), rope = new T.Mesh(new T.TubeGeometry(cu, 240, .012, 5), fm(0xc9a77a, { roughness: .9 })); spin.add(rope);
-        const fr = fm(0xfbfbf8, { roughness: .6 }), ph = fm(0xc4ccd4, { roughness: .8, emissive: 0x556070, emissiveIntensity: .4 }), pin = fm(0xb98a5a);
-        for (let k = 6; k < P.length - 3; k += 12) { const p = P[k], n = N[k], c = new T.Group(), sz = .42 * Math.max(.7, 1 - k / P.length * .4);
+        const fr = fm(0xfbfbf8, { roughness: .6 }), pin = fm(0xb98a5a), blank = fm(0xe9edf0, { roughness: .8 }), step = (P.length - 6) / 15;
+        for (let i = 0; i < 15; i++) { const k = Math.round(4 + i * step), p = P[k], n = N[k], c = new T.Group(), sz = .34 * Math.max(.75, 1 - k / P.length * .35);
           const card = new T.Mesh(new T.BoxGeometry(sz, sz * 1.2, .012), fr); card.position.y = -sz * .62; c.add(card);
-          const pic = new T.Mesh(new T.PlaneGeometry(sz * .84, sz * .84), ph); pic.position.set(0, -sz * .53, .007); c.add(pic);
+          const pic = new T.Mesh(new T.PlaneGeometry(sz * .84, sz * .84), blank); pic.position.set(0, -sz * .53, .007); c.add(pic);
           const cl = new T.Mesh(new T.BoxGeometry(sz * .1, sz * .26, sz * .08), pin); cl.position.y = -sz * .04; c.add(cl);
-          c.position.copy(p); c.lookAt(p.clone().add(new T.Vector3(n.x, 0, n.z))); c.rotateZ((rnd() - .5) * .3); c.traverse(o => { o.castShadow = true; }); spin.add(c); } } }
+          c.position.copy(p); c.lookAt(p.clone().add(new T.Vector3(n.x, 0, n.z))); c.rotateZ((rnd() - .5) * .3); c.traverse(o => { o.castShadow = true; }); c.userData.pic = pic; c.userData.blank = blank; spin.add(c); PSLOT.push(c); } } }
     if (L.ribbon) { // 금색 리본: 겉면을 따라 납작한 띠가 아래에서 위로 두 바퀴 남짓, 하늘빛을 반사해서 돌리면 빛이 흘러가요
       const P = [], N = []; for (let k = 0; k <= 160; k++) { const f = k / 160, s = surf(ft + .15 + f * (top * .84 - ft - .15), 1.2 + f * 6.283 * 2.2, .08); if (s) { P.push(s.p); N.push(s.n.clone().normalize()); } }
       if (P.length > 10) {
@@ -361,6 +362,13 @@ export async function mount(el, opt) {
       lookTo(.8, 50, () => { for (let k = 0; k < 14; k++) setTimeout(() => { if (!alive) return; const to = seenPos(); shoot(to, () => { if (starA) dot(to, k % 3 === 0); }); }, k * 220); setTimeout(() => { if (alive && drag == null) lookTo(0, 80); }, 5200); }); },
     place(o) { placing = { o: Object.assign({}, o, { spot: null }), m: null, spot: null }; v = 0; return !!hangOrn; },
     placed() { return placing && placing.spot ? placing.spot.map((x, i) => +x.toFixed(i === 2 ? 2 : 3)) : null; },
+    polaPages() { return Math.max(1, Math.ceil((opt.polas || []).length / 15)); },
+    polaPage(pg) { if (!PSLOT.length) return; const L_ = opt.polas || [];
+      PSLOT.forEach((c, i) => { const o = L_[pg * 15 + i], k = ORN.indexOf(c); if (k >= 0) ORN.splice(k, 1); const pic = c.userData.pic;
+        if (!o || !o.pic) { pic.material = c.userData.blank; c.userData.orn = null; c.traverse(x => { x.userData.orn = null; }); return; }
+        c.userData.orn = o; c.traverse(x => { x.userData.orn = o; }); ORN.push(c);
+        const ld = PTEX[o.pic] || (PTEX[o.pic] = new Promise(res => { const tl = new T.TextureLoader(); tl.setCrossOrigin('anonymous'); tl.load(o.pic, tx => { const im = tx.image, w = im.width, h = im.height; tx.colorSpace = T.SRGBColorSpace; if (h > w) { tx.repeat.set(1, w / h); tx.offset.set(0, (1 - w / h) / 2); } else { tx.repeat.set(h / w, 1); tx.offset.set((1 - h / w) / 2, 0); } res(new T.MeshStandardMaterial({ map: tx, roughness: .7 })); }, undefined, () => res(null)); }));
+        ld.then(m => { if (m && c.userData.orn === o) pic.material = m; }); }); },
     move(id) { const m = ORN.find(x => x.userData.orn.id === id); if (!m || !hangOrn) return false; const o = m.userData.orn, p = m.position;
       const sp = o.spot ? o.spot.slice() : [Math.atan2(p.z, p.x), Math.max(0, Math.min(1, p.y / top)), 1, 0];
       ORN.splice(ORN.indexOf(m), 1); placing = { o, m, spot: sp, orig: o.spot ? o.spot.slice() : null, origPos: p.clone(), origQ: m.quaternion.clone() }; v = 0; return true; },

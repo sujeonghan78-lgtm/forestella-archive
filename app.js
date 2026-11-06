@@ -5954,9 +5954,9 @@
     { n: '작은 나무', en: 'Small tree', ja: '小さな木', w: 150, slot: 25, o: { tree: .55 } },
     { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.15, glit: 1, woods: 20, dk: .2 } },
     { n: '구슬', en: 'Baubles', ja: 'オーナメント', w: 1000, slot: 80, o: { tree: 1, tall: 1.15, glit: 1, gifts: 1, woods: 54, dk: .4 } },
-    { n: '양말·선물', en: 'Socks & gifts', ja: '靴下とプレゼント', w: 2500, slot: 120, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, snow: 1, woods: 96 , dk: 0.55 } },
-    { n: '눈', en: 'Snow', ja: '雪', w: 5000, slot: 160, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, snow: 1, lights: 1, fly: 1, woods: 96, dk: .7 } },
-    { n: '별', en: 'Star', ja: '星', w: 10000, slot: 200, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, snow: 1, star: 1, lights: 1, fly: 1, woods: 96, dk: .85 } },
+    { n: '양말·선물', en: 'Socks & gifts', ja: '靴下とプレゼント', w: 2500, slot: 120, o: { tree: 1, tall: 1.15, glit: 1, pola: 1, gifts: 1, snow: 1, woods: 96 , dk: 0.55 } },
+    { n: '눈', en: 'Snow', ja: '雪', w: 5000, slot: 160, o: { tree: 1, tall: 1.15, glit: 1, pola: 1, gifts: 1, snow: 1, lights: 1, fly: 1, woods: 96, dk: .7 } },
+    { n: '별', en: 'Star', ja: '星', w: 10000, slot: 200, o: { tree: 1, tall: 1.15, glit: 1, pola: 1, gifts: 1, snow: 1, star: 1, lights: 1, fly: 1, woods: 96, dk: .85 } },
   ];
   // 내 트리 이름 (이 폰에만, sb-tree.name)
   const treeName = () => (treeMine().name || '').trim() || L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー');
@@ -5981,9 +5981,9 @@
     const ids = new Set((t.orn || []).map(o => o.id)), del = new Set(mine.ornDel || []);
     const orn = (!TREE_OPEN && isAdmin() ? (mine.torn || []) : (t.orn || []).concat((mine.orn || []).filter(o => !ids.has(o.id)))).filter(o => !del.has(o.id));
     const oc = mine.ornCol || {}, os = mine.ornSpot || {}; orn.forEach(o => { if (oc[o.id] != null && o.by === me) o.color = oc[o.id]; if (os[o.id] && o.by === me) o.spot = os[o.id]; });
-    const slot = TREE_LV[i].slot, myOrn = orn.filter(o => o.by === me).length;
+    const slot = TREE_LV[i].slot, myOrn = orn.filter(o => o.by === me).length, polas = orn.filter(o => o.shape === 4), plain = orn.filter(o => o.shape !== 4);
     const todayP = Object.values(t.by).filter(a => a.includes(today)).length + (localN > sheetN && !sheetN ? 1 : 0);
-    return { water, people, todayP, i, lv: TREE_LV[i], next: TREE_LV[i + 1], done, left, todayN, myDays: new Set([...got, ...(mine.water || [])]).size, orn, hung: orn.slice(0, slot), basket: orn.slice(slot), slot, myOrn };
+    return { water, people, todayP, i, lv: TREE_LV[i], next: TREE_LV[i + 1], done, left, todayN, myDays: new Set([...got, ...(mine.water || [])]).size, orn, hung: plain.slice(0, slot), basket: plain.slice(slot), polas, slot, myOrn };
   }
   let treeApi = null, treeFrom = '', treeMod = null;
   const treeWeek = () => { const t = kstDay(), d0 = new Date(t + 'T00:00:00Z'), mon = d0.getTime() - ((d0.getUTCDay() + 6) % 7) * 864e5; return [0, 1, 2, 3, 4, 5, 6].map(k => new Date(mon + k * 864e5).toISOString().slice(0, 10)); };
@@ -5996,7 +5996,11 @@
   }
   // ---- 오너먼트 달기 ----
   const ORN_MAX = 3; // 한 명당 달 수 있는 오너먼트 수
-  const ORN_C = ['#e8453c', '#ff9a3c', '#f5c83c', '#8fd968', '#7fd0e8', '#3f6fe0', '#9b6ee8', '#ff8fc0'], ORN_S = ['구슬', '양말', '별', '눈사람'];
+  const ORN_C = ['#e8453c', '#ff9a3c', '#f5c83c', '#8fd968', '#7fd0e8', '#3f6fe0', '#9b6ee8', '#ff8fc0'], ORN_S = ['구슬', '양말', '별', '눈사람', '폴라로이드'];
+  // 폴라로이드에 넣을 사진: 사이트에 있는 콘서트 포스터·음반 표지만 (불러올 수 있는 주소만)
+  const polaPics = () => { const ok = u => u && (/^covers\//.test(u) || /pbs\.twimg\.com/.test(u)), seen = new Set(), out = [];
+    (data.concerts || []).forEach(c => { if (ok(c.img) && !seen.has(c.img)) { seen.add(c.img); out.push({ src: imgSize(c.img, 'small'), name: c.name }); } });
+    (data.albums || []).forEach(a => { if (ok(a.img) && !seen.has(a.img)) { seen.add(a.img); out.push({ src: imgSize(a.img, 'small'), name: a.name }); } }); return out; };
   const treeOpenAt = () => Date.parse((window.CONFIG || {}).treeOpen || '2026-12-24T00:00:00+09:00');
   const treeOpened = () => !!(window.CONFIG || {}).treeSecret && Date.now() >= treeOpenAt();
   async function treeRead(o) { // 연 날 이후엔 모두, 그 전엔 쓴 사람·관리자만
@@ -6005,6 +6009,15 @@
     if (o.plain) return o.plain;
     try { return await opOpen(o.sec, key); } catch (err) { return null; }
   }
+  // 폴라로이드 쪽 버튼 (15장이 넘으면): 처음엔 내 폴라로이드가 있는 쪽, 없으면 마지막 쪽
+  function treePolaBar(st) {
+    if (!treeApi || !treeApi.polaPage) return; const n = treeApi.polaPages(), me = myUid(), mi = st.polas.findIndex(o => o.by === me);
+    let cur = mi >= 0 ? Math.floor(mi / 15) : n - 1; treeApi.polaPage(cur);
+    document.querySelectorAll('.tree-pp').forEach(x => x.remove()); const pg = document.querySelector('.tree-page'); if (n < 2 || !pg) return;
+    const bar = document.createElement('div'); bar.className = 'tree-pp'; pg.appendChild(bar);
+    const draw = () => { bar.innerHTML = '📷 ' + Array.from({ length: n }, (_, k) => `<button data-k="${k}" class="${k === cur ? 'on' : ''}">${k + 1}</button>`).join(''); bar.querySelectorAll('button').forEach(b => { b.onclick = () => { cur = +b.dataset.k; treeApi.polaPage(cur); draw(); }; }); };
+    draw();
+  }
   function treeCard(o) {
     document.querySelectorAll('.tree-pop').forEach(x => x.remove());
     const pg = document.querySelector('.tree-page'); if (!pg) return;
@@ -6012,6 +6025,7 @@
     const box = document.createElement('div'); box.className = 'tree-pop';
     box.innerHTML = `<button class="tp-x" aria-label="${L3('닫기', 'Close', '閉じる')}">✕</button>
       <p class="tp-who"><i style="background:${ORN_C[o.color] || ORN_C[0]}"></i><b>${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}</b> → ${o.to === '포레' ? L3('포레스텔라에게', 'To Forestella', 'フォレステラへ') : L3('숲별에게', 'To fans', 'ファンへ')}${d ? ` · ${d}` : ''}</p>
+      ${o.shape === 4 && o.pic ? `<p class="tp-pic"><img src="${esc(o.pic)}" alt="" referrerpolicy="no-referrer"><small>${esc((polaPics().find(p => p.src === o.pic) || {}).name || '')}</small></p>` : ''}
       <p class="tp-msg">🔒 ${L3('12월 24일 0시에 열려요', 'Opens Dec 24, 00:00 KST', '12月24日0時に開きます')}</p>
       ${mine ? `<div class="ts-row ts-col tp-col">${ORN_C.map((c, k) => `<button data-k="${k}" class="${k === o.color ? 'on' : ''}" style="background:${c}" aria-label="${k + 1}"></button>`).join('')}</div>` : ''}
       ${mine ? `<button class="tp-del">${L3('내 오너먼트 떼기', 'Remove mine', '外す')}</button>` : tAdm() ? `<button class="tp-del tp-adm">${L3('숨기기 (관리자)', 'Hide (admin)', '非表示')}</button>` : ''}`;
@@ -6071,8 +6085,9 @@
     const sh = document.createElement('div'); sh.className = 'tree-sheet';
     const f = { shape: 0, color: Math.floor(Math.random() * 8), to: '숲별' };
     sh.innerHTML = `<div class="ts-prev" id="ts-prev"><small>${L3('손가락으로 돌려 보세요', 'Drag to turn', 'ドラッグで回せます')}</small></div><div class="ts-in"><h2>🎁 ${L3('오너먼트 달기', 'Hang an ornament', 'オーナメントを飾る')}</h2>
-      <p class="ts-l">${L3('모양', 'Shape', '形')}</p><div class="ts-row" id="ts-shape">${ORN_S.map((n, k) => `<button data-k="${k}">${['🔮', '🧦', '⭐', '☃️'][k]} ${L3(n, ['Bead', 'Sock', 'Star', 'Snowman'][k], ['玉', '靴下', '星', '雪だるま'][k])}</button>`).join('')}</div>
-      <p class="ts-l">${L3('색', 'Color', '色')}</p><div class="ts-row ts-col" id="ts-color">${ORN_C.map((c, k) => `<button data-k="${k}" style="background:${c}" aria-label="${k + 1}"></button>`).join('')}</div>
+      <p class="ts-l">${L3('모양', 'Shape', '形')}</p><div class="ts-row" id="ts-shape">${ORN_S.map((n, k) => k === 4 && !(st.lv.o.pola || adm) ? '' : `<button data-k="${k}">${['🔮', '🧦', '⭐', '☃️', '📷'][k]} ${L3(n, ['Bead', 'Sock', 'Star', 'Snowman', 'Polaroid'][k], ['玉', '靴下', '星', '雪だるま', 'ポラロイド'][k])}</button>`).join('')}</div>
+      <div id="ts-pics" hidden><p class="ts-l">${L3('사진 고르기', 'Pick a photo', '写真を選ぶ')}</p><div class="ts-pics">${polaPics().map((p, k) => `<button data-k="${k}" title="${esc(p.name)}"><img src="${esc(p.src)}" alt="" loading="lazy" referrerpolicy="no-referrer"></button>`).join('')}</div></div>
+      <p class="ts-l ts-colw">${L3('색', 'Color', '色')}</p><div class="ts-row ts-col" id="ts-color">${ORN_C.map((c, k) => `<button data-k="${k}" style="background:${c}" aria-label="${k + 1}"></button>`).join('')}</div>
       <p class="ts-l">${L3('받는 사람', 'To', '宛先')}</p><div class="ts-row" id="ts-to"><button data-k="숲별">${L3('숲별에게', 'To fans', 'ファンへ')}</button><button data-k="포레">${L3('포레스텔라에게', 'To Forestella', 'フォレステラへ')}</button></div>
       <input id="ts-nick" maxlength="12" placeholder="${L3('닉네임 (비우면 익명의 숲별)', 'Nickname (optional)', 'ニックネーム(任意)')}">
       <textarea id="ts-msg" maxlength="200" rows="3" placeholder="${L3('하고 싶은 말 (200자)', 'Your message (200 chars)', 'メッセージ(200字)')}"></textarea><p class="ts-cnt"><span id="ts-n">0</span>/200</p>
@@ -6082,13 +6097,16 @@
     const pv = treeMod && treeMod.preview ? treeMod.preview(sh.querySelector('#ts-prev'), f) : null;
     const sel = (id, key) => { const row = sh.querySelector(id); row.querySelectorAll('button').forEach(b => { b.classList.toggle('on', String(f[key]) === b.dataset.k); b.onclick = () => { f[key] = key === 'to' ? b.dataset.k : +b.dataset.k; sel(id, key); if (pv && key !== 'to') pv.set(f); }; }); };
     sel('#ts-shape', 'shape'); sel('#ts-color', 'color'); sel('#ts-to', 'to');
-    const ta = sh.querySelector('#ts-msg'), go = sh.querySelector('.ts-go');
-    ta.oninput = () => { sh.querySelector('#ts-n').textContent = ta.value.length; go.disabled = !ta.value.trim(); };
+    const ta = sh.querySelector('#ts-msg'), go = sh.querySelector('.ts-go'), PP = polaPics(), pw = sh.querySelector('#ts-pics');
+    const chk = () => { const P = f.shape === 4; pw.hidden = !P; sh.querySelector('#ts-color').hidden = P; sh.querySelector('.ts-colw').hidden = P; sh.querySelector('#ts-prev').hidden = P; go.disabled = !ta.value.trim() || (P && !f.pic); go.textContent = P ? L3('📷 줄에 걸기', '📷 Hang it', '📷 飾る') : full ? L3('🧺 바구니에 넣기', '🧺 Put in basket', '🧺 バスケットへ') : L3('트리에 달러 가기 ›', 'Choose a spot ›', '場所を選ぶ ›'); };
+    sh.querySelectorAll('#ts-shape button').forEach(b => b.addEventListener('click', chk));
+    pw.querySelectorAll('button').forEach(b => { b.onclick = () => { pw.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); f.pic = PP[+b.dataset.k].src; chk(); }; });
+    ta.oninput = () => { sh.querySelector('#ts-n').textContent = ta.value.length; chk(); };
     sh.querySelector('.ts-cancel').onclick = () => sh.remove();
     go.onclick = () => {
-      const o = { id: Math.random().toString(36).slice(2, 9), by: myUid(), mine: true, at: Date.now(), shape: f.shape, color: f.color, to: f.to, nick: sh.querySelector('#ts-nick').value.trim().slice(0, 12), text: ta.value.trim().slice(0, 200) };
+      const o = { id: Math.random().toString(36).slice(2, 9), by: myUid(), mine: true, at: Date.now(), shape: f.shape, color: f.color, to: f.to, nick: sh.querySelector('#ts-nick').value.trim().slice(0, 12), text: ta.value.trim().slice(0, 200), pic: f.shape === 4 ? f.pic : '' };
       sh.remove();
-      if (full) { treeSend(o, null); return; }
+      if (full || f.shape === 4) { treeSend(o, null); return; }
       treeApi.place(o); treePlaceBar(sp => treeSend(o, sp));
     };
   }
@@ -6156,12 +6174,12 @@
   function treeSend(o, spot) {
     const mm = treeMine(), adm = !TREE_OPEN && isAdmin();
     mySecKey().then(k => opSeal(o.text, [(window.CONFIG || {}).treeKey, k])).then(sec => {
-      const rec = { id: o.id, by: o.by, at: o.at, shape: o.shape, color: o.color, to: o.to, nick: o.nick, spot, sec };
-      return (adm ? Promise.resolve() : formPost(`종류: 오너먼트\n번호: ${o.id}\n누가: ${o.by}\n모양: ${ORN_S[o.shape]}\n색: ${o.color}\n받는이: ${o.to}\n닉네임: ${o.nick}\n자리: ${spot ? spot.join(',') : ''}\n내용: ${sec}`)).then(() => {
+      const rec = { id: o.id, by: o.by, at: o.at, shape: o.shape, color: o.color, to: o.to, nick: o.nick, spot, sec, pic: o.pic || '' };
+      return (adm ? Promise.resolve() : formPost(`종류: 오너먼트\n번호: ${o.id}\n누가: ${o.by}\n모양: ${ORN_S[o.shape]}\n색: ${o.color}\n받는이: ${o.to}\n닉네임: ${o.nick}\n자리: ${spot ? spot.join(',') : ''}${o.pic ? '\n사진: ' + o.pic : ''}\n내용: ${sec}`)).then(() => {
         if (adm) mm.torn = (mm.torn || []).concat(rec); else mm.orn = (mm.orn || []).concat(rec).slice(-30);
         boxWrite(TREE_KEY, mm);
         if (spot && treeApi) { treeApi.commit(); } else if (treeApi) treeApi.cancel();
-        toast(spot ? L3('🎁 오너먼트를 달았어요! 12월 24일 0시에 열려요', '🎁 Hung! Opens Dec 24', '🎁 飾りました!12月24日に開きます') : L3('🧺 바구니에 넣었어요. 트리가 자라면 걸려요', '🧺 In the basket — it hangs when the tree grows', '🧺 バスケットに入れました'));
+        toast(o.shape === 4 ? L3('📷 폴라로이드를 걸었어요! 12월 24일 0시에 열려요', '📷 Hung! Opens Dec 24', '📷 飾りました!12月24日に開きます') : spot ? L3('🎁 오너먼트를 달았어요! 12월 24일 0시에 열려요', '🎁 Hung! Opens Dec 24', '🎁 飾りました!12月24日に開きます') : L3('🧺 바구니에 넣었어요. 트리가 자라면 걸려요', '🧺 In the basket — it hangs when the tree grows', '🧺 バスケットに入れました'));
         if (!spot) setTimeout(() => { if (currentRoute() === 'tree') renderBase('tree'); }, 900);
       });
     }).catch(() => { if (treeApi) treeApi.cancel(); toast(L3('보내지 못했어요. 잠시 뒤 다시 해 주세요', 'Could not send. Try again shortly', '送信できませんでした')); });
@@ -6219,7 +6237,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = qs.get('sky') || undefined;
     let ok = true; try { const c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (err) { ok = false; }
     if (!ok) { el.innerHTML = `<p class="tree-load">${L3('이 폰에선 3D 트리를 볼 수 없어요. 물 주기는 할 수 있어요!', '3D tree is not supported here, but you can still water!', 'この端末では3Dツリーを表示できませんが、水やりはできます!')}</p>`; }
-    else import('./tree.js?v=65').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, cName, orns: st.hung.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else if (tl || !treeLvNews()) treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
+    else import('./tree.js?v=66').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, cName, orns: st.hung.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), polas: st.polas.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); treePolaBar(st); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else if (tl || !treeLvNews()) treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
     const bk = document.getElementById('tree-back'); if (bk) bk.onclick = () => { location.hash = treeFrom || '#/more'; };
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };
