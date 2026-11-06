@@ -2523,3 +2523,7 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-pp button { border: 0; background: none; min-width: 22px; height: 22px; border-radius: 11px; font-size: 13px; color: #456; }
 .tree-pp button.on { background: #2c8a7a; color: #fff; }
 #ts-cap { width: 100%; box-sizing: border-box; margin: 4px 0 6px; } .tp-pic span { display: flex; flex-direction: column; } .tp-pic b { font-size: 15px; }
+.tree-sheet .ts-pics { grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 240px; }
+.tree-sheet .ts-pics button { position: relative; display: block; width: 100%; height: 0; min-height: 0; padding: 0 0 100%; margin: 0; border-radius: 8px; border: 2px solid transparent; box-shadow: none; overflow: hidden; }
+.tree-sheet .ts-pics button img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tree-sheet .ts-pics button.on { border-color: #2c8a7a; box-shadow: 0 0 0 2px #2c8a7a; }
