@@ -222,7 +222,7 @@ export async function mount(el, opt) {
         for (let k = 0; k < 6; k++) { ex.fillStyle = 'rgba(255,255,255,.9)'; ex.fillRect(k * 43, 30 + (k % 3) * 8, 10, 60); }
         const env = new T.CanvasTexture(ec); env.mapping = T.EquirectangularReflectionMapping; env.colorSpace = T.SRGBColorSpace;
         const rb = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0xffcc55, metalness: 1, roughness: .22, envMap: env, envMapIntensity: 1.3, emissive: 0x8a5a00, emissiveIntensity: .25, side: T.DoubleSide })); rb.castShadow = true; spin.add(rb); } }
-    { // 바닥 돌: 크고 작은 각진 돌을 둘레에 흩어 놓아요 (한 번에 그려서 가벼워요)
+    if (L.woods) { // 바닥 돌 (Lv5부터): 크고 작은 각진 돌을 둘레에 흩어 놓아요 (한 번에 그려서 가벼워요)
       let rs = 31; const rr = () => (rs = (rs * 16807) % 2147483647) / 2147483647, n = 46, im = new T.InstancedMesh(new T.DodecahedronGeometry(1, 0), fm(0xe6eef4, { roughness: 1 }), n), mx = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler();
       for (let k = 0; k < n; k++) { const a = rr() * 6.283, d = 3.6 + Math.pow(rr(), .7) * 16, s = (.12 + Math.pow(rr(), 2.5) * .8) * (1 + (d - 3.6) / 16);
         q.setFromEuler(e.set(rr() * 3, rr() * 3, rr() * 3)); mx.compose(new T.Vector3(Math.cos(a) * d, s * .25, Math.sin(a) * d), q, new T.Vector3(s * (1 + rr() * .6), s * (.5 + rr() * .4), s * (1 + rr() * .5))); im.setMatrixAt(k, mx); }
