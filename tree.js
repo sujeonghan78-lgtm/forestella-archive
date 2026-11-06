@@ -222,6 +222,13 @@ export async function mount(el, opt) {
         for (let k = 0; k < 6; k++) { ex.fillStyle = 'rgba(255,255,255,.9)'; ex.fillRect(k * 43, 30 + (k % 3) * 8, 10, 60); }
         const env = new T.CanvasTexture(ec); env.mapping = T.EquirectangularReflectionMapping; env.colorSpace = T.SRGBColorSpace;
         const rb = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0xffcc55, metalness: 1, roughness: .22, envMap: env, envMapIntensity: 1.3, emissive: 0x8a5a00, emissiveIntensity: .25, side: T.DoubleSide })); rb.castShadow = true; spin.add(rb); } }
+    if (L.woods) { // 뒤쪽 숲: 각진 원뿔을 쌓은 단순한 나무, 레벨마다 하나둘씩 늘어요 (눈 레벨엔 끝이 하얗게)
+      let ws = 77; const wr = () => (ws = (ws * 16807) % 2147483647) / 2147483647, G = fm(0x2f5a3c), S = fm(0xf2f6fa), TR = fm(0x4a3426);
+      for (let k = 0; k < L.woods; k++) { const a = Math.PI * (1.08 + wr() * .84), d = 8 + wr() * 8, hs = 1.2 + wr() * 1.4, g = new T.Group();
+        const tr = new T.Mesh(new T.CylinderGeometry(.12 * hs, .14 * hs, .5 * hs, 5), TR); tr.position.y = .25 * hs; g.add(tr);
+        for (let j = 0; j < 3; j++) { const r = (.85 - j * .2) * hs, h = (1 - j * .15) * hs, y = .45 * hs + j * .62 * hs, c = new T.Mesh(new T.ConeGeometry(r, h, 6), G); c.position.y = y + h / 2; g.add(c);
+          if (L.snow) { const w = new T.Mesh(new T.ConeGeometry(r * .52, h * .52, 6), S); w.position.y = y + h - h * .26 + .01; g.add(w); } }
+        g.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); g.rotation.y = wr() * 6; sc.add(g); } }
     if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); spin.add(sm); }
     if (L.gifts) [0, Math.PI].forEach((ra, half) => GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { // 앞뒤로 빙 둘러요 (트리와 같이 돌아요), 큰 상자는 더 크게
       const f = q >= .5 ? 1.4 : 1, cs = Math.cos(ra), sn = Math.sin(ra), g = gift(x * cs - z * sn, x * sn + z * cs, half ? OC[(i + 3) % 8] : c, q * f, h * f, rc, i + half); g.rotation.y += ra; if (up) g.position.y = up * 1.4; spin.add(g); }));
