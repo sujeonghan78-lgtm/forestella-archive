@@ -5952,11 +5952,11 @@
     { n: '새싹', en: 'Sprout', ja: '芽', w: 25, slot: 0, o: { sprout: 1 } },
     { n: '아기 나무', en: 'Sapling', ja: '若木', w: 75, slot: 10, o: { tree: .32 } },
     { n: '작은 나무', en: 'Small tree', ja: '小さな木', w: 150, slot: 25, o: { tree: .55 } },
-    { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.15, glit: 1, woods: 4 } },
-    { n: '구슬', en: 'Baubles', ja: 'オーナメント', w: 1000, slot: 80, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, woods: 10 } },
-    { n: '양말·선물', en: 'Socks & gifts', ja: '靴下とプレゼント', w: 2500, slot: 120, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, woods: 18 } },
-    { n: '눈', en: 'Snow', ja: '雪', w: 5000, slot: 160, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, snow: 1, woods: 32 } },
-    { n: '별', en: 'Star', ja: '星', w: 10000, slot: 200, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, snow: 1, star: 1, woods: 32 } },
+    { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.15, glit: 1, woods: 8 } },
+    { n: '구슬', en: 'Baubles', ja: 'オーナメント', w: 1000, slot: 80, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, woods: 20 } },
+    { n: '양말·선물', en: 'Socks & gifts', ja: '靴下とプレゼント', w: 2500, slot: 120, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, woods: 36 } },
+    { n: '눈', en: 'Snow', ja: '雪', w: 5000, slot: 160, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, snow: 1, woods: 64 } },
+    { n: '별', en: 'Star', ja: '星', w: 10000, slot: 200, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, snow: 1, star: 1, woods: 64 } },
   ];
   // 내 트리 이름 (이 폰에만, sb-tree.name)
   const treeName = () => (treeMine().name || '').trim() || L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー');
