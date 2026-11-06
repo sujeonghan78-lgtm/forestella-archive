@@ -5967,13 +5967,14 @@
   const kstDay = (t = Date.now()) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10);
   const treeMine = () => boxRead(TREE_KEY) || { water: [] };
   // 시트에 아직 안 올라온 내 물(오늘)은 폰 기록으로 더해서 보여줘요
+  const treeX2 = () => [0, 6].includes(new Date(kstDay() + 'T00:00:00Z').getUTCDay()) ? 2 : 1; // 주말엔 물 한 번이 두 번
   function treeState() {
     const t = (data && data.tree) || { water: 0, people: 0, by: {} }, me = myUid(), mine = treeMine(), got = new Set(t.by[me] || []), today = kstDay();
     // 오늘 준 횟수: 시트에 온 것과 이 폰 기록 중 큰 쪽 (시트에 아직 안 온 만큼 더해서 보여줘요)
     const sheetN = (t.by[me] || []).filter(d => d === today).length, localN = mine.wn && mine.wn.d === today ? mine.wn.n : 0;
     const extra = Math.max(0, localN - sheetN), todayN = Math.max(sheetN, localN);
     const tw = !TREE_OPEN && isAdmin() ? (mine.test || 0) : 0; // 관리자 시험용 물 (이 폰에만)
-    const water = t.water + extra + tw, people = t.people + (extra && !got.size ? 1 : 0);
+    const water = t.water + extra * treeX2() + tw, people = t.people + (extra && !got.size ? 1 : 0);
     let i = 0; TREE_LV.forEach((l, k) => { if (water >= l.w) i = k; });
     const done = !(!TREE_OPEN && isAdmin()) && todayN >= TREE_MAX, left = Math.max(0, TREE_MAX - todayN);
     // 오너먼트: 시트 + 아직 시트에 안 온 내 것(오픈 전 관리자는 이 폰 시험용만). 자리 수만큼 먼저 온 순서로 걸고 나머지는 바구니
@@ -6184,7 +6185,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       <div class="tree-top">
         <div class="tree-tline"><button class="tree-back" id="tree-back" aria-label="${L3('돌아가기', 'Back', '戻る')}">${TI.back}</button><h1 class="tree-h"><button class="tree-name" id="tree-name" aria-label="${L3('트리 이름 바꾸기', 'Rename tree', '名前を変える')}">🎄 ${esc(treeName())} <svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button> <small>Lv${st.i + 1} ${lvN(st.lv)}</small></h1>${treeOpened() || tAdm() ? `<button class="tree-back tree-lt" id="tree-letters" aria-label="${L3('편지 보기', 'Letters', '手紙')}">${TI.letter}</button>` : ''}<button class="tree-back" onclick="window.sbDataRefresh&&sbDataRefresh()" aria-label="${L3('새로 불러오기', 'Refresh', '更新')}"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>${adm}</div>
         <p class="tree-skyp">${[['', L3('지금', 'Now', '今')], ['dawn', L3('새벽', 'Dawn', '夜明け')], ['day', L3('낮', 'Day', '昼')], ['sunset', L3('노을', 'Sunset', '夕焼け')], ['night', L3('밤', 'Night', '夜')]].map(([k, n]) => `<a href="#/tree${k ? '?sky=' + k : ''}"${(qs.get('sky') || '') === k ? ' class="on"' : ''}>${n}</a>`).join('')}${isAdmin() ? `<a href="#" onclick="event.preventDefault();try{localStorage.getItem('sb-tree-user')?localStorage.removeItem('sb-tree-user'):localStorage.setItem('sb-tree-user','1')}catch(e){}location.reload()">${tAdm() ? '👤 일반' : '🔑 관리자'}</a>` : ''}</p>
-        ${dTxt ? `<p class="tree-dday">🎄 ${L3('연말 콘서트까지', 'Year-end concert', '年末コンサートまで')} <b>${dTxt}</b></p>` : ''}
+        ${treeX2() > 1 ? `<p class="tree-dday">💧 ${L3('주말엔 물 두 배! 한 번 주면 2번으로 세요', 'Weekend: every watering counts double!', '週末は水やりが2倍!')}</p>` : ''}${dTxt ? `<p class="tree-dday">🎄 ${L3('연말 콘서트까지', 'Year-end concert', '年末コンサートまで')} <b>${dTxt}</b></p>` : ''}
         <div class="tree-road" aria-label="${L3('콘서트까지 물 준 날', 'Days watered until the concert', 'コンサートまでの水やり')}"><div class="tr-line">${stamp}</div><p class="tr-lab"><span>${md(path[0])}</span><span>${L3(`물 준 날 ${[...days].filter(d => d >= path[0]).length}일`, `${[...days].filter(d => d >= path[0]).length} days watered`, `水やり${[...days].filter(d => d >= path[0]).length}日`)}</span><span>${md(cDays[0])}</span></p></div>
       </div>
       <div class="tree-bot">
@@ -6222,7 +6223,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       const mine = treeMine(), today = kstDay(); b.disabled = true;
       (TREE_OPEN ? formPost(`종류: 물\n누가: ${myUid()}`) : Promise.resolve()).then(() => {
         boxWrite(TREE_KEY, TREE_OPEN ? Object.assign(mine, { water: [...new Set([...(mine.water || []), today])].slice(-120), wn: { d: today, n: t.todayN + 1 } }) : Object.assign(mine, { test: (mine.test || 0) + (+(document.getElementById('tree-n') || {}).value || 1), tdays: [...new Set([...(mine.tdays || []), today])].slice(-14) }));
-        if (treeApi) treeApi.water(TREE_OPEN ? 1 : (+(document.getElementById('tree-n') || {}).value || 1));
+        if (treeApi) treeApi.water(TREE_OPEN ? treeX2() : (+(document.getElementById('tree-n') || {}).value || 1));
         const td = document.querySelector(`.tr-d[data-d="${today}"]`); if (td && !td.classList.contains('on')) td.classList.add('on', 'pop');
         const n = treeState(); b.querySelector('span').innerHTML = wlab(n); if (n.done) b.classList.add('done'); else b.disabled = false;
         toast(n.i > t.i ? L3(`🎉 트리가 Lv${n.i + 1} ${lvN(n.lv)}이 됐어요!`, `🎉 The tree reached Lv${n.i + 1}!`, `🎉 ツリーがLv${n.i + 1}になりました!`) : (n.done ? L3('💧 오늘 물은 다 줬어요! 내일 또 와 주세요', '💧 All done today! Come back tomorrow', '💧 今日の水やり完了!また明日') : L3(`💧 물을 줬어요! 오늘 ${n.left}번 더 줄 수 있어요`, `💧 Watered! ${n.left} more today`, `💧 水をあげました!今日はあと${n.left}回`)));
