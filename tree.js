@@ -34,7 +34,7 @@ async function loadTree() {
   g.computeBoundingBox(); const k = H / g.boundingBox.max.y; g.scale(k, k, k);
   FT = f0 * TS * k; SRC = g;
 }
-const PTEX = {};
+const PTEX = {}; let pPick = null, pgCur = 0; const PICK = new T.MeshStandardMaterial({ color: 0xfff3b0, emissive: 0xffc83a, emissiveIntensity: .6, roughness: .6 });
 let seed = 9; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const fm = (c, o = {}) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: .75, flatShading: true }, o));
 // 면마다 살짝 다른 색 (아래 진초록 → 위 연두), snow면 윗면을 눈으로
@@ -320,6 +320,7 @@ export async function mount(el, opt) {
     pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) { drag = null; moving = false; } else { const [p] = pts.values(); drag = p.x; dragY = p.y; }
     if (!tp || e.target !== cvs) return;
     if (placing) { const h = hitTree(e); if (h) setPlace(h[0], h[1]); return; }
+    if (pPick) { rcP.setFromCamera(ndc(e), cam); const hh = rcP.intersectObjects(PSLOT, true)[0]; if (hh) { let c = hh.object; while (c && !PSLOT.includes(c)) c = c.parent; const i = PSLOT.indexOf(c), g = pgCur * 15 + i; if (c && !(opt.polas || [])[g]) pPick(g); } return; }
     rcP.setFromCamera(ndc(e), cam); const hit = rcP.intersectObjects(ORN, true)[0]; if (hit && opt.onTap) opt.onTap(hit.object.userData.orn); };
   addEventListener('pointerup', up); addEventListener('pointercancel', up);
   cvs.addEventListener('wheel', e => { e.preventDefault(); setZoom(zoom * (e.deltaY > 0 ? 1.1 : .9)); }, { passive: false });
@@ -340,6 +341,7 @@ export async function mount(el, opt) {
     if (++frame % 6 === 0) tags();
     for (let i = pops.length - 1; i >= 0; i--) { const o = pops[i]; const mn = o.userData.min || .15; o.material.size = Math.max(mn, o.material.size * .985); if (o.material.size <= mn) pops.splice(i, 1); }
     for (let i = fx.length - 1; i >= 0; i--) if (!fx[i]()) fx.splice(i, 1);
+    if (pPick) PICK.emissiveIntensity = .45 + .35 * Math.sin(performance.now() / 260);
     if (LIGHTS.length || FLY.length) { const tm = performance.now() / 1000; LIGHTS.forEach(l => { l.material.opacity = .55 + .45 * Math.sin(tm * 1.6 + l.userData.ph); }); FLY.forEach(f => { const u = f.userData, a = u.a + tm * .08 * u.s; f.position.set(Math.cos(a) * u.r, u.y + Math.sin(tm * .7 + u.ph) * .35, Math.sin(a) * u.r); f.material.opacity = Math.max(0, Math.sin(tm * 1.3 + u.ph)) * .95; }); }
     if (snowP) { const a = snowP.geometry.attributes.position, tm = performance.now() / 1000; for (let k = 0; k < a.count; k++) { let y = a.getY(k) - .012 - (k % 5) * .002; if (y < 0) y = 16; a.setY(k, y); a.setX(k, a.getX(k) + Math.sin(tm + k) * .003); } a.needsUpdate = true; }
     skyG.rotation.y = skyRot; spin.rotation.y = rot;
@@ -362,13 +364,14 @@ export async function mount(el, opt) {
       lookTo(.8, 50, () => { for (let k = 0; k < 14; k++) setTimeout(() => { if (!alive) return; const to = seenPos(); shoot(to, () => { if (starA) dot(to, k % 3 === 0); }); }, k * 220); setTimeout(() => { if (alive && drag == null) lookTo(0, 80); }, 5200); }); },
     place(o) { placing = { o: Object.assign({}, o, { spot: null }), m: null, spot: null }; v = 0; return !!hangOrn; },
     placed() { return placing && placing.spot ? placing.spot.map((x, i) => +x.toFixed(i === 2 ? 2 : 3)) : null; },
-    addPola(o) { (opt.polas = opt.polas || []).push(o); this.polaPage(Math.floor((opt.polas.length - 1) / 15)); },
+    addPola(o, g) { (opt.polas = opt.polas || [])[g] = o; this.polaPage(Math.floor(g / 15)); },
+    polaPick(cb) { pPick = cb; this.polaPage(pgCur); },
     polaPages() { return Math.max(1, Math.ceil((opt.polas || []).length / 15)); },
-    polaPage(pg) { if (!PSLOT.length) return; const L_ = opt.polas || [];
+    polaPage(pg) { if (!PSLOT.length) return; pgCur = pg; const L_ = opt.polas || [];
       PSLOT.forEach((c, i) => { const o = L_[pg * 15 + i], k = ORN.indexOf(c); if (k >= 0) ORN.splice(k, 1); const pic = c.userData.pic;
         const cp = c.userData.cap; if (cp.material.map) { cp.material.map.dispose(); cp.material.map = null; } cp.visible = false;
         if (o && o.cap) { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const x = cv.getContext('2d'); let fs = 64; x.font = `600 ${fs}px sans-serif`; while (x.measureText(o.cap).width > 490 && fs > 26) { fs -= 2; x.font = `600 ${fs}px sans-serif`; } x.fillStyle = '#33393e'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(o.cap, 256, 66); const tx = new T.CanvasTexture(cv); tx.colorSpace = T.SRGBColorSpace; cp.material.map = tx; cp.material.needsUpdate = true; cp.visible = true; }
-        if (!o || !o.pic) { pic.material = c.userData.blank; c.userData.orn = null; c.traverse(x => { x.userData.orn = null; }); return; }
+        if (!o || !o.pic) { pic.material = pPick && !o ? PICK : c.userData.blank; c.userData.orn = null; c.traverse(x => { x.userData.orn = null; }); return; }
         c.userData.orn = o; c.traverse(x => { x.userData.orn = o; }); ORN.push(c);
         const ld = PTEX[o.pic] || (PTEX[o.pic] = new Promise(res => { const tl = new T.TextureLoader(); tl.setCrossOrigin('anonymous'); tl.load(o.pic, tx => { const im = tx.image, w = im.width, h = im.height; tx.colorSpace = T.SRGBColorSpace; if (h > w) { tx.repeat.set(1, w / h); tx.offset.set(0, (1 - w / h) / 2); } else { tx.repeat.set(h / w, 1); tx.offset.set((1 - h / w) / 2, 0); } res(new T.MeshStandardMaterial({ map: tx, roughness: .7 })); }, undefined, () => res(null)); }));
         ld.then(m => { if (m && c.userData.orn === o) pic.material = m; }); }); },
