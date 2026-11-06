@@ -6033,7 +6033,7 @@
       <p class="tp-who"><i style="background:${ORN_C[o.color] || ORN_C[0]}"></i><b>${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}</b> → ${o.to === '포레' ? L3('포레스텔라에게', 'To Forestella', 'フォレステラへ') : L3('숲별에게', 'To fans', 'ファンへ')}${d ? ` · ${d}` : ''}</p>
       ${o.shape === 4 && o.pic ? `<p class="tp-pic"><img src="${esc(o.pic)}" alt="" referrerpolicy="no-referrer"><span>${o.cap ? `<b>${esc(o.cap)}</b>` : ''}<small>${esc((polaPics().find(p => p.src === o.pic) || {}).name || '')}</small></span></p>` : ''}
       <p class="tp-msg">🔒 ${L3('12월 24일 0시에 열려요', 'Opens Dec 24, 00:00 KST', '12月24日0時に開きます')}</p>
-      ${mine ? `<div class="ts-row ts-col tp-col">${ORN_C.map((c, k) => `<button data-k="${k}" class="${k === o.color ? 'on' : ''}" style="background:${c}" aria-label="${k + 1}"></button>`).join('')}</div>` : ''}
+      ${mine && o.shape !== 4 ? `<div class="ts-row ts-col tp-col">${ORN_C.map((c, k) => `<button data-k="${k}" class="${k === o.color ? 'on' : ''}" style="background:${c}" aria-label="${k + 1}"></button>`).join('')}</div>` : ''}
       ${mine ? `<button class="tp-del">${L3('내 오너먼트 떼기', 'Remove mine', '外す')}</button>` : tAdm() ? `<button class="tp-del tp-adm">${L3('숨기기 (관리자)', 'Hide (admin)', '非表示')}</button>` : ''}`;
     pg.appendChild(box); box.querySelector('.tp-x').onclick = () => box.remove();
     treeRead(o).then(txt => { if (txt == null || !box.isConnected) return; const m = box.querySelector('.tp-msg'); m.textContent = txt; if (!treeOpened()) m.insertAdjacentHTML('beforeend', `<small>${mine ? L3('나만 미리 볼 수 있어요', 'Only you can see this until it opens', '開くまで自分だけ見られます') : L3('관리자 미리보기', 'Admin preview', '管理者プレビュー')}</small>`); });
