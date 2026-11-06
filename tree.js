@@ -228,7 +228,7 @@ export async function mount(el, opt) {
         const tr = new T.Mesh(new T.CylinderGeometry(.12 * hs, .15 * hs, .5 * hs, 5), TR); tr.position.y = .25 * hs; g.add(tr);
         let y = .4 * hs; for (let j = 0; j < nt; j++) { const r = (.85 - j * .55 / nt) * hs * fat * (.9 + wr() * .2), h = (1.05 - j * .3 / nt) * hs * (.85 + wr() * .3), c = new T.Mesh(new T.ConeGeometry(r, h, seg), G); c.position.y = y + h / 2; c.rotation.y = wr() * 3; c.rotation.z = (wr() - .5) * .08; g.add(c);
           if (L.snow) { const w = new T.Mesh(new T.ConeGeometry(r * .52, h * .52, seg), S); w.position.y = y + h - h * .26 + .01; w.rotation.copy(c.rotation); g.add(w); } y += h * (.55 + wr() * .1); }
-        g.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); g.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.transparent = true; } }); spin.add(g); WOODS.push(g); } }
+        g.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); g.traverse(o => { if (o.material) { o.material = o.material.clone(); o.userData.c0 = o.material.color.clone(); } }); spin.add(g); WOODS.push(g); } }
     if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); spin.add(sm); }
     if (L.gifts) [0, Math.PI].forEach((ra, half) => GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { // 앞뒤로 빙 둘러요 (트리와 같이 돌아요), 큰 상자는 더 크게
       const f = q >= .5 ? 1.4 : 1, cs = Math.cos(ra), sn = Math.sin(ra), g = gift(x * cs - z * sn, x * sn + z * cs, half ? OC[(i + 3) % 8] : c, q * f, h * f, rc, i + half); g.rotation.y += ra; if (up) g.position.y = up * 1.4; spin.add(g); }));
@@ -305,7 +305,7 @@ export async function mount(el, opt) {
     for (let i = fx.length - 1; i >= 0; i--) if (!fx[i]()) fx.splice(i, 1);
     if (snowP) { const a = snowP.geometry.attributes.position, tm = performance.now() / 1000; for (let k = 0; k < a.count; k++) { let y = a.getY(k) - .012 - (k % 5) * .002; if (y < 0) y = 16; a.setY(k, y); a.setX(k, a.getX(k) + Math.sin(tm + k) * .003); } a.needsUpdate = true; }
     skyG.rotation.y = skyRot; spin.rotation.y = rot;
-    if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(); WOODS.forEach(g => { g.getWorldPosition(wp); const k = Math.max(0, Math.min(1, (wp.distanceTo(cam.position) - c0 * .85) / (c0 * .25))); g.visible = k > .01; if (g.userData.k !== k) { g.userData.k = k; g.traverse(o => { if (o.material) o.material.opacity = k * .6; }); } }); } // 트리보다 카메라 쪽에 온 숲 나무는 흐려져요
+    if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(), fc = sc.fog ? sc.fog.color : new T.Color(0xffffff); WOODS.forEach(g => { g.getWorldPosition(wp); const dc = wp.distanceTo(cam.position); g.visible = dc > c0 * .8; const f = Math.round(Math.max(0, Math.min(.65, (dc - c0 * .8) / (c0 * 1.3))) * 40) / 40; if (g.userData.f !== f) { g.userData.f = f; g.traverse(o => { if (o.material && o.userData.c0) o.material.color.copy(o.userData.c0).lerp(fc, f); }); } }); }
     if (GLIT.length) { const wp = new T.Vector3(), wn = new T.Vector3(); GLIT.forEach(sp => { sp.getWorldPosition(wp); wn.copy(sp.userData.n).applyAxisAngle(new T.Vector3(0, 1, 0), rot); const d = wn.dot(cam.position.clone().sub(wp).normalize()), th = sp.userData.k; sp.material.opacity = Math.max(0, 1 - Math.abs(d - th) / .035); }); } spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
     for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i];
       if (dp.userData.wait > 0) { dp.userData.wait--; continue; } dp.visible = true;
