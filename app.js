@@ -5952,11 +5952,11 @@
     { n: '새싹', en: 'Sprout', ja: '芽', w: 25, slot: 0, o: { sprout: 1 } },
     { n: '아기 나무', en: 'Sapling', ja: '若木', w: 75, slot: 10, o: { tree: .32 } },
     { n: '작은 나무', en: 'Small tree', ja: '小さな木', w: 150, slot: 25, o: { tree: .55 } },
-    { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1 } },
-    { n: '구슬', en: 'Baubles', ja: 'オーナメント', w: 1000, slot: 80, o: { tree: 1 } },
-    { n: '양말·선물', en: 'Socks & gifts', ja: '靴下とプレゼント', w: 2500, slot: 120, o: { tree: 1, gifts: 1 } },
-    { n: '눈', en: 'Snow', ja: '雪', w: 5000, slot: 160, o: { tree: 1, gifts: 1, snow: 1 } },
-    { n: '별', en: 'Star', ja: '星', w: 10000, slot: 200, o: { tree: 1, gifts: 1, snow: 1, star: 1 } },
+    { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.3 } },
+    { n: '구슬', en: 'Baubles', ja: 'オーナメント', w: 1000, slot: 80, o: { tree: 1, tall: 1.3 } },
+    { n: '양말·선물', en: 'Socks & gifts', ja: '靴下とプレゼント', w: 2500, slot: 120, o: { tree: 1, tall: 1.3, gifts: 1 } },
+    { n: '눈', en: 'Snow', ja: '雪', w: 5000, slot: 160, o: { tree: 1, tall: 1.3, gifts: 1, snow: 1 } },
+    { n: '별', en: 'Star', ja: '星', w: 10000, slot: 200, o: { tree: 1, tall: 1.3, gifts: 1, snow: 1, star: 1 } },
   ];
   // 내 트리 이름 (이 폰에만, sb-tree.name)
   const treeName = () => (treeMine().name || '').trim() || L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー');
@@ -6208,7 +6208,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = qs.get('sky') || undefined;
     let ok = true; try { const c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (err) { ok = false; }
     if (!ok) { el.innerHTML = `<p class="tree-load">${L3('이 폰에선 3D 트리를 볼 수 없어요. 물 주기는 할 수 있어요!', '3D tree is not supported here, but you can still water!', 'この端末では3Dツリーを表示できませんが、水やりはできます!')}</p>`; }
-    else import('./tree.js?v=23').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, cName, orns: st.hung.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
+    else import('./tree.js?v=24').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, cName, orns: st.hung.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
     const bk = document.getElementById('tree-back'); if (bk) bk.onclick = () => { location.hash = treeFrom || '#/more'; };
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };
