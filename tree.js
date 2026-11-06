@@ -190,7 +190,7 @@ export async function mount(el, opt) {
     else dot(seenPos(), false);
     return null; };
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
-  const PLAIN = treeMesh(!!L.snow, L.dk || 0), SNOWY = null;
+  const PLAIN = treeMesh(false, L.dk || 0), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
   let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [];
   if (!L.tree) { // 씨앗·새싹
