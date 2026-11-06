@@ -215,13 +215,13 @@ export async function mount(el, opt) {
       const bp = [], GAP = .072, R = (y, a) => { const s = surf(y, a, 0); return s ? { r: Math.hypot(s.p.x, s.p.z), p: s.p } : null; };
       const prof = []; for (let y = ft - .2; y < top * .8; y += .02) { let m = 0, n = 0; for (let k = 0; k < 12; k++) { const q = R(y, k / 12 * 6.283); if (q) { m += q.r; n++; } } prof.push([y, n ? m / n : 0]); }
       const edges = []; for (let k = 2; k < prof.length - 2; k++) if (prof[k][1] > prof[k - 1][1] && prof[k][1] >= prof[k + 1][1] && prof[k][1] > prof[k - 2][1] && prof[k][1] >= prof[k + 2][1] && (!edges.length || prof[k][0] - edges[edges.length - 1] > .3)) edges.push(prof[k][0]);
-      edges.slice(-3).forEach(ey => { const ring = []; for (let k = 0; k < 180; k++) { const q = R(ey, k / 180 * 6.283); ring.push(q); }
+      edges.slice(-4).forEach(ey => { const ring = []; for (let k = 0; k < 180; k++) { const q = R(ey, k / 180 * 6.283); ring.push(q); }
         let tips = []; ring.forEach((q, k) => { if (!q) return; const nb = [-3, -2, -1, 1, 2, 3].map(d => ring[(k + d + 180) % 180]); if (nb.every(o => !o || o.r <= q.r)) tips.push(q.p.clone().multiply(new T.Vector3(1.03, 1, 1.03))); });
         while (tips.length > 14) tips = tips.filter((_, i) => i % 2 === 0);
-        tips.forEach((A, i) => { const B = tips[(i + 1) % tips.length]; if (tips.length < 2) return; const ch = A.distanceTo(B), sag = Math.min(.4, ch * .22), line = [];
+        [[1, .22, .4], [2, .3, .7]].forEach(([step, sf, sm]) => tips.forEach((A, i) => { if (step === 2 && i % 2) return; const B = tips[(i + step) % tips.length]; if (tips.length < 3) return; const ch = A.distanceTo(B), sag = Math.min(sm, ch * sf), line = [];
           for (let u = 0; u <= 1.0001; u += .01) { const c = 1 - (2 * u - 1) ** 2, p = A.clone().lerp(B, u); p.y -= sag * c; const s = R(p.y, Math.atan2(p.z, p.x)); if (s) { const r0 = Math.hypot(p.x, p.z), rr = s.r + .03; if (r0 < rr) p.multiply(new T.Vector3(rr / r0, 1, rr / r0)); } line.push(p); }
           let acc = 0, need = 0; if (bp.every(b => b.distanceTo(line[0]) > GAP * .8)) bp.push(line[0]);
-          for (let k = 1; k < line.length; k++) { const seg = line[k].distanceTo(line[k - 1]); while (acc + seg >= need + GAP) { need += GAP; const q = line[k - 1].clone().lerp(line[k], (need - acc) / seg); if (bp.every(b => b.distanceTo(q) > GAP * .8)) bp.push(q); } acc += seg; } }); });
+          for (let k = 1; k < line.length; k++) { const seg = line[k].distanceTo(line[k - 1]); while (acc + seg >= need + GAP) { need += GAP; const q = line[k - 1].clone().lerp(line[k], (need - acc) / seg); if (bp.every(b => b.distanceTo(q) > GAP * .8)) bp.push(q); } acc += seg; } })); });
       const im = new T.InstancedMesh(new T.IcosahedronGeometry(.036, 1), new T.MeshStandardMaterial({ color: 0xf7c94e, metalness: .6, roughness: .35, emissive: 0x7a5200, emissiveIntensity: .3 }), bp.length), mx = new T.Matrix4();
       bp.forEach((p, k) => { mx.makeTranslation(p.x, p.y, p.z); im.setMatrixAt(k, mx); }); im.castShadow = true; spin.add(im); }
     if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); sc.add(sm); }
