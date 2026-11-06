@@ -691,7 +691,7 @@
       { const tl = new Map(); buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '취향' || !r.by) return; const a = line0(r, '답'), at = tsMs(r.time); if (!tl.has(r.by) || tl.get(r.by).at <= at) tl.set(r.by, { at, a }); });
         tl.forEach((x, by) => { if (/^[0-9a-z]{16}[0-2]$/.test(x.a)) tasteAll[by] = x.a; }); }
       // 숲별 트리 물 주기 (종류: 물 / 누가): 사람마다 하루(서울 날짜) 한 번만 셈
-      { const seen = new Map(); buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '물' || !r.by) return; const at = tsMs(r.time); if (!at) return; const d = new Date(at + 9 * 3600e3).toISOString().slice(0, 10), k = r.by + '|' + d, c = seen.get(k) || 0; if (c >= 5) return; seen.set(k, c + 1); treeAll.water += [0, 6].includes(new Date(d + 'T00:00:00Z').getUTCDay()) ? 2 : 1; (treeAll.by[r.by] = treeAll.by[r.by] || []).push(d); }); treeAll.people = Object.keys(treeAll.by).length; } // 한 사람 하루 5번까지 (by에는 준 날이 횟수만큼 들어가요)
+      { const seen = new Map(); buildReports(toObjects(raw.reports), true).forEach(r => { if (r.type !== '물' || !r.by) return; const at = tsMs(r.time); if (!at) return; const d = new Date(at + 9 * 3600e3).toISOString().slice(0, 10), k = r.by + '|' + d, c = seen.get(k) || 0; if (c >= 5) return; seen.set(k, c + 1); treeAll.water += new Date(d + 'T00:00:00Z').getUTCDay() === 6 ? 2 : 1; (treeAll.by[r.by] = treeAll.by[r.by] || []).push(d); }); treeAll.people = Object.keys(treeAll.by).length; } // 한 사람 하루 5번까지 (by에는 준 날이 횟수만큼 들어가요)
       // 숲별 트리 오너먼트 (종류: 오너먼트 번호/누가/모양/색/받는이/닉네임/자리: 각도,높이,크기,회전/내용: SEC1 잠긴 글). 한 사람 3개까지(먼저 단 것부터, 뗀 건 빼고 셈), 올린 사람이 지우면(종류: 오너먼트삭제 번호/누가) 빠져요
       { const del = new Set(), cnt = new Map(), seen = new Set(); treeAll.orn = [];
         const all = buildReports(toObjects(raw.reports), true);
