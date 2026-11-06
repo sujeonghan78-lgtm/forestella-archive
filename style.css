@@ -2513,3 +2513,12 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tl-ornt{margin:2px 0 0;font-size:12px;color:#ffe9a8}
 .tree-skyp{margin:6px 0 0;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}.tree-skyp a{font-size:11.5px;padding:3px 9px;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;text-decoration:none}.tree-skyp a.on{background:rgba(255,255,255,.4);font-weight:700}
 .tree-tags span.me { background: #fff3b0; color: #6a4a00; }
+.ts-pics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 190px; overflow-y: auto; margin-bottom: 8px; }
+.ts-pics button { padding: 0; border: 2px solid transparent; border-radius: 6px; background: #eee; aspect-ratio: 1; overflow: hidden; }
+.ts-pics button.on { border-color: #2c8a7a; }
+.ts-pics img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#ts-pics[hidden], .ts-col[hidden], .ts-colw[hidden], .ts-prev[hidden] { display: none; }
+.tp-pic { display: flex; align-items: center; gap: 8px; margin: 6px 0; } .tp-pic img { width: 54px; height: 54px; object-fit: cover; border: 4px solid #fff; border-bottom-width: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.25); } .tp-pic small { color: #888; }
+.tree-pp { position: absolute; right: 12px; top: 172px; z-index: 3; display: flex; gap: 4px; align-items: center; background: rgba(255,255,255,.75); border-radius: 14px; padding: 3px 8px; font-size: 13px; }
+.tree-pp button { border: 0; background: none; min-width: 22px; height: 22px; border-radius: 11px; font-size: 13px; color: #456; }
+.tree-pp button.on { background: #2c8a7a; color: #fff; }

@@ -699,7 +699,7 @@
         all.forEach(r => { if (r.type !== '오너먼트' || !r.by) return; const id = line0(r, '번호'), at = tsMs(r.time); if (!id || seen.has(id) || del.has(id + '|' + r.by) || (window.SB_EV_HIDE || new Set()).has('or' + id)) return;
           const nb = (cnt.get(r.by) || 0); if (nb >= 3) return; seen.add(id); cnt.set(r.by, nb + 1);
           const sp = line0(r, '자리').split(',').map(Number), spot = sp.length === 4 && sp.every(isFinite) ? sp : null;
-          treeAll.orn.push({ id, by: r.by, at, shape: Math.max(0, ['구슬', '양말', '별', '눈사람'].indexOf(line0(r, '모양'))), color: Math.min(7, Math.max(0, +line0(r, '색') || 0)), to: line0(r, '받는이') === '포레' ? '포레' : '숲별', nick: line0(r, '닉네임').slice(0, 12), spot, sec: r.message || '' }); });
+          treeAll.orn.push({ id, by: r.by, at, shape: Math.max(0, ['구슬', '양말', '별', '눈사람', '폴라로이드'].indexOf(line0(r, '모양'))), pic: line0(r, '사진').slice(0, 300), color: Math.min(7, Math.max(0, +line0(r, '색') || 0)), to: line0(r, '받는이') === '포레' ? '포레' : '숲별', nick: line0(r, '닉네임').slice(0, 12), spot, sec: r.message || '' }); });
         // 단 사람이 나중에 색을 바꾸면(종류: 오너먼트색 번호/누가/색) 마지막 것으로
         const byId = new Map(treeAll.orn.map(o => [o.id, o])); all.forEach(r => { if (r.type !== '오너먼트색' || !r.by) return; const o = byId.get(line0(r, '번호')), c = +line0(r, '색'); if (o && o.by === r.by && c >= 0 && c <= 7) o.color = c; });
         all.forEach(r => { if (r.type !== '오너먼트자리' || !r.by) return; const o = byId.get(line0(r, '번호')), sp = line0(r, '자리').split(',').map(Number); if (o && o.by === r.by && sp.length === 4 && sp.every(isFinite)) o.spot = sp; }); // 단 사람이 자리를 옮기면(종류: 오너먼트자리) 마지막 자리로
