@@ -5952,7 +5952,7 @@
     { n: '새싹', en: 'Sprout', ja: '芽', w: 25, slot: 0, o: { sprout: 1 } },
     { n: '아기 나무', en: 'Sapling', ja: '若木', w: 75, slot: 10, o: { tree: .32 } },
     { n: '작은 나무', en: 'Small tree', ja: '小さな木', w: 150, slot: 25, o: { tree: .55 } },
-    { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.15, glit: 1, woods: 12 } },
+    { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.15, glit: 1, woods: 20 } },
     { n: '구슬', en: 'Baubles', ja: 'オーナメント', w: 1000, slot: 80, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, woods: 30 } },
     { n: '양말·선물', en: 'Socks & gifts', ja: '靴下とプレゼント', w: 2500, slot: 120, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, woods: 54 } },
     { n: '눈', en: 'Snow', ja: '雪', w: 5000, slot: 160, o: { tree: 1, tall: 1.15, glit: 1, ribbon: 1, gifts: 1, snow: 1, woods: 96 } },
