@@ -213,9 +213,9 @@ export async function mount(el, opt) {
       sp.position.copy(s.p); sp.scale.setScalar(.11 + rnd() * .06); sp.userData.n = s.n.clone().normalize(); sp.userData.k = .5 + rnd() * .4; spin.add(sp); GLIT.push(sp); }
     if (L.ribbon) { // 금구슬 가랜드: 층마다 작은 금구슬 줄이 U자로 늘어져요 (구슬 간격은 줄 길이로 고르게)
       const bp = [], GAP = .072;
-      [[.28, 6], [.5, 5], [.7, 4]].forEach(([hf, n], ti) => { const y0 = ft + hf * (top - ft), off0 = rnd() * 6.283, sag = .3 * L.tree * (1 - ti * .2);
+      [[.28, 6], [.5, 5], [.7, 4]].forEach(([hf, n], ti) => { const y0 = ft + hf * (top - ft), off0 = rnd() * 6.283, sag = .6 * L.tree * (1 - ti * .2);
         for (let j = 0; j < n; j++) { const a0 = off0 + j / n * 6.283, a1 = a0 + 6.283 / n, line = [];
-          for (let u = 0; u <= 1.0001; u += .005) { const s = surf(y0 - sag * Math.sin(Math.PI * u), a0 + (a1 - a0) * u, .06 + .13 * Math.sin(Math.PI * u)); if (s) line.push(s.p.clone()); }
+          for (let u = 0; u <= 1.0001; u += .005) { const s = surf(y0 - sag * Math.sin(Math.PI * u), a0 + (a1 - a0) * u, .05 + .07 * Math.sin(Math.PI * u)); if (s) line.push(s.p.clone()); }
           if (line.length < 2) continue; let acc = 0, need = 0; bp.push(line[0]);
           for (let k = 1; k < line.length; k++) { const seg = line[k].distanceTo(line[k - 1]); while (acc + seg >= need + GAP) { need += GAP; bp.push(line[k - 1].clone().lerp(line[k], (need - acc) / seg)); } acc += seg; } } });
       const im = new T.InstancedMesh(new T.IcosahedronGeometry(.036, 1), new T.MeshStandardMaterial({ color: 0xf7c94e, metalness: .6, roughness: .35, emissive: 0x7a5200, emissiveIntensity: .3 }), bp.length), mx = new T.Matrix4();
