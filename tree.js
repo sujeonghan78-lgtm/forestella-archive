@@ -226,6 +226,16 @@ export async function mount(el, opt) {
       const y = ft + rnd() * (top * .86 - ft), s = surf(y, rnd() * 6.283, .06); if (!s) continue;
       const sp = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: k % 3 ? 0xfff6d0 : 0xffffff, transparent: true, depthWrite: false, depthTest: false, blending: T.AdditiveBlending, fog: false, opacity: 0 }));
       sp.position.copy(s.p); sp.scale.setScalar(.11 + rnd() * .06); sp.userData.n = s.n.clone().normalize(); sp.userData.k = .5 + rnd() * .4; spin.add(sp); GLIT.push(sp); }
+    if (L.pola) { // 폴라로이드 줄 (초안): 겉면에서 살짝 띄운 끈에 사진 카드를 집게로 매달아요
+      const P = [], N = []; for (let k = 0; k <= 120; k++) { const f = k / 120, s = surf(ft + .2 + f * (top * .8 - ft - .2), 1.2 + f * 6.283 * 1.8, .16); if (s) { P.push(s.p); N.push(s.n.clone().normalize()); } }
+      if (P.length > 10) {
+        const cu = new T.CatmullRomCurve3(P), rope = new T.Mesh(new T.TubeGeometry(cu, 240, .012, 5), fm(0xc9a77a, { roughness: .9 })); spin.add(rope);
+        const fr = fm(0xfbfbf8, { roughness: .6 }), ph = fm(0xc4ccd4, { roughness: .8, emissive: 0x556070, emissiveIntensity: .4 }), pin = fm(0xb98a5a);
+        for (let k = 6; k < P.length - 3; k += 12) { const p = P[k], n = N[k], c = new T.Group(), sz = .42 * Math.max(.7, 1 - k / P.length * .4);
+          const card = new T.Mesh(new T.BoxGeometry(sz, sz * 1.2, .012), fr); card.position.y = -sz * .62; c.add(card);
+          const pic = new T.Mesh(new T.PlaneGeometry(sz * .84, sz * .84), ph); pic.position.set(0, -sz * .53, .007); c.add(pic);
+          const cl = new T.Mesh(new T.BoxGeometry(sz * .1, sz * .26, sz * .08), pin); cl.position.y = -sz * .04; c.add(cl);
+          c.position.copy(p); c.lookAt(p.clone().add(new T.Vector3(n.x, 0, n.z))); c.rotateZ((rnd() - .5) * .3); c.traverse(o => { o.castShadow = true; }); spin.add(c); } } }
     if (L.ribbon) { // 금색 리본: 겉면을 따라 납작한 띠가 아래에서 위로 두 바퀴 남짓, 하늘빛을 반사해서 돌리면 빛이 흘러가요
       const P = [], N = []; for (let k = 0; k <= 160; k++) { const f = k / 160, s = surf(ft + .15 + f * (top * .84 - ft - .15), 1.2 + f * 6.283 * 2.2, .08); if (s) { P.push(s.p); N.push(s.n.clone().normalize()); } }
       if (P.length > 10) {
