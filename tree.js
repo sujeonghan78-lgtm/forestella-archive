@@ -183,12 +183,12 @@ export async function mount(el, opt) {
     if (L.sprout) { const st = new T.Mesh(new T.CylinderGeometry(.035, .045, .55, 6), fm(0x4e8f3a)); st.position.y = .4; spin.add(st); [-1, 1].forEach(k => { const lf = new T.Mesh(new T.IcosahedronGeometry(.2, 1), fm(0x7fd468)); lf.scale.set(1.5, .35, .75); lf.position.set(k * .2, .68, 0); lf.rotation.z = k * .4; spin.add(lf); }); top = .9; }
     else { const sd = new T.Mesh(new T.IcosahedronGeometry(.2, 1), fm(0xa06d40)); sd.scale.set(1, .8, 1); sd.position.y = .22; spin.add(sd); top = .5; }
   } else {
-    t = (SNOWY || PLAIN).clone(); t.scale.setScalar(L.tree); spin.add(t); top = H * L.tree; t.updateMatrixWorld(true);
+    t = (SNOWY || PLAIN).clone(); const TY = L.tall || 1; t.scale.set(L.tree, L.tree * TY, L.tree); spin.add(t); top = H * L.tree * TY; t.updateMatrixWorld(true);
     const rc = new T.Raycaster(), hs = top;
     // 겉면 자리 + 그 자리의 바깥 방향
     surf = (y, a, off) => { rc.set(new T.Vector3(Math.cos(a) * 12, y, Math.sin(a) * 12), new T.Vector3(-Math.cos(a), 0, -Math.sin(a))); const h = rc.intersectObject(t, false)[0]; if (!h) return null; const nrm = h.face.normal.clone().transformDirection(t.matrixWorld); return { p: h.point.add(nrm.clone().multiplyScalar(off)), n: nrm }; };
     const hang = (o, s) => { o.position.copy(s.p); o.lookAt(s.p.clone().add(s.n)); o.rotateZ((rnd() - .5) * .5); o.castShadow = true; spin.add(o); };
-    const ft = FT * L.tree, nB = L.beads || 0, nS = L.socks || 0, nSt = L.stars || 0, used = [];
+    const ft = FT * L.tree * (L.tall || 1), nB = L.beads || 0, nS = L.socks || 0, nSt = L.stars || 0, used = [];
     // 빈 자리 찾기: 다른 장식과 gap 이상 떨어진 겉면 (여러 번 시도)
     const spot = (gap, off) => { for (let tr = 0; tr < 14; tr++) { const y = ft + .3 * L.tree + rnd() * (hs - ft - 1.0 * L.tree), s = surf(y, rnd() * 6.283, off); if (s && used.every(u => u.p.distanceTo(s.p) > u.r + gap)) return s; } return null; };
     // 숲별 오너먼트 (opt.orns: [{id, shape 0구슬·1양말·2별, color, spot [각도, 높이 비율, 크기, 회전] 또는 null, nick}])
