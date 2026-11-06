@@ -362,6 +362,7 @@ export async function mount(el, opt) {
       lookTo(.8, 50, () => { for (let k = 0; k < 14; k++) setTimeout(() => { if (!alive) return; const to = seenPos(); shoot(to, () => { if (starA) dot(to, k % 3 === 0); }); }, k * 220); setTimeout(() => { if (alive && drag == null) lookTo(0, 80); }, 5200); }); },
     place(o) { placing = { o: Object.assign({}, o, { spot: null }), m: null, spot: null }; v = 0; return !!hangOrn; },
     placed() { return placing && placing.spot ? placing.spot.map((x, i) => +x.toFixed(i === 2 ? 2 : 3)) : null; },
+    addPola(o) { (opt.polas = opt.polas || []).push(o); this.polaPage(Math.floor((opt.polas.length - 1) / 15)); },
     polaPages() { return Math.max(1, Math.ceil((opt.polas || []).length / 15)); },
     polaPage(pg) { if (!PSLOT.length) return; const L_ = opt.polas || [];
       PSLOT.forEach((c, i) => { const o = L_[pg * 15 + i], k = ORN.indexOf(c); if (k >= 0) ORN.splice(k, 1); const pic = c.userData.pic;
