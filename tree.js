@@ -37,9 +37,9 @@ async function loadTree() {
 let seed = 9; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const fm = (c, o = {}) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: .75, flatShading: true }, o));
 // 면마다 살짝 다른 색 (아래 진초록 → 위 연두), snow면 윗면을 눈으로
-function treeMesh(snow) {
+function treeMesh(snow, dk = 0) {
   const g = SRC.clone(), p = g.attributes.position, n = p.count, col = new Float32Array(n * 3);
-  const G0 = new T.Color(0x3f8a34), G1 = new T.Color(0x8fd968), B = new T.Color(0xb57a48), S = new T.Color(0xeef4fb);
+  const G0 = new T.Color(0x3f8a34).lerp(new T.Color(0x0f5548), dk), G1 = new T.Color(0x8fd968).lerp(new T.Color(0x3a9a82), dk), B = new T.Color(0xb57a48), S = new T.Color(0xeef4fb);
   seed = 5;
   for (let i = 0; i < n; i += 3) {
     let cy = 0; for (let j = 0; j < 3; j++) cy += p.getY(i + j) / 3;
@@ -175,7 +175,7 @@ export async function mount(el, opt) {
     else dot(seenPos(), false);
     return null; };
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
-  const PLAIN = treeMesh(false), SNOWY = null;
+  const PLAIN = treeMesh(false, L.dk || 0), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
   let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [];
   if (!L.tree) { // 씨앗·새싹
