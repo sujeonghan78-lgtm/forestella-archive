@@ -224,7 +224,7 @@ export async function mount(el, opt) {
         const rb = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0xffcc55, metalness: 1, roughness: .22, envMap: env, envMapIntensity: 1.3, emissive: 0x8a5a00, emissiveIntensity: .25, side: T.DoubleSide })); rb.castShadow = true; spin.add(rb); } }
     if (L.woods) { // 둘레 숲: 각진 원뿔을 쌓은 단순한 나무가 빙 둘러 있고 트리와 같이 돌아요 (카메라보다 멀리), 눈 레벨엔 끝이 하얗게
       let ws = 77; const wr = () => (ws = (ws * 16807) % 2147483647) / 2147483647, GC = [0x2f5a3c, 0x3a6b45, 0x274d36, 0x456f3a, 0x2c6050], S = fm(0xf2f6fa), TR = fm(0x4a3426);
-      for (let k = 0; k < L.woods; k++) { const a = wr() * 6.283, d = 12 + Math.pow(wr(), .8) * 16, hs = 1.0 + wr() * 1.3, g = new T.Group(), G = fm(GC[k % GC.length]), nt = 2 + Math.floor(wr() * 3), seg = 5 + Math.floor(wr() * 3), fat = .8 + wr() * .45;
+      for (let k = 0; k < L.woods; k++) { const a = wr() * 6.283, d = 12 + Math.pow(wr(), .8) * 16, hs = .7 + Math.pow(wr(), 2) * 2.2, g = new T.Group(), G = fm(GC[k % GC.length]), nt = 2 + Math.floor(wr() * 3), seg = 5 + Math.floor(wr() * 3), fat = .8 + wr() * .45;
         const tr = new T.Mesh(new T.CylinderGeometry(.12 * hs, .15 * hs, .5 * hs, 5), TR); tr.position.y = .25 * hs; g.add(tr);
         let y = .4 * hs; for (let j = 0; j < nt; j++) { const r = (.85 - j * .55 / nt) * hs * fat * (.9 + wr() * .2), h = (1.05 - j * .3 / nt) * hs * (.85 + wr() * .3), c = new T.Mesh(new T.ConeGeometry(r, h, seg), G); c.position.y = y + h / 2; c.rotation.y = wr() * 3; c.rotation.z = (wr() - .5) * .08; g.add(c);
           if (L.snow) { const w = new T.Mesh(new T.ConeGeometry(r * .52, h * .52, seg), S); w.position.y = y + h - h * .26 + .01; w.rotation.copy(c.rotation); g.add(w); } y += h * (.55 + wr() * .1); }
