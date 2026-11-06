@@ -222,6 +222,11 @@ export async function mount(el, opt) {
         for (let k = 0; k < 6; k++) { ex.fillStyle = 'rgba(255,255,255,.9)'; ex.fillRect(k * 43, 30 + (k % 3) * 8, 10, 60); }
         const env = new T.CanvasTexture(ec); env.mapping = T.EquirectangularReflectionMapping; env.colorSpace = T.SRGBColorSpace;
         const rb = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0xffcc55, metalness: 1, roughness: .22, envMap: env, envMapIntensity: 1.3, emissive: 0x8a5a00, emissiveIntensity: .25, side: T.DoubleSide })); rb.castShadow = true; spin.add(rb); } }
+    { // 바닥 돌: 크고 작은 각진 돌을 둘레에 흩어 놓아요 (한 번에 그려서 가벼워요)
+      let rs = 31; const rr = () => (rs = (rs * 16807) % 2147483647) / 2147483647, n = 46, im = new T.InstancedMesh(new T.DodecahedronGeometry(1, 0), fm(0x7a8088, { roughness: .95 }), n), mx = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler();
+      for (let k = 0; k < n; k++) { const a = rr() * 6.283, d = 3.6 + Math.pow(rr(), .7) * 16, s = (.12 + Math.pow(rr(), 2.5) * .8) * (1 + (d - 3.6) / 16);
+        q.setFromEuler(e.set(rr() * 3, rr() * 3, rr() * 3)); mx.compose(new T.Vector3(Math.cos(a) * d, s * .25, Math.sin(a) * d), q, new T.Vector3(s * (1 + rr() * .6), s * (.5 + rr() * .4), s * (1 + rr() * .5))); im.setMatrixAt(k, mx); }
+      im.castShadow = im.receiveShadow = true; spin.add(im); }
     if (L.woods) { // 둘레 숲: 각진 원뿔을 쌓은 단순한 나무 (한 그루 = 한 덩어리로 합쳐 가볍게), 트리와 같이 돌아요. 눈 레벨엔 끝이 하얗게
       let ws = 77; const wr = () => (ws = (ws * 16807) % 2147483647) / 2147483647, GC = [0x2f5a3c, 0x3a6b45, 0x274d36, 0x456f3a, 0x2c6050], SC = new T.Color(0xf2f6fa), TC = new T.Color(0x4a3426);
       const part = (geo, x, y, z, ry, rz, col, P, N, C) => { const g = geo.toNonIndexed(); g.rotateZ(rz); g.rotateY(ry); g.translate(x, y, z); const p = g.attributes.position.array, n = g.attributes.normal.array; for (let i = 0; i < p.length; i++) { P.push(p[i]); N.push(n[i]); } for (let i = 0; i < p.length / 3; i++) C.push(col.r, col.g, col.b); };
