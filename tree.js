@@ -211,14 +211,17 @@ export async function mount(el, opt) {
       const y = ft + rnd() * (top * .86 - ft), s = surf(y, rnd() * 6.283, .06); if (!s) continue;
       const sp = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: k % 3 ? 0xfff6d0 : 0xffffff, transparent: true, depthWrite: false, depthTest: false, blending: T.AdditiveBlending, fog: false, opacity: 0 }));
       sp.position.copy(s.p); sp.scale.setScalar(.11 + rnd() * .06); sp.userData.n = s.n.clone().normalize(); sp.userData.k = .5 + rnd() * .4; spin.add(sp); GLIT.push(sp); }
-    if (L.ribbon) { // 금구슬 가랜드: 층마다 작은 금구슬 줄이 U자로 늘어져요 (구슬 간격은 줄 길이로 고르게)
-      const bp = [], GAP = .072;
-      [[.28, 6], [.5, 5], [.7, 4]].forEach(([hf, n], ti) => { const y0 = ft + hf * (top - ft), off0 = rnd() * 6.283, sag = .6 * L.tree * (1 - ti * .2);
-        for (let j = 0; j < n; j++) { const a0 = off0 + j / n * 6.283, a1 = a0 + 6.283 / n, line = [];
-          const A = surf(y0, a0, .08), B = surf(y0, a1, .08); if (!A || !B) continue; // 양 끝만 트리에 걸고, 가운데는 공중에서 축 늘어져요 (트리 밖으로만 살짝 밀어요)
-          for (let u = 0; u <= 1.0001; u += .01) { const c = 1 - (2 * u - 1) ** 2, p = A.p.clone().lerp(B.p, u); p.y -= sag * c; const s = surf(p.y, Math.atan2(p.z, p.x), .08); if (s) { const rr = Math.hypot(s.p.x, s.p.z), r0 = Math.hypot(p.x, p.z); if (r0 < rr) p.multiply(new T.Vector3(rr / r0, 1, rr / r0)); } line.push(p); }
-          if (line.length < 2) continue; let acc = 0, need = 0; const st = bp.length; if (!bp.some(q => q.distanceTo(line[0]) < GAP * .8)) bp.push(line[0]);
-          for (let k = 1; k < line.length; k++) { const seg = line[k].distanceTo(line[k - 1]); while (acc + seg >= need + GAP) { need += GAP; const q = line[k - 1].clone().lerp(line[k], (need - acc) / seg); if (bp.every(b => b.distanceTo(q) > GAP * .8)) bp.push(q); } acc += seg; } } });
+    if (L.ribbon) { // 금구슬 가랜드: 각 층 아래 테두리의 뾰족한 끝마다 걸고, 끝과 끝 사이는 공중에 U자로 늘어져요
+      const bp = [], GAP = .072, R = (y, a) => { const s = surf(y, a, 0); return s ? { r: Math.hypot(s.p.x, s.p.z), p: s.p } : null; };
+      const prof = []; for (let y = ft - .2; y < top * .8; y += .02) { let m = 0, n = 0; for (let k = 0; k < 12; k++) { const q = R(y, k / 12 * 6.283); if (q) { m += q.r; n++; } } prof.push([y, n ? m / n : 0]); }
+      const edges = []; for (let k = 2; k < prof.length - 2; k++) if (prof[k][1] > prof[k - 1][1] && prof[k][1] >= prof[k + 1][1] && prof[k][1] > prof[k - 2][1] && prof[k][1] >= prof[k + 2][1] && (!edges.length || prof[k][0] - edges[edges.length - 1] > .3)) edges.push(prof[k][0]);
+      edges.slice(-3).forEach(ey => { const ring = []; for (let k = 0; k < 180; k++) { const q = R(ey, k / 180 * 6.283); ring.push(q); }
+        let tips = []; ring.forEach((q, k) => { if (!q) return; const nb = [-3, -2, -1, 1, 2, 3].map(d => ring[(k + d + 180) % 180]); if (nb.every(o => !o || o.r <= q.r)) tips.push(q.p.clone().multiply(new T.Vector3(1.03, 1, 1.03))); });
+        while (tips.length > 14) tips = tips.filter((_, i) => i % 2 === 0);
+        tips.forEach((A, i) => { const B = tips[(i + 1) % tips.length]; if (tips.length < 2) return; const ch = A.distanceTo(B), sag = Math.min(.4, ch * .22), line = [];
+          for (let u = 0; u <= 1.0001; u += .01) { const c = 1 - (2 * u - 1) ** 2, p = A.clone().lerp(B, u); p.y -= sag * c; const s = R(p.y, Math.atan2(p.z, p.x)); if (s) { const r0 = Math.hypot(p.x, p.z), rr = s.r + .03; if (r0 < rr) p.multiply(new T.Vector3(rr / r0, 1, rr / r0)); } line.push(p); }
+          let acc = 0, need = 0; if (bp.every(b => b.distanceTo(line[0]) > GAP * .8)) bp.push(line[0]);
+          for (let k = 1; k < line.length; k++) { const seg = line[k].distanceTo(line[k - 1]); while (acc + seg >= need + GAP) { need += GAP; const q = line[k - 1].clone().lerp(line[k], (need - acc) / seg); if (bp.every(b => b.distanceTo(q) > GAP * .8)) bp.push(q); } acc += seg; } }); });
       const im = new T.InstancedMesh(new T.IcosahedronGeometry(.036, 1), new T.MeshStandardMaterial({ color: 0xf7c94e, metalness: .6, roughness: .35, emissive: 0x7a5200, emissiveIntensity: .3 }), bp.length), mx = new T.Matrix4();
       bp.forEach((p, k) => { mx.makeTranslation(p.x, p.y, p.z); im.setMatrixAt(k, mx); }); im.castShadow = true; spin.add(im); }
     if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); sc.add(sm); }
