@@ -211,6 +211,8 @@ export async function mount(el, opt) {
       const y = ft + rnd() * (top * .86 - ft), s = surf(y, rnd() * 6.283, .06); if (!s) continue;
       const sp = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: k % 3 ? 0xfff6d0 : 0xffffff, transparent: true, depthWrite: false, depthTest: false, blending: T.AdditiveBlending, fog: false, opacity: 0 }));
       sp.position.copy(s.p); sp.scale.setScalar(.11 + rnd() * .06); sp.userData.n = s.n.clone().normalize(); sp.userData.k = .5 + rnd() * .4; spin.add(sp); GLIT.push(sp); }
+    if (L.ribbon) { const pts = []; for (let k = 0; k <= 80; k++) { const f = k / 80, s = surf(ft + .15 + f * (top * .84 - ft - .15), 1.2 + f * 6.283 * 2.2, .09); if (s) pts.push(s.p); } // 금색 리본 띠: 아래에서 위로 두 바퀴 남짓
+      if (pts.length > 10) { const rb = new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 240, .05, 8, false), fm(0xffd257, { metalness: .4, roughness: .35, emissive: 0xc08a10, emissiveIntensity: .45, flatShading: false })); rb.castShadow = true; spin.add(rb); } }
     if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); sc.add(sm); }
     if (L.gifts) GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { const g = gift(x, z, c, q, h, rc, i); if (up) g.position.y = up; sc.add(g); });
   }
