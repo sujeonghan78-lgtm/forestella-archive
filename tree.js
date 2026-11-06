@@ -211,17 +211,13 @@ export async function mount(el, opt) {
       const y = ft + rnd() * (top * .86 - ft), s = surf(y, rnd() * 6.283, .06); if (!s) continue;
       const sp = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: k % 3 ? 0xfff6d0 : 0xffffff, transparent: true, depthWrite: false, depthTest: false, blending: T.AdditiveBlending, fog: false, opacity: 0 }));
       sp.position.copy(s.p); sp.scale.setScalar(.11 + rnd() * .06); sp.userData.n = s.n.clone().normalize(); sp.userData.k = .5 + rnd() * .4; spin.add(sp); GLIT.push(sp); }
-    if (L.ribbon) { // 금색 리본: 겉면을 따라 납작한 띠가 아래에서 위로 두 바퀴 남짓, 하늘빛을 반사해서 돌리면 빛이 흘러가요
-      const P = [], N = [], ph = [rnd() * 6, rnd() * 6, rnd() * 6]; for (let k = 0; k <= 160; k++) { const f = k / 160, s = surf(ft + .15 + f * (top * .84 - ft - .15) + .05 * Math.sin(f * 31 + ph[2]), 1.2 + f * 6.283 * 2.2, .11 + .07 * Math.sin(f * 19 + ph[0]) + .04 * Math.sin(f * 47 + ph[1])); if (s) { P.push(s.p); N.push(s.n.clone().normalize()); } }
-      if (P.length > 10) {
-        const cv = P.map(() => 0), pos = [], nor = [], idx = [], W = .075;
-        P.forEach((p, k) => { const tg = (P[Math.min(k + 1, P.length - 1)]).clone().sub(P[Math.max(k - 1, 0)]).normalize(), f = k / P.length, tw = .55 * Math.sin(f * 23 + ph[1]) + .3 * Math.sin(f * 9 + ph[0]), w = new T.Vector3().crossVectors(N[k], tg).normalize().applyAxisAngle(tg, tw).multiplyScalar(W); N[k].applyAxisAngle(tg, tw); pos.push(p.x + w.x, p.y + w.y, p.z + w.z, p.x - w.x, p.y - w.y, p.z - w.z); nor.push(N[k].x, N[k].y, N[k].z, N[k].x, N[k].y, N[k].z); if (k) { const i = k * 2; idx.push(i - 2, i - 1, i, i - 1, i + 1, i); } });
-        const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); g.setIndex(idx);
-        const ec = document.createElement('canvas'); ec.width = 256; ec.height = 128; const ex = ec.getContext('2d'), eg = ex.createLinearGradient(0, 0, 0, 128);
-        eg.addColorStop(0, '#2a3550'); eg.addColorStop(.42, '#fff6dc'); eg.addColorStop(.5, '#ffffff'); eg.addColorStop(.58, '#c99a3a'); eg.addColorStop(1, '#3a2a10'); ex.fillStyle = eg; ex.fillRect(0, 0, 256, 128);
-        for (let k = 0; k < 6; k++) { ex.fillStyle = 'rgba(255,255,255,.9)'; ex.fillRect(k * 43, 30 + (k % 3) * 8, 10, 60); }
-        const env = new T.CanvasTexture(ec); env.mapping = T.EquirectangularReflectionMapping; env.colorSpace = T.SRGBColorSpace;
-        const rb = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0xffcc55, metalness: .85, roughness: .38, envMap: env, envMapIntensity: .75, emissive: 0x8a5a00, emissiveIntensity: .25, side: T.DoubleSide })); rb.castShadow = true; spin.add(rb); } }
+    if (L.ribbon) { // 금구슬 가랜드: 층마다 작은 금구슬 줄이 U자로 늘어져요
+      const bp = [];
+      [[.28, 6], [.5, 5], [.7, 4]].forEach(([hf, n], ti) => { const y0 = ft + hf * (top - ft), off0 = rnd() * 6.283, sag = .34 * L.tree * (1 - ti * .2);
+        for (let j = 0; j < n; j++) { const a0 = off0 + j / n * 6.283, a1 = a0 + 6.283 / n; let prev = null;
+          for (let u = 0; u <= 1.0001; u += .02) { const s = surf(y0 - sag * Math.sin(Math.PI * u), a0 + (a1 - a0) * u, .05 + .07 * Math.sin(Math.PI * u)); if (!s) continue; if (!prev || prev.distanceTo(s.p) > .075) { bp.push(s.p.clone()); prev = s.p; } } } });
+      const im = new T.InstancedMesh(new T.IcosahedronGeometry(.036, 1), new T.MeshStandardMaterial({ color: 0xf7c94e, metalness: .6, roughness: .35, emissive: 0x7a5200, emissiveIntensity: .3 }), bp.length), mx = new T.Matrix4();
+      bp.forEach((p, k) => { mx.makeTranslation(p.x, p.y, p.z); im.setMatrixAt(k, mx); }); im.castShadow = true; spin.add(im); }
     if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); sc.add(sm); }
     if (L.gifts) GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { const g = gift(x, z, c, q, h, rc, i); if (up) g.position.y = up; sc.add(g); });
   }
