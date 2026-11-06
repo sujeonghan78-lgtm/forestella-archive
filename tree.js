@@ -53,7 +53,22 @@ function treeMesh(snow, dk = 0) {
   }
   g.setAttribute('color', new T.BufferAttribute(col, 3)); g.computeVertexNormals();
   const m = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .9 }));
-  m.castShadow = m.receiveShadow = true; return m;
+  m.castShadow = m.receiveShadow = true;
+  if (snow) { // 층 끝 윗면에 두툼한 눈 (위로 들어 올린 흰 판)
+    const bins = new Array(41).fill(0), bi = y => Math.min(40, Math.max(0, Math.round(y / H * 40))), sp = [];
+    for (let i = 0; i < n; i++) { const k = bi(p.getY(i)); bins[k] = Math.max(bins[k], Math.hypot(p.getX(i), p.getZ(i))); }
+    for (let i = 0; i < n; i += 3) {
+      let cy = 0, cr = 0; for (let j = 0; j < 3; j++) { cy += p.getY(i + j) / 3; cr += Math.hypot(p.getX(i + j), p.getZ(i + j)) / 3; }
+      if (cy < FT + .1) continue;
+      const ax = p.getX(i + 1) - p.getX(i), ay = p.getY(i + 1) - p.getY(i), az = p.getZ(i + 1) - p.getZ(i), bx = p.getX(i + 2) - p.getX(i), by = p.getY(i + 2) - p.getY(i), bz = p.getZ(i + 2) - p.getZ(i);
+      const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx, ln = Math.hypot(nx, ny, nz) || 1;
+      if (ny / ln < .55 || cr < (bins[bi(cy)] || 1) * .78) continue;
+      for (let j = 0; j < 3; j++) { const x = p.getX(i + j), z = p.getZ(i + j), r = Math.hypot(x, z) || 1, o = .05 + .03 * Math.sin(x * 7 + z * 5); sp.push(x + x / r * .02, p.getY(i + j) + o, z + z / r * .02); }
+    }
+    const sg = new T.BufferGeometry(); sg.setAttribute('position', new T.Float32BufferAttribute(sp, 3)); sg.computeVertexNormals();
+    const sm = new T.Mesh(sg, new T.MeshStandardMaterial({ color: 0xf6f9fd, emissive: 0x9aa8b8, emissiveIntensity: .3, roughness: 1, flatShading: true, side: T.DoubleSide })); sm.castShadow = true; m.add(sm);
+  }
+  return m;
 }
 // 장식 모양들 (각진 로우폴리)
 export function bead(sz, c) { return new T.Mesh(new T.IcosahedronGeometry(sz, 1), fm(c, { roughness: .55 })); }
@@ -175,7 +190,7 @@ export async function mount(el, opt) {
     else dot(seenPos(), false);
     return null; };
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
-  const PLAIN = treeMesh(false, L.dk || 0), SNOWY = null;
+  const PLAIN = treeMesh(!!L.snow, L.dk || 0), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
   let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [];
   if (!L.tree) { // 씨앗·새싹
