@@ -6172,6 +6172,7 @@
     }
   }
   function treeSend(o, spot) {
+    if (tAdm() && new URLSearchParams(location.hash.split('?')[1] || '').get('lv')) { if (treeApi) spot ? treeApi.commit() : treeApi.cancel(); toast(L3('🧪 레벨 미리보기라 시트엔 안 올렸어요', '🧪 Preview only, not saved', '🧪 プレビューなので保存しません')); return; } // 관리자 레벨 미리보기에선 시험만
     const mm = treeMine(), adm = !TREE_OPEN && isAdmin();
     mySecKey().then(k => opSeal(o.text, [(window.CONFIG || {}).treeKey, k])).then(sec => {
       const rec = { id: o.id, by: o.by, at: o.at, shape: o.shape, color: o.color, to: o.to, nick: o.nick, spot, sec, pic: o.pic || '', cap: o.cap || '' };
