@@ -215,9 +215,10 @@ export async function mount(el, opt) {
       const bp = [], GAP = .072;
       [[.28, 6], [.5, 5], [.7, 4]].forEach(([hf, n], ti) => { const y0 = ft + hf * (top - ft), off0 = rnd() * 6.283, sag = .6 * L.tree * (1 - ti * .2);
         for (let j = 0; j < n; j++) { const a0 = off0 + j / n * 6.283, a1 = a0 + 6.283 / n, line = [];
-          for (let u = 0; u <= 1.0001; u += .005) { const s = surf(y0 - sag * Math.sin(Math.PI * u), a0 + (a1 - a0) * u, .05 + .07 * Math.sin(Math.PI * u)); if (s) line.push(s.p.clone()); }
-          if (line.length < 2) continue; let acc = 0, need = 0; bp.push(line[0]);
-          for (let k = 1; k < line.length; k++) { const seg = line[k].distanceTo(line[k - 1]); while (acc + seg >= need + GAP) { need += GAP; bp.push(line[k - 1].clone().lerp(line[k], (need - acc) / seg)); } acc += seg; } } });
+          for (let u = 0; u <= 1.0001; u += .01) { const c = 1 - (2 * u - 1) ** 2, s = surf(y0 - sag * c, a0 + (a1 - a0) * u, .05 + .07 * c); if (s) line.push(s.p.clone()); }
+          for (let r = 0; r < 4; r++) for (let k = 1; k < line.length - 1; k++) line[k] = line[k - 1].clone().add(line[k]).add(line[k]).add(line[k + 1]).multiplyScalar(.25); // 잎 모서리에서 튀는 곳을 부드럽게
+          if (line.length < 2) continue; let acc = 0, need = 0; const st = bp.length; if (!bp.some(q => q.distanceTo(line[0]) < GAP * .8)) bp.push(line[0]);
+          for (let k = 1; k < line.length; k++) { const seg = line[k].distanceTo(line[k - 1]); while (acc + seg >= need + GAP) { need += GAP; const q = line[k - 1].clone().lerp(line[k], (need - acc) / seg); if (bp.every(b => b.distanceTo(q) > GAP * .8)) bp.push(q); } acc += seg; } } });
       const im = new T.InstancedMesh(new T.IcosahedronGeometry(.036, 1), new T.MeshStandardMaterial({ color: 0xf7c94e, metalness: .6, roughness: .35, emissive: 0x7a5200, emissiveIntensity: .3 }), bp.length), mx = new T.Matrix4();
       bp.forEach((p, k) => { mx.makeTranslation(p.x, p.y, p.z); im.setMatrixAt(k, mx); }); im.castShadow = true; spin.add(im); }
     if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); sc.add(sm); }
