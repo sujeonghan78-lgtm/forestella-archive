@@ -215,8 +215,8 @@ export async function mount(el, opt) {
       const bp = [], GAP = .072;
       [[.28, 6], [.5, 5], [.7, 4]].forEach(([hf, n], ti) => { const y0 = ft + hf * (top - ft), off0 = rnd() * 6.283, sag = .6 * L.tree * (1 - ti * .2);
         for (let j = 0; j < n; j++) { const a0 = off0 + j / n * 6.283, a1 = a0 + 6.283 / n, line = [];
-          const A = surf(y0, a0, .08), B = surf(y0, a1, .08); if (!A || !B) continue; // 양 끝만 트리에 걸고, 가운데는 공중에서 축 늘어져요 (트리 밖으로만 살짝 밀어요)
-          for (let u = 0; u <= 1.0001; u += .01) { const c = 1 - (2 * u - 1) ** 2, p = A.p.clone().lerp(B.p, u); p.y -= sag * c; const s = surf(p.y, Math.atan2(p.z, p.x), .08); if (s) { const rr = Math.hypot(s.p.x, s.p.z), r0 = Math.hypot(p.x, p.z); if (r0 < rr) p.multiply(new T.Vector3(rr / r0, 1, rr / r0)); } line.push(p); }
+          for (let u = 0; u <= 1.0001; u += .01) { const c = 1 - (2 * u - 1) ** 2, s = surf(y0 - sag * c, a0 + (a1 - a0) * u, .05 + .07 * c); if (s) line.push(s.p.clone()); }
+          for (let r = 0; r < 4; r++) for (let k = 1; k < line.length - 1; k++) line[k] = line[k - 1].clone().add(line[k]).add(line[k]).add(line[k + 1]).multiplyScalar(.25); // 잎 모서리에서 튀는 곳을 부드럽게
           if (line.length < 2) continue; let acc = 0, need = 0; const st = bp.length; if (!bp.some(q => q.distanceTo(line[0]) < GAP * .8)) bp.push(line[0]);
           for (let k = 1; k < line.length; k++) { const seg = line[k].distanceTo(line[k - 1]); while (acc + seg >= need + GAP) { need += GAP; const q = line[k - 1].clone().lerp(line[k], (need - acc) / seg); if (bp.every(b => b.distanceTo(q) > GAP * .8)) bp.push(q); } acc += seg; } } });
       const im = new T.InstancedMesh(new T.IcosahedronGeometry(.036, 1), new T.MeshStandardMaterial({ color: 0xf7c94e, metalness: .6, roughness: .35, emissive: 0x7a5200, emissiveIntensity: .3 }), bp.length), mx = new T.Matrix4();
