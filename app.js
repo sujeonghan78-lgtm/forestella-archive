@@ -6084,7 +6084,8 @@
   }
   function treeOrnSheet() {
     const st = treeState(), adm = !TREE_OPEN && isAdmin();
-    if (st.myOrn >= ORN_MAX && !adm) { toast(L3(`오너먼트는 한 명당 ${ORN_MAX}개까지예요. 하나를 떼면 다시 달 수 있어요 🎁`, `Up to ${ORN_MAX} ornaments each 🎁`, `1人${ORN_MAX}個までです 🎁`)); return; }
+    const prev = tAdm() && new URLSearchParams(location.hash.split('?')[1] || '').get('lv'); // 관리자 레벨 미리보기: 개수 제한 없이 시험
+    if (st.myOrn >= ORN_MAX && !adm && !prev) { toast(L3(`오너먼트는 한 명당 ${ORN_MAX}개까지예요. 하나를 떼면 다시 달 수 있어요 🎁`, `Up to ${ORN_MAX} ornaments each 🎁`, `1人${ORN_MAX}個までです 🎁`)); return; }
     if (treeOpened()) { toast(L3('편지가 열렸어요! 이제 오너먼트는 못 달아요', 'Letters are open now', '手紙が開きました')); return; }
     const full = st.hung.length >= st.slot || !treeApi, pg = document.querySelector('.tree-page'); if (!pg) return;
     document.querySelectorAll('.tree-sheet,.tree-pop').forEach(x => x.remove());
