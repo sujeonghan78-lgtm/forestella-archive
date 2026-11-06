@@ -4366,6 +4366,7 @@
           ${item('#/box', '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>', '보관함')}
           ${WAIT_ON() ? item('#/wait', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2.5h6"/>', '기다리는 일정', goIds().length ? String(goIds().length) : '') : ''}
           ${item('#/card', '<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h5M4 15.5h16" stroke-dasharray="2 2"/>', '숲별 카드')}
+          ${item('#/pola', '<rect x="5" y="3" width="14" height="18" rx="1.5"/><rect x="7.5" y="5.5" width="9" height="9"/>', '폴라로이드 만들기')}
           ${item('#/map', '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>', '숲별 발자국')}
           ${matchOpen() ? item('#/match', '<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>', '취향 궁합') : ''}`)}
         ${grp('아카이브', `
@@ -6288,6 +6289,56 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         const box = document.getElementById('home-tree'); if (box) box.outerHTML = homeTree(); const fb = document.getElementById('tree-fab'); if (fb) fb.remove(); bindHomeTree();
       }).catch(() => { b.disabled = false; toast(L3('보내지 못했어요. 잠시 뒤 다시 눌러 주세요', 'Could not send. Try again shortly', '送信できませんでした')); }); };
   }
+  // 폴라로이드 만들기 (#/pola): 내 폰 사진이나 사이트 사진(콘서트 포스터·음반 표지)에 아래 글씨를 넣어 저장해요. 사진은 이 폰에서만
+  const POLA_KEY = 'sb-pola', POLA_FR = [['#ffffff', '하양'], ['#f6efe2', '크림'], ['#1f2326', '검정'], ['#f7d6df', '분홍'], ['#d4ece3', '민트'], ['#dbe4f6', '하늘']];
+  let polaImg = null;
+  function polaView() {
+    const o = Object.assign({ fr: '#ffffff', font: 'pen', cap: '', date: 1 }, boxRead(POLA_KEY) || {});
+    return `<a class="back" href="#/more">‹ ${L3('더보기', 'More', 'もっと見る')}</a><h1 class="page-title">📷 ${L3('폴라로이드 만들기', 'Polaroid maker', 'ポラロイドを作る')}</h1>
+      <section class="pola-page"><canvas class="pola-cv" width="1080" height="1320"></canvas>
+      <p class="src-note">${L3('사진', 'Photo', '写真')}</p><div class="chips"><label class="chip">📷 ${L3('내 사진 고르기', 'My photo', '自分の写真')}<input type="file" accept="image/*" class="pola-file" hidden></label><button type="button" class="chip pola-site">🖼 ${L3('사이트 사진', 'Site photos', 'サイトの写真')}</button></div>
+      <div class="ts-pics pola-pics" hidden>${polaPics().map((p, k) => `<button type="button" data-k="${k}" title="${esc(p.name)}"><img src="${esc(p.src)}" alt="" loading="lazy" referrerpolicy="no-referrer"></button>`).join('')}</div>
+      <p class="src-note">${L3('글씨', 'Caption', '文字')}</p><input class="pola-cap" maxlength="24" value="${esc(o.cap)}" placeholder="${L3('예: 2025.12.24 우리의 크리스마스', 'e.g. our Christmas', '例: 私たちのクリスマス')}">
+      <label class="pola-dl"><input type="checkbox" class="pola-date"${o.date ? ' checked' : ''}> ${L3('오늘 날짜 넣기', 'Add today\'s date', '今日の日付')}</label>
+      <div class="chips">${LYC_FONT.map(([k, l]) => `<button type="button" class="chip${o.font === k ? ' on' : ''}" data-font="${k}">${l}</button>`).join('')}</div>
+      <p class="src-note">${L3('테두리', 'Frame', 'フチ')}</p><div class="chips">${POLA_FR.map(([c, l]) => `<button type="button" class="chip${o.fr === c ? ' on' : ''}" data-fr="${c}"><i class="pola-sw" style="background:${c}"></i>${l}</button>`).join('')}</div>
+      <div class="lyc-acts"><button type="button" class="bpill pola-save">${L3('이미지 저장', 'Save image', '画像を保存')}</button><button type="button" class="chip pola-share">${L3('공유하기', 'Share', '共有')}</button></div>
+      <p class="src-note pola-msg">${L3('사진은 이 폰에서만 써요. 사이트에 올라가지 않아요.', 'Your photo stays on this phone.', '写真はこの端末だけで使います。')}</p></section>`;
+  }
+  function polaBind() {
+    const pg = document.querySelector('.pola-page'); if (!pg) return;
+    const o = Object.assign({ fr: '#ffffff', font: 'pen', cap: '', date: 1 }, boxRead(POLA_KEY) || {}), cv = pg.querySelector('.pola-cv'), x = cv.getContext('2d'), msg = pg.querySelector('.pola-msg');
+    const dark = o2 => parseInt(o2.fr.slice(1, 3), 16) < 80;
+    const draw = () => { const W = 1080, S = 960, M = 60; x.fillStyle = o.fr; x.fillRect(0, 0, W, 1320);
+      x.fillStyle = dark(o) ? '#2c3134' : '#e7eaec'; x.fillRect(M, M, S, S);
+      if (polaImg && polaImg.width) { const w = polaImg.width, h = polaImg.height, k = Math.max(S / w, S / h), dw = w * k, dh = h * k; x.save(); x.beginPath(); x.rect(M, M, S, S); x.clip(); x.drawImage(polaImg, M + (S - dw) / 2, M + (S - dh) / 2, dw, dh); x.restore(); }
+      else { x.fillStyle = dark(o) ? '#7a8288' : '#9aa3aa'; x.font = '600 44px sans-serif'; x.textAlign = 'center'; x.fillText(L3('사진을 골라 주세요', 'Pick a photo', '写真を選んでください'), W / 2, M + S / 2); }
+      x.fillStyle = 'rgba(0,0,0,.06)'; x.fillRect(M, M, S, 3);
+      const F = CARD_FONTS[o.font] || CARD_FONTS.pen, ink = dark(o) ? '#f2f2f0' : '#2b2f33'; x.fillStyle = ink; x.textAlign = 'center'; x.textBaseline = 'middle';
+      let fs = 70 * F.k; x.font = `${F.big} ${fs}px ${F.f}`; while (x.measureText(o.cap).width > S - 40 && fs > 30) { fs -= 2; x.font = `${F.big} ${fs}px ${F.f}`; }
+      x.fillText(o.cap, W / 2, o.date ? 1128 : 1170);
+      if (o.date) { const t = kstDay().replace(/-/g, '.'); x.font = `400 ${34 * F.k}px ${F.f}`; x.globalAlpha = .6; x.fillText(t, W / 2, 1222); x.globalAlpha = 1; }
+      x.textBaseline = 'alphabetic'; };
+    const save = () => boxWrite(POLA_KEY, { fr: o.fr, font: o.font, cap: o.cap, date: o.date });
+    cardFontsReady(o.cap + '0123456789.').then(() => document.fonts && Promise.all(LYC_FONT.map(([k]) => document.fonts.load(`${CARD_FONTS[k].big} 60px ${CARD_FONTS[k].f}`, o.cap || '가'))).catch(() => {})).then(draw); draw();
+    const load = (src, cors) => { const im = new Image(); if (cors) im.crossOrigin = 'anonymous'; im.onload = () => { polaImg = im; draw(); }; im.src = src; };
+    pg.querySelector('.pola-file').onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => load(r.result); r.readAsDataURL(f); };
+    const pics = pg.querySelector('.pola-pics'), PP = polaPics(); pg.querySelector('.pola-site').onclick = () => { pics.hidden = !pics.hidden; };
+    pics.querySelectorAll('button').forEach(b => { b.onclick = () => { pics.querySelectorAll('button').forEach(z => z.classList.toggle('on', z === b)); load(PP[+b.dataset.k].src, 1); }; });
+    pg.querySelector('.pola-cap').oninput = e => { o.cap = e.target.value; save(); draw(); };
+    pg.querySelector('.pola-date').onchange = e => { o.date = e.target.checked ? 1 : 0; save(); draw(); };
+    pg.querySelectorAll('[data-font]').forEach(b => { b.onclick = () => { o.font = b.dataset.font; pg.querySelectorAll('[data-font]').forEach(z => z.classList.toggle('on', z === b)); save(); draw(); }; });
+    pg.querySelectorAll('[data-fr]').forEach(b => { b.onclick = () => { o.fr = b.dataset.fr; pg.querySelectorAll('[data-fr]').forEach(z => z.classList.toggle('on', z === b)); save(); draw(); }; });
+    const blobOf = () => new Promise(res => { try { cv.toBlob(res, 'image/png'); } catch (err) { res(null); } }), fname = `숲별폴라로이드_${kstDay()}.png`;
+    pg.querySelector('.pola-save').onclick = async () => { const b = await blobOf(); if (!b) { msg.textContent = L3('이 사진은 저장이 안 돼요. 다른 사진을 골라 주세요.', 'This photo cannot be saved.', 'この写真は保存できません。'); return; }
+      const file = new File([b], fname, { type: 'image/png' }), ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (ios && navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (err) { if (err.name === 'AbortError') return; } }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = fname; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      msg.textContent = L3('저장했어요. 갤러리나 다운로드 폴더에서 볼 수 있어요.', 'Saved.', '保存しました。'); };
+    pg.querySelector('.pola-share').onclick = async () => { const b = await blobOf(); if (!b) return; const file = new File([b], fname, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text: '#포레스텔라 #숲별폴라로이드' }); } catch (err) { /* 닫음 */ } }
+      else msg.textContent = L3('이 브라우저는 바로 공유가 안 돼요. 이미지 저장 후 올려 주세요.', 'Save the image and share it.', '保存してから共有してください。'); };
+  }
   function giftView() { return `<a class="back" href="#/days">‹ 함께한 기념일</a><section class="gift-box" id="gift-box"><p class="empty">${L3('선물 상자를 여는 중…', 'Opening your gift…', 'プレゼントを開けています…')}</p></section>`; }
     // 기념일 이름 번역 (팬텀싱어 우승 9주년 → Phantom Singer win · 9th anniversary)
   const memL = n => { const L = window.SB_LANG; return (L && L.lang !== 'ko' && L.tr && L.tr(n)) || n; };
@@ -6333,7 +6384,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     program: programView,
     local: localView,
     box: boxView,
-    card: cardView, wait: waitView, match: matchView, gift: giftView, tree: treeView,
+    card: cardView, pola: polaView, wait: waitView, match: matchView, gift: giftView, tree: treeView,
     songs: songsView,
     song: songView,
     timeline: timelineView,
@@ -8564,7 +8615,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     });
   }
   function setTabs(name) {
-    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', match: 'more', gift: 'more', tree: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', days: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
+    const tabName = name === 'xfeed' && /[?&]rel=/.test(location.hash) ? 'home' : { song: 'songs', program: 'home', members: 'more', card: 'more', pola: 'more', match: 'more', gift: 'more', tree: 'more', wait: 'more', concerts: 'more', tour: 'more', search: 'home', timeline: 'more', add: 'more', opinion: 'more', news: 'more', days: 'more', fan: 'more', map: 'more', placefind: 'more', admin: 'more', releases: 'home', about: 'more', install: 'more' }[name] || name;
     document.querySelectorAll('.tab').forEach(t => {
       const on = t.dataset.tab === tabName;
       t.classList.toggle('on', on);
@@ -8617,6 +8668,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (name === 'card') bindCard();
     if (name === 'match') bindMatch();
     if (name === 'gift') giftCheck();
+    if (name === 'pola') polaBind();
     if (name === 'tree') bindTree();
     setTimeout(waitPop, 800);
     if (name === 'map') bindMap();

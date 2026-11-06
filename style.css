@@ -2522,3 +2522,9 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-pp { position: absolute; right: 12px; top: 172px; z-index: 3; display: flex; gap: 4px; align-items: center; background: rgba(255,255,255,.75); border-radius: 14px; padding: 3px 8px; font-size: 13px; }
 .tree-pp button { border: 0; background: none; min-width: 22px; height: 22px; border-radius: 11px; font-size: 13px; color: #456; }
 .tree-pp button.on { background: #2c8a7a; color: #fff; }
+.pola-page { padding: 0 16px 24px; }
+.pola-cv { width: 100%; max-width: 360px; display: block; margin: 8px auto 12px; box-shadow: 0 4px 16px rgba(0,0,0,.18); border-radius: 2px; }
+.pola-cap { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line, #ddd); border-radius: 10px; font-size: 15px; margin-bottom: 6px; }
+.pola-dl { display: block; font-size: 14px; margin: 4px 0 8px; }
+.pola-sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,.2); margin-right: 4px; vertical-align: -1px; }
+.pola-pics[hidden] { display: none; } .pola-pics { margin: 8px 0; }
