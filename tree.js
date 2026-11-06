@@ -236,7 +236,7 @@ export async function mount(el, opt) {
           const card = new T.Mesh(new T.BoxGeometry(sz, sz * 1.2, .012), fr); card.position.y = -sz * .62; c.add(card);
           const pic = new T.Mesh(new T.PlaneGeometry(sz * .84, sz * .84), blank); pic.position.set(0, -sz * .53, .007); c.add(pic);
           const cl = new T.Mesh(new T.BoxGeometry(sz * .1, sz * .26, sz * .08), pin); cl.position.y = -sz * .04; c.add(cl);
-          c.position.copy(p); c.lookAt(p.clone().add(new T.Vector3(n.x, 0, n.z))); c.rotateZ((rnd() - .5) * .3); c.traverse(o => { o.castShadow = true; }); c.userData.pic = pic; c.userData.blank = blank; spin.add(c); PSLOT.push(c); } } }
+          c.position.copy(p); c.lookAt(p.clone().add(new T.Vector3(n.x, 0, n.z))); c.rotateZ((rnd() - .5) * .3); c.traverse(o => { o.castShadow = true; }); const cp = new T.Mesh(new T.PlaneGeometry(sz * .92, sz * .23), new T.MeshBasicMaterial({ transparent: true, depthWrite: false })); cp.position.set(0, -sz * 1.085, .007); cp.visible = false; c.add(cp); c.userData.cap = cp; c.userData.pic = pic; c.userData.blank = blank; spin.add(c); PSLOT.push(c); } } }
     if (L.ribbon) { // 금색 리본: 겉면을 따라 납작한 띠가 아래에서 위로 두 바퀴 남짓, 하늘빛을 반사해서 돌리면 빛이 흘러가요
       const P = [], N = []; for (let k = 0; k <= 160; k++) { const f = k / 160, s = surf(ft + .15 + f * (top * .84 - ft - .15), 1.2 + f * 6.283 * 2.2, .08); if (s) { P.push(s.p); N.push(s.n.clone().normalize()); } }
       if (P.length > 10) {
@@ -365,6 +365,8 @@ export async function mount(el, opt) {
     polaPages() { return Math.max(1, Math.ceil((opt.polas || []).length / 15)); },
     polaPage(pg) { if (!PSLOT.length) return; const L_ = opt.polas || [];
       PSLOT.forEach((c, i) => { const o = L_[pg * 15 + i], k = ORN.indexOf(c); if (k >= 0) ORN.splice(k, 1); const pic = c.userData.pic;
+        const cp = c.userData.cap; if (cp.material.map) { cp.material.map.dispose(); cp.material.map = null; } cp.visible = false;
+        if (o && o.cap) { const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const x = cv.getContext('2d'); let fs = 64; x.font = `600 ${fs}px sans-serif`; while (x.measureText(o.cap).width > 490 && fs > 26) { fs -= 2; x.font = `600 ${fs}px sans-serif`; } x.fillStyle = '#33393e'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(o.cap, 256, 66); const tx = new T.CanvasTexture(cv); tx.colorSpace = T.SRGBColorSpace; cp.material.map = tx; cp.material.needsUpdate = true; cp.visible = true; }
         if (!o || !o.pic) { pic.material = c.userData.blank; c.userData.orn = null; c.traverse(x => { x.userData.orn = null; }); return; }
         c.userData.orn = o; c.traverse(x => { x.userData.orn = o; }); ORN.push(c);
         const ld = PTEX[o.pic] || (PTEX[o.pic] = new Promise(res => { const tl = new T.TextureLoader(); tl.setCrossOrigin('anonymous'); tl.load(o.pic, tx => { const im = tx.image, w = im.width, h = im.height; tx.colorSpace = T.SRGBColorSpace; if (h > w) { tx.repeat.set(1, w / h); tx.offset.set(0, (1 - w / h) / 2); } else { tx.repeat.set(h / w, 1); tx.offset.set((1 - h / w) / 2, 0); } res(new T.MeshStandardMaterial({ map: tx, roughness: .7 })); }, undefined, () => res(null)); }));
