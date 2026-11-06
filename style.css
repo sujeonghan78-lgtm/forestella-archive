@@ -2411,8 +2411,12 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-fab { position: fixed; right: 16px; bottom: calc(var(--tabs-h) + 16px + env(safe-area-inset-bottom)); z-index: 40; width: 56px; height: 56px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); background: radial-gradient(circle at 32% 28%, #9fe0ff, #3a8fe0 55%, #2459b8); box-shadow: 0 6px 18px rgba(36,89,184,.4), inset 0 -3px 6px rgba(0,0,0,.15); display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
 .tree-fab svg { width: 26px; height: 26px; fill: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
 .tree-fab em { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #fff; color: #2459b8; font: 700 11.5px/20px system-ui, sans-serif; font-style: normal; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
-.tree-fab.done { background: radial-gradient(circle at 32% 28%, #b9e8a0, #4f9a4a 60%, #2f6a35); box-shadow: 0 6px 18px rgba(47,106,53,.35); }
-.tree-fab.done em { color: #2f6a35; }
+.tree-fab.done { background: radial-gradient(circle at 32% 28%, #d9dde2, #9aa3ad 60%, #737c86); box-shadow: 0 6px 18px rgba(0,0,0,.2); }
+.tree-fab.done em { color: #66707a; }
+.tree-fab { flex-direction: column; gap: 0; }
+.tree-fab svg { width: 22px; height: 22px; }
+.tree-fab b { color: #fff; font: 800 10.5px/1 system-ui, sans-serif; margin-top: 1px; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.tree-fab em { white-space: nowrap; }
 .tree-fab.pop { animation: fab-pop .45s ease; }
 @keyframes fab-pop { 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .tree-const { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); padding: 8px 16px; border-radius: 20px; background: rgba(10,20,40,.55); color: #fff3c8; font-size: 15px; font-weight: 700; pointer-events: none; animation: tc-fade 3.2s ease forwards; white-space: nowrap; }
