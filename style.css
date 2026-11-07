@@ -2588,3 +2588,16 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-page.slim .tr-lab { display: none; } .tree-page.slim .tree-road.show .tr-lab { display: flex; } .tree-page.slim .tree-road { cursor: pointer; }
 .tree-page.slim .tree-bar { position: relative; height: 16px; border-radius: 8px; } .tree-page.slim .tree-bar i { border-radius: 8px; }
 .tree-page.slim .tree-bar em { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 10.5px; font-weight: 600; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+
+.tree-page.slim .tree-snow svg { fill: none; stroke: currentColor; stroke-width: 1.8; }
+.snow-pick { position: absolute; right: 16px; bottom: 120px; z-index: 6; background: rgba(255,255,255,.96); border-radius: 16px; padding: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.25); display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 210px; color: #24453f; }
+.snow-pick p { grid-column: 1 / -1; margin: 0 0 2px; font-size: 12px; color: #678; text-align: center; text-shadow: none; }
+.snow-pick button { border: 0; border-radius: 12px; background: #eef4f2; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; color: #24453f; }
+.snow-pick button b { font-size: 14px; } .snow-pick button small { font-size: 11px; color: #2c8a7a; }
+
+.tree-btns { position: relative; }
+.tree-sky { position: absolute; left: calc(50% - 166px); top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.1); color: rgba(255,255,255,.75); display: flex; align-items: center; justify-content: center; padding: 0; }
+.tree-sky svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.sky-pick { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); display: flex; gap: 4px; background: rgba(255,255,255,.95); border-radius: 18px; padding: 5px; box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 6; }
+.sky-pick[hidden] { display: none; }
+.sky-pick a { padding: 5px 10px; border-radius: 13px; font-size: 13px; color: #24453f; text-decoration: none; white-space: nowrap; } .sky-pick a.on { background: #24584f; color: #fff; }
