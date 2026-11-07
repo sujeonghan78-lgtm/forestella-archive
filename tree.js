@@ -107,7 +107,7 @@ export function animalSnow(sz, kind, my = {}) { // my: { c 목도리 색, f 얼�
     const m = o.t === 'c' ? new T.Mesh(new T.ConeGeometry(sz * .055, sz * .3, 8), fm(0xff8a2a)) : new T.Mesh(new T.CylinderGeometry(sz * .045, sz * .045, sz * .03, 12), fm(0x1d1d22, { roughness: .4 }));
     m.position.copy(o.t === 'c' ? p.clone().add(d.clone().multiplyScalar(sz * .14)) : p); m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), d); g.add(m); }); // 단추(눈)·당근(코)
   if (my.f) { const tx = new T.TextureLoader().load(my.f); tx.colorSpace = T.SRGBColorSpace;
-    const fc = new T.Mesh(new T.SphereGeometry(sz * .372, 24, 16, Math.PI * .5 - .75, 1.5, Math.PI * .5 - .75, 1.5), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); fc.position.y = sz * 1.15; g.add(fc); }
+    const fc = new T.Mesh(new T.SphereGeometry(sz * .368, 12, 8, Math.PI * .5 - .75, 1.5, Math.PI * .5 - .75, 1.5), new T.MeshStandardMaterial({ map: tx, transparent: true, depthWrite: false, roughness: .8, flatShading: true, polygonOffset: true, polygonOffsetFactor: -2 })); fc.position.y = sz * 1.15; g.add(fc); }
   g.traverse(o => { o.castShadow = true; }); return g;
 }
 export function snowman(sz, c = 0xd8343e) { // 눈사람 (목도리 색 = c)
