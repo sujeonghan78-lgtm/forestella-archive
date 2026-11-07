@@ -423,7 +423,7 @@ export function preview(el, o) {
   const sc = new T.Scene(), cam = new T.PerspectiveCamera(30, W() / Hh(), .01, 20); cam.position.set(0, 0, 2.1); cam.lookAt(0, 0, 0);
   sc.add(new T.HemisphereLight(0xffffff, 0x50605a, 1.8)); const d = new T.DirectionalLight(0xfff4e0, 2.4); d.position.set(1.5, 2, 2.5); sc.add(d);
   const g = new T.Group(); sc.add(g); let m = null, ry = .5, rx = .15, vy = .01, drag = null, alive = true;
-  const set = q => { if (m) g.remove(m); m = q.shape === 3 ? (() => { const g = new T.Group(), s = snowman(.36, OC[q.color]); s.position.y = -.32; g.add(s); return g; })() : q.shape === 1 ? sock(.42, OC[q.color]) : q.shape === 2 ? star5(.2, OC[q.color]) : bead(.2, OC[q.color]); g.add(m); };
+  const set = q => { if (m) g.remove(m); m = q.snowK != null ? (() => { const s = animalSnow(.48, q.snowK, q.my || {}); s.position.y = -.42; s.rotation.y = -.5; return s; })() : q.shape === 3 ? (() => { const g = new T.Group(), s = snowman(.36, OC[q.color]); s.position.y = -.32; g.add(s); return g; })() : q.shape === 1 ? sock(.42, OC[q.color]) : q.shape === 2 ? star5(.2, OC[q.color]) : bead(.2, OC[q.color]); g.add(m); };
   set(o);
   r.domElement.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; r.domElement.setPointerCapture(e.pointerId); });
   r.domElement.addEventListener('pointermove', e => { if (!drag) return; vy = (e.clientX - drag.x) * .012; ry += vy; rx = Math.max(-1.2, Math.min(1.2, rx + (e.clientY - drag.y) * .012)); drag = { x: e.clientX, y: e.clientY }; });
