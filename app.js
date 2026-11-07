@@ -6053,13 +6053,13 @@
     const PENS = ['#1d1d22', '#ffffff', '#ff8fb0', '#d8343e', '#8a5a3a', '#ffbf2a', '#3f6fe0'], WS = [3, 7, 14, 26];
     const sh = document.createElement('div'); sh.className = 'tree-sheet sn-sheet';
     sh.innerHTML = `<div class="ts-prev" id="sn-prev"><small>${L3('손가락으로 돌려 보세요', 'Drag to turn', 'ドラッグで回せます')}</small></div><div class="ts-in">
-      <div class="sn-head"><h2>${n[3]} ${L3(`내 ${n[0]} 눈사람`, `My ${n[1]} snowman`, `${n[2]}の雪だるま`)}</h2><span>🔒 ${L3('나만 보여요', 'Only you', '自分だけ')}</span></div>
-      <div class="sn-bar"><button data-t="pen" title="펜">✏️</button><button data-t="er" title="지우개">🧽</button><button class="sn-deco" title="데코">✨</button><span class="sn-dk" hidden><button data-t="b" title="단추">⚫</button><button data-t="c" title="당근">🥕</button></span><i class="sn-sp"></i><button class="sn-undo" title="되돌리기">↶</button><button class="sn-redo" title="다시하기">↷</button><button class="sn-clr" title="${L3('모두 지우기', 'Clear all', '全部消す')}">🗑</button></div>
+      <div class="sn-head"><h2>${L3(`내 ${n[0]} 눈사람`, `My ${n[1]} snowman`, `${n[2]}の雪だるま`)}</h2><span>${L3('나만 보여요', 'Only you', '自分だけ')}</span></div>
+      <div class="sn-bar"><button data-t="pen" >펜</button><button data-t="er" >지우개</button><button class="sn-deco">데코</button><span class="sn-dk" hidden><button data-t="b" >단추</button><button data-t="c" >당근</button></span><i class="sn-sp"></i><button class="sn-undo" title="되돌리기">↶</button><button class="sn-redo" title="다시하기">↷</button><button class="sn-clr" >${L3('비우기', 'Clear', '消す')}</button></div>
       <div class="sn-face"><canvas width="256" height="256"></canvas><canvas class="sn-ov" width="256" height="256"></canvas></div>
       <div class="sn-opts"><div class="sn-pens">${PENS.map(c => `<button data-p="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div><div class="sn-ws">${WS.map(w => `<button data-w="${w}" aria-label="${w}"><i style="width:${Math.min(22, w)}px;height:${Math.min(22, w)}px"></i></button>`).join('')}</div></div>
       <p class="sn-hint"></p>
       <p class="ts-l">${k === 2 ? L3('망토 색', 'Cape color', 'マントの色') : L3('목도리 색', 'Scarf color', 'マフラーの色')}</p><div class="sn-cols">${SNOW_C.map(c => `<button data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>
-      <p class="sn-pos"><button class="sn-move">📍 ${L3('자리 옮기기', 'Move', '移動')}</button> · <button class="sn-reset">${L3('처음 모습', 'Reset', '元に戻す')}</button> · <button class="sn-del">${L3('치우기', 'Remove', '片付ける')}</button></p>
+      <p class="sn-pos"><button class="sn-move">${L3('자리 옮기기', 'Move', '移動')}</button> · <button class="sn-reset">${L3('처음 모습', 'Reset', '元に戻す')}</button> · <button class="sn-del">${L3('치우기', 'Remove', '片付ける')}</button></p>
       <div class="ts-btns"><button class="ts-cancel">${L3('취소', 'Cancel', 'キャンセル')}</button><button class="ts-go">${L3('저장', 'Save', '保存')}</button></div></div>`;
     pg.appendChild(sh);
     const cv = sh.querySelector('canvas'), x = cv.getContext('2d'); let drawn = !!cur.f, last = null;
