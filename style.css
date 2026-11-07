@@ -2551,3 +2551,9 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .sn-tool { justify-content: center; } .sn-tool button { font-size: 13px; } .sn-tool button.on, .sn-w button.on { background: #e3f3ee; box-shadow: 0 0 0 2px #2c8a7a; }
 .sn-tool[hidden], .sn-dk[hidden] { display: none; } .sn-dk { text-align: center; margin: 2px 0 6px; } .sn-deco { border: 1px dashed #9ab; background: none; border-radius: 14px; padding: 4px 12px; font-size: 13px; color: #456; }
 .tree-page.placing > *:not(.tree-placebar):not(#tree-cv):not(:has(#tree-cv)) { visibility: hidden; }
+.sn-sheet .ts-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px; margin: 0 0 10px; }
+.sn-sheet .ts-row button { margin: 0; }
+.sn-sheet .sn-tool { padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,.06); }
+.sn-sheet .sn-dk { text-align: left; }
+.sn-sheet .sn-col { margin-bottom: 14px; }
+.sn-sheet .sn-pos { justify-content: flex-start; padding-top: 10px; border-top: 1px solid rgba(0,0,0,.06); }
