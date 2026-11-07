@@ -171,6 +171,14 @@ export async function mount(el, opt) {
   const STEP = opt.cStep || 20, SKY_R = 22, CP = [];
   // 하늘은 돔: 손가락으로 돌리면 트리보다 천천히 같이 돌아요. 별자리는 하늘 둘레에 펼쳐 둬요 (앞쪽 두 개부터)
   const skyG = new T.Group(); sc.add(skyG);
+  const MET = { list: [], t: 0, geo: new T.PlaneGeometry(6, .1), tex: (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 4; const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 128, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.85, 'rgba(220,235,255,.7)'); g.addColorStop(1, 'rgba(255,255,255,1)'); x.fillStyle = g; x.fillRect(0, 0, 128, 4); return new T.CanvasTexture(c); })() };
+  const metGo = f0 => {
+        const fw = new T.Vector3(); cam.getWorldDirection(fw); const up = cam.up.clone().applyQuaternion(cam.quaternion).normalize(), rt = fw.clone().cross(up).normalize(), dir = Math.random() < .5 ? -1 : 1;
+        const m = new T.Mesh(MET.geo, new T.MeshBasicMaterial({ map: MET.tex, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
+        const D = cam.position.length() + 14, hh = D * Math.tan(cam.fov * Math.PI / 360), hw = hh * cam.aspect; m.position.copy(cam.position).addScaledVector(fw, D).addScaledVector(up, hh * (.45 + Math.random() * .45)).addScaledVector(rt, hw * (Math.random() * 1.2 - .3) * dir);
+        const v = rt.clone().multiplyScalar(-dir * .55).addScaledVector(up, -.3); m.quaternion.copy(cam.quaternion); m.rotateZ(Math.atan2(-.3, -dir * .55));
+        m.userData = { v, f: f0 }; m.position.addScaledVector(v, f0); sc.add(m); MET.list.push(m); 
+  };
   const SKY_A = [0, .6, -.6, 1.2, -1.2, 1.85, -1.85, 2.7], SKY_Y = [19, 21.5, 20, 22, 21, 20.5, 22, 21];
   CONST.forEach((c, ci) => { const a = SKY_A[ci], cx = c.p.reduce((s, q) => s + q[0], 0) / c.p.length * c.s, cy = c.p.reduce((s, q) => s + q[1], 0) / c.p.length * c.s;
     c.p.forEach(([x, y]) => { const dx = x * c.s - cx; CP.push({ ci, v: new T.Vector3(Math.sin(a) * SKY_R + Math.cos(a) * dx, SKY_Y[ci] + y * c.s - cy, -Math.cos(a) * SKY_R + Math.sin(a) * dx) }); }); });
@@ -370,6 +378,10 @@ export async function mount(el, opt) {
     if (pPick) PICK.emissiveIntensity = .45 + .35 * Math.sin(performance.now() / 260);
     if (LIGHTS.length || FLY.length) { const tm = performance.now() / 1000; LIGHTS.forEach(l => { l.material.opacity = .55 + .45 * Math.sin(tm * 1.6 + l.userData.ph); }); FLY.forEach(f => { const u = f.userData, a = u.a + tm * .08 * u.s; f.position.set(Math.cos(a) * u.r, u.y + Math.sin(tm * .7 + u.ph) * .35, Math.sin(a) * u.r); f.material.opacity = Math.max(0, Math.sin(tm * 1.3 + u.ph)) * .95; }); }
     if (snowP) { const a = snowP.geometry.attributes.position, tm = performance.now() / 1000; for (let k = 0; k < a.count; k++) { let y = a.getY(k) - .012 - (k % 5) * .002; if (y < 0) y = 16; a.setY(k, y); a.setX(k, a.getX(k) + Math.sin(tm + k) * .003); } a.needsUpdate = true; }
+    if (starA >= .45) { // 별똥별: 밤·노을 하늘에 가끔 하나씩 (몇 초마다 랜덤)
+      if (!MET.t) MET.t = performance.now() + 2500 + Math.random() * 5000;
+      if (performance.now() > MET.t) { MET.t = performance.now() + 4000 + Math.random() * 9000; metGo(0); }
+      for (let i = MET.list.length - 1; i >= 0; i--) { const m = MET.list[i], u = m.userData; u.f++; m.position.add(u.v); m.material.opacity = Math.min(1, u.f / 6) * Math.max(0, 1 - Math.max(0, u.f - 22) / 14); if (u.f > 36) { sc.remove(m); m.material.dispose(); MET.list.splice(i, 1); } } }
     skyG.rotation.y = skyRot; spin.rotation.y = rot;
     if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(), fc = sc.fog ? sc.fog.color : new T.Color(0xffffff); WOODS.forEach(g => { g.getWorldPosition(wp); const dc = wp.distanceTo(cam.position); g.visible = dc > c0 * .8; const f = Math.round(Math.max(0, Math.min(.3, (dc - c0 * .8) / (c0 * 2))) * 40) / 40; if (g.userData.f !== f || g.userData.fc !== fc.getHex()) { g.userData.f = f; g.userData.fc = fc.getHex(); g.material.color.setScalar(1 - f); g.material.emissive.copy(fc).multiplyScalar(f); } }); }
     if (GLIT.length) { const wp = new T.Vector3(), wn = new T.Vector3(); GLIT.forEach(sp => { sp.getWorldPosition(wp); wn.copy(sp.userData.n).applyAxisAngle(new T.Vector3(0, 1, 0), rot); const d = wn.dot(cam.position.clone().sub(wp).normalize()), th = sp.userData.k; sp.material.opacity = Math.max(0, 1 - Math.abs(d - th) / .035); }); } spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
@@ -393,7 +405,7 @@ export async function mount(el, opt) {
     addPola(o, g) { (opt.polas = opt.polas || [])[g] = o; this.polaPage(Math.floor(g / 15)); },
     polaPick(cb) { pPick = cb; this.polaPage(pgCur); },
     snowSet(k, my) { snowPut(k, my); },
-    shot() { r.render(sc, cam); return r.domElement.toDataURL('image/png'); }, // 트리 사진 (화면 글자 없이)
+    shot() { if (starA >= .45 && !MET.list.length) { metGo(12); MET.list[MET.list.length - 1].material.opacity = 1; } r.render(sc, cam); return r.domElement.toDataURL('image/png'); }, // 트리 사진 (화면 글자 없이)
     snowPlace(k, cb) { if (sPlace && sPlace.g) spin.remove(sPlace.g); sPlace = cb ? { k, cb, g: null, p: null } : null;
       if (!SZONE) { SZONE = new T.Mesh(new T.RingGeometry(1.4, 4.9, 40, 1, .1, Math.PI - .2), new T.MeshBasicMaterial({ color: 0x8fd0ff, transparent: true, opacity: .35, depthWrite: false, side: T.DoubleSide })); SZONE.rotation.x = Math.PI / 2; SZONE.position.y = .03; spin.add(SZONE); } SZONE.visible = !!cb;
       if (cb) { rot = Math.round(rot / 6.283) * 6.283; v = 0; } }, // 눈사람은 선물 없는 반쪽(앞)에만, 고르는 동안 그 땅을 연하게
