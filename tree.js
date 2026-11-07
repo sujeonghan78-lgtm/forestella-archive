@@ -102,7 +102,8 @@ export function animalSnow(sz, kind, my = {}) { // my: { c 목도리 색, f 얼�
     const col = new T.Mesh(new T.TorusGeometry(sz * .37, sz * .055, 6, 14), fm(my.c != null ? my.c : 0xd8343e)); col.rotation.x = Math.PI / 2; col.position.y = sz * .9; g.add(col); }
   else { [-1, 1].forEach(k => { const e = new T.Mesh(new T.IcosahedronGeometry(sz * .08, 1), w); e.scale.set(1, 3.2, .7); e.position.set(k * sz * .12, sz * 1.6, 0); e.rotation.z = -k * .12; g.add(e); const i = new T.Mesh(new T.SphereGeometry(sz * .04, 6, 4), pk); i.scale.set(1, 4.5, .4); i.position.set(k * sz * .12, sz * 1.62, sz * .05); i.rotation.z = -k * .12; g.add(i); });
     const n = new T.Mesh(new T.SphereGeometry(sz * .035, 6, 4), pk); n.position.set(0, sz * 1.16, sz * .36); n.userData.face = 1; g.add(n); scarf(0x8ec5e8); }
-  if (my.f) { g.children.filter(o => o.userData.face).forEach(o => g.remove(o)); const tx = new T.TextureLoader().load(my.f); tx.colorSpace = T.SRGBColorSpace;
+  g.children.filter(o => o.userData.face).forEach(o => g.remove(o)); // 얼굴은 처음엔 비워 두고, 그린 사람만 그 그림으로
+  if (my.f) { const tx = new T.TextureLoader().load(my.f); tx.colorSpace = T.SRGBColorSpace;
     const fc = new T.Mesh(new T.SphereGeometry(sz * .372, 24, 16, Math.PI * .5 - .75, 1.5, Math.PI * .5 - .75, 1.5), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); fc.position.y = sz * 1.15; g.add(fc); }
   g.traverse(o => { o.castShadow = true; }); return g;
 }
