@@ -5993,11 +5993,12 @@
   }
   let treeApi = null, treeFrom = '', treeMod = null;
   const treeWeek = () => { const t = kstDay(), d0 = new Date(t + 'T00:00:00Z'), mon = d0.getTime() - ((d0.getUTCDay() + 6) % 7) * 864e5; return [0, 1, 2, 3, 4, 5, 6].map(k => new Date(mon + k * 864e5).toISOString().slice(0, 10)); };
+  function treePpl(st) { const nx = st.next; return `<p class="tl-ppl">${L3(`오늘 ${st.todayP}명 · 모두 ${st.people}명`, `Today ${st.todayP} · Total ${st.people}`, `今日${st.todayP}人 · 合計${st.people}人`)}${st.slot ? ` · <button type="button" class="tl-orn" onclick="const t=this.parentNode.nextElementSibling;t.hidden=!t.hidden">${L3('오너먼트', 'Ornaments', 'オーナメント')} ${st.hung.length}/${st.slot} ⓘ</button>` : ''}</p>
+      ${st.slot || st.next ? `<p class="tl-ornt" hidden>${nx ? L3(`다음: Lv${st.i + 2} ${lvN(nx)}`, `Next: Lv${st.i + 2} ${lvN(nx)}`, `次: Lv${st.i + 2} ${lvN(nx)}`) + ' · ' : ''}${(() => { const nl = TREE_LV.slice(st.i + 1).find(l => l.slot > st.slot); return nl ? L3(`Lv${TREE_LV.indexOf(nl) + 1}이 되면 오너먼트 ${nl.slot}개까지`, `Up to ${nl.slot} at Lv${TREE_LV.indexOf(nl) + 1}`, `Lv${TREE_LV.indexOf(nl) + 1}で${nl.slot}個まで`) : ''; })()}</p>` : ''}`;
+  }
   function treeHud(st) {
     const nx = st.next, pct = nx ? Math.round((st.water - st.lv.w) / (nx.w - st.lv.w) * 100) : 100;
-    if (tAdm()) return `<div class="tl-row"><b>Lv${st.i + 1}</b><span class="tree-bar"><i style="width:${pct}%"></i><em>${st.water}${nx ? ' / ' + nx.w : ''}</em></span><b>${nx ? 'Lv' + (st.i + 2) : 'MAX'}</b></div>
-      <p class="tl-ppl">${L3(`오늘 ${st.todayP}명 · 모두 ${st.people}명`, `Today ${st.todayP} · Total ${st.people}`, `今日${st.todayP}人 · 合計${st.people}人`)}${st.slot ? ` · <button type="button" class="tl-orn" onclick="const t=this.parentNode.nextElementSibling;t.hidden=!t.hidden">${L3('오너먼트', 'Ornaments', 'オーナメント')} ${st.hung.length}/${st.slot} ⓘ</button>` : ''}</p>
-      ${st.slot || st.next ? `<p class="tl-ornt" hidden>${nx ? L3(`다음: Lv${st.i + 2} ${lvN(nx)}`, `Next: Lv${st.i + 2} ${lvN(nx)}`, `次: Lv${st.i + 2} ${lvN(nx)}`) + ' · ' : ''}${(() => { const nl = TREE_LV.slice(st.i + 1).find(l => l.slot > st.slot); return nl ? L3(`Lv${TREE_LV.indexOf(nl) + 1}이 되면 오너먼트 ${nl.slot}개까지`, `Up to ${nl.slot} at Lv${TREE_LV.indexOf(nl) + 1}`, `Lv${TREE_LV.indexOf(nl) + 1}で${nl.slot}個まで`) : ''; })()}</p>` : ''}`;
+    if (tAdm()) return `<div class="tl-row"><b>Lv${st.i + 1}</b><span class="tree-bar"><i style="width:${pct}%"></i><em>${st.water}${nx ? ' / ' + nx.w : ''}</em></span><b>${nx ? 'Lv' + (st.i + 2) : 'MAX'}</b></div>`;
     return `<div class="tl-row"><b>Lv${st.i + 1}</b><span class="tree-bar"><i style="width:${pct}%"></i></span><b>${nx ? 'Lv' + (st.i + 2) : 'MAX'}</b></div>
       <p class="tl-num">💧 ${st.water}${nx ? ` / ${nx.w} · ${L3('다음', 'Next', '次')}: ${lvN(nx)}` : ` · ${L3('다음 레벨 준비 중', 'Next level coming soon', '次のレベル準備中')}`}</p>
       <p class="tl-ppl">🌟 ${L3(`오늘 숲별 ${st.todayP}명이 물 줬어요 · 지금까지 ${st.people}명`, `${st.todayP} fans watered today · ${st.people} in total`, `今日${st.todayP}人が水やり · これまで${st.people}人`)}${st.slot || st.next ? ` · <button type="button" class="tl-orn" onclick="const t=this.parentNode.nextElementSibling;t.hidden=!t.hidden">🎁 ${L3('오너먼트', 'Ornaments', 'オーナメント')} ${st.hung.length}/${st.slot} ⓘ</button>` : ''}</p>
@@ -6022,7 +6023,7 @@
   // 오른쪽 위 버튼 칸(📷 쪽·⛄·🎁): 길 표시 바로 아래에 세로로 쌓아요
   function treeRt() { const pg = document.querySelector('.tree-page'); if (!pg) return null; let r = pg.querySelector('.tree-rt'); if (!r) { r = document.createElement('div'); r.className = 'tree-rt'; pg.appendChild(r);
       if (tAdm()) { r.classList.add('fold'); const t = document.createElement('button'); t.className = 'rt-tog'; t.innerHTML = `<svg viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>${L3('꾸미기', 'Decorate', 'デコ')}`; t.onclick = () => r.classList.toggle('open'); r.prepend(t); } } // 관리자 미리보기: 폴라로이드·눈사람·선물 버튼을 '꾸미기' 하나로 접기
-    const rd = pg.querySelector('.tree-road'); if (rd) r.style.top = Math.round(rd.getBoundingClientRect().bottom - pg.getBoundingClientRect().top + 8) + 'px'; return r; }
+    const rd = pg.querySelector('.tree-ppl') || pg.querySelector('.tree-road'); if (rd) r.style.top = Math.round(rd.getBoundingClientRect().bottom - pg.getBoundingClientRect().top + 8) + 'px'; return r; }
   function treePolaBar(st) {
     if (!treeApi || !treeApi.polaPage) return; const pk = !!treePolaBar.pick, last = st.polas.length, n = Math.max(1, Math.ceil((last + (pk && last % 15 === 0 ? 1 : 0)) / 15)), me = myUid(), mi = st.polas.findIndex(o => o && o.by === me);
     let cur = pk ? Math.max(0, n - 1 - (st.polas.slice((n - 1) * 15).length < 15 ? 0 : 0)) : mi >= 0 ? Math.floor(mi / 15) : n - 1; if (pk) { for (let k = 0; k < n; k++) if (Array.from({ length: 15 }, (_, i) => st.polas[k * 15 + i]).some(x => !x)) { cur = k; break; } } treeApi.polaPage(cur);
@@ -6321,8 +6322,10 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         <p class="tree-skyp">${[['', L3('지금', 'Now', '今')], ['dawn', L3('새벽', 'Dawn', '夜明け')], ['day', L3('낮', 'Day', '昼')], ['sunset', L3('노을', 'Sunset', '夕焼け')], ['night', L3('밤', 'Night', '夜')]].map(([k, n]) => `<a href="#/tree${k ? '?sky=' + k : ''}"${(qs.get('sky') || '') === k ? ' class="on"' : ''}>${n}</a>`).join('')}${isAdmin() ? `<a href="#" onclick="event.preventDefault();try{localStorage.getItem('sb-tree-user')?localStorage.removeItem('sb-tree-user'):localStorage.setItem('sb-tree-user','1')}catch(e){}location.reload()">${tAdm() ? '👤 일반' : '🔑 관리자'}</a>` : ''}</p>
         ${tAdm() ? (dTxt || treeX2() > 1 ? `<p class="tree-dday">${dTxt ? `🎄 ${L3('연말 콘서트까지', 'Year-end concert', '年末コンサートまで')} <b>${dTxt}</b>` : ''}${treeX2() > 1 ? `${dTxt ? ' · ' : ''}💧 ${L3('토요일은 물 두 배', 'Saturday: double water', '土曜日は水2倍')}` : ''}</p>` : '') : `${treeX2() > 1 ? `<p class="tree-dday">💧 ${L3('토요일은 물 두 배 데이! 한 번 주면 2번으로 세요', 'Saturday: every watering counts double!', '土曜日は水やりが2倍!')}</p>` : ''}${dTxt ? `<p class="tree-dday">🎄 ${L3('연말 콘서트까지', 'Year-end concert', '年末コンサートまで')} <b>${dTxt}</b></p>` : ''}`}
         <div class="tree-road" aria-label="${L3('콘서트까지 물 준 날', 'Days watered until the concert', 'コンサートまでの水やり')}"><div class="tr-line">${stamp}</div><p class="tr-lab"><span>${md(path[0])}</span><span>${L3(`물 준 날 ${[...days].filter(d => d >= path[0]).length}일`, `${[...days].filter(d => d >= path[0]).length} days watered`, `水やり${[...days].filter(d => d >= path[0]).length}日`)}</span><span>${md(cDays[0])}</span></p></div>
+        ${tAdm() ? `<div class="tree-ppl" id="tree-ppl">${treePpl(st)}</div>` : ''}
       </div>
-      <div class="tree-bot">
+      <div class="tree-bot${tAdm() && mine.hideBot ? ' hid' : ''}">
+        ${tAdm() ? `<button class="bot-tog" id="bot-tog" aria-label="${L3('버튼 접기', 'Hide buttons', 'ボタンを隠す')}"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>` : ''}
         ${st.basket.length ? `<button class="tree-basket" id="tree-basket">🧺 ${L3(`오너먼트 ${st.basket.length}개가 기다려요`, `${st.basket.length} ornament(s) waiting`, `オーナメント${st.basket.length}個が待っています`)}${(() => { const nl = TREE_LV.find(l => l.slot >= st.orn.length); return nl ? ` · ${L3(`물 ${nl.w - st.water}개 더 주면 다 걸려요`, `${nl.w - st.water} more water to hang all`, `あと水${nl.w - st.water}個で全部飾れます`)}` : ''; })()} ›</button>` : ''}
         <div class="tree-hud" id="tree-hud">${treeHud(st)}</div>
         <div class="tree-btns">
@@ -6337,7 +6340,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   }
   function bindTree() {
     const el = document.getElementById('tree-cv'); if (!el) return;
-    if (tAdm()) { const sk = document.getElementById('tree-sky'); if (sk) sk.onclick = () => { const p = document.querySelector('.sky-pick'); p.hidden = !p.hidden; }; const rd = document.querySelector('.tree-road'); if (rd) rd.onclick = () => rd.classList.toggle('show'); const mm = treeMine(); if (!mm.noteSeen) { mm.noteSeen = kstDay(); boxWrite(TREE_KEY, mm); } }
+    if (tAdm()) { const bt = document.getElementById('bot-tog'); if (bt) bt.onclick = () => { const m = treeMine(); m.hideBot = m.hideBot ? 0 : 1; boxWrite(TREE_KEY, m); document.querySelector('.tree-bot').classList.toggle('hid', !!m.hideBot); }; const sk = document.getElementById('tree-sky'); if (sk) sk.onclick = () => { const p = document.querySelector('.sky-pick'); p.hidden = !p.hidden; }; const rd = document.querySelector('.tree-road'); if (rd) rd.onclick = () => rd.classList.toggle('show'); const mm = treeMine(); if (!mm.noteSeen) { mm.noteSeen = kstDay(); boxWrite(TREE_KEY, mm); } }
     if (treeApi) { treeApi.destroy(); treeApi = null; }
     const st = treeState(), qs = new URLSearchParams(location.hash.split('?')[1] || ''), tl = tAdm() && +qs.get('lv');
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = qs.get('sky') || undefined;
@@ -6367,7 +6370,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         const q = new URLSearchParams(location.hash.split('?')[1] || ''), sk = q.get('sky');
         if (q.get('lv')) setTimeout(() => { location.hash = '#/tree' + (sk ? '?sky=' + sk : ''); }, 900);
         else if (n.i > t.i) setTimeout(() => { if (currentRoute() === 'tree') renderBase('tree'); }, 1200);
-        else { const hd = document.getElementById('tree-hud'); if (hd) hd.innerHTML = treeHud(n); }
+        else { const hd = document.getElementById('tree-hud'); if (hd) hd.innerHTML = treeHud(n); const pp = document.getElementById('tree-ppl'); if (pp) pp.innerHTML = treePpl(n); }
       }).catch(() => { b.disabled = false; toast(L3('보내지 못했어요. 잠시 뒤 다시 눌러 주세요', 'Could not send. Try again shortly', '送信できませんでした。少し後でもう一度')); });
     };
   }
