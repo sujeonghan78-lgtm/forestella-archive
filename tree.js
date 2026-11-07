@@ -308,7 +308,7 @@ export async function mount(el, opt) {
         if (L.lights && k % 3 === 0 && d < 20) for (let j = 0; j < 6; j++) { const yy = .55 * hs + wr() * (y - .7 * hs), rr = (.8 - .5 * (yy / y)) * hs * fat * .9, aa = wr() * 6.283, lt = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: [0xffd27a, 0xff9a6a, 0xfff2c0][j % 3], transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); lt.position.set(Math.cos(aa) * rr, yy, Math.sin(aa) * rr); lt.scale.setScalar(.6 * Math.max(.7, hs * .5)); lt.userData.ph = wr() * 6.283; m.add(lt); LIGHTS.push(lt); } } }
     if (L.aurora) { // 눈 속 작은 등불 (Lv8~): 큰 트리에서 떨어진 숲 가장자리 눈 위에 랜턴, 밤·노을엔 촛불처럼 일렁여요
       let ls = 913; const lr = () => (ls = (ls * 16807) % 2147483647) / 2147483647, lit = night || sky === 'sunset', FR = fm(0x2b2f33, { roughness: .6, metalness: .4 });
-      for (let c = 0; c < 5; c++) { const ca = c * 1.257 + lr() * .7, cd = 8.5 + lr() * 10, nn = 1 + Math.floor(lr() * 3);
+      for (let c = 0; c < 7; c++) { const ca = c * .898 + lr() * .5, cd = 8.5 + lr() * 10, nn = 1;
         for (let j = 0; j < nn; j++) { const a = ca + (lr() - .5) * .12, d = cd + (lr() - .5) * 1.4, s = (1.1 + (d - 8) / 12 * .7) * (.8 + lr() * .35), fade = 1 - Math.min(.55, (d - 8) / 20), g = new T.Group();
           const glass = new T.Mesh(new T.BoxGeometry(.2, .26, .2), new T.MeshStandardMaterial({ color: lit ? 0xffe2b0 : 0xb9c4cc, emissive: 0xff9a3a, emissiveIntensity: lit ? 1.4 * fade : 0, roughness: .3, transparent: true, opacity: .9 }));
           glass.position.y = .2; g.add(glass);
