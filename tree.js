@@ -405,7 +405,7 @@ export async function mount(el, opt) {
     addPola(o, g) { (opt.polas = opt.polas || [])[g] = o; this.polaPage(Math.floor(g / 15)); },
     polaPick(cb) { pPick = cb; this.polaPage(pgCur); },
     snowSet(k, my) { snowPut(k, my); },
-    shot() { if (starA >= .45 && !MET.list.length) { metGo(12); MET.list[MET.list.length - 1].material.opacity = 1; } r.render(sc, cam); return r.domElement.toDataURL('image/png'); }, // 트리 사진 (화면 글자 없이)
+    shot() { r.render(sc, cam); return r.domElement.toDataURL('image/png'); }, // 트리 사진 (화면 글자 없이)
     snowPlace(k, cb) { if (sPlace && sPlace.g) spin.remove(sPlace.g); sPlace = cb ? { k, cb, g: null, p: null } : null;
       if (!SZONE) { SZONE = new T.Mesh(new T.RingGeometry(1.4, 4.9, 40, 1, .1, Math.PI - .2), new T.MeshBasicMaterial({ color: 0x8fd0ff, transparent: true, opacity: .35, depthWrite: false, side: T.DoubleSide })); SZONE.rotation.x = Math.PI / 2; SZONE.position.y = .03; spin.add(SZONE); } SZONE.visible = !!cb;
       if (cb) { rot = Math.round(rot / 6.283) * 6.283; v = 0; } }, // 눈사람은 선물 없는 반쪽(앞)에만, 고르는 동안 그 땅을 연하게
