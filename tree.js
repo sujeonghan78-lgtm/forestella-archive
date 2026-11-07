@@ -178,7 +178,7 @@ export async function mount(el, opt) {
         const m = new T.Mesh(MET.geo, new T.MeshBasicMaterial({ map: MET.tex, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
         const D = cam.position.length() + 40, hh = D * Math.tan(cam.fov * Math.PI / 360), hw = hh * cam.aspect; m.position.copy(cam.position).addScaledVector(fw, D).addScaledVector(up, hh * (.45 + Math.random() * .45)).addScaledVector(rt, hw * (Math.random() * 1.2 - .3) * dir);
         const v = rt.clone().multiplyScalar(-dir * .55).addScaledVector(up, -.3); m.quaternion.copy(cam.quaternion); m.rotateZ(Math.atan2(-.3, -dir * .55));
-        m.userData = { v, f: f0 }; m.position.addScaledVector(v, f0); sc.add(m); MET.list.push(m); 
+        m.scale.x = .55 + Math.random() * .8; m.userData = { v, f: f0 }; m.position.addScaledVector(v, f0); sc.add(m); MET.list.push(m); 
   };
   const SKY_A = [0, .6, -.6, 1.2, -1.2, 1.85, -1.85, 2.7], SKY_Y = [19, 21.5, 20, 22, 21, 20.5, 22, 21];
   CONST.forEach((c, ci) => { const a = SKY_A[ci], cx = c.p.reduce((s, q) => s + q[0], 0) / c.p.length * c.s, cy = c.p.reduce((s, q) => s + q[1], 0) / c.p.length * c.s;
@@ -204,7 +204,7 @@ export async function mount(el, opt) {
     fx.push(() => { f++; const k = f / life; s.scale.setScalar(size * (1 - k * .8)); s.material.opacity = starA * (1 - k); if (k >= 1) { skyG.remove(s); return false; } return true; }); };
   const dot = (pos, big) => { const pt = new T.Points(new T.BufferGeometry().setFromPoints([pos]), ptM(big ? 2.4 : 1.4)); pt.userData.min = big ? .26 : .13; skyG.add(pt); pops.push(pt); glow(pos, big ? 3.2 : 1.8, big ? 110 : 80); };
   // 별똥별: 하늘 위 한쪽에서 꼬리를 끌며 날아와 별자리 자리에 박혀요
-  const shoot = (to, done_) => { const rtv = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion); rtv.y = 0; rtv.normalize().applyAxisAngle(new T.Vector3(0, 1, 0), -skyG.rotation.y); const from = to.clone().addScaledVector(rtv, 9 + rnd() * 5).add(new T.Vector3(0, 7 + rnd() * 4, 0)), N = 14, hist = []; // 별똥별은 늘 화면 오른쪽 위 → 왼쪽 아래
+  const shoot = (to, done_) => { const rtv = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion); rtv.y = 0; rtv.normalize().applyAxisAngle(new T.Vector3(0, 1, 0), -skyG.rotation.y); const from = to.clone().addScaledVector(rtv, 9 + rnd() * 5).add(new T.Vector3(0, 7 + rnd() * 4, 0)), N = 8 + Math.floor(Math.random() * 12), hist = []; // 별똥별은 늘 화면 오른쪽 위 → 왼쪽 아래
     const head = new T.Points(new T.BufferGeometry().setFromPoints([from]), ptM(1.2)); skyG.add(head);
     const tg = new T.BufferGeometry().setFromPoints(Array(N).fill(from)), tail = new T.Line(tg, new T.LineBasicMaterial({ color: 0xfff3c8, transparent: true, opacity: starA * .8, fog: false })); skyG.add(tail);
     let f = 0; const L = 70;
