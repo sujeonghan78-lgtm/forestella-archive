@@ -6024,6 +6024,33 @@
     const draw = () => { const f = Array.from({ length: 15 }, (_, i) => st.polas[cur * 15 + i]).filter(Boolean).length; bar.innerHTML = '📷 ' + (n < 2 ? L3('1쪽', 'p.1', '1ページ') : Array.from({ length: n }, (_, k) => `<button data-k="${k}" class="${k === cur ? 'on' : ''}">${k + 1}</button>`).join('')) + `<small>· ${f}/15</small>`; bar.querySelectorAll('button').forEach(b => { b.onclick = () => { cur = +b.dataset.k; treeApi.polaPage(cur); draw(); }; }); };
     draw();
   }
+  // 동물 눈사람 꾸미기 (Lv8): 목도리 색 + 손가락으로 얼굴 그리기. 이 폰에서만 보여요 (sb-tree snow4)
+  const SNOW_N = [['곰돌이', 'Bear', 'クマ', '🐻'], ['고양이', 'Cat', 'ネコ', '🐱'], ['병아리', 'Chick', 'ヒヨコ', '🐥'], ['토끼', 'Bunny', 'ウサギ', '🐰']], SNOW_C = ['#9a6a44', '#f0a040', '#d8343e', '#8ec5e8', '#3fae6a', '#9b6ee8', '#ff8fc0', '#2d3a4a', '#f4f4f0'];
+  function treeSnowEdit(k) {
+    const pg = document.querySelector('.tree-page'); if (!pg || !treeApi) return; document.querySelectorAll('.tree-sheet,.tree-pop').forEach(x => x.remove());
+    const mm = treeMine(), cur = (mm.snow4 || [])[k] || {}, n = SNOW_N[k], f = { c: cur.c, pen: '#1d1d22' };
+    const sh = document.createElement('div'); sh.className = 'tree-sheet';
+    sh.innerHTML = `<div class="ts-in"><h2>${n[3]} ${L3(`내 ${n[0]} 눈사람 꾸미기`, `Decorate my ${n[1]} snowman`, `${n[2]}の雪だるまを飾る`)}</h2><p class="ts-note">🔒 ${L3('나만 보여요. 이 폰에만 저장돼요.', 'Only you can see it, saved on this phone.', '自分だけに見えます(この端末に保存)')}</p>
+      <p class="ts-l">${L3('얼굴 그리기', 'Draw a face', '顔を描く')}</p><div class="sn-face"><canvas width="256" height="256"></canvas></div>
+      <div class="ts-row sn-pen">${['#1d1d22', '#ff8fb0', '#d8343e', '#8a5a3a', '#ffbf2a'].map(c => `<button data-p="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}<button class="sn-clr">${L3('지우기', 'Clear', '消す')}</button></div>
+      <p class="ts-l">${L3('목도리 색', 'Scarf color', 'マフラーの色')}</p><div class="ts-row ts-col sn-col">${SNOW_C.map(c => `<button data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>
+      <div class="ts-btns"><button class="ts-cancel">${L3('취소', 'Cancel', 'キャンセル')}</button><button class="sn-reset">${L3('처음 모습', 'Reset', '元に戻す')}</button><button class="ts-go">${L3('저장', 'Save', '保存')}</button></div></div>`;
+    pg.appendChild(sh);
+    const cv = sh.querySelector('canvas'), x = cv.getContext('2d'); let drawn = false, last = null;
+    if (cur.f) { const im = new Image(); im.onload = () => { x.drawImage(im, 0, 0, 256, 256); drawn = true; }; im.src = cur.f; }
+    const pt = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * 256 / b.width, (e.clientY - b.top) * 256 / b.height]; };
+    cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); last = pt(e); x.fillStyle = f.pen; x.beginPath(); x.arc(last[0], last[1], 4, 0, 7); x.fill(); drawn = true; };
+    cv.onpointermove = e => { if (!last) return; const p = pt(e); x.strokeStyle = f.pen; x.lineWidth = 8; x.lineCap = x.lineJoin = 'round'; x.beginPath(); x.moveTo(last[0], last[1]); x.lineTo(p[0], p[1]); x.stroke(); last = p; };
+    cv.onpointerup = cv.onpointercancel = () => { last = null; };
+    const mark = () => { sh.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === f.pen)); sh.querySelectorAll('[data-c]').forEach(b => b.classList.toggle('on', f.c != null && parseInt(b.dataset.c.slice(1), 16) === f.c)); }; mark();
+    sh.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => { f.pen = b.dataset.p; mark(); }; });
+    sh.querySelectorAll('[data-c]').forEach(b => { b.onclick = () => { f.c = parseInt(b.dataset.c.slice(1), 16); mark(); treeApi.snowSet(k, { c: f.c, f: drawn ? cv.toDataURL() : '' }); }; });
+    sh.querySelector('.sn-clr').onclick = () => { x.clearRect(0, 0, 256, 256); drawn = false; };
+    const put = v => { mm.snow4 = mm.snow4 || []; mm.snow4[k] = v; boxWrite(TREE_KEY, mm); treeApi.snowSet(k, v || {}); sh.remove(); };
+    sh.querySelector('.ts-cancel').onclick = () => { treeApi.snowSet(k, cur); sh.remove(); };
+    sh.querySelector('.sn-reset').onclick = () => put(null);
+    sh.querySelector('.ts-go').onclick = () => { put({ c: f.c, f: drawn ? cv.toDataURL() : '' }); toast(L3('⛄ 내 눈사람을 꾸몄어요!', '⛄ Saved!', '⛄ 保存しました!')); };
+  }
   function treeCard(o) {
     document.querySelectorAll('.tree-pop').forEach(x => x.remove());
     const pg = document.querySelector('.tree-page'); if (!pg) return;
@@ -6257,7 +6284,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = qs.get('sky') || undefined;
     let ok = true; try { const c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (err) { ok = false; }
     if (!ok) { el.innerHTML = `<p class="tree-load">${L3('이 폰에선 3D 트리를 볼 수 없어요. 물 주기는 할 수 있어요!', '3D tree is not supported here, but you can still water!', 'この端末では3Dツリーを表示できませんが、水やりはできます!')}</p>`; }
-    else import('./tree.js?v=72').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, cName, orns: st.hung.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), polas: st.polas.map(o => o && Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); treePolaBar(st); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else if (tl || !treeLvNews()) treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
+    else import('./tree.js?v=73').then(m => (treeMod = m).mount(el, { lv: lv.o, people: st.people, water: st.water, sky, cName, orns: st.hung.map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), polas: st.polas.map(o => o && Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, snow4: (treeMine().snow4 || []).map(x => x || {}), onSnow: treeSnowEdit, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); treePolaBar(st); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else if (tl || !treeLvNews()) treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
     const bk = document.getElementById('tree-back'); if (bk) bk.onclick = () => { location.hash = treeFrom || '#/more'; };
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };

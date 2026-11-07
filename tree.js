@@ -87,21 +87,23 @@ export function sock(sz, c) {
   return g;
 }
 // 동물 눈사람 (Lv8): 0 곰 · 1 고양이 · 2 병아리 · 3 토끼. 얼굴은 점 눈 + 볼터치, 동물 특징만 얹어요
-export function animalSnow(sz, kind) {
+export function animalSnow(sz, kind, my = {}) { // my: { c 목도리 색, f 얼굴 그림(dataURL) } 이 폰에서만
   const g = new T.Group(), w = fm(0xfbfdff, { roughness: .8 }), blk = fm(0x1d1d22), pk = fm(0xffb3c1, { roughness: .9 });
   const b1 = new T.Mesh(new T.IcosahedronGeometry(sz * .5, 1), w); b1.position.y = sz * .5; const b2 = new T.Mesh(new T.IcosahedronGeometry(sz * .36, 1), w); b2.position.y = sz * 1.15; g.add(b1, b2);
-  [-1, 1].forEach(k => { const e = new T.Mesh(new T.SphereGeometry(sz * .033, 8, 6), blk); e.position.set(k * sz * .12, sz * 1.24, sz * .33); g.add(e); const hl = new T.Mesh(new T.SphereGeometry(sz * .011, 6, 4), new T.MeshBasicMaterial({ color: 0xffffff })); hl.position.set(k * sz * .12 + sz * .011, sz * 1.252, sz * .36); g.add(hl);
-    const ch = new T.Mesh(new T.SphereGeometry(sz * .06, 6, 4), pk); ch.scale.set(1, .6, .4); ch.position.set(k * sz * .21, sz * 1.13, sz * .29); g.add(ch); });
-  const scarf = c => { const sf = new T.Mesh(new T.TorusGeometry(sz * .37, sz * .065, 6, 14), fm(c)); sf.rotation.x = Math.PI / 2; sf.position.y = sz * .88; g.add(sf); const tl = new T.Mesh(new T.BoxGeometry(sz * .12, sz * .35, sz * .05), fm(c)); tl.position.set(sz * .2, sz * .72, sz * .42); tl.rotation.z = .2; g.add(tl); };
+  [-1, 1].forEach(k => { const e = new T.Mesh(new T.SphereGeometry(sz * .033, 8, 6), blk); e.position.set(k * sz * .12, sz * 1.24, sz * .33); e.userData.face = 1; g.add(e); const hl = new T.Mesh(new T.SphereGeometry(sz * .011, 6, 4), new T.MeshBasicMaterial({ color: 0xffffff })); hl.position.set(k * sz * .12 + sz * .011, sz * 1.252, sz * .36); hl.userData.face = 1; g.add(hl);
+    const ch = new T.Mesh(new T.SphereGeometry(sz * .06, 6, 4), pk); ch.scale.set(1, .6, .4); ch.position.set(k * sz * .21, sz * 1.13, sz * .29); ch.userData.face = 1; g.add(ch); });
+  const scarf = c0 => { const c = my.c != null ? my.c : c0; const sf = new T.Mesh(new T.TorusGeometry(sz * .37, sz * .065, 6, 14), fm(c)); sf.rotation.x = Math.PI / 2; sf.position.y = sz * .88; g.add(sf); const tl = new T.Mesh(new T.BoxGeometry(sz * .12, sz * .35, sz * .05), fm(c)); tl.position.set(sz * .2, sz * .72, sz * .42); tl.rotation.z = .2; g.add(tl); };
   if (kind === 0) { [-1, 1].forEach(k => { const e = new T.Mesh(new T.IcosahedronGeometry(sz * .11, 1), w); e.scale.z = .7; e.position.set(k * sz * .25, sz * 1.42, 0); g.add(e); const i = new T.Mesh(new T.SphereGeometry(sz * .055, 6, 4), pk); i.scale.z = .4; i.position.set(k * sz * .25, sz * 1.42, sz * .07); g.add(i); });
-    const n = new T.Mesh(new T.SphereGeometry(sz * .045, 6, 4), blk); n.position.set(0, sz * 1.15, sz * .36); g.add(n); scarf(0x9a6a44); }
+    const n = new T.Mesh(new T.SphereGeometry(sz * .045, 6, 4), blk); n.position.set(0, sz * 1.15, sz * .36); n.userData.face = 1; g.add(n); scarf(0x9a6a44); }
   else if (kind === 1) { [-1, 1].forEach(k => { const e = new T.Mesh(new T.ConeGeometry(sz * .11, sz * .2, 4), w); e.position.set(k * sz * .2, sz * 1.47, 0); e.rotation.z = -k * .35; g.add(e); });
-    const n = new T.Mesh(new T.SphereGeometry(sz * .035, 6, 4), pk); n.position.set(0, sz * 1.16, sz * .36); g.add(n); scarf(0xf0a040); }
-  else if (kind === 2) { const bk = new T.Mesh(new T.SphereGeometry(sz * .05, 10, 8), fm(0xffbf2a, { roughness: .5 })); bk.scale.z = .5; bk.position.set(0, sz * 1.13, sz * .355); g.add(bk);
-    const cp = new T.Mesh(new T.CylinderGeometry(sz * .37, sz * .62, sz * .72, 14, 1, true, Math.PI * .35, Math.PI * 1.3), fm(0xd8343e, { side: T.DoubleSide })); cp.position.y = sz * .6; g.add(cp);
-    const col = new T.Mesh(new T.TorusGeometry(sz * .37, sz * .055, 6, 14), fm(0xd8343e)); col.rotation.x = Math.PI / 2; col.position.y = sz * .9; g.add(col); }
+    const n = new T.Mesh(new T.SphereGeometry(sz * .035, 6, 4), pk); n.position.set(0, sz * 1.16, sz * .36); n.userData.face = 1; g.add(n); scarf(0xf0a040); }
+  else if (kind === 2) { const bk = new T.Mesh(new T.SphereGeometry(sz * .05, 10, 8), fm(0xffbf2a, { roughness: .5 })); bk.scale.z = .5; bk.position.set(0, sz * 1.13, sz * .355); bk.userData.face = 1; g.add(bk);
+    const cp = new T.Mesh(new T.CylinderGeometry(sz * .37, sz * .62, sz * .72, 14, 1, true, Math.PI * .35, Math.PI * 1.3), fm(my.c != null ? my.c : 0xd8343e, { side: T.DoubleSide })); cp.position.y = sz * .6; g.add(cp);
+    const col = new T.Mesh(new T.TorusGeometry(sz * .37, sz * .055, 6, 14), fm(my.c != null ? my.c : 0xd8343e)); col.rotation.x = Math.PI / 2; col.position.y = sz * .9; g.add(col); }
   else { [-1, 1].forEach(k => { const e = new T.Mesh(new T.IcosahedronGeometry(sz * .08, 1), w); e.scale.set(1, 3.2, .7); e.position.set(k * sz * .12, sz * 1.6, 0); e.rotation.z = -k * .12; g.add(e); const i = new T.Mesh(new T.SphereGeometry(sz * .04, 6, 4), pk); i.scale.set(1, 4.5, .4); i.position.set(k * sz * .12, sz * 1.62, sz * .05); i.rotation.z = -k * .12; g.add(i); });
-    const n = new T.Mesh(new T.SphereGeometry(sz * .035, 6, 4), pk); n.position.set(0, sz * 1.16, sz * .36); g.add(n); scarf(0x8ec5e8); }
+    const n = new T.Mesh(new T.SphereGeometry(sz * .035, 6, 4), pk); n.position.set(0, sz * 1.16, sz * .36); n.userData.face = 1; g.add(n); scarf(0x8ec5e8); }
+  if (my.f) { g.children.filter(o => o.userData.face).forEach(o => g.remove(o)); const tx = new T.TextureLoader().load(my.f); tx.colorSpace = T.SRGBColorSpace;
+    const fc = new T.Mesh(new T.SphereGeometry(sz * .372, 24, 16, Math.PI * .5 - .75, 1.5, Math.PI * .5 - .75, 1.5), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); fc.position.y = sz * 1.15; g.add(fc); }
   g.traverse(o => { o.castShadow = true; }); return g;
 }
 export function snowman(sz, c = 0xd8343e) { // 눈사람 (목도리 색 = c)
@@ -211,7 +213,7 @@ export async function mount(el, opt) {
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false, L.dk || 0), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
-  let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [], LIGHTS = [], FLY = [], PSLOT = [];
+  let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [], LIGHTS = [], FLY = [], PSLOT = [], SNOW4 = [];
   if (!L.tree) { // 씨앗·새싹
     const soil = new T.Mesh(new T.CylinderGeometry(.55, .65, .14, 9), fm(0x6e4a2c, { roughness: 1 })); soil.position.y = .07; spin.add(soil);
     if (L.sprout) { const st = new T.Mesh(new T.CylinderGeometry(.035, .045, .55, 6), fm(0x4e8f3a)); st.position.y = .4; spin.add(st); [-1, 1].forEach(k => { const lf = new T.Mesh(new T.IcosahedronGeometry(.2, 1), fm(0x7fd468)); lf.scale.set(1.5, .35, .75); lf.position.set(k * .2, .68, 0); lf.rotation.z = k * .4; spin.add(lf); }); top = .9; }
@@ -282,7 +284,7 @@ export async function mount(el, opt) {
         const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(P, 3)); geo.setAttribute('normal', new T.Float32BufferAttribute(N, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(C, 3));
         const m = new T.Mesh(geo, new T.MeshStandardMaterial({ vertexColors: true, roughness: .8, flatShading: true })); m.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); spin.add(m); WOODS.push(m);
         if (L.lights && k % 3 === 0) for (let j = 0; j < 6; j++) { const yy = .55 * hs + wr() * (y - .7 * hs), rr = (.8 - .5 * (yy / y)) * hs * fat * .9, aa = wr() * 6.283, lt = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: [0xffd27a, 0xff9a6a, 0xfff2c0][j % 3], transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); lt.position.set(Math.cos(aa) * rr, yy, Math.sin(aa) * rr); lt.scale.setScalar(.6 * Math.max(.7, hs * .5)); lt.userData.ph = wr() * 6.283; m.add(lt); LIGHTS.push(lt); } } }
-    if (L.sm4) [[-3.7, -.2], [-3.1, 1.2], [3.1, 1.2], [3.7, -.2]].forEach(([x, z], k) => { const a_ = animalSnow(.85, k); a_.position.set(x, 0, z); a_.rotation.y = Math.atan2(-x, 6 - z) * .6; spin.add(a_); });
+    if (L.sm4) [[-3.7, -.2], [-3.1, 1.2], [3.1, 1.2], [3.7, -.2]].forEach(([x, z], k) => { const a_ = animalSnow(.85, k, (opt.snow4 || [])[k] || {}); a_.userData.sk = k; SNOW4[k] = a_; a_.position.set(x, 0, z); a_.rotation.y = Math.atan2(-x, 6 - z) * .6; spin.add(a_); });
     if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); spin.add(sm); }
     if (L.gifts) [0, Math.PI].forEach((ra, half) => GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { // 앞뒤로 빙 둘러요 (트리와 같이 돌아요), 큰 상자는 더 크게
       const f = q >= .5 ? 1.4 : 1, cs = Math.cos(ra), sn = Math.sin(ra), g = gift(x * cs - z * sn, x * sn + z * cs, half ? OC[(i + 3) % 8] : c, q * f, h * f, rc, i + half); g.rotation.y += ra; if (up) g.position.y = up * 1.4; spin.add(g); }));
@@ -340,7 +342,7 @@ export async function mount(el, opt) {
     if (!tp || e.target !== cvs) return;
     if (placing) { const h = hitTree(e); if (h) setPlace(h[0], h[1]); return; }
     if (pPick) { rcP.setFromCamera(ndc(e), cam); const hh = rcP.intersectObjects(PSLOT, true)[0]; if (hh) { let c = hh.object; while (c && !PSLOT.includes(c)) c = c.parent; const i = PSLOT.indexOf(c), g = pgCur * 15 + i; if (c && !(opt.polas || [])[g]) pPick(g); } return; }
-    rcP.setFromCamera(ndc(e), cam); const hit = rcP.intersectObjects(ORN, true)[0]; if (hit && opt.onTap) opt.onTap(hit.object.userData.orn); };
+    rcP.setFromCamera(ndc(e), cam); const hit = rcP.intersectObjects(ORN.concat(SNOW4), true)[0]; if (!hit) return; let o = hit.object; while (o && o.userData.sk == null && !o.userData.orn) o = o.parent; if (o && o.userData.sk != null) { if (opt.onSnow) opt.onSnow(o.userData.sk); return; } if (opt.onTap) opt.onTap(hit.object.userData.orn); };
   addEventListener('pointerup', up); addEventListener('pointercancel', up);
   cvs.addEventListener('wheel', e => { e.preventDefault(); setZoom(zoom * (e.deltaY > 0 ? 1.1 : .9)); }, { passive: false });
   const drops = []; let frame = 0;
@@ -385,6 +387,7 @@ export async function mount(el, opt) {
     placed() { return placing && placing.spot ? placing.spot.map((x, i) => +x.toFixed(i === 2 ? 2 : 3)) : null; },
     addPola(o, g) { (opt.polas = opt.polas || [])[g] = o; this.polaPage(Math.floor(g / 15)); },
     polaPick(cb) { pPick = cb; this.polaPage(pgCur); },
+    snowSet(k, my) { const o = SNOW4[k]; if (!o) return; const n = animalSnow(.85, k, my || {}); n.position.copy(o.position); n.rotation.copy(o.rotation); n.userData.sk = k; spin.remove(o); spin.add(n); SNOW4[k] = n; },
     polaOn() { return PSLOT.length > 0; },
     polaPages() { return Math.max(1, Math.ceil((opt.polas || []).length / 15)); },
     polaPage(pg) { if (!PSLOT.length) return; pgCur = pg; const L_ = opt.polas || [];
