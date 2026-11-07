@@ -2547,3 +2547,7 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-rt .tree-pp { order: 0; } .tree-rt .tree-snb { order: 1; gap: 6px; }
 .tree-rt .tree-pp, .tree-snb .snb-go, .tree-snb .snb-gift { height: 28px; box-sizing: border-box; line-height: 20px; padding: 4px 10px; font-size: 13px; }
 .tree-snb .snb-list { order: 1; } .tree-snb .snb-gift { order: 2; }
+.sn-face { position: relative; } .sn-face .sn-ov { position: absolute; inset: 0; }
+.sn-tool { justify-content: center; } .sn-tool button { font-size: 13px; } .sn-tool button.on, .sn-w button.on { background: #e3f3ee; box-shadow: 0 0 0 2px #2c8a7a; }
+.sn-tool[hidden], .sn-dk[hidden] { display: none; } .sn-dk { text-align: center; margin: 2px 0 6px; } .sn-deco { border: 1px dashed #9ab; background: none; border-radius: 14px; padding: 4px 12px; font-size: 13px; color: #456; }
+.tree-page.placing > *:not(.tree-placebar):not(#tree-cv):not(:has(#tree-cv)) { visibility: hidden; }
