@@ -103,6 +103,9 @@ export function animalSnow(sz, kind, my = {}) { // my: { c 목도리 색, f 얼�
   else { [-1, 1].forEach(k => { const e = new T.Mesh(new T.IcosahedronGeometry(sz * .08, 1), w); e.scale.set(1, 3.2, .7); e.position.set(k * sz * .12, sz * 1.6, 0); e.rotation.z = -k * .12; g.add(e); const i = new T.Mesh(new T.SphereGeometry(sz * .04, 6, 4), pk); i.scale.set(1, 4.5, .4); i.position.set(k * sz * .12, sz * 1.62, sz * .05); i.rotation.z = -k * .12; g.add(i); });
     const n = new T.Mesh(new T.SphereGeometry(sz * .035, 6, 4), pk); n.position.set(0, sz * 1.16, sz * .36); n.userData.face = 1; g.add(n); scarf(0x8ec5e8); }
   g.children.filter(o => o.userData.face).forEach(o => g.remove(o)); // 얼굴은 처음엔 비워 두고, 그린 사람만 그 그림으로
+  (my.it || []).forEach(o => { const ph = Math.PI * .5 - .75 + o.u / 256 * 1.5, th = Math.PI * .5 - .75 + o.v / 256 * 1.5, r = sz * .37, d = new T.Vector3(-Math.cos(ph) * Math.sin(th), Math.cos(th), Math.sin(ph) * Math.sin(th)), p = d.clone().multiplyScalar(r).add(new T.Vector3(0, sz * 1.15, 0));
+    const m = o.t === 'c' ? new T.Mesh(new T.ConeGeometry(sz * .055, sz * .3, 8), fm(0xff8a2a)) : new T.Mesh(new T.CylinderGeometry(sz * .045, sz * .045, sz * .03, 12), fm(0x1d1d22, { roughness: .4 }));
+    m.position.copy(o.t === 'c' ? p.clone().add(d.clone().multiplyScalar(sz * .14)) : p); m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), d); g.add(m); }); // 단추(눈)·당근(코)
   if (my.f) { const tx = new T.TextureLoader().load(my.f); tx.colorSpace = T.SRGBColorSpace;
     const fc = new T.Mesh(new T.SphereGeometry(sz * .372, 24, 16, Math.PI * .5 - .75, 1.5, Math.PI * .5 - .75, 1.5), new T.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false })); fc.position.y = sz * 1.15; g.add(fc); }
   g.traverse(o => { o.castShadow = true; }); return g;
@@ -332,7 +335,7 @@ export async function mount(el, opt) {
       else if (pinch) setZoom(zoom * pinch / d2);
       pinch = d2; tw = a2; return; }
     if (moving) { const h = hitTree(e); if (h) setPlace(h[0], h[1]); return; }
-    if (drag == null) return; const dx = e.clientX - drag, dy = e.clientY - dragY; rot += dx * .01; skyRot += dx * .0033; v = placing ? 0 : dx * .0015; drag = e.clientX; dragY = e.clientY;
+    if (drag == null) return; const dx = e.clientX - drag, dy = e.clientY - dragY; rot += dx * .01; skyRot += dx * .0033; v = placing || sPlace || pPick ? 0 : dx * .0015; drag = e.clientX; dragY = e.clientY;
     if (zoom < .95) ly = Math.max(hh * .08, Math.min(hh * 1.02, ly + dy * .012 * Math.max(1, hh / 4))); // 확대 중엔 위아래로 밀면 보는 높이가 바뀌어요
     else if (look > 0 || (tilt <= -.05 && dy < 0)) look = Math.max(0, Math.min(1, look - dy * .004)); // 끝까지 위로 밀면 하늘을 올려다봐요
     else tilt = Math.max(-.05, Math.min(1.1, tilt + dy * .006));
@@ -343,7 +346,7 @@ export async function mount(el, opt) {
     pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) { drag = null; moving = false; } else { const [p] = pts.values(); drag = p.x; dragY = p.y; }
     if (!tp || e.target !== cvs) return;
     if (placing) { const h = hitTree(e); if (h) setPlace(h[0], h[1]); return; }
-    if (sPlace) { rcP.setFromCamera(ndc(e), cam); const pt = new T.Vector3(); if (rcP.ray.intersectPlane(new T.Plane(new T.Vector3(0, 1, 0), 0), pt)) { const lp = spin.worldToLocal(pt), r = Math.hypot(lp.x, lp.z); if (r > 1.3 && r < 5) { const cb = sPlace; sPlace = null; cb([+lp.x.toFixed(2), +lp.z.toFixed(2)]); } } return; }
+    if (sPlace) { rcP.setFromCamera(ndc(e), cam); const pt = new T.Vector3(); if (rcP.ray.intersectPlane(new T.Plane(new T.Vector3(0, 1, 0), 0), pt)) { const lp = spin.worldToLocal(pt), r = Math.hypot(lp.x, lp.z); if (r > 1.3 && r < 5) { const p = [+lp.x.toFixed(2), +lp.z.toFixed(2)]; if (!sPlace.g) { sPlace.g = animalSnow(.85, sPlace.k, {}); sPlace.g.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = .6; o.material.depthWrite = false; } }); spin.add(sPlace.g); } sPlace.g.position.set(p[0], 0, p[1]); sPlace.g.rotation.y = Math.atan2(p[0], p[1]); sPlace.p = p; sPlace.cb(p); } } return; }
     if (pPick) { rcP.setFromCamera(ndc(e), cam); const hh = rcP.intersectObjects(PSLOT, true)[0]; if (hh) { let c = hh.object; while (c && !PSLOT.includes(c)) c = c.parent; const i = PSLOT.indexOf(c), g = pgCur * 15 + i; if (c && !(opt.polas || [])[g]) pPick(g); } return; }
     rcP.setFromCamera(ndc(e), cam); const hit = rcP.intersectObjects(ORN.concat(SNOW4.filter(Boolean)), true)[0]; if (!hit) return; let o = hit.object; while (o && o.userData.sk == null && !o.userData.orn) o = o.parent; if (o && o.userData.sk != null) { if (opt.onSnow) opt.onSnow(o.userData.sk); return; } if (opt.onTap) opt.onTap(hit.object.userData.orn); };
   addEventListener('pointerup', up); addEventListener('pointercancel', up);
@@ -361,7 +364,7 @@ export async function mount(el, opt) {
   (function loop() {
     if (!alive) return;
     if (!document.body.contains(cvs)) { api.destroy(); return; }
-    if (drag == null && !placing) { rot += v; v += (.003 - v) * .02; }
+    if (drag == null && !placing && !sPlace && !pPick) { rot += v; v += (.003 - v) * .02; }
     if (++frame % 6 === 0) tags();
     for (let i = pops.length - 1; i >= 0; i--) { const o = pops[i]; const mn = o.userData.min || .15; o.material.size = Math.max(mn, o.material.size * .985); if (o.material.size <= mn) pops.splice(i, 1); }
     for (let i = fx.length - 1; i >= 0; i--) if (!fx[i]()) fx.splice(i, 1);
@@ -391,7 +394,7 @@ export async function mount(el, opt) {
     addPola(o, g) { (opt.polas = opt.polas || [])[g] = o; this.polaPage(Math.floor(g / 15)); },
     polaPick(cb) { pPick = cb; this.polaPage(pgCur); },
     snowSet(k, my) { snowPut(k, my); },
-    snowPlace(cb) { sPlace = cb; },
+    snowPlace(k, cb) { if (sPlace && sPlace.g) spin.remove(sPlace.g); sPlace = cb ? { k, cb, g: null, p: null } : null; },
     polaOn() { return PSLOT.length > 0; },
     polaPages() { return Math.max(1, Math.ceil((opt.polas || []).length / 15)); },
     polaPage(pg) { if (!PSLOT.length) return; pgCur = pg; const L_ = opt.polas || [];
