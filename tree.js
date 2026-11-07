@@ -383,6 +383,7 @@ export async function mount(el, opt) {
       if (!MET.t) MET.t = performance.now() + 2500 + Math.random() * 5000;
       if (performance.now() > MET.t) { MET.t = performance.now() + 4000 + Math.random() * 9000; metGo(0); }
       for (let i = MET.list.length - 1; i >= 0; i--) { const m = MET.list[i], u = m.userData; u.f++; m.position.add(u.v); m.material.opacity = Math.min(1, u.f / 6) * Math.max(0, 1 - Math.max(0, u.f - 22) / 14); if (u.f > 36) { sc.remove(m); m.material.dispose(); MET.list.splice(i, 1); } } }
+    skyRot += .00012; // 하늘(별)이 아주 천천히 돌아요 — 한 바퀴 약 15분
     skyG.rotation.y = skyRot; spin.rotation.y = rot;
     if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(), fc = sc.fog ? sc.fog.color : new T.Color(0xffffff); WOODS.forEach(g => { g.getWorldPosition(wp); const dc = wp.distanceTo(cam.position); g.visible = dc > c0 * .8; const f = Math.round(Math.max(0, Math.min(.3, (dc - c0 * .8) / (c0 * 2))) * 40) / 40; if (g.userData.f !== f || g.userData.fc !== fc.getHex()) { g.userData.f = f; g.userData.fc = fc.getHex(); g.material.color.setScalar(1 - f); g.material.emissive.copy(fc).multiplyScalar(f); } }); }
     if (GLIT.length) { const wp = new T.Vector3(), wn = new T.Vector3(); GLIT.forEach(sp => { sp.getWorldPosition(wp); wn.copy(sp.userData.n).applyAxisAngle(new T.Vector3(0, 1, 0), rot); const d = wn.dot(cam.position.clone().sub(wp).normalize()), th = sp.userData.k; sp.material.opacity = Math.max(0, 1 - Math.abs(d - th) / .035); }); } spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
