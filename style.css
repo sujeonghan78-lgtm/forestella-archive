@@ -2559,10 +2559,10 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .sn-sheet .sn-pos { justify-content: flex-start; padding-top: 10px; border-top: 1px solid rgba(0,0,0,.06); }
 .sn-sheet .sn-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; } .sn-sheet .sn-head h2 { margin: 0 0 8px; } .sn-sheet .sn-head span { font-size: 12px; color: #789; }
 .sn-sheet .sn-bar { display: flex; align-items: center; gap: 2px; padding: 4px; background: #f1f5f4; border-radius: 12px; margin-bottom: 8px; }
-.sn-sheet .sn-bar button { min-width: 30px; height: 34px; padding: 0 7px; border: 0; border-radius: 9px; background: none; font-size: 13px; font-weight: 600; color: #456; line-height: 34px; box-shadow: none; white-space: nowrap; }
-.sn-sheet .sn-bar .sn-clr { color: #c55; }
-.sn-sheet .sn-bar button.on, .sn-sheet .sn-bar .sn-deco.open { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15), inset 0 0 0 2px #2c8a7a; }
-.sn-sheet .sn-bar button:disabled { opacity: .3; } .sn-sheet .sn-bar .sn-undo, .sn-sheet .sn-bar .sn-redo { font-size: 20px; padding: 0 6px; }
+.sn-sheet .sn-bar button { min-width: 40px; height: 44px; padding: 0 5px; border: 0; border-radius: 10px; background: none; color: #4a5a60; box-shadow: none; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.sn-sheet .sn-bar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; } .sn-sheet .sn-bar b { font-size: 10px; font-weight: 500; line-height: 1; white-space: nowrap; }
+.sn-sheet .sn-bar button.on, .sn-sheet .sn-bar .sn-deco.open { background: #fff; color: #1f7d6d; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.sn-sheet .sn-bar button:disabled { opacity: .3; } .sn-sheet .sn-bar .sn-clr { color: #c55; }
 .sn-sheet .sn-dk { display: inline-flex; gap: 4px; padding-left: 4px; border-left: 1px solid #d5dedb; } .sn-sheet .sn-dk[hidden] { display: none; }
 .sn-sheet .sn-sp { flex: 1; }
 .sn-sheet .sn-face { width: 190px; height: 190px; margin: 0 auto 8px; }
