@@ -170,13 +170,13 @@ export async function mount(el, opt) {
   // 다 채운 별자리는 연한 선으로 잇고 이름이 잠깐 떠요. 낮엔 안 보이고 새벽·노을·밤에 보여요
   const STEP = opt.cStep || 20, SKY_R = 22, CP = [];
   // 하늘은 돔: 손가락으로 돌리면 트리보다 천천히 같이 돌아요. 별자리는 하늘 둘레에 펼쳐 둬요 (앞쪽 두 개부터)
-  const skyG = new T.Group(); sc.add(skyG);
-  const MET = { list: [], t: 0, geo: new T.PlaneGeometry(6, .75), tex: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 236, 0); g.addColorStop(0, 'rgba(255,243,200,0)'); g.addColorStop(1, 'rgba(255,243,200,.85)'); x.fillStyle = g; x.fillRect(0, 15, 236, 2);
+  const skyG = new T.Group(); skyG.scale.setScalar(2); sc.add(skyG); // 하늘을 숲 나무보다 멀리 (별이 나무 앞에 보이지 않게)
+  const MET = { list: [], t: 0, geo: new T.PlaneGeometry(11, 1.35), tex: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 236, 0); g.addColorStop(0, 'rgba(255,243,200,0)'); g.addColorStop(1, 'rgba(255,243,200,.85)'); x.fillStyle = g; x.fillRect(0, 15, 236, 2);
     const h = x.createRadialGradient(236, 16, 0, 236, 16, 6); h.addColorStop(0, 'rgba(255,255,240,1)'); h.addColorStop(.35, 'rgba(255,243,200,.8)'); h.addColorStop(1, 'rgba(255,243,200,0)'); x.fillStyle = h; x.fillRect(229, 9, 14, 14); return new T.CanvasTexture(c); })() }; // 편지 열릴 때 별똥별처럼: 빛나는 머리 + 노란 꼬리
   const metGo = f0 => {
         const fw = new T.Vector3(); cam.getWorldDirection(fw); const up = cam.up.clone().applyQuaternion(cam.quaternion).normalize(), rt = fw.clone().cross(up).normalize(), dir = 1;
         const m = new T.Mesh(MET.geo, new T.MeshBasicMaterial({ map: MET.tex, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
-        const D = cam.position.length() + 14, hh = D * Math.tan(cam.fov * Math.PI / 360), hw = hh * cam.aspect; m.position.copy(cam.position).addScaledVector(fw, D).addScaledVector(up, hh * (.45 + Math.random() * .45)).addScaledVector(rt, hw * (Math.random() * 1.2 - .3) * dir);
+        const D = cam.position.length() + 40, hh = D * Math.tan(cam.fov * Math.PI / 360), hw = hh * cam.aspect; m.position.copy(cam.position).addScaledVector(fw, D).addScaledVector(up, hh * (.45 + Math.random() * .45)).addScaledVector(rt, hw * (Math.random() * 1.2 - .3) * dir);
         const v = rt.clone().multiplyScalar(-dir * .55).addScaledVector(up, -.3); m.quaternion.copy(cam.quaternion); m.rotateZ(Math.atan2(-.3, -dir * .55));
         m.userData = { v, f: f0 }; m.position.addScaledVector(v, f0); sc.add(m); MET.list.push(m); 
   };
@@ -186,7 +186,7 @@ export async function mount(el, opt) {
   // 별끼리 너무 붙지 않게: 다른 별(별자리 별 포함)과 STAR_GAP보다 가까우면 다른 자리를 다시 찾아요
   const STAR_GAP = 1.1, used_ = CP.map(q => q.v), far = v => used_.every(u => u.distanceToSquared(v) > STAR_GAP * STAR_GAP);
   const starPos = () => { let v; for (let k = 0; k < 15; k++) { const a = rnd() * 6.283, R = 24 + rnd() * 6, y = 4 + rnd() * 30; v = new T.Vector3(Math.sin(a) * R, y, -Math.cos(a) * R); if (far(v)) break; } used_.push(v); return [v.x, v.y, v.z]; };
-  const ptM = sz => new T.PointsMaterial({ color: 0xfff3c8, size: sz, transparent: true, opacity: starA, fog: false });
+  const ptM = sz => new T.PointsMaterial({ color: 0xfff3c8, size: sz * 1.7, transparent: true, opacity: starA, fog: false });
   const lineM = new T.LineBasicMaterial({ color: 0xcfe0ff, transparent: true, opacity: starA * .35, fog: false });
   const drawLines = ci => { const c = CONST[ci], base = CP.findIndex(q => q.ci === ci), p = []; c.e.forEach(([i, j]) => p.push(CP[base + i].v, CP[base + j].v)); skyG.add(new T.LineSegments(new T.BufferGeometry().setFromPoints(p), lineM)); };
   let wn = opt.water || 0;
@@ -214,7 +214,7 @@ export async function mount(el, opt) {
   // 카메라가 천천히 하늘을 올려다봤다가 돌아와요 (별자리 별이 켜질 때)
   const lookTo = (to, n, then) => { const from = look; let f = 0; fx.push(() => { f++; const k = Math.min(1, f / n), e = k * k * (3 - 2 * k); look = from + (to - from) * e; if (zoom >= .95) aim(); if (k >= 1) { if (then) then(); return false; } return true; }); };
   // 지금 화면에 보이는 하늘 자리 (위쪽 빈 하늘, 트리 뒤 먼 곳)
-  const seenPos = () => { for (let k = 0; k < 12; k++) { const nx = (rnd() - .5) * 1.7, ny = .12 + rnd() * .43; if (Math.abs(nx) < .42 && ny < .45) continue; const n = new T.Vector3(nx, ny, .5).unproject(cam), dir = n.sub(cam.position).normalize(); if (dir.z > -.05) continue; const tt = (-24 - cam.position.z) / dir.z, p = cam.position.clone().add(dir.multiplyScalar(tt)); if (p.y > 3) { skyG.updateMatrixWorld(true); const lp = skyG.worldToLocal(p); if (!far(lp) && k < 11) continue; used_.push(lp); return lp; } } return new T.Vector3(...starPos()); };
+  const seenPos = () => { for (let k = 0; k < 12; k++) { const nx = (rnd() - .5) * 1.7, ny = .12 + rnd() * .43; if (Math.abs(nx) < .42 && ny < .45) continue; const n = new T.Vector3(nx, ny, .5).unproject(cam), dir = n.sub(cam.position).normalize(); if (dir.z > -.05) continue; const tt = (-50 - cam.position.z) / dir.z, p = cam.position.clone().add(dir.multiplyScalar(tt)); if (p.y > 6) { skyG.updateMatrixWorld(true); const lp = skyG.worldToLocal(p); if (!far(lp) && k < 11) continue; used_.push(lp); return lp; } } return new T.Vector3(...starPos()); };
   // 하늘을 돌려 그 별이 앞에 오게 (가까운 쪽으로)
   const skyTo = (a, n) => { const from = skyRot; let d = (a - from) % 6.2832; if (d > 3.1416) d -= 6.2832; if (d < -3.1416) d += 6.2832; let f = 0; fx.push(() => { f++; const k = Math.min(1, f / n), e = k * k * (3 - 2 * k); skyRot = from + d * e; return k < 1; }); };
   const skyStar = () => { const before = lit(); wn++; const q = lit() > before ? CP[lit() - 1] : null, fin = q && done(q.ci);
