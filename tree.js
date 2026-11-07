@@ -8,7 +8,7 @@ export function skyNow(d = new Date()) {
   const h = d.getHours() + d.getMinutes() / 60;
   return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 19 ? 'sunset' : 'night';
 }
-const SKY = { dawn: ['#a99ad8', '#f7c6cf', .35], day: ['#9fd3f2', '#e8f6fb', 0], sunset: ['#4b3f86', '#f6a06a', .45], night: ['#13274a', '#2b5a5a', 1] };
+const SKY = { dawn: ['#a99ad8', '#f7c6cf', .35], day: ['#9fd3f2', '#e8f6fb', 0], sunset: ['#4b3f86', '#f6a06a', .45], night: ['#060b1a', '#16303a', 1] };
 
 let SRC = null, FT = 1.6;
 const H = 5.6;
@@ -284,7 +284,7 @@ export async function mount(el, opt) {
         const env = new T.CanvasTexture(ec); env.mapping = T.EquirectangularReflectionMapping; env.colorSpace = T.SRGBColorSpace;
         const rb = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0xffcc55, metalness: 1, roughness: .22, envMap: env, envMapIntensity: 1.3, emissive: 0x8a5a00, emissiveIntensity: .25, side: T.DoubleSide })); rb.castShadow = true; spin.add(rb); } }
     if (L.aurora && night) { // 오로라 (Lv8~): 가는 세로 빛줄기가 촘촘한 커튼 — 아래는 밝은 초록으로 또렷이 끊기고, 위로 갈수록 청록→보라로 흐려져요. 은은하게, 하늘과 같이 돌아요
-      [[-.9, 1.6, 37, 6.4, 15, .0], [.3, 1.5, 40, 7.2, 17, 1.7], [1.5, 1.4, 38, 6.6, 14, 3.1], [2.8, 1.6, 41, 7.2, 16, 4.6], [4.3, 1.5, 39, 6.8, 15, 6.2]].forEach(([a0, span, R0, y0, H, sd]) => { const W = 90, g = new T.PlaneGeometry(1, 1, W, 1), p = g.attributes.position;
+      [[-.9, 1.6, 37, 9.4, 6, .0], [.3, 1.5, 40, 10.2, 7, 1.7], [1.5, 1.4, 38, 9.6, 5.5, 3.1], [2.8, 1.6, 41, 10.3, 6.5, 4.6], [4.3, 1.5, 39, 9.8, 6, 6.2]].forEach(([a0, span, R0, y0, H, sd]) => { const W = 90, g = new T.PlaneGeometry(1, 1, W, 1), p = g.attributes.position;
         for (let i = 0; i < p.count; i++) { const u = p.getX(i) + .5, v = p.getY(i) + .5, an = a0 + (u - .5) * span, rr = R0 + Math.sin(u * 7 + sd) * 3 + Math.sin(u * 19 + sd) * .8; p.setXYZ(i, Math.sin(an) * rr, y0 + v * H + Math.sin(u * 5.3 + sd) * 2 + Math.sin(u * 13 + sd) * .7, -Math.cos(an) * rr); }
         const m = new T.Mesh(g, new T.ShaderMaterial({ uniforms: { t: AUR.t, o: { value: .42 }, sd: { value: sd } }, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide,
           vertexShader: 'uniform float t; uniform float sd; varying vec2 vU; void main(){ vU = uv; vec3 q = position; vec2 n = normalize(q.xz); q.xz += n * (sin(uv.x * 11.0 + t * .25 + sd) * 1.8 + sin(uv.x * 27.0 - t * .4) * .5); gl_Position = projectionMatrix * modelViewMatrix * vec4(q, 1.0); }',
@@ -394,7 +394,7 @@ export async function mount(el, opt) {
     AUR.t.value = performance.now() / 1000;
     skyRot += .00012; // 하늘(별)이 아주 천천히 돌아요 — 한 바퀴 약 15분
     skyG.rotation.y = skyRot; spin.rotation.y = rot;
-    const WFADE = [.06, .32, .56, .78]; if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(), fc = sc.fog ? sc.fog.color : new T.Color(0xffffff); WOODS.forEach(g => { g.getWorldPosition(wp); const dc = wp.distanceTo(cam.position); g.visible = dc > c0 * .8; const f = WFADE[g.userData.tier || 0]; /* 거리 4단계: 멀수록 하늘색에 가깝게 */ if (g.userData.f !== f || g.userData.fc !== fc.getHex()) { g.userData.f = f; g.userData.fc = fc.getHex(); g.material.color.setScalar(1 - f); g.material.emissive.copy(fc).multiplyScalar(f); } }); }
+    const WFADE = [0, .45, .7, .88]; if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(), fc = sc.fog ? sc.fog.color : new T.Color(0xffffff); WOODS.forEach(g => { g.getWorldPosition(wp); const dc = wp.distanceTo(cam.position); g.visible = dc > c0 * .8; const f = WFADE[g.userData.tier || 0]; /* 거리 4단계: 멀수록 하늘색에 가깝게 */ if (g.userData.f !== f || g.userData.fc !== fc.getHex()) { g.userData.f = f; g.userData.fc = fc.getHex(); g.material.color.setScalar(1 - f); g.material.emissive.copy(fc).multiplyScalar(f); } }); }
     if (GLIT.length) { const wp = new T.Vector3(), wn = new T.Vector3(); GLIT.forEach(sp => { sp.getWorldPosition(wp); wn.copy(sp.userData.n).applyAxisAngle(new T.Vector3(0, 1, 0), rot); const d = wn.dot(cam.position.clone().sub(wp).normalize()), th = sp.userData.k; sp.material.opacity = Math.max(0, 1 - Math.abs(d - th) / .035); }); } spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
     for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i];
       if (dp.userData.wait > 0) { dp.userData.wait--; continue; } dp.visible = true;
