@@ -290,7 +290,6 @@ export async function mount(el, opt) {
         const m = new T.Mesh(geo, new T.MeshStandardMaterial({ vertexColors: true, roughness: .8, flatShading: true })); m.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); spin.add(m); WOODS.push(m);
         if (L.lights && k % 3 === 0) for (let j = 0; j < 6; j++) { const yy = .55 * hs + wr() * (y - .7 * hs), rr = (.8 - .5 * (yy / y)) * hs * fat * .9, aa = wr() * 6.283, lt = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: [0xffd27a, 0xff9a6a, 0xfff2c0][j % 3], transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); lt.position.set(Math.cos(aa) * rr, yy, Math.sin(aa) * rr); lt.scale.setScalar(.6 * Math.max(.7, hs * .5)); lt.userData.ph = wr() * 6.283; m.add(lt); LIGHTS.push(lt); } } }
     if (L.sm4) (opt.snow4 || []).forEach((my, k) => { if (my && my.p) snowPut(k, my); }); // 내가 놓은 자리에만 (이 폰)
-    if (L.snow) { const sm = snowman(.85); sm.position.set(-2.4, 0, -2.9); sm.rotation.y = Math.PI + .7; sm.traverse(o => { o.castShadow = true; }); spin.add(sm); }
     if (L.gifts && !opt.noGifts) [Math.PI].forEach((ra, half) => GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { // 앞뒤로 빙 둘러요 (트리와 같이 돌아요), 큰 상자는 더 크게
       const f = q >= .5 ? 1.4 : 1, cs = Math.cos(ra), sn = Math.sin(ra), g = gift(x * cs - z * sn, x * sn + z * cs, half ? OC[(i + 3) % 8] : c, q * f, h * f, rc, i + half); g.rotation.y += ra; if (up) g.position.y = up * 1.4; spin.add(g); }));
   }
