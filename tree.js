@@ -171,7 +171,8 @@ export async function mount(el, opt) {
   const STEP = opt.cStep || 20, SKY_R = 22, CP = [];
   // 하늘은 돔: 손가락으로 돌리면 트리보다 천천히 같이 돌아요. 별자리는 하늘 둘레에 펼쳐 둬요 (앞쪽 두 개부터)
   const skyG = new T.Group(); sc.add(skyG);
-  const MET = { list: [], t: 0, geo: new T.PlaneGeometry(6, .1), tex: (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 4; const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 128, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.85, 'rgba(220,235,255,.7)'); g.addColorStop(1, 'rgba(255,255,255,1)'); x.fillStyle = g; x.fillRect(0, 0, 128, 4); return new T.CanvasTexture(c); })() };
+  const MET = { list: [], t: 0, geo: new T.PlaneGeometry(6, .75), tex: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 236, 0); g.addColorStop(0, 'rgba(255,243,200,0)'); g.addColorStop(1, 'rgba(255,243,200,.85)'); x.fillStyle = g; x.fillRect(0, 15, 236, 2);
+    const h = x.createRadialGradient(236, 16, 0, 236, 16, 16); h.addColorStop(0, 'rgba(255,255,240,1)'); h.addColorStop(.35, 'rgba(255,243,200,.8)'); h.addColorStop(1, 'rgba(255,243,200,0)'); x.fillStyle = h; x.fillRect(220, 0, 36, 32); return new T.CanvasTexture(c); })() }; // 편지 열릴 때 별똥별처럼: 빛나는 머리 + 노란 꼬리
   const metGo = f0 => {
         const fw = new T.Vector3(); cam.getWorldDirection(fw); const up = cam.up.clone().applyQuaternion(cam.quaternion).normalize(), rt = fw.clone().cross(up).normalize(), dir = 1;
         const m = new T.Mesh(MET.geo, new T.MeshBasicMaterial({ map: MET.tex, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
@@ -203,7 +204,7 @@ export async function mount(el, opt) {
     fx.push(() => { f++; const k = f / life; s.scale.setScalar(size * (1 - k * .8)); s.material.opacity = starA * (1 - k); if (k >= 1) { skyG.remove(s); return false; } return true; }); };
   const dot = (pos, big) => { const pt = new T.Points(new T.BufferGeometry().setFromPoints([pos]), ptM(big ? 2.4 : 1.4)); pt.userData.min = big ? .26 : .13; skyG.add(pt); pops.push(pt); glow(pos, big ? 3.2 : 1.8, big ? 110 : 80); };
   // 별똥별: 하늘 위 한쪽에서 꼬리를 끌며 날아와 별자리 자리에 박혀요
-  const shoot = (to, done_) => { const a = Math.atan2(to.x, -to.z), sd = (rnd() < .5 ? -1 : 1) * (9 + rnd() * 5), from = to.clone().add(new T.Vector3(Math.cos(a) * sd, 7 + rnd() * 4, Math.sin(a) * sd)), N = 14, hist = [];
+  const shoot = (to, done_) => { const rtv = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion); rtv.y = 0; rtv.normalize().applyAxisAngle(new T.Vector3(0, 1, 0), -skyG.rotation.y); const from = to.clone().addScaledVector(rtv, 9 + rnd() * 5).add(new T.Vector3(0, 7 + rnd() * 4, 0)), N = 14, hist = []; // 별똥별은 늘 화면 오른쪽 위 → 왼쪽 아래
     const head = new T.Points(new T.BufferGeometry().setFromPoints([from]), ptM(1.2)); skyG.add(head);
     const tg = new T.BufferGeometry().setFromPoints(Array(N).fill(from)), tail = new T.Line(tg, new T.LineBasicMaterial({ color: 0xfff3c8, transparent: true, opacity: starA * .8, fog: false })); skyG.add(tail);
     let f = 0; const L = 70;
