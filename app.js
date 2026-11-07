@@ -6034,22 +6034,23 @@
   }
   function treeSnowEdit(k) {
     const pg = document.querySelector('.tree-page'); if (!pg || !treeApi) return; document.querySelectorAll('.tree-sheet,.tree-pop').forEach(x => x.remove());
-    const mm = treeMine(), cur = (mm.snow4 || [])[k] || {}, n = SNOW_N[k], f = { c: cur.c, pen: '#1d1d22' };
+    const mm = treeMine(), cur = (mm.snow4 || [])[k] || {}, n = SNOW_N[k], f = { c: cur.c, pen: '#1d1d22', w: 8 };
     const sh = document.createElement('div'); sh.className = 'tree-sheet';
     sh.innerHTML = `<div class="ts-in"><h2>${n[3]} ${L3(`내 ${n[0]} 눈사람 꾸미기`, `Decorate my ${n[1]} snowman`, `${n[2]}の雪だるまを飾る`)}</h2><p class="ts-note">🔒 ${L3('나만 보여요. 이 폰에만 저장돼요.', 'Only you can see it, saved on this phone.', '自分だけに見えます(この端末に保存)')}</p>
       <p class="ts-l">${L3('얼굴 그리기', 'Draw a face', '顔を描く')}</p><div class="sn-face"><canvas width="256" height="256"></canvas></div>
       <div class="ts-row sn-pen">${['#1d1d22', '#ff8fb0', '#d8343e', '#8a5a3a', '#ffbf2a'].map(c => `<button data-p="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}<button class="sn-clr">${L3('지우기', 'Clear', '消す')}</button></div>
+      <div class="ts-row sn-w">${[[4, '가늘게'], [8, '보통'], [16, '굵게'], [28, '아주 굵게']].map(([w, l]) => `<button data-w="${w}"><i style="width:${Math.min(20, w)}px;height:${Math.min(20, w)}px"></i>${l}</button>`).join('')}</div>
       <p class="ts-l">${k === 2 ? L3('망토 색', 'Cape color', 'マントの色') : L3('목도리 색', 'Scarf color', 'マフラーの色')}</p><div class="ts-row ts-col sn-col">${SNOW_C.map(c => `<button data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>
       <div class="ts-btns"><button class="ts-cancel">${L3('취소', 'Cancel', 'キャンセル')}</button><button class="sn-reset">${L3('처음 모습', 'Reset', '元に戻す')}</button><button class="ts-go">${L3('저장', 'Save', '保存')}</button></div></div>`;
     pg.appendChild(sh);
     const cv = sh.querySelector('canvas'), x = cv.getContext('2d'); let drawn = false, last = null;
     if (cur.f) { const im = new Image(); im.onload = () => { x.drawImage(im, 0, 0, 256, 256); drawn = true; }; im.src = cur.f; }
     const pt = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * 256 / b.width, (e.clientY - b.top) * 256 / b.height]; };
-    cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); last = pt(e); x.fillStyle = f.pen; x.beginPath(); x.arc(last[0], last[1], 4, 0, 7); x.fill(); drawn = true; };
-    cv.onpointermove = e => { if (!last) return; const p = pt(e); x.strokeStyle = f.pen; x.lineWidth = 8; x.lineCap = x.lineJoin = 'round'; x.beginPath(); x.moveTo(last[0], last[1]); x.lineTo(p[0], p[1]); x.stroke(); last = p; };
+    cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); last = pt(e); x.fillStyle = f.pen; x.beginPath(); x.arc(last[0], last[1], f.w / 2, 0, 7); x.fill(); drawn = true; };
+    cv.onpointermove = e => { if (!last) return; const p = pt(e); x.strokeStyle = f.pen; x.lineWidth = f.w; x.lineCap = x.lineJoin = 'round'; x.beginPath(); x.moveTo(last[0], last[1]); x.lineTo(p[0], p[1]); x.stroke(); last = p; };
     cv.onpointerup = cv.onpointercancel = () => { last = null; };
-    const mark = () => { sh.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === f.pen)); sh.querySelectorAll('[data-c]').forEach(b => b.classList.toggle('on', f.c != null && parseInt(b.dataset.c.slice(1), 16) === f.c)); }; mark();
-    sh.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => { f.pen = b.dataset.p; mark(); }; });
+    const mark = () => { sh.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === f.pen)); sh.querySelectorAll('[data-w]').forEach(b => b.classList.toggle('on', +b.dataset.w === f.w)); sh.querySelectorAll('[data-c]').forEach(b => b.classList.toggle('on', f.c != null && parseInt(b.dataset.c.slice(1), 16) === f.c)); }; mark();
+    sh.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => { f.pen = b.dataset.p; mark(); }; }); sh.querySelectorAll('[data-w]').forEach(b => { b.onclick = () => { f.w = +b.dataset.w; mark(); }; });
     sh.querySelectorAll('[data-c]').forEach(b => { b.onclick = () => { f.c = parseInt(b.dataset.c.slice(1), 16); mark(); treeApi.snowSet(k, { c: f.c, f: drawn ? cv.toDataURL() : '' }); }; });
     sh.querySelector('.sn-clr').onclick = () => { x.clearRect(0, 0, 256, 256); drawn = false; };
     const put = v => { mm.snow4 = mm.snow4 || []; mm.snow4[k] = v; boxWrite(TREE_KEY, mm); treeApi.snowSet(k, v || {}); sh.remove(); };

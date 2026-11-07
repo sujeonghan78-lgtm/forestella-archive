@@ -2537,3 +2537,5 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-snb .snb-list { display: flex; gap: 4px; background: rgba(255,255,255,.85); border-radius: 14px; padding: 4px 6px; }
 .tree-snb .snb-list[hidden] { display: none; }
 .tree-snb .snb-list button { border: 0; background: none; font-size: 22px; width: 34px; height: 34px; padding: 0; }
+.sn-w button { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.sn-w button i { display: inline-block; border-radius: 50%; background: #1d1d22; }
