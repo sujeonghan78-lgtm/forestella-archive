@@ -2575,3 +2575,8 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .sn-sheet .sn-hint { font-size: 12px; color: #789; margin: 6px 0 4px; min-height: 16px; }
 .sn-sheet .sn-cols { margin-bottom: 10px; }
 .sn-sheet .sn-pos { font-size: 13px; color: #9aa; text-align: center; margin: 4px 0 8px; } .sn-sheet .sn-pos button { border: 0; background: none; padding: 4px; font-size: 13px; color: #567; text-decoration: underline; text-underline-offset: 3px; box-shadow: none; }
+
+.tree-rt .rt-tog { order: -1; display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 12px; border: 0; border-radius: 16px; background: rgba(255,255,255,.88); color: #24584f; font-size: 13px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+.tree-rt .rt-tog svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.tree-rt .rt-tog:only-child { display: none; } .tree-rt.open .rt-tog { background: #24584f; color: #fff; }
+.tree-rt.fold:not(.open) > :not(.rt-tog) { display: none; }
