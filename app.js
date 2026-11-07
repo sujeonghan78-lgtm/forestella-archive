@@ -6017,13 +6017,14 @@
   }
   // 폴라로이드 쪽 버튼 (15장이 넘으면): 처음엔 내 폴라로이드가 있는 쪽, 없으면 마지막 쪽
   // 오른쪽 위 버튼 칸(📷 쪽·⛄·🎁): 길 표시 바로 아래에 세로로 쌓아요
-  function treeRt() { const pg = document.querySelector('.tree-page'); if (!pg) return null; let r = pg.querySelector('.tree-rt'); if (!r) { r = document.createElement('div'); r.className = 'tree-rt'; pg.appendChild(r); }
+  function treeRt() { const pg = document.querySelector('.tree-page'); if (!pg) return null; let r = pg.querySelector('.tree-rt'); if (!r) { r = document.createElement('div'); r.className = 'tree-rt'; pg.appendChild(r);
+      if (tAdm()) { r.classList.add('fold'); const t = document.createElement('button'); t.className = 'rt-tog'; t.innerHTML = `<svg viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>${L3('꾸미기', 'Decorate', 'デコ')}`; t.onclick = () => r.classList.toggle('open'); r.prepend(t); } } // 관리자 미리보기: 폴라로이드·눈사람·선물 버튼을 '꾸미기' 하나로 접기
     const rd = pg.querySelector('.tree-road'); if (rd) r.style.top = Math.round(rd.getBoundingClientRect().bottom - pg.getBoundingClientRect().top + 8) + 'px'; return r; }
   function treePolaBar(st) {
     if (!treeApi || !treeApi.polaPage) return; const pk = !!treePolaBar.pick, last = st.polas.length, n = Math.max(1, Math.ceil((last + (pk && last % 15 === 0 ? 1 : 0)) / 15)), me = myUid(), mi = st.polas.findIndex(o => o && o.by === me);
     let cur = pk ? Math.max(0, n - 1 - (st.polas.slice((n - 1) * 15).length < 15 ? 0 : 0)) : mi >= 0 ? Math.floor(mi / 15) : n - 1; if (pk) { for (let k = 0; k < n; k++) if (Array.from({ length: 15 }, (_, i) => st.polas[k * 15 + i]).some(x => !x)) { cur = k; break; } } treeApi.polaPage(cur);
     document.querySelectorAll('.tree-pp').forEach(x => x.remove()); const pg = document.querySelector('.tree-page'); if (!pg || !(treeApi.polaOn && treeApi.polaOn())) return;
-    const bar = document.createElement('div'); bar.className = 'tree-pp'; treeRt().appendChild(bar);
+    const bar = document.createElement('div'); bar.className = 'tree-pp'; treeRt().appendChild(bar); if (pk) treeRt().classList.add('open');
     const draw = () => { const f = Array.from({ length: 15 }, (_, i) => st.polas[cur * 15 + i]).filter(Boolean).length; bar.innerHTML = '📷 ' + (n < 2 ? L3('1쪽', 'p.1', '1ページ') : Array.from({ length: n }, (_, k) => `<button data-k="${k}" class="${k === cur ? 'on' : ''}">${k + 1}</button>`).join('')) + `<small>· ${f}/15</small>`; bar.querySelectorAll('button').forEach(b => { b.onclick = () => { cur = +b.dataset.k; treeApi.polaPage(cur); draw(); }; }); };
     draw();
   }
