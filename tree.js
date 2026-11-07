@@ -173,7 +173,7 @@ export async function mount(el, opt) {
   const skyG = new T.Group(); sc.add(skyG);
   const MET = { list: [], t: 0, geo: new T.PlaneGeometry(6, .1), tex: (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 4; const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 128, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.85, 'rgba(220,235,255,.7)'); g.addColorStop(1, 'rgba(255,255,255,1)'); x.fillStyle = g; x.fillRect(0, 0, 128, 4); return new T.CanvasTexture(c); })() };
   const metGo = f0 => {
-        const fw = new T.Vector3(); cam.getWorldDirection(fw); const up = cam.up.clone().applyQuaternion(cam.quaternion).normalize(), rt = fw.clone().cross(up).normalize(), dir = Math.random() < .5 ? -1 : 1;
+        const fw = new T.Vector3(); cam.getWorldDirection(fw); const up = cam.up.clone().applyQuaternion(cam.quaternion).normalize(), rt = fw.clone().cross(up).normalize(), dir = 1;
         const m = new T.Mesh(MET.geo, new T.MeshBasicMaterial({ map: MET.tex, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
         const D = cam.position.length() + 14, hh = D * Math.tan(cam.fov * Math.PI / 360), hw = hh * cam.aspect; m.position.copy(cam.position).addScaledVector(fw, D).addScaledVector(up, hh * (.45 + Math.random() * .45)).addScaledVector(rt, hw * (Math.random() * 1.2 - .3) * dir);
         const v = rt.clone().multiplyScalar(-dir * .55).addScaledVector(up, -.3); m.quaternion.copy(cam.quaternion); m.rotateZ(Math.atan2(-.3, -dir * .55));
