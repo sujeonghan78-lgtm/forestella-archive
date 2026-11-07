@@ -2609,3 +2609,4 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-page.slim .tree-btns { display: grid; grid-template-columns: 1fr 1fr auto 1fr 1fr; justify-items: center; align-items: center; gap: 6px; max-width: 360px; margin-left: auto; margin-right: auto; }
 .tree-page.slim .tree-btns .tree-sky { grid-column: 1; grid-row: 1; } .tree-page.slim .tree-btns #tree-gift { grid-column: 2; grid-row: 1; } .tree-page.slim .tree-btns .tree-water { grid-column: 3; grid-row: 1; } .tree-page.slim .tree-btns .tree-snow, .tree-page.slim .tree-btns .tree-me { grid-column: 4; grid-row: 1; }
 .tree-page.slim .tree-btns .tree-gift { width: 52px; height: 52px; border-radius: 16px; } .tree-page.slim .tree-btns .tree-gift small { font-size: 9px; }
+.tree-page.slim .tree-btns { grid-template-columns: 52px 52px auto 52px 52px; justify-content: center; column-gap: 14px; max-width: none; }
