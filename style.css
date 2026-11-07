@@ -2580,3 +2580,6 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-rt .rt-tog svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
 .tree-rt .rt-tog:only-child { display: none; } .tree-rt.open .rt-tog { background: #24584f; color: #fff; }
 .tree-rt.fold:not(.open) > :not(.rt-tog) { display: none; }
+
+.tree-pp.pp-bot { position: static; width: max-content; margin: 0 auto 8px; background: rgba(255,255,255,.82); padding: 2px 6px; gap: 2px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.tree-pp.pp-bot button { font-size: 18px; line-height: 20px; color: #24584f; } .tree-pp.pp-bot button:disabled { opacity: .25; } .tree-pp.pp-bot span { font-size: 13px; font-weight: 600; color: #24584f; padding: 0 2px; } .tree-pp.pp-bot small { font-size: 11px; margin: 0 4px 0 6px; }
