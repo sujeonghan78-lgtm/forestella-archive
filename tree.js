@@ -217,7 +217,7 @@ export async function mount(el, opt) {
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
   const PLAIN = treeMesh(false, L.dk || 0), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
-  let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [], LIGHTS = [], FLY = [], PSLOT = [], SNOW4 = []; let sPlace = null;
+  let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [], LIGHTS = [], FLY = [], PSLOT = [], SNOW4 = []; let sPlace = null, SZONE = null;
   const snowPut = (k, my) => { if (SNOW4[k]) { spin.remove(SNOW4[k]); SNOW4[k] = null; } if (!my || !my.p) return; const n = animalSnow(.85, k, my); n.position.set(my.p[0], 0, my.p[1]); n.rotation.y = Math.atan2(my.p[0], my.p[1]); n.userData.sk = k; spin.add(n); SNOW4[k] = n; };
   if (!L.tree) { // 씨앗·새싹
     const soil = new T.Mesh(new T.CylinderGeometry(.55, .65, .14, 9), fm(0x6e4a2c, { roughness: 1 })); soil.position.y = .07; spin.add(soil);
@@ -290,8 +290,8 @@ export async function mount(el, opt) {
         const m = new T.Mesh(geo, new T.MeshStandardMaterial({ vertexColors: true, roughness: .8, flatShading: true })); m.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); spin.add(m); WOODS.push(m);
         if (L.lights && k % 3 === 0) for (let j = 0; j < 6; j++) { const yy = .55 * hs + wr() * (y - .7 * hs), rr = (.8 - .5 * (yy / y)) * hs * fat * .9, aa = wr() * 6.283, lt = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: [0xffd27a, 0xff9a6a, 0xfff2c0][j % 3], transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); lt.position.set(Math.cos(aa) * rr, yy, Math.sin(aa) * rr); lt.scale.setScalar(.6 * Math.max(.7, hs * .5)); lt.userData.ph = wr() * 6.283; m.add(lt); LIGHTS.push(lt); } } }
     if (L.sm4) (opt.snow4 || []).forEach((my, k) => { if (my && my.p) snowPut(k, my); }); // 내가 놓은 자리에만 (이 폰)
-    if (L.snow) { const sm = snowman(.85); sm.position.set(2.05, 0, 3.1); sm.rotation.y = -.45; sm.traverse(o => { o.castShadow = true; }); spin.add(sm); }
-    if (L.gifts && !opt.noGifts) [0, Math.PI].forEach((ra, half) => GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { // 앞뒤로 빙 둘러요 (트리와 같이 돌아요), 큰 상자는 더 크게
+    if (L.snow) { const sm = snowman(.85); sm.position.set(-2.4, 0, -2.9); sm.rotation.y = Math.PI + .7; sm.traverse(o => { o.castShadow = true; }); spin.add(sm); }
+    if (L.gifts && !opt.noGifts) [Math.PI].forEach((ra, half) => GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { // 앞뒤로 빙 둘러요 (트리와 같이 돌아요), 큰 상자는 더 크게
       const f = q >= .5 ? 1.4 : 1, cs = Math.cos(ra), sn = Math.sin(ra), g = gift(x * cs - z * sn, x * sn + z * cs, half ? OC[(i + 3) % 8] : c, q * f, h * f, rc, i + half); g.rotation.y += ra; if (up) g.position.y = up * 1.4; spin.add(g); }));
   }
   // 반딧불 빛 가루 (Lv8부터): 트리 둘레를 천천히 떠다녀요
@@ -346,7 +346,7 @@ export async function mount(el, opt) {
     pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) { drag = null; moving = false; } else { const [p] = pts.values(); drag = p.x; dragY = p.y; }
     if (!tp || e.target !== cvs) return;
     if (placing) { const h = hitTree(e); if (h) setPlace(h[0], h[1]); return; }
-    if (sPlace) { rcP.setFromCamera(ndc(e), cam); const pt = new T.Vector3(); if (rcP.ray.intersectPlane(new T.Plane(new T.Vector3(0, 1, 0), 0), pt)) { const lp = spin.worldToLocal(pt), r = Math.hypot(lp.x, lp.z); if (r > 1.3 && r < 5) { const p = [+lp.x.toFixed(2), +lp.z.toFixed(2)]; if (!sPlace.g) { sPlace.g = animalSnow(.85, sPlace.k, {}); sPlace.g.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = .6; o.material.depthWrite = false; } }); spin.add(sPlace.g); } sPlace.g.position.set(p[0], 0, p[1]); sPlace.g.rotation.y = Math.atan2(p[0], p[1]); sPlace.p = p; sPlace.cb(p); } } return; }
+    if (sPlace) { rcP.setFromCamera(ndc(e), cam); const pt = new T.Vector3(); if (rcP.ray.intersectPlane(new T.Plane(new T.Vector3(0, 1, 0), 0), pt)) { const lp = spin.worldToLocal(pt), r = Math.hypot(lp.x, lp.z); if (r > 1.3 && r < 5 && lp.z > .3) { const p = [+lp.x.toFixed(2), +lp.z.toFixed(2)]; if (!sPlace.g) { sPlace.g = animalSnow(.85, sPlace.k, {}); sPlace.g.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = .6; o.material.depthWrite = false; } }); spin.add(sPlace.g); } sPlace.g.position.set(p[0], 0, p[1]); sPlace.g.rotation.y = Math.atan2(p[0], p[1]); sPlace.p = p; sPlace.cb(p); } } return; }
     if (pPick) { rcP.setFromCamera(ndc(e), cam); const hh = rcP.intersectObjects(PSLOT, true)[0]; if (hh) { let c = hh.object; while (c && !PSLOT.includes(c)) c = c.parent; const i = PSLOT.indexOf(c), g = pgCur * 15 + i; if (c && !(opt.polas || [])[g]) pPick(g); } return; }
     rcP.setFromCamera(ndc(e), cam); const hit = rcP.intersectObjects(ORN.concat(SNOW4.filter(Boolean)), true)[0]; if (!hit) return; let o = hit.object; while (o && o.userData.sk == null && !o.userData.orn) o = o.parent; if (o && o.userData.sk != null) { if (opt.onSnow) opt.onSnow(o.userData.sk); return; } if (opt.onTap) opt.onTap(hit.object.userData.orn); };
   addEventListener('pointerup', up); addEventListener('pointercancel', up);
@@ -394,7 +394,9 @@ export async function mount(el, opt) {
     addPola(o, g) { (opt.polas = opt.polas || [])[g] = o; this.polaPage(Math.floor(g / 15)); },
     polaPick(cb) { pPick = cb; this.polaPage(pgCur); },
     snowSet(k, my) { snowPut(k, my); },
-    snowPlace(k, cb) { if (sPlace && sPlace.g) spin.remove(sPlace.g); sPlace = cb ? { k, cb, g: null, p: null } : null; },
+    snowPlace(k, cb) { if (sPlace && sPlace.g) spin.remove(sPlace.g); sPlace = cb ? { k, cb, g: null, p: null } : null;
+      if (!SZONE) { SZONE = new T.Mesh(new T.RingGeometry(1.4, 4.9, 40, 1, .1, Math.PI - .2), new T.MeshBasicMaterial({ color: 0x8fd0ff, transparent: true, opacity: .35, depthWrite: false, side: T.DoubleSide })); SZONE.rotation.x = Math.PI / 2; SZONE.position.y = .03; spin.add(SZONE); } SZONE.visible = !!cb;
+      if (cb) { rot = Math.round(rot / 6.283) * 6.283; v = 0; } }, // 눈사람은 선물 없는 반쪽(앞)에만, 고르는 동안 그 땅을 연하게
     polaOn() { return PSLOT.length > 0; },
     polaPages() { return Math.max(1, Math.ceil((opt.polas || []).length / 15)); },
     polaPage(pg) { if (!PSLOT.length) return; pgCur = pg; const L_ = opt.polas || [];
