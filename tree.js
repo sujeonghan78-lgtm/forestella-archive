@@ -290,7 +290,7 @@ export async function mount(el, opt) {
     if (L.woods) { // 둘레 숲: 각진 원뿔을 쌓은 단순한 나무 (한 그루 = 한 덩어리로 합쳐 가볍게), 트리와 같이 돌아요. 눈 레벨엔 끝이 하얗게
       let ws = 77; const wr = () => (ws = (ws * 16807) % 2147483647) / 2147483647, GC = [0x2f5a3c, 0x3a6b45, 0x274d36, 0x456f3a, 0x2c6050], SC = new T.Color(0xf2f6fa), TC = new T.Color(0x4a3426);
       const part = (geo, x, y, z, ry, rz, col, P, N, C) => { const g = geo.toNonIndexed(); g.rotateZ(rz); g.rotateY(ry); g.translate(x, y, z); const p = g.attributes.position.array, n = g.attributes.normal.array; for (let i = 0; i < p.length; i++) { P.push(p[i]); N.push(n[i]); } for (let i = 0; i < p.length / 3; i++) C.push(col.r, col.g, col.b); };
-      for (let k = 0; k < L.woods; k++) { const a = wr() * 6.283, d = 12 + Math.pow(wr(), .8) * 16, hs = .6 + Math.pow(wr(), 2) * (.7 + 2.6 * (d - 12) / 16), G = new T.Color(GC[k % GC.length]), nt = 2 + Math.floor(wr() * 3), seg = 5 + Math.floor(wr() * 3), fat = .55 + wr() * .8, P = [], N = [], C = [];
+      for (let k = 0; k < L.woods; k++) { const a = wr() * 6.283, d = 12 + Math.pow(wr(), .8) * 16 * (L.wfar || 1), hs = .6 + Math.pow(wr(), 2) * (.7 + 2.6 * Math.min(1.4, (d - 12) / 16)), G = new T.Color(GC[k % GC.length]), nt = 2 + Math.floor(wr() * 3), seg = 5 + Math.floor(wr() * 3), fat = .55 + wr() * .8, P = [], N = [], C = [];
         part(new T.CylinderGeometry(.12 * hs, .15 * hs, .5 * hs, 5), 0, .25 * hs, 0, 0, 0, TC, P, N, C);
         let y = .4 * hs; for (let j = 0; j < nt; j++) { const r = (.85 - j * .55 / nt) * hs * fat * (.9 + wr() * .2), h = (1.05 - j * .3 / nt) * hs * (.85 + wr() * .3), ry = wr() * 3, rz = (wr() - .5) * .08;
           part(new T.ConeGeometry(r, h, seg), 0, y + h / 2, 0, ry, rz, G, P, N, C);
