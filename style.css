@@ -2542,3 +2542,8 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-snb .snb-gift { border: 0; background: rgba(255,255,255,.8); border-radius: 14px; padding: 4px 10px; font-size: 13px; color: #345; }
 .tree-snb .snb-list button.on { background: #e3f3ee; border-radius: 50%; }
 .sn-pos { justify-content: center; } .sn-pos button { font-size: 13px; }
+.tree-rt { position: absolute; right: 12px; top: 172px; z-index: 3; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.tree-rt .tree-pp, .tree-rt .tree-snb { position: static; }
+.tree-rt .tree-pp { order: 0; } .tree-rt .tree-snb { order: 1; gap: 6px; }
+.tree-rt .tree-pp, .tree-snb .snb-go, .tree-snb .snb-gift { height: 28px; box-sizing: border-box; line-height: 20px; padding: 4px 10px; font-size: 13px; }
+.tree-snb .snb-list { order: 1; } .tree-snb .snb-gift { order: 2; }
