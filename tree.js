@@ -171,6 +171,7 @@ export async function mount(el, opt) {
   const STEP = opt.cStep || 20, SKY_R = 22, CP = [];
   // 하늘은 돔: 손가락으로 돌리면 트리보다 천천히 같이 돌아요. 별자리는 하늘 둘레에 펼쳐 둬요 (앞쪽 두 개부터)
   const skyG = new T.Group(); skyG.scale.setScalar(2); sc.add(skyG); // 하늘을 숲 나무보다 멀리 (별이 나무 앞에 보이지 않게)
+  const AUR = { t: { value: 0 } };
   const MET = { list: [], t: 0, geo: new T.PlaneGeometry(11, 1.35), tex: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 236, 0); g.addColorStop(0, 'rgba(255,243,200,0)'); g.addColorStop(1, 'rgba(255,243,200,.85)'); x.fillStyle = g; x.fillRect(0, 15, 236, 2);
     const h = x.createRadialGradient(236, 16, 0, 236, 16, 6); h.addColorStop(0, 'rgba(255,255,240,1)'); h.addColorStop(.35, 'rgba(255,243,200,.8)'); h.addColorStop(1, 'rgba(255,243,200,0)'); x.fillStyle = h; x.fillRect(229, 9, 14, 14); return new T.CanvasTexture(c); })() }; // 편지 열릴 때 별똥별처럼: 빛나는 머리 + 노란 꼬리
   const metGo = f0 => {
@@ -282,6 +283,13 @@ export async function mount(el, opt) {
         for (let k = 0; k < 6; k++) { ex.fillStyle = 'rgba(255,255,255,.9)'; ex.fillRect(k * 43, 30 + (k % 3) * 8, 10, 60); }
         const env = new T.CanvasTexture(ec); env.mapping = T.EquirectangularReflectionMapping; env.colorSpace = T.SRGBColorSpace;
         const rb = new T.Mesh(g, new T.MeshStandardMaterial({ color: 0xffcc55, metalness: 1, roughness: .22, envMap: env, envMapIntensity: 1.3, emissive: 0x8a5a00, emissiveIntensity: .25, side: T.DoubleSide })); rb.castShadow = true; spin.add(rb); } }
+    if (L.aurora && night) { // 오로라 (Lv8~): 밤하늘에 초록·보라 빛 커튼이 천천히 일렁여요 (하늘과 같이 돌아요)
+      [[-.6, 1.7, 36, 3.5, 12], [.9, 1.3, 40, 5, 10], [2.6, 1.4, 38, 4, 11]].forEach(([a0, span, R0, y0, H]) => { const W = 60, g = new T.PlaneGeometry(1, 1, W, 1), p = g.attributes.position;
+        for (let i = 0; i < p.count; i++) { const u = p.getX(i) + .5, v = p.getY(i) + .5, an = a0 + (u - .5) * span, rr = R0 + Math.sin(u * 9) * 2.5; p.setXYZ(i, Math.sin(an) * rr, y0 + v * H + Math.sin(u * 6.3) * 1.5, -Math.cos(an) * rr); }
+        const m = new T.Mesh(g, new T.ShaderMaterial({ uniforms: { t: AUR.t, o: { value: .85 } }, transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.DoubleSide,
+          vertexShader: 'uniform float t; varying vec2 vU; void main(){ vU = uv; vec3 q = position; vec2 n = normalize(q.xz); q.xz += n * (sin(uv.x * 14.0 + t * .35) * 1.6 + sin(uv.x * 31.0 - t * .5) * .6); gl_Position = projectionMatrix * modelViewMatrix * vec4(q, 1.0); }',
+          fragmentShader: 'uniform float t; uniform float o; varying vec2 vU; void main(){ float b = .55 + .45 * sin(vU.x * 70.0 + t * .6 + sin(vU.x * 9.0 + t * .2) * 4.0); float v = vU.y; float a = smoothstep(0.0, .12, v) * (1.0 - smoothstep(.3, 1.0, v)) * smoothstep(0.0, .12, vU.x) * (1.0 - smoothstep(.88, 1.0, vU.x)); vec3 c = mix(vec3(.15, 1.0, .55), vec3(.55, .35, 1.0), smoothstep(.35, 1.0, v)); gl_FragColor = vec4(c, a * b * o * (.75 + .25 * sin(t * .4 + vU.x * 5.0))); }' }));
+        m.renderOrder = -1; skyG.add(m); }); }
     if (L.woods) { // 바닥 돌 (Lv5부터): 크고 작은 각진 돌을 둘레에 흩어 놓아요 (한 번에 그려서 가벼워요)
       let rs = 31; const rr = () => (rs = (rs * 16807) % 2147483647) / 2147483647, n = 46, im = new T.InstancedMesh(new T.DodecahedronGeometry(1, 0), fm(0xf2f6fa, { roughness: 1, emissive: 0x8a96a2, emissiveIntensity: .35 }), n), mx = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler();
       for (let k = 0; k < n; k++) { const a = rr() * 6.283, d = 3.6 + Math.pow(rr(), .7) * 16, s = (.12 + Math.pow(rr(), 2.5) * .8) * (1 + (d - 3.6) / 16);
@@ -297,7 +305,7 @@ export async function mount(el, opt) {
           if (L.snow) part(new T.ConeGeometry(r * .52, h * .52, seg), 0, y + h - h * .26 + .01, 0, ry, rz, SC, P, N, C); y += h * (.55 + wr() * .1); }
         const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(P, 3)); geo.setAttribute('normal', new T.Float32BufferAttribute(N, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(C, 3));
         const m = new T.Mesh(geo, new T.MeshStandardMaterial({ vertexColors: true, roughness: .8, flatShading: true })); m.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); spin.add(m); WOODS.push(m);
-        if (L.lights && k % 3 === 0) for (let j = 0; j < 6; j++) { const yy = .55 * hs + wr() * (y - .7 * hs), rr = (.8 - .5 * (yy / y)) * hs * fat * .9, aa = wr() * 6.283, lt = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: [0xffd27a, 0xff9a6a, 0xfff2c0][j % 3], transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); lt.position.set(Math.cos(aa) * rr, yy, Math.sin(aa) * rr); lt.scale.setScalar(.6 * Math.max(.7, hs * .5)); lt.userData.ph = wr() * 6.283; m.add(lt); LIGHTS.push(lt); } } }
+        if (L.lights && k % 3 === 0 && d < 20) for (let j = 0; j < 6; j++) { const yy = .55 * hs + wr() * (y - .7 * hs), rr = (.8 - .5 * (yy / y)) * hs * fat * .9, aa = wr() * 6.283, lt = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: [0xffd27a, 0xff9a6a, 0xfff2c0][j % 3], transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); lt.position.set(Math.cos(aa) * rr, yy, Math.sin(aa) * rr); lt.scale.setScalar(.6 * Math.max(.7, hs * .5)); lt.userData.ph = wr() * 6.283; m.add(lt); LIGHTS.push(lt); } } }
     if (L.sm4) (opt.snow4 || []).forEach((my, k) => { if (my && my.p) snowPut(k, my); }); // 내가 놓은 자리에만 (이 폰)
     if (L.gifts && !opt.noGifts) [Math.PI].forEach((ra, half) => GIFTS.forEach(([x, z, c, rc, q, h, up], i) => { // 앞뒤로 빙 둘러요 (트리와 같이 돌아요), 큰 상자는 더 크게
       const f = q >= .5 ? 1.4 : 1, cs = Math.cos(ra), sn = Math.sin(ra), g = gift(x * cs - z * sn, x * sn + z * cs, half ? OC[(i + 3) % 8] : c, q * f, h * f, rc, i + half); g.rotation.y += ra; if (up) g.position.y = up * 1.4; spin.add(g); }));
@@ -383,6 +391,7 @@ export async function mount(el, opt) {
       if (!MET.t) MET.t = performance.now() + 2500 + Math.random() * 5000;
       if (performance.now() > MET.t) { MET.t = performance.now() + 4000 + Math.random() * 9000; metGo(0); }
       for (let i = MET.list.length - 1; i >= 0; i--) { const m = MET.list[i], u = m.userData; u.f++; m.position.add(u.v); m.material.opacity = Math.min(1, u.f / 6) * Math.max(0, 1 - Math.max(0, u.f - 22) / 14); if (u.f > 36) { sc.remove(m); m.material.dispose(); MET.list.splice(i, 1); } } }
+    AUR.t.value = performance.now() / 1000;
     skyRot += .00012; // 하늘(별)이 아주 천천히 돌아요 — 한 바퀴 약 15분
     skyG.rotation.y = skyRot; spin.rotation.y = rot;
     if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(), fc = sc.fog ? sc.fog.color : new T.Color(0xffffff); WOODS.forEach(g => { g.getWorldPosition(wp); const dc = wp.distanceTo(cam.position); g.visible = dc > c0 * .8; const f = Math.round(Math.max(0, Math.min(.3, (dc - c0 * .8) / (c0 * 2))) * 40) / 40; if (g.userData.f !== f || g.userData.fc !== fc.getHex()) { g.userData.f = f; g.userData.fc = fc.getHex(); g.material.color.setScalar(1 - f); g.material.emissive.copy(fc).multiplyScalar(f); } }); }
