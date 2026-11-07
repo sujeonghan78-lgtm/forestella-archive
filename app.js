@@ -5954,7 +5954,7 @@
     { n: '작은 나무', en: 'Small tree', ja: '小さな木', w: 150, slot: 25, o: { tree: .55 } },
     { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.15, glit: 1, woods: 20, dk: .2 } },
     { n: '폴라로이드', en: 'Polaroids', ja: 'ポラロイド', w: 1000, slot: 80, o: { tree: 1, tall: 1.15, glit: 1, pola: 1, woods: 54, dk: .4 } },
-    { n: '눈과 선물', en: 'Snow & gifts', ja: '雪とプレゼント', w: 2500, slot: 120, o: { tree: 1, tall: 1.15, glit: 1, pola: 1, gifts: 1, snow: 1, woods: 96 , dk: 0.55 } },
+    { n: '눈과 선물', en: 'Snow & gifts', ja: '雪とプレゼント', w: 2500, slot: 120, o: { tree: 1, tall: 1.15, glit: 1, pola: 1, gifts: 1, snow: 1, sm4: 1, woods: 96, dk: 0.55 } },
     { n: '반딧불', en: 'Fireflies', ja: 'ホタル', w: 5000, slot: 160, o: { tree: 1, tall: 1.15, glit: 1, pola: 1, gifts: 1, snow: 1, lights: 1, fly: 1, sm4: 1, woods: 96, dk: .7 } },
     { n: '별', en: 'Star', ja: '星', w: 10000, slot: 200, o: { tree: 1, tall: 1.15, glit: 1, pola: 1, gifts: 1, snow: 1, star: 1, lights: 1, fly: 1, sm4: 1, woods: 96, dk: .85 } },
   ];
@@ -6027,9 +6027,9 @@
     const draw = () => { const f = Array.from({ length: 15 }, (_, i) => st.polas[cur * 15 + i]).filter(Boolean).length; bar.innerHTML = '📷 ' + (n < 2 ? L3('1쪽', 'p.1', '1ページ') : Array.from({ length: n }, (_, k) => `<button data-k="${k}" class="${k === cur ? 'on' : ''}">${k + 1}</button>`).join('')) + `<small>· ${f}/15</small>`; bar.querySelectorAll('button').forEach(b => { b.onclick = () => { cur = +b.dataset.k; treeApi.polaPage(cur); draw(); }; }); };
     draw();
   }
-  // 동물 눈사람 꾸미기 (Lv8): 목도리 색 + 손가락으로 얼굴 그리기. 이 폰에서만 보여요 (sb-tree snow4)
+  // 동물 눈사람 꾸미기 (Lv7): 목도리 색 + 손가락으로 얼굴 그리기. 이 폰에서만 보여요 (sb-tree snow4)
   const SNOW_N = [['곰돌이', 'Bear', 'クマ', '🐻'], ['고양이', 'Cat', 'ネコ', '🐱'], ['병아리', 'Chick', 'ヒヨコ', '🐥'], ['토끼', 'Bunny', 'ウサギ', '🐰']], SNOW_C = ['#9a6a44', '#f0a040', '#d8343e', '#8ec5e8', '#3fae6a', '#9b6ee8', '#ff8fc0', '#2d3a4a', '#f4f4f0'];
-  // 눈사람 설치 (Lv8): 오른쪽 위 ⛄ → 넷 중 고르기 → 놓지 않은 건 트리 둘레 땅을 눌러 놓고, 놓은 건 꾸미기. 선물 상자 켜고 끄기도 여기
+  // 눈사람 설치 (Lv7): 오른쪽 위 ⛄ → 넷 중 고르기 → 놓지 않은 건 트리 둘레 땅을 눌러 놓고, 놓은 건 꾸미기. 선물 상자 켜고 끄기도 여기
   function treeSnowBtn(lv) {
     treeSnowBtn.lv = lv; document.querySelectorAll('.tree-snb').forEach(x => x.remove()); const pg = document.querySelector('.tree-page'); if (!pg || !(lv.o.sm4 || lv.o.gifts)) return;
     const mm = treeMine(), sn = mm.snow4 || [], any = sn.some(x => x && x.p), b = document.createElement('div'); b.className = 'tree-snb';
