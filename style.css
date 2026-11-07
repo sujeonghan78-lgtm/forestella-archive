@@ -2629,3 +2629,8 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .bot-shot { pointer-events: auto; position: absolute; right: 14px; top: 2px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,.18); color: rgba(255,255,255,.85); display: flex; align-items: center; justify-content: center; z-index: 2; }
 .bot-shot svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tree-bot.hid > .bot-shot { display: flex; }
+
+.shot-ov { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.82); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px 16px; }
+.shot-ov img { max-width: 100%; max-height: 70vh; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.5); -webkit-touch-callout: default; }
+.shot-ov p { margin: 0; color: rgba(255,255,255,.8); font-size: 13px; } .shot-ov div { display: flex; gap: 8px; } .shot-ov .bpill { text-decoration: none; }
+.tree-top.hid ~ .tree-rt { display: none; }
