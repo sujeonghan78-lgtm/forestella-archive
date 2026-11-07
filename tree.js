@@ -172,7 +172,7 @@ export async function mount(el, opt) {
   // 하늘은 돔: 손가락으로 돌리면 트리보다 천천히 같이 돌아요. 별자리는 하늘 둘레에 펼쳐 둬요 (앞쪽 두 개부터)
   const skyG = new T.Group(); sc.add(skyG);
   const MET = { list: [], t: 0, geo: new T.PlaneGeometry(6, .75), tex: (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 236, 0); g.addColorStop(0, 'rgba(255,243,200,0)'); g.addColorStop(1, 'rgba(255,243,200,.85)'); x.fillStyle = g; x.fillRect(0, 15, 236, 2);
-    const h = x.createRadialGradient(236, 16, 0, 236, 16, 16); h.addColorStop(0, 'rgba(255,255,240,1)'); h.addColorStop(.35, 'rgba(255,243,200,.8)'); h.addColorStop(1, 'rgba(255,243,200,0)'); x.fillStyle = h; x.fillRect(220, 0, 36, 32); return new T.CanvasTexture(c); })() }; // 편지 열릴 때 별똥별처럼: 빛나는 머리 + 노란 꼬리
+    const h = x.createRadialGradient(236, 16, 0, 236, 16, 9); h.addColorStop(0, 'rgba(255,255,240,1)'); h.addColorStop(.35, 'rgba(255,243,200,.8)'); h.addColorStop(1, 'rgba(255,243,200,0)'); x.fillStyle = h; x.fillRect(226, 6, 20, 20); return new T.CanvasTexture(c); })() }; // 편지 열릴 때 별똥별처럼: 빛나는 머리 + 노란 꼬리
   const metGo = f0 => {
         const fw = new T.Vector3(); cam.getWorldDirection(fw); const up = cam.up.clone().applyQuaternion(cam.quaternion).normalize(), rt = fw.clone().cross(up).normalize(), dir = 1;
         const m = new T.Mesh(MET.geo, new T.MeshBasicMaterial({ map: MET.tex, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, fog: false }));
