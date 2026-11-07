@@ -2596,8 +2596,13 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .snow-pick button b { font-size: 14px; } .snow-pick button small { font-size: 11px; color: #2c8a7a; }
 
 .tree-btns { position: relative; }
-.tree-sky { position: absolute; left: calc(50% - 166px); top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.1); color: rgba(255,255,255,.75); display: flex; align-items: center; justify-content: center; padding: 0; }
-.tree-sky svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.tree-page.slim .tree-btns { gap: 14px; } .tree-sky svg, .tree-page.slim .tree-snow svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .sky-pick { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); display: flex; gap: 4px; background: rgba(255,255,255,.95); border-radius: 18px; padding: 5px; box-shadow: 0 6px 18px rgba(0,0,0,.25); z-index: 6; }
 .sky-pick[hidden] { display: none; }
 .sky-pick a { padding: 5px 10px; border-radius: 13px; font-size: 13px; color: #24453f; text-decoration: none; white-space: nowrap; } .sky-pick a.on { background: #24584f; color: #fff; }
+
+.tree-snb .snb-tg { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 8px 0 12px; border: 0; border-radius: 15px; background: rgba(255,255,255,.88); color: #345; font-size: 13px; }
+.tree-snb .snb-tg i { width: 30px; height: 18px; border-radius: 9px; background: #c9d3d1; position: relative; transition: background .15s; }
+.tree-snb .snb-tg i::after { content: ''; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.tree-snb .snb-tg.on i { background: #2c8a7a; } .tree-snb .snb-tg.on i::after { left: 14px; }
+.sky-pick, .snow-pick { pointer-events: auto; }
