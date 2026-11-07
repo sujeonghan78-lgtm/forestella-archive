@@ -6050,7 +6050,7 @@
   function treeSnowEdit(k) {
     const pg = document.querySelector('.tree-page'); if (!pg || !treeApi) return; document.querySelectorAll('.tree-sheet,.tree-pop').forEach(x => x.remove());
     const mm = treeMine(), cur = (mm.snow4 || [])[k] || {}, n = SNOW_N[k], f = { c: cur.c, pen: '#1d1d22', w: 8, tool: 'pen', it: (cur.it || []).slice() };
-    const sh = document.createElement('div'); sh.className = 'tree-sheet';
+    const sh = document.createElement('div'); sh.className = 'tree-sheet sn-sheet';
     sh.innerHTML = `<div class="ts-prev" id="sn-prev"><small>${L3('손가락으로 돌려 보세요', 'Drag to turn', 'ドラッグで回せます')}</small></div><div class="ts-in"><h2>${n[3]} ${L3(`내 ${n[0]} 눈사람 꾸미기`, `Decorate my ${n[1]} snowman`, `${n[2]}の雪だるまを飾る`)}</h2><p class="ts-note">🔒 ${L3('나만 보여요. 이 폰에만 저장돼요.', 'Only you can see it, saved on this phone.', '自分だけに見えます(この端末に保存)')}</p>
       <p class="ts-l">${L3('얼굴 그리기', 'Draw a face', '顔を描く')}</p><div class="sn-face"><canvas width="256" height="256"></canvas><canvas class="sn-ov" width="256" height="256"></canvas></div>
       <p class="sn-dk"><button class="sn-deco">＋ ${L3('데코 추가하기', 'Add decorations', 'デコを追加')}</button></p><div class="ts-row sn-tool" hidden><button data-t="pen">✏️ ${L3('그리기', 'Draw', '描く')}</button><button data-t="b">⚫ ${L3('단추 달기', 'Button', 'ボタン')}</button><button data-t="c">🥕 ${L3('당근 달기', 'Carrot', 'にんじん')}</button></div>
