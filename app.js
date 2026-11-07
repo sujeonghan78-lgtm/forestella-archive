@@ -6050,28 +6050,46 @@
   function treeSnowEdit(k) {
     const pg = document.querySelector('.tree-page'); if (!pg || !treeApi) return; document.querySelectorAll('.tree-sheet,.tree-pop').forEach(x => x.remove());
     const mm = treeMine(), cur = (mm.snow4 || [])[k] || {}, n = SNOW_N[k], f = { c: cur.c, pen: '#1d1d22', w: 8, tool: 'pen', it: (cur.it || []).slice() };
+    const PENS = ['#1d1d22', '#ffffff', '#ff8fb0', '#d8343e', '#8a5a3a', '#ffbf2a', '#3f6fe0'], WS = [3, 7, 14, 26];
     const sh = document.createElement('div'); sh.className = 'tree-sheet sn-sheet';
-    sh.innerHTML = `<div class="ts-prev" id="sn-prev"><small>${L3('손가락으로 돌려 보세요', 'Drag to turn', 'ドラッグで回せます')}</small></div><div class="ts-in"><h2>${n[3]} ${L3(`내 ${n[0]} 눈사람 꾸미기`, `Decorate my ${n[1]} snowman`, `${n[2]}の雪だるまを飾る`)}</h2><p class="ts-note">🔒 ${L3('나만 보여요. 이 폰에만 저장돼요.', 'Only you can see it, saved on this phone.', '自分だけに見えます(この端末に保存)')}</p>
-      <p class="ts-l">${L3('얼굴 그리기', 'Draw a face', '顔を描く')}</p><div class="sn-face"><canvas width="256" height="256"></canvas><canvas class="sn-ov" width="256" height="256"></canvas></div>
-      <p class="sn-dk"><button class="sn-deco">＋ ${L3('데코 추가하기', 'Add decorations', 'デコを追加')}</button></p><div class="ts-row sn-tool" hidden><button data-t="pen">✏️ ${L3('그리기', 'Draw', '描く')}</button><button data-t="b">⚫ ${L3('단추 달기', 'Button', 'ボタン')}</button><button data-t="c">🥕 ${L3('당근 달기', 'Carrot', 'にんじん')}</button></div>
-      <div class="ts-row sn-pen">${['#1d1d22', '#ff8fb0', '#d8343e', '#8a5a3a', '#ffbf2a'].map(c => `<button data-p="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}<button class="sn-clr">${L3('지우기', 'Clear', '消す')}</button></div>
-      <div class="ts-row sn-w">${[[4, '가늘게'], [8, '보통'], [16, '굵게'], [28, '아주 굵게']].map(([w, l]) => `<button data-w="${w}"><i style="width:${Math.min(20, w)}px;height:${Math.min(20, w)}px"></i>${l}</button>`).join('')}</div>
-      <p class="ts-l">${k === 2 ? L3('망토 색', 'Cape color', 'マントの色') : L3('목도리 색', 'Scarf color', 'マフラーの色')}</p><div class="ts-row ts-col sn-col">${SNOW_C.map(c => `<button data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>
-      <div class="ts-row sn-pos"><button class="sn-move">📍 ${L3('자리 옮기기', 'Move', '移動')}</button><button class="sn-del">🧹 ${L3('치우기', 'Remove', '片付ける')}</button><button class="sn-reset">${L3('처음 모습', 'Reset', '元に戻す')}</button></div>
+    sh.innerHTML = `<div class="ts-prev" id="sn-prev"><small>${L3('손가락으로 돌려 보세요', 'Drag to turn', 'ドラッグで回せます')}</small></div><div class="ts-in">
+      <div class="sn-head"><h2>${n[3]} ${L3(`내 ${n[0]} 눈사람`, `My ${n[1]} snowman`, `${n[2]}の雪だるま`)}</h2><span>🔒 ${L3('나만 보여요', 'Only you', '自分だけ')}</span></div>
+      <div class="sn-bar"><button data-t="pen" title="펜">✏️</button><button data-t="er" title="지우개">🧽</button><button class="sn-deco" title="데코">✨</button><span class="sn-dk" hidden><button data-t="b" title="단추">⚫</button><button data-t="c" title="당근">🥕</button></span><i class="sn-sp"></i><button class="sn-undo" title="되돌리기">↶</button><button class="sn-redo" title="다시하기">↷</button><button class="sn-clr" title="${L3('모두 지우기', 'Clear all', '全部消す')}">🗑</button></div>
+      <div class="sn-face"><canvas width="256" height="256"></canvas><canvas class="sn-ov" width="256" height="256"></canvas></div>
+      <div class="sn-opts"><div class="sn-pens">${PENS.map(c => `<button data-p="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div><div class="sn-ws">${WS.map(w => `<button data-w="${w}" aria-label="${w}"><i style="width:${Math.min(22, w)}px;height:${Math.min(22, w)}px"></i></button>`).join('')}</div></div>
+      <p class="sn-hint"></p>
+      <p class="ts-l">${k === 2 ? L3('망토 색', 'Cape color', 'マントの色') : L3('목도리 색', 'Scarf color', 'マフラーの色')}</p><div class="sn-cols">${SNOW_C.map(c => `<button data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>
+      <p class="sn-pos"><button class="sn-move">📍 ${L3('자리 옮기기', 'Move', '移動')}</button> · <button class="sn-reset">${L3('처음 모습', 'Reset', '元に戻す')}</button> · <button class="sn-del">${L3('치우기', 'Remove', '片付ける')}</button></p>
       <div class="ts-btns"><button class="ts-cancel">${L3('취소', 'Cancel', 'キャンセル')}</button><button class="ts-go">${L3('저장', 'Save', '保存')}</button></div></div>`;
     pg.appendChild(sh);
-    const cv = sh.querySelector('canvas'), x = cv.getContext('2d'); let drawn = false, last = null;
+    const cv = sh.querySelector('canvas'), x = cv.getContext('2d'); let drawn = !!cur.f, last = null;
     const pv = treeMod && treeMod.preview ? treeMod.preview(sh.querySelector('#sn-prev'), { snowK: k, my: cur }) : null, pvUp = () => { if (pv) pv.set({ snowK: k, my: { c: f.c, f: drawn ? cv.toDataURL() : '', it: f.it } }); };
-    if (cur.f) { const im = new Image(); im.onload = () => { x.drawImage(im, 0, 0, 256, 256); drawn = true; pvUp(); }; im.src = cur.f; }
-    const ov = sh.querySelector('.sn-ov'), ox = ov.getContext('2d'), drawIt = () => { ox.clearRect(0, 0, 256, 256); f.it.forEach(o => { if (o.t === 'c') { ox.fillStyle = '#ff8a2a'; ox.beginPath(); ox.moveTo(o.u, o.v - 9); ox.lineTo(o.u + 26, o.v + 3); ox.lineTo(o.u, o.v + 9); ox.fill(); } else { ox.fillStyle = '#1d1d22'; ox.beginPath(); ox.arc(o.u, o.v, 11, 0, 7); ox.fill(); ox.fillStyle = '#666'; [[-3, -3], [3, -3], [-3, 3], [3, 3]].forEach(([a, b]) => { ox.beginPath(); ox.arc(o.u + a, o.v + b, 1.6, 0, 7); ox.fill(); }); } }); }; drawIt();
+    const ov = sh.querySelector('.sn-ov'), ox = ov.getContext('2d'), drawIt = () => { ox.clearRect(0, 0, 256, 256); f.it.forEach(o => { if (o.t === 'c') { ox.fillStyle = '#ff8a2a'; ox.beginPath(); ox.moveTo(o.u, o.v - 9); ox.lineTo(o.u + 26, o.v + 3); ox.lineTo(o.u, o.v + 9); ox.fill(); } else { ox.fillStyle = '#1d1d22'; ox.beginPath(); ox.arc(o.u, o.v, 11, 0, 7); ox.fill(); ox.fillStyle = '#666'; [[-3, -3], [3, -3], [-3, 3], [3, 3]].forEach(([a, b]) => { ox.beginPath(); ox.arc(o.u + a, o.v + b, 1.6, 0, 7); ox.fill(); }); } }); };
+    // 되돌리기·다시하기: 한 획(또는 단추·당근 하나)마다 그 전 모습을 저장해요 (30번까지)
+    const H = [], R = [], snap = () => ({ img: x.getImageData(0, 0, 256, 256), it: f.it.slice(), d: drawn }), load = s_ => { x.putImageData(s_.img, 0, 0); f.it = s_.it.slice(); drawn = s_.d; drawIt(); pvUp(); ub(); };
+    const ub = () => { sh.querySelector('.sn-undo').disabled = !H.length; sh.querySelector('.sn-redo').disabled = !R.length; }, push = () => { H.push(snap()); if (H.length > 30) H.shift(); R.length = 0; ub(); };
+    if (cur.f) { const im = new Image(); im.onload = () => { x.drawImage(im, 0, 0, 256, 256); pvUp(); }; im.src = cur.f; }
+    drawIt(); ub();
     const pt = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * 256 / b.width, (e.clientY - b.top) * 256 / b.height]; };
-    ov.onpointerdown = e => { if (f.tool !== 'pen') { const q = pt(e); if (f.it.length < 12) f.it.push({ t: f.tool, u: Math.round(q[0]), v: Math.round(q[1]) }); drawIt(); pvUp(); return; } ov.setPointerCapture(e.pointerId); last = pt(e); x.fillStyle = f.pen; x.beginPath(); x.arc(last[0], last[1], f.w / 2, 0, 7); x.fill(); drawn = true; };
-    ov.onpointermove = e => { if (!last) return; const p = pt(e); x.strokeStyle = f.pen; x.lineWidth = f.w; x.lineCap = x.lineJoin = 'round'; x.beginPath(); x.moveTo(last[0], last[1]); x.lineTo(p[0], p[1]); x.stroke(); last = p; };
-    ov.onpointerup = ov.onpointercancel = () => { if (last) pvUp(); last = null; };
-    const mark = () => { sh.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === f.pen)); sh.querySelectorAll('[data-w]').forEach(b => b.classList.toggle('on', +b.dataset.w === f.w)); sh.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === f.tool)); sh.querySelectorAll('[data-c]').forEach(b => b.classList.toggle('on', f.c != null && parseInt(b.dataset.c.slice(1), 16) === f.c)); }; mark();
-    sh.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => { f.pen = b.dataset.p; f.tool = 'pen'; mark(); }; }); sh.querySelectorAll('[data-w]').forEach(b => { b.onclick = () => { f.w = +b.dataset.w; f.tool = 'pen'; mark(); }; }); sh.querySelectorAll('[data-t]').forEach(b => { b.onclick = () => { f.tool = b.dataset.t; mark(); }; }); const tl = sh.querySelector('.sn-tool'), dk = sh.querySelector('.sn-deco'); if (f.it.length) { tl.hidden = false; dk.parentNode.hidden = true; } dk.onclick = () => { tl.hidden = false; dk.parentNode.hidden = true; f.tool = 'b'; mark(); };
+    const ink = () => { x.globalCompositeOperation = f.tool === 'er' ? 'destination-out' : 'source-over'; x.fillStyle = x.strokeStyle = f.pen; x.lineWidth = f.tool === 'er' ? f.w * 1.6 : f.w; x.lineCap = x.lineJoin = 'round'; };
+    ov.onpointerdown = e => { const q = pt(e); push();
+      if (f.tool === 'b' || f.tool === 'c') { if (f.it.length < 12) f.it.push({ t: f.tool, u: Math.round(q[0]), v: Math.round(q[1]) }); drawIt(); pvUp(); return; }
+      if (f.tool === 'er') { const hit = f.it.findIndex(o => Math.hypot(o.u - q[0], o.v - q[1]) < 16); if (hit >= 0) { f.it.splice(hit, 1); drawIt(); } }
+      ov.setPointerCapture(e.pointerId); last = q; ink(); x.beginPath(); x.arc(q[0], q[1], x.lineWidth / 2, 0, 7); x.fill(); if (f.tool === 'pen') drawn = true; };
+    ov.onpointermove = e => { if (!last) return; const p = pt(e); ink(); x.beginPath(); x.moveTo(last[0], last[1]); x.lineTo(p[0], p[1]); x.stroke(); last = p; };
+    ov.onpointerup = ov.onpointercancel = () => { if (last) { x.globalCompositeOperation = 'source-over'; pvUp(); } last = null; };
+    const HINT = { pen: L3('얼굴을 그려 보세요', 'Draw a face', '顔を描いてね'), er: L3('지울 곳을 문질러요 (단추·당근은 톡)', 'Rub to erase', 'こすって消す'), b: L3('누른 곳에 단추가 달려요', 'Tap to add a button', 'タップでボタン'), c: L3('누른 곳에 당근 코가 달려요', 'Tap to add a carrot', 'タップでにんじん') };
+    const mark = () => { sh.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === f.tool)); sh.querySelectorAll('[data-p]').forEach(b => b.classList.toggle('on', b.dataset.p === f.pen)); sh.querySelectorAll('[data-w]').forEach(b => b.classList.toggle('on', +b.dataset.w === f.w)); sh.querySelectorAll('[data-c]').forEach(b => b.classList.toggle('on', f.c != null && parseInt(b.dataset.c.slice(1), 16) === f.c));
+      sh.querySelector('.sn-opts').classList.toggle('off', f.tool === 'b' || f.tool === 'c'); sh.querySelector('.sn-hint').textContent = HINT[f.tool]; }; mark();
+    sh.querySelectorAll('[data-t]').forEach(b => { b.onclick = () => { f.tool = b.dataset.t; mark(); }; });
+    sh.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => { f.pen = b.dataset.p; if (f.tool !== 'pen') f.tool = 'pen'; mark(); }; });
+    sh.querySelectorAll('[data-w]').forEach(b => { b.onclick = () => { f.w = +b.dataset.w; if (f.tool !== 'er') f.tool = 'pen'; mark(); }; });
+    const dk = sh.querySelector('.sn-dk'), db = sh.querySelector('.sn-deco'); if (f.it.length) { dk.hidden = false; db.classList.add('open'); }
+    db.onclick = () => { dk.hidden = !dk.hidden; db.classList.toggle('open', !dk.hidden); if (dk.hidden && (f.tool === 'b' || f.tool === 'c')) f.tool = 'pen'; else if (!dk.hidden) f.tool = 'b'; mark(); };
+    sh.querySelector('.sn-undo').onclick = () => { if (!H.length) return; R.push(snap()); load(H.pop()); };
+    sh.querySelector('.sn-redo').onclick = () => { if (!R.length) return; H.push(snap()); load(R.pop()); };
+    sh.querySelector('.sn-clr').onclick = () => { push(); x.clearRect(0, 0, 256, 256); drawn = false; f.it = []; drawIt(); pvUp(); };
     sh.querySelectorAll('[data-c]').forEach(b => { b.onclick = () => { f.c = parseInt(b.dataset.c.slice(1), 16); mark(); pvUp(); treeApi.snowSet(k, { c: f.c, f: drawn ? cv.toDataURL() : '', it: f.it, p: cur.p }); }; });
-    sh.querySelector('.sn-clr').onclick = () => { x.clearRect(0, 0, 256, 256); drawn = false; f.it = []; drawIt(); pvUp(); };
     const put = v => { mm.snow4 = mm.snow4 || []; mm.snow4[k] = v; boxWrite(TREE_KEY, mm); treeApi.snowSet(k, v || {}); sh.remove(); };
     sh.querySelector('.ts-cancel').onclick = () => { treeApi.snowSet(k, cur); sh.remove(); };
     sh.querySelector('.sn-reset').onclick = () => put({ p: cur.p });
