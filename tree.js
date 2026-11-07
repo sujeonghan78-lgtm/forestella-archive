@@ -308,7 +308,7 @@ export async function mount(el, opt) {
         if (L.lights && k % 3 === 0 && d < 20) for (let j = 0; j < 6; j++) { const yy = .55 * hs + wr() * (y - .7 * hs), rr = (.8 - .5 * (yy / y)) * hs * fat * .9, aa = wr() * 6.283, lt = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: [0xffd27a, 0xff9a6a, 0xfff2c0][j % 3], transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false })); lt.position.set(Math.cos(aa) * rr, yy, Math.sin(aa) * rr); lt.scale.setScalar(.6 * Math.max(.7, hs * .5)); lt.userData.ph = wr() * 6.283; m.add(lt); LIGHTS.push(lt); } } }
     if (L.aurora) { // 눈 속 작은 등불 (Lv8~): 큰 트리에서 떨어진 숲 가장자리 눈 위에 랜턴, 밤·노을엔 촛불처럼 일렁여요
       let ls = 913; const lr = () => (ls = (ls * 16807) % 2147483647) / 2147483647, lit = night || sky === 'sunset', FR = fm(0x2b2f33, { roughness: .6, metalness: .4 });
-      for (let c = 0; c < 7; c++) { const ca = c * .898 + lr() * .5, cd = 8.5 + lr() * 10, nn = 1;
+      for (let c = 0; c < 14; c++) { const far = c >= 7, ca = c * .898 + (far ? .45 : 0) + lr() * .5, cd = far ? 22 + lr() * 18 : 8.5 + lr() * 10, nn = 1; // 가까운 숲 7개 + 저 멀리 숲 7개
         for (let j = 0; j < nn; j++) { const a = ca + (lr() - .5) * .12, d = cd + (lr() - .5) * 1.4, s = (1.1 + (d - 8) / 12 * .7) * (.8 + lr() * .35), fade = 1 - Math.min(.55, (d - 8) / 20), g = new T.Group();
           const glass = new T.Mesh(new T.BoxGeometry(.2, .26, .2), new T.MeshStandardMaterial({ color: lit ? 0xffe2b0 : 0xb9c4cc, emissive: 0xff9a3a, emissiveIntensity: lit ? 1.4 * fade : 0, roughness: .3, transparent: true, opacity: .9 }));
           glass.position.y = .2; g.add(glass);
@@ -317,7 +317,7 @@ export async function mount(el, opt) {
           const ring = new T.Mesh(new T.TorusGeometry(.045, .012, 4, 8), FR); ring.position.y = .48; g.add(ring);
           [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([x, z]) => { const p = new T.Mesh(new T.BoxGeometry(.03, .28, .03), FR); p.position.set(x * .105, .2, z * .105); g.add(p); });
           g.children.forEach(m => { m.castShadow = true; });
-          if (lit) { const halo = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: 0xffb060, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: .8 * fade })); halo.position.y = .22; halo.scale.setScalar(.75); g.add(halo);
+          if (lit) { const halo = new T.Sprite(new T.SpriteMaterial({ map: GLOW, color: 0xffb060, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: .8 * fade })); halo.position.y = .22; halo.scale.setScalar(far ? 1.3 : .75); g.add(halo);
             const pool = new T.Mesh(new T.CircleGeometry(.75, 20), new T.MeshBasicMaterial({ map: GLOW, color: 0xffa050, transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false, opacity: .45 * fade })); pool.rotation.x = -Math.PI / 2; pool.position.y = .015; g.add(pool);
             LANT.push({ glass, halo, pool, f: fade, ph: lr() * 6.283 }); }
           g.scale.setScalar(s); g.rotation.y = lr() * 6.283; g.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); spin.add(g); } } }
