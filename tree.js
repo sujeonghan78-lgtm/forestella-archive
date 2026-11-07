@@ -309,7 +309,7 @@ export async function mount(el, opt) {
           part(new T.CylinderGeometry(.004 * hs + .01, .004 * hs + .01, .1 * sc, 3), x, y - .05 * sc, z, 0, 0, KC, P, N, C); part(new T.BoxGeometry(.27 * sc, .05 * sc, .27 * sc), x, y0 + .025 * sc, z, ro, 0, KC, P, N, C); part(new T.ConeGeometry(.2 * sc, .12 * sc, 4), x, y0 + .35 * sc, z, ro + Math.PI / 4, 0, KC, P, N, C);
           part(new T.BoxGeometry(.2 * sc, .24 * sc, .2 * sc), x, y0 + .17 * sc, z, ro, 0, KC, GP, GN, GC2); });
         const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(P, 3)); geo.setAttribute('normal', new T.Float32BufferAttribute(N, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(C, 3));
-        const m = new T.Mesh(geo, new T.MeshStandardMaterial({ vertexColors: true, roughness: .8, flatShading: true, fog: d < 38 })); m.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); m.userData.tier = d < 19 ? 0 : d < 28 ? 1 : d < 38 ? 2 : 3; spin.add(m); WOODS.push(m);
+        const m = new T.Mesh(geo, new T.MeshStandardMaterial({ vertexColors: true, roughness: .8, flatShading: true })); m.position.set(Math.cos(a) * d, 0, Math.sin(a) * d); m.userData.tier = d < 19 ? 0 : d < 28 ? 1 : d < 38 ? 2 : 3; spin.add(m); WOODS.push(m);
         if (GP.length) { const gg = new T.BufferGeometry(); gg.setAttribute('position', new T.Float32BufferAttribute(GP, 3)); gg.setAttribute('normal', new T.Float32BufferAttribute(GN, 3)); m.add(new T.Mesh(gg, GLM)); } }
       if (GLM.emissiveIntensity) TLAN.push(GLM); }
     if (L.aurora) { // 눈 속 작은 등불 (Lv8~): 큰 트리에서 떨어진 숲 가장자리 눈 위에 랜턴, 밤·노을엔 촛불처럼 일렁여요
@@ -417,7 +417,7 @@ export async function mount(el, opt) {
     AUR.t.value = performance.now() / 1000;
     skyRot += .00012; // 하늘(별)이 아주 천천히 돌아요 — 한 바퀴 약 15분
     skyG.rotation.y = skyRot; spin.rotation.y = rot;
-    const WFADE = [0, .42, .66, .96]; if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(), fc = (sc.fog ? sc.fog.color : new T.Color(0xffffff)).clone().lerp(new T.Color(s0), .45); WOODS.forEach(g => { g.getWorldPosition(wp); const dc = wp.distanceTo(cam.position); g.visible = dc > c0 * .8; const f = WFADE[g.userData.tier || 0]; /* 거리 4단계: 멀수록 나무 뒤 하늘색(지평선과 위 하늘 사이)에 가깝게, 맨 뒤 4단계는 안개 없이 그 색으로 */ if (g.userData.f !== f || g.userData.fc !== fc.getHex()) { g.userData.f = f; g.userData.fc = fc.getHex(); g.material.color.setScalar(1 - f); g.material.emissive.copy(fc).multiplyScalar(f); } }); }
+    const WFADE = [0, .42, .66, .96]; if (WOODS.length) { const wp = new T.Vector3(), c0 = cam.position.length(), fc = sc.fog ? sc.fog.color : new T.Color(0xffffff); WOODS.forEach(g => { g.getWorldPosition(wp); const dc = wp.distanceTo(cam.position); g.visible = dc > c0 * .8; const f = WFADE[g.userData.tier || 0]; /* 거리 4단계: 멀수록 하늘색에 가깝게 */ if (g.userData.f !== f || g.userData.fc !== fc.getHex()) { g.userData.f = f; g.userData.fc = fc.getHex(); g.material.color.setScalar(1 - f); g.material.emissive.copy(fc).multiplyScalar(f); } }); }
     if (GLIT.length) { const wp = new T.Vector3(), wn = new T.Vector3(); GLIT.forEach(sp => { sp.getWorldPosition(wp); wn.copy(sp.userData.n).applyAxisAngle(new T.Vector3(0, 1, 0), rot); const d = wn.dot(cam.position.clone().sub(wp).normalize()), th = sp.userData.k; sp.material.opacity = Math.max(0, 1 - Math.abs(d - th) / .035); }); } spin.rotation.z = Math.sin(sway * 14) * sway * .05; sway = Math.max(0, sway - .016);
     for (let i = drops.length - 1; i >= 0; i--) { const dp = drops[i];
       if (dp.userData.wait > 0) { dp.userData.wait--; continue; } dp.visible = true;
