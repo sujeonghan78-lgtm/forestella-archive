@@ -249,7 +249,7 @@ export async function mount(el, opt) {
       const P = []; for (let k = 0; k <= 120; k++) { const f = k / 120, q = surf(ft + .2 + f * (top * .8 - ft - .2), 1.2 + f * 6.283 * 1.8, .16); if (q) P.push(q.p); }
       if (P.length > 10) { const step = (P.length - 6) / 15; for (let i = 0; i < 15; i++) { const k = Math.round(4 + i * step), sz = .34 * Math.max(.75, 1 - k / P.length * .35), c = P[k].clone(); c.y -= sz * .6; PCARD.push({ p: c, r: sz * .72 }); used.push({ p: c, r: sz * .72 }); } } }
     const pFree = (p, r) => PCARD.every(c => c.p.distanceTo(p) > c.r + r);
-    const OB = 1.25 * Math.max(L.tree, .55);
+    const OSZ = L.tree > 1 ? 1 + (L.tree - 1) * .4 : Math.max(L.tree, .55), OB = 1.25 * OSZ; // 트리가 1보다 커져도 오너먼트는 덜 커져요 (Lv6~)
     ornMake = (o, sz) => o.shape === 3 ? (() => { const g = new T.Group(), s = snowman(.26 * sz, OC[o.color] || OC[0]); s.position.y = -.22 * sz; g.add(s); return g; })() : o.shape === 1 ? sock(.3 * sz, OC[o.color] || OC[0]) : o.shape === 2 ? star5(.11 * sz, OC[o.color] || OC[2]) : bead(.11 * sz, OC[o.color] || OC[0]);
     ornOff = (o, sz) => (o.shape === 0 ? .1 : o.shape === 3 ? .1 : .06) * sz;
     const at0 = f => { const ry = spin.rotation.y, rz = spin.rotation.z; spin.rotation.set(0, 0, 0); spin.updateMatrixWorld(true); try { return f(); } finally { spin.rotation.set(0, ry, rz); spin.updateMatrixWorld(true); } };
@@ -259,7 +259,7 @@ export async function mount(el, opt) {
       m.userData.orn = o; m.traverse(c => { c.castShadow = true; c.userData.orn = o; }); if (!m.parent) spin.add(m); used.push({ p: s.p, r: .13 * sz }); return m; });
     (opt.orns || []).filter(o => o.spot).forEach(o => { const m = hangOrn(o); if (m) ORN.push(m); });
     for (let k = 0; k < nB + nS + nSt; k++) {
-      const sz = (.7 + rnd() * .5) * Math.max(L.tree, .55), kind = k < nB ? 0 : k < nB + nS ? 1 : 2, r = (kind === 1 ? .2 : .11) * sz, s = spot(r + .05, kind === 0 ? .09 * sz : kind === 1 ? .06 * sz : .05 * sz); if (!s) continue;
+      const sz = (.7 + rnd() * .5) * OSZ, kind = k < nB ? 0 : k < nB + nS ? 1 : 2, r = (kind === 1 ? .2 : .11) * sz, s = spot(r + .05, kind === 0 ? .09 * sz : kind === 1 ? .06 * sz : .05 * sz); if (!s) continue;
       used.push({ p: s.p, r }); hang(kind === 0 ? bead(.1 * sz, BC[Math.floor(rnd() * BC.length)]) : kind === 1 ? sock(.3 * sz, SC[Math.floor(rnd() * SC.length)]) : star5(.1 * sz, [0xf5c83c, 0xdfe4ea, 0xff8fc0][k % 3]), s);
     }
     (opt.orns || []).filter(o => !o.spot).forEach(o => { const m = hangOrn(o); if (m) ORN.push(m); });
