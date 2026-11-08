@@ -5953,7 +5953,7 @@
     { n: '아기 나무', en: 'Sapling', ja: '若木', w: 75, slot: 10, o: { tree: .32 } },
     { n: '작은 나무', en: 'Small tree', ja: '小さな木', w: 150, slot: 25, o: { tree: .55 } },
     { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.15, glit: 1, woods: 20, dk: .2 } },
-    { n: '폴라로이드', en: 'Polaroids', ja: 'ポラロイド', w: 1000, slot: 80, o: { tree: 1.22, tall: 1.15, trunk: 1.38, glit: 1, pola: 1, woods: 54, dk: .4 } },
+    { n: '폴라로이드', en: 'Polaroids', ja: 'ポラロイド', w: 1000, slot: 80, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, woods: 54, dk: .4 } },
     { n: '눈 오는 숲', en: 'Snowy forest', ja: '雪の森', w: 2500, slot: 120, o: { tree: 1.22, tall: 1.15, trunk: 1.38, glit: 1, pola: 1, snow: 1, sm4: 1, woods: 96, dk: 0.55 } },
     { n: '오로라', en: 'Aurora', ja: 'オーロラ', w: 5000, slot: 160, o: { tree: 1.22, tall: 1.15, trunk: 1.38, glit: 1, pola: 1, snow: 1, lights: 1, aurora: 1, sm4: 1, woods: 320, wfar: 2.2, dk: .7 } },
     { n: '별', en: 'Star', ja: '星', w: 10000, slot: 200, o: { tree: 1.22, tall: 1.15, trunk: 1.38, glit: 1, pola: 1, snow: 1, star: 1, lights: 1, aurora: 1, sm4: 1, woods: 320, wfar: 2.2, dk: .85 } },
