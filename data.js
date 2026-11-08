@@ -788,6 +788,8 @@
     try { xAuto = JSON.parse(raw.xauto || '{}').posts || []; } catch (err) { /* 없으면 넘어가요 */ }
     // 공식 계정이 자기 글에 이어 단 타래 글 (data/x_extra.json, 웹 아카이브에서 찾은 것)
     try { const seenA = new Set(xAuto.map(p => p.id)); xAuto = xAuto.concat((JSON.parse(raw.xextra || '{}').posts || []).filter(p => !seenA.has(p.id))); } catch (err) { /* 없으면 넘어가요 */ }
+    // 자동으로 받은 글엔 &lt; 같은 글자가 그대로 들어 있어서 원래 글자로 바꿔요
+    xAuto.forEach(p => { if (p.text) p.text = p.text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); });
     const autoById = new Map(xAuto.map(p => [p.id, p]));
     // 글 번호로 올린 시각을 알 수 있어요 (X 글 번호 앞부분이 시각)
     const idDate = id => { try { return new Date(Number(BigInt(id) >> 22n) + 1288834974657 + 9 * 3600e3).toISOString().slice(0, 10); } catch (e) { return ''; } };
@@ -832,12 +834,44 @@
       if (hit) p.rel = hit[0];
     });
     events.forEach(e => { e.xBehind = []; });
-    xFeed.forEach(p => {
+    // 시트에 일정ID가 없는 글(자동으로 받은 최근 글 등)은 글 속 날짜(261107)·올린 날 + 일정 이름 낱말로 알아서 붙여요
+    //  '종료!' 후기 글 → 그날 일정의 후기 / 현장·비하인드·영상 글 → 0~3일 전 일정의 비하인드 (공지·기사·음반·투표·생일은 안 붙여요)
+    {
+      const xf = t => String(t).normalize('NFKC').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+      const XSTOP = new Set(['포레스텔라', 'forestella', '콘서트', '공연', '축제', '행사', '기념', '특집', '출연', '녹화', '방송', '종료', 'concert', 'festival', 'live', 'the', 'of', 'in', 'and', 'kbs', 'kbs1', 'kbs2', 'mbc', 'sbs', 'jtbc', 'tv', '배두훈', '강형호', '조민규', '고우림', '두훈', '형호', '민규', '우림', '제1회']);
+      const ew = e => e._xw || (e._xw = [...new Set((String(e.title).normalize('NFKC').match(/[0-9A-Za-z가-힣]{2,}/g) || []).map(w => w.toLowerCase()).filter(w => !XSTOP.has(w) && !/^\d+$|^제?\d+회$|^\d+주년$/.test(w)))]);
+      const dAdd = (d, n) => new Date(Date.parse(d) + n * 864e5).toISOString().slice(0, 10);
+      const onDay = (e, d) => e.date === d || (e.endDate && e.date <= d && d <= e.endDate);
+      const okEv = e => !/생일|발매|기념일/.test(e.category + ' ' + e.title);
+      xFeed.forEach(p => {
+        if (p.after || p.behind || /공지|기사|음반|투표|생일/.test(p.cat) || /^\s*\[🗞/.test(p.raw)) return;
+        const tm = p.raw.slice(0, 80).match(/(?:^|\D)(\d{2})(\d{2})(\d{2})(?!\d)/);
+        const td = tm && +tm[2] >= 1 && +tm[2] <= 12 && +tm[3] >= 1 && +tm[3] <= 31 ? `20${tm[1]}-${tm[2]}-${tm[3]}` : '';
+        const ft = xf(p.raw.replace(/https?:\/\/\S+/g, ''));
+        const score = e => ew(e).filter(w => ft.includes(w)).reduce((n, w) => n + w.length, 0);
+        // '잠시 후 18:00 시작' 같은 알림 글은 후기가 아니라 현장 글로 붙여요
+        const after = p.cat === '일정 후기' && !/잠시\s?후|지금 바로|시작합니다/.test(p.raw);
+        // 후기: 글 속 날짜, 없으면 올린 날·전날 / 그 밖: 글 속 날짜, 없으면 올린 날부터 3일 전까지 (사진·일상 글은 그날만)
+        const days = td ? [td] : after ? [p.date, dAdd(p.date, -1)] : p.cat === '사진·일상' ? [p.date] : [0, 1, 2, 3].map(n => dAdd(p.date, -n));
+        const cand = events.filter(e => okEv(e) && days.some(d => (after || td ? onDay(e, d) : e.date === d))).map(e => ({ e, sc: score(e) }));
+        const need = after ? (td ? 2 : 3) : (td ? 3 : 4);
+        let pick = cand.filter(c => c.sc >= need).sort((a, b) => b.sc - a.sc);
+        if (!pick.length) return;
+        p[after ? 'after' : 'behind'] = pick[0].e.id;
+        p.autoEv = true;
+        // 같은 행사가 일정 두 줄(카페 일정·팬 등록)로 있으면 비슷하게 맞는 쪽에도 같이 붙여요
+        p.alsoEv = pick.slice(1).filter(c => c.sc >= Math.max(need, pick[0].sc * 0.5) && c.e.date === pick[0].e.date).map(c => c.e.id);
+      });
+    }
+    // 시트에서 정한 글이 먼저, 자동으로 맞춘 글은 그다음 (후기 자리가 비었을 때만)
+    [false, true].forEach(au => xFeed.forEach(p => {
+      if (!!p.autoEv !== au) return;
       // 관리자가 원본에 합친 중복 일정의 X 글은 원본으로 따라가요
-      const mg = window.SB_EV_MERGE || {}, a = byId.get(mg[p.after] || p.after), b = byId.get(mg[p.behind] || p.behind);
-      if (a && !a.xPost) a.xPost = p;
-      if (b) b.xBehind.push(p);
-    });
+      const mg = window.SB_EV_MERGE || {};
+      const ev = id => byId.get(mg[id] || id);
+      [p.after, ...(p.after ? p.alsoEv || [] : [])].map(ev).forEach(a => { if (a && !a.xPost) a.xPost = p; });
+      [p.behind, ...(p.after ? [] : p.alsoEv || [])].map(ev).forEach(b => { if (b && !b.xBehind.includes(p)) b.xBehind.push(p); });
+    }));
     xFeed.reverse();  // 모아보기는 최신 글부터
     videos.forEach(v => { const e = byId.get((window.SB_EV_MERGE || {})[v.eventId] || v.eventId); if (e) e.related.push(v); });
     // 곡별로 확인된 무대 모으기 (이름은 가장 많이 쓰인 표기로)
