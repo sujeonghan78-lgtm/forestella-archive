@@ -6006,7 +6006,7 @@
       ${st.slot || st.next ? `<p class="tl-ornt" hidden>${(() => { const nl = TREE_LV.slice(st.i + 1).find(l => l.slot > st.slot); return nl ? L3(`Lv${TREE_LV.indexOf(nl) + 1} ${lvN(nl)} 레벨이 되면 ${nl.slot}개까지 달 수 있어요!`, `At Lv${TREE_LV.indexOf(nl) + 1}, up to ${nl.slot} ornaments!`, `Lv${TREE_LV.indexOf(nl) + 1}になると${nl.slot}個まで飾れます!`) : L3('지금이 가장 많이 달 수 있는 레벨이에요!', 'This is the max!', '今が最大です!'); })()}</p>` : ''}`;
   }
   // ---- 오너먼트 달기 ----
-  const ORN_MAX = 3, POLA_MAX = 5; // 한 명당 오너먼트 3개, 폴라로이드는 따로 5장
+  const ORN_MAX = 3, POLA_MAX = 2; // 한 명당 오너먼트 3개, 폴라로이드는 따로 2장
   const ORN_C = ['#e8453c', '#ff9a3c', '#f5c83c', '#8fd968', '#7fd0e8', '#3f6fe0', '#9b6ee8', '#ff8fc0'], ORN_S = ['구슬', '양말', '별', '눈사람', '폴라로이드'];
   // 폴라로이드에 넣을 사진: 사이트에 있는 콘서트 포스터·음반 표지만 (불러올 수 있는 주소만)
   const polaPics = () => { const ok = u => u && (/^covers\//.test(u) || /pbs\.twimg\.com/.test(u)), seen = new Set(), out = [];
