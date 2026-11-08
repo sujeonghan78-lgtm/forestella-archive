@@ -343,7 +343,7 @@ export async function mount(el, opt) {
   let snowP = null;
   if (L.snow) { const n = 500, p = new Float32Array(n * 3); for (let k = 0; k < n; k++) { p[k * 3] = (Math.random() - .5) * 26; p[k * 3 + 1] = Math.random() * 16; p[k * 3 + 2] = (Math.random() - .5) * 22; }
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(p, 3)); snowP = new T.Points(g, new T.PointsMaterial({ color: 0xffffff, size: .07, transparent: true, opacity: .85, depthWrite: false })); sc.add(snowP); }
-  const hh = Math.max(top, 1), dist = L.tree ? 4.2 + 9.8 * L.tree : 3.4;
+  const hh = Math.max(top, 1), dist = L.tree ? 4.2 + 9.8 * Math.min(L.tree, 1) + 3 * Math.max(0, L.tree - 1) : 3.4; // Lv6부터 나무가 커지면 카메라는 조금만 물러나서 커진 게 보여요
   const cam = new T.PerspectiveCamera(34, W0() / H0(), .05, 200);
   let tilt = .12, zoom = 1, ly = null, look = 0; // 위아래 각도, 확대(두 손가락), 확대했을 때 보는 높이
   const aim = () => { const asp = W0() / H0(), dd = dist * (asp < .8 ? Math.max(1.08, .68 / asp) : 1) * zoom, ty0 = hh * (asp < .6 ? .42 : .47), ty = zoom < .95 && ly != null ? ly : ty0; cam.position.set(0, ty + Math.sin(tilt) * dd, Math.cos(tilt) * dd); cam.lookAt(0, ty + look * dd * .6, -look * dd * .15); };
