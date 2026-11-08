@@ -24,7 +24,7 @@ async function loadTree() {
   let f0 = 99; for (let i = 0; i < n; i++) if (Math.hypot(p.getX(i), p.getZ(i)) > maxR * .6) f0 = Math.min(f0, p.getY(i));
   const bins = new Array(41).fill(0), bi = y => Math.min(40, Math.max(0, Math.round(y / H * 40)));
   for (let i = 0; i < n; i++) { const k = bi(p.getY(i)); bins[k] = Math.max(bins[k], Math.hypot(p.getX(i), p.getZ(i))); }
-  const TS = .45, W = 1.32, SEG = 9;
+  const TS = .62, W = 1.32, SEG = 9;
   for (let i = 0; i < n; i++) {
     let x = p.getX(i), y = p.getY(i), z = p.getZ(i); const r = Math.hypot(x, z), a = Math.atan2(z, x);
     if (y < f0 - .01) y *= TS;
