@@ -695,9 +695,10 @@
       // 숲별 트리 오너먼트 (종류: 오너먼트 번호/누가/모양/색/받는이/닉네임/자리: 각도,높이,크기,회전/내용: SEC1 잠긴 글). 한 사람 3개까지(먼저 단 것부터, 뗀 건 빼고 셈), 올린 사람이 지우면(종류: 오너먼트삭제 번호/누가) 빠져요
       { const del = new Set(), cnt = new Map(), seen = new Set(); treeAll.orn = [];
         const all = buildReports(toObjects(raw.reports), true);
-        all.forEach(r => { if (r.type === '오너먼트삭제' && r.by) del.add(line0(r, '번호') + '|' + r.by); });
+        const UNDEL = new Set(['6qbjvky|58ng2004', 'hsws8oc|58ng2004']); window.SB_ORN_UNDEL = new Set([...UNDEL].map(x => x.split('|')[0])); // 실수로 뗀 것 되살리기 (11-08 수정 님)
+        all.forEach(r => { if (r.type === '오너먼트삭제' && r.by && !UNDEL.has(line0(r, '번호') + '|' + r.by)) del.add(line0(r, '번호') + '|' + r.by); });
         all.forEach(r => { if (r.type !== '오너먼트' || !r.by) return; const id = line0(r, '번호'), at = tsMs(r.time); if (!id || seen.has(id) || del.has(id + '|' + r.by) || (window.SB_EV_HIDE || new Set()).has('or' + id)) return;
-          const nb = (cnt.get(r.by) || 0); if (nb >= 3) return; seen.add(id); cnt.set(r.by, nb + 1);
+          const isP = line0(r, '모양') === '폴라로이드', ck = r.by + (isP ? '|p' : ''), nb = (cnt.get(ck) || 0); if (nb >= (isP ? 5 : 3)) return; seen.add(id); cnt.set(ck, nb + 1); // 오너먼트 3개, 폴라로이드는 따로 5장
           const sp = line0(r, '자리').split(',').map(Number), spot = sp.length === 4 && sp.every(isFinite) ? sp : null;
           treeAll.orn.push({ id, by: r.by, at, shape: Math.max(0, ['구슬', '양말', '별', '눈사람', '폴라로이드'].indexOf(line0(r, '모양'))), pic: line0(r, '사진').slice(0, 300), cap: line0(r, '제목').slice(0, 16), slot: line0(r, '칸') === '' ? -1 : +line0(r, '칸'), color: Math.min(7, Math.max(0, +line0(r, '색') || 0)), to: line0(r, '받는이') === '포레' ? '포레' : '숲별', nick: line0(r, '닉네임').slice(0, 12), spot, sec: r.message || '' }); });
         // 단 사람이 나중에 색을 바꾸면(종류: 오너먼트색 번호/누가/색) 마지막 것으로

@@ -5985,7 +5985,7 @@
     let i = 0; TREE_LV.forEach((l, k) => { if (water >= l.w) i = k; });
     const done = !(!TREE_OPEN && isAdmin()) && todayN >= TREE_MAX, left = Math.max(0, TREE_MAX - todayN);
     // 오너먼트: 시트 + 아직 시트에 안 온 내 것(오픈 전 관리자는 이 폰 시험용만). 자리 수만큼 먼저 온 순서로 걸고 나머지는 바구니
-    const ids = new Set((t.orn || []).map(o => o.id)), del = new Set(mine.ornDel || []);
+    const ids = new Set((t.orn || []).map(o => o.id)), del = new Set((mine.ornDel || []).filter(id => !(window.SB_ORN_UNDEL || new Set()).has(id)));
     const orn = (!TREE_OPEN && isAdmin() ? (mine.torn || []) : (t.orn || []).concat((mine.orn || []).filter(o => !ids.has(o.id)))).filter(o => !del.has(o.id));
     const oc = mine.ornCol || {}, os = mine.ornSpot || {}; orn.forEach(o => { if (oc[o.id] != null && o.by === me) o.color = oc[o.id]; if (os[o.id] && o.by === me) o.spot = os[o.id]; });
     const slot = TREE_LV[i].slot, myOrn = orn.filter(o => o.by === me && o.shape !== 4).length, myPola = orn.filter(o => o.by === me && o.shape === 4).length, polas = treePolaGrid(orn.filter(o => o.shape === 4)), plain = orn.filter(o => o.shape !== 4);
