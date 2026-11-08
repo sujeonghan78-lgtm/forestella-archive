@@ -461,7 +461,8 @@ export async function mount(el, opt) {
     commit() { if (placing && placing.m) ORN.push(placing.m); placing = null; },
     add(o) { if (!hangOrn) return; const m = hangOrn(o); if (m) ORN.push(m); },
     recolor(id, from, to) { const a = new T.Color(OC[from]), b = OC[to]; ORN.filter(m => m.userData.orn.id === id).forEach(m => { m.userData.orn.color = to; m.traverse(c => { if (c.material && c.material.color && c.material.color.equals(a)) c.material.color.set(b); }); }); },
-    remove(id) { ORN.filter(m => m.userData.orn.id === id).forEach(m => { spin.remove(m); ORN.splice(ORN.indexOf(m), 1); }); },
+    remove(id) { const L_ = opt.polas || [], pi = L_.findIndex(o => o && o.id === id); if (pi >= 0) { L_[pi] = null; this.polaPage(pgCur); return; } // 폴라로이드는 틀은 그대로, 사진·글만 비워요
+      ORN.filter(m => m.userData.orn.id === id).forEach(m => { spin.remove(m); ORN.splice(ORN.indexOf(m), 1); }); },
     destroy() { alive = false; removeEventListener('resize', onResize); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); removeEventListener('pointermove', onMove); try { r.dispose(); } catch (err) { /* 괜찮아요 */ } cvs.remove(); },
   };
   return api;
