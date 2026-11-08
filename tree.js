@@ -10,7 +10,7 @@ export function skyNow(d = new Date()) {
 }
 const SKY = { dawn: ['#a99ad8', '#f7c6cf', .35], day: ['#9fd3f2', '#e8f6fb', 0], sunset: ['#4b3f86', '#f6a06a', .45], night: ['#060b1a', '#16303a', 1] };
 
-let SRC = null, FT = 1.6;
+let SRC = null, FT = 1.6; const FT0 = () => FT;
 const H = 5.6;
 async function loadTree() {
   if (SRC) return;
@@ -24,7 +24,7 @@ async function loadTree() {
   let f0 = 99; for (let i = 0; i < n; i++) if (Math.hypot(p.getX(i), p.getZ(i)) > maxR * .6) f0 = Math.min(f0, p.getY(i));
   const bins = new Array(41).fill(0), bi = y => Math.min(40, Math.max(0, Math.round(y / H * 40)));
   for (let i = 0; i < n; i++) { const k = bi(p.getY(i)); bins[k] = Math.max(bins[k], Math.hypot(p.getX(i), p.getZ(i))); }
-  const TS = .62, W = 1.32, SEG = 9;
+  const TS = .45, W = 1.32, SEG = 9;
   for (let i = 0; i < n; i++) {
     let x = p.getX(i), y = p.getY(i), z = p.getZ(i); const r = Math.hypot(x, z), a = Math.atan2(z, x);
     if (y < f0 - .01) y *= TS;
@@ -38,8 +38,9 @@ const PTEX = {}; let pPick = null, pgCur = 0; const PICK = new T.MeshStandardMat
 let seed = 9; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const fm = (c, o = {}) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: .75, flatShading: true }, o));
 // 면마다 살짝 다른 색 (아래 진초록 → 위 연두), snow면 윗면을 눈으로
-function treeMesh(snow, dk = 0) {
-  const g = SRC.clone(), p = g.attributes.position, n = p.count, col = new Float32Array(n * 3);
+function treeMesh(snow, dk = 0, tk = 1) {
+  const g = SRC.clone(), p = g.attributes.position, n = p.count, col = new Float32Array(n * 3); let FT = FT0();
+  if (tk !== 1) { const k = H / (H + FT * (tk - 1)); for (let i = 0; i < n; i++) { const y = p.getY(i); p.setXYZ(i, p.getX(i) * k, (y < FT ? y * tk : y + FT * (tk - 1)) * k, p.getZ(i) * k); } FT = FT * tk * k; } // 밑동 길게 (Lv6~)
   const G0 = new T.Color(0x3f8a34).lerp(new T.Color(0x084e52), dk), G1 = new T.Color(0x8fd968).lerp(new T.Color(0x2c9690), dk), B = new T.Color(0xb57a48), S = new T.Color(0xeef4fb);
   seed = 5;
   for (let i = 0; i < n; i += 3) {
@@ -54,7 +55,7 @@ function treeMesh(snow, dk = 0) {
   }
   g.setAttribute('color', new T.BufferAttribute(col, 3)); g.computeVertexNormals();
   const m = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .9 }));
-  m.castShadow = m.receiveShadow = true;
+  m.castShadow = m.receiveShadow = true; m.userData.ft = FT;
   if (snow) { // 층 끝 윗면에 두툼한 눈 (위로 들어 올린 흰 판)
     const bins = new Array(41).fill(0), bi = y => Math.min(40, Math.max(0, Math.round(y / H * 40))), sp = [];
     for (let i = 0; i < n; i++) { const k = bi(p.getY(i)); bins[k] = Math.max(bins[k], Math.hypot(p.getX(i), p.getZ(i))); }
@@ -225,7 +226,7 @@ export async function mount(el, opt) {
     else dot(seenPos(), false);
     return null; };
   const hill = new T.Mesh(new T.CylinderGeometry(60, 60, .6, 48), fm(0xe6eef4, { roughness: 1, flatShading: false })); hill.position.y = -.3; hill.receiveShadow = true; sc.add(hill);
-  const PLAIN = treeMesh(false, L.dk || 0), SNOWY = null;
+  const PLAIN = treeMesh(false, L.dk || 0, L.trunk || 1), SNOWY = null;
   const spin = new T.Group(); sc.add(spin);
   let skyRot = 0, top = 1, t = null, surf = null, hangOrn = null, ornOff = null, ornMake = null; const pops = [], ORN = [], fx = [], GLIT = [], WOODS = [], LIGHTS = [], LANT = [], TLAN = [], FLY = [], PSLOT = [], SNOW4 = []; let sPlace = null, SZONE = null;
   const snowPut = (k, my) => { if (SNOW4[k]) { spin.remove(SNOW4[k]); SNOW4[k] = null; } if (!my || !my.p) return; const n = animalSnow(.85, k, my); n.position.set(my.p[0], 0, my.p[1]); n.rotation.y = Math.atan2(my.p[0], my.p[1]); n.userData.sk = k; spin.add(n); SNOW4[k] = n; };
@@ -239,7 +240,7 @@ export async function mount(el, opt) {
     // 겉면 자리 + 그 자리의 바깥 방향
     surf = (y, a, off) => { rc.set(new T.Vector3(Math.cos(a) * 12, y, Math.sin(a) * 12), new T.Vector3(-Math.cos(a), 0, -Math.sin(a))); const h = rc.intersectObject(t, false)[0]; if (!h) return null; const nrm = h.face.normal.clone().transformDirection(t.matrixWorld); return { p: h.point.add(nrm.clone().multiplyScalar(off)), n: nrm }; };
     const hang = (o, s) => { o.position.copy(s.p); o.lookAt(s.p.clone().add(s.n)); o.rotateZ((rnd() - .5) * .5); o.castShadow = true; spin.add(o); };
-    const ft = FT * L.tree * (L.tall || 1), nB = L.beads || 0, nS = L.socks || 0, nSt = L.stars || 0, used = [];
+    const ft = ((t && t.userData.ft) || FT) * L.tree * (L.tall || 1), nB = L.beads || 0, nS = L.socks || 0, nSt = L.stars || 0, used = [];
     // 빈 자리 찾기: 다른 장식과 gap 이상 떨어진 겉면 (여러 번 시도)
     const spot = (gap, off) => { for (let tr = 0; tr < 14; tr++) { const y = ft + .3 * L.tree + rnd() * (hs - ft - 1.0 * L.tree), s = surf(y, rnd() * 6.283, off); if (s && used.every(u => u.p.distanceTo(s.p) > u.r + gap)) return s; } return null; };
     // 숲별 오너먼트 (opt.orns: [{id, shape 0구슬·1양말·2별, color, spot [각도, 높이 비율, 크기, 회전] 또는 null, nick}])
