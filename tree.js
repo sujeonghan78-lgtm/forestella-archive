@@ -244,11 +244,16 @@ export async function mount(el, opt) {
     const spot = (gap, off) => { for (let tr = 0; tr < 14; tr++) { const y = ft + .3 * L.tree + rnd() * (hs - ft - 1.0 * L.tree), s = surf(y, rnd() * 6.283, off); if (s && used.every(u => u.p.distanceTo(s.p) > u.r + gap)) return s; } return null; };
     // 숲별 오너먼트 (opt.orns: [{id, shape 0구슬·1양말·2별, color, spot [각도, 높이 비율, 크기, 회전] 또는 null, nick}])
     // 자리를 고른 것 먼저 달고, 사이트 장식은 그 둘레 빈 곳에, 자리 없이 바구니에서 온 건 마지막에 빈 곳에 달아요
+    const PCARD = []; if (L.pola) { // 폴라로이드 칸 자리를 먼저 잡아 두고, 오너먼트가 그 위에 겹치지 않게 비켜 달아요
+      const P = []; for (let k = 0; k <= 120; k++) { const f = k / 120, q = surf(ft + .2 + f * (top * .8 - ft - .2), 1.2 + f * 6.283 * 1.8, .16); if (q) P.push(q.p); }
+      if (P.length > 10) { const step = (P.length - 6) / 15; for (let i = 0; i < 15; i++) { const k = Math.round(4 + i * step), sz = .34 * Math.max(.75, 1 - k / P.length * .35), c = P[k].clone(); c.y -= sz * .6; PCARD.push({ p: c, r: sz * .72 }); used.push({ p: c, r: sz * .72 }); } } }
+    const pFree = (p, r) => PCARD.every(c => c.p.distanceTo(p) > c.r + r);
     const OB = 1.25 * Math.max(L.tree, .55);
     ornMake = (o, sz) => o.shape === 3 ? (() => { const g = new T.Group(), s = snowman(.26 * sz, OC[o.color] || OC[0]); s.position.y = -.22 * sz; g.add(s); return g; })() : o.shape === 1 ? sock(.3 * sz, OC[o.color] || OC[0]) : o.shape === 2 ? star5(.11 * sz, OC[o.color] || OC[2]) : bead(.11 * sz, OC[o.color] || OC[0]);
     ornOff = (o, sz) => (o.shape === 0 ? .1 : o.shape === 3 ? .1 : .06) * sz;
     const at0 = f => { const ry = spin.rotation.y, rz = spin.rotation.z; spin.rotation.set(0, 0, 0); spin.updateMatrixWorld(true); try { return f(); } finally { spin.rotation.set(0, ry, rz); spin.updateMatrixWorld(true); } };
-    hangOrn = (o, m) => at0(() => { const sz = OB * (o.spot ? o.spot[2] : 1), s = o.spot ? surf(Math.min(o.spot[1], .86) * top, o.spot[0], ornOff(o, sz)) : spot(.13 * sz, ornOff(o, sz)); if (!s) return null;
+    hangOrn = (o, m) => at0(() => { const sz = OB * (o.spot ? o.spot[2] : 1); let s = o.spot ? surf(Math.min(o.spot[1], .86) * top, o.spot[0], ornOff(o, sz)) : spot(.13 * sz, ornOff(o, sz)); if (!s) return null;
+      if (o.spot && !pFree(s.p, .12 * sz)) { const h0 = Math.min(o.spot[1], .86); find: for (let d = 1; d <= 10; d++) for (const [dh, da] of [[-.03, 0], [.03, 0], [0, -.1], [0, .1], [-.03, -.1], [.03, .1]]) { const q = surf(Math.max(.05, Math.min(.86, h0 + dh * d)) * top, o.spot[0] + da * d, ornOff(o, sz)); if (q && pFree(q.p, .12 * sz)) { s = q; break find; } } } // 폴라로이드와 겹치면 가까운 빈 곳으로
       m = m || ornMake(o, sz); m.position.copy(s.p); m.lookAt(s.p.clone().add(s.n)); m.rotateZ(o.spot ? o.spot[3] : (rnd() - .5) * .5);
       m.userData.orn = o; m.traverse(c => { c.castShadow = true; c.userData.orn = o; }); if (!m.parent) spin.add(m); used.push({ p: s.p, r: .13 * sz }); return m; });
     (opt.orns || []).filter(o => o.spot).forEach(o => { const m = hangOrn(o); if (m) ORN.push(m); });
