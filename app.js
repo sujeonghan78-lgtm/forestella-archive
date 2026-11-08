@@ -5988,9 +5988,9 @@
     const ids = new Set((t.orn || []).map(o => o.id)), del = new Set(mine.ornDel || []);
     const orn = (!TREE_OPEN && isAdmin() ? (mine.torn || []) : (t.orn || []).concat((mine.orn || []).filter(o => !ids.has(o.id)))).filter(o => !del.has(o.id));
     const oc = mine.ornCol || {}, os = mine.ornSpot || {}; orn.forEach(o => { if (oc[o.id] != null && o.by === me) o.color = oc[o.id]; if (os[o.id] && o.by === me) o.spot = os[o.id]; });
-    const slot = TREE_LV[i].slot, myOrn = orn.filter(o => o.by === me).length, polas = treePolaGrid(orn.filter(o => o.shape === 4)), plain = orn.filter(o => o.shape !== 4);
+    const slot = TREE_LV[i].slot, myOrn = orn.filter(o => o.by === me && o.shape !== 4).length, myPola = orn.filter(o => o.by === me && o.shape === 4).length, polas = treePolaGrid(orn.filter(o => o.shape === 4)), plain = orn.filter(o => o.shape !== 4);
     const todayP = Object.values(t.by).filter(a => a.includes(today)).length + (localN > sheetN && !sheetN ? 1 : 0);
-    return { water, people, todayP, i, lv: TREE_LV[i], next: TREE_LV[i + 1], done, left, todayN, myDays: new Set([...got, ...(mine.water || [])]).size, orn, hung: plain.slice(0, slot), basket: plain.slice(slot), polas, slot, myOrn };
+    return { water, people, todayP, i, lv: TREE_LV[i], next: TREE_LV[i + 1], done, left, todayN, myDays: new Set([...got, ...(mine.water || [])]).size, orn, hung: plain.slice(0, slot), basket: plain.slice(slot), polas, slot, myOrn, myPola };
   }
   let treeApi = null, treeFrom = '', treeMod = null;
   const treeWeek = () => { const t = kstDay(), d0 = new Date(t + 'T00:00:00Z'), mon = d0.getTime() - ((d0.getUTCDay() + 6) % 7) * 864e5; return [0, 1, 2, 3, 4, 5, 6].map(k => new Date(mon + k * 864e5).toISOString().slice(0, 10)); };
@@ -6006,7 +6006,7 @@
       ${st.slot || st.next ? `<p class="tl-ornt" hidden>${(() => { const nl = TREE_LV.slice(st.i + 1).find(l => l.slot > st.slot); return nl ? L3(`Lv${TREE_LV.indexOf(nl) + 1} ${lvN(nl)} 레벨이 되면 ${nl.slot}개까지 달 수 있어요!`, `At Lv${TREE_LV.indexOf(nl) + 1}, up to ${nl.slot} ornaments!`, `Lv${TREE_LV.indexOf(nl) + 1}になると${nl.slot}個まで飾れます!`) : L3('지금이 가장 많이 달 수 있는 레벨이에요!', 'This is the max!', '今が最大です!'); })()}</p>` : ''}`;
   }
   // ---- 오너먼트 달기 ----
-  const ORN_MAX = 3; // 한 명당 달 수 있는 오너먼트 수
+  const ORN_MAX = 3, POLA_MAX = 5; // 한 명당 오너먼트 3개, 폴라로이드는 따로 5장
   const ORN_C = ['#e8453c', '#ff9a3c', '#f5c83c', '#8fd968', '#7fd0e8', '#3f6fe0', '#9b6ee8', '#ff8fc0'], ORN_S = ['구슬', '양말', '별', '눈사람', '폴라로이드'];
   // 폴라로이드에 넣을 사진: 사이트에 있는 콘서트 포스터·음반 표지만 (불러올 수 있는 주소만)
   const polaPics = () => { const ok = u => u && (/^covers\//.test(u) || /pbs\.twimg\.com/.test(u)), seen = new Set(), out = [];
@@ -6171,14 +6171,15 @@
   function treeOrnSheet() {
     const st = treeState(), adm = !TREE_OPEN && isAdmin();
     const prev = tAdm() && new URLSearchParams(location.hash.split('?')[1] || '').get('lv'); // 관리자 레벨 미리보기: 개수 제한 없이 시험
-    if (st.myOrn >= ORN_MAX && !adm && !prev) { toast(L3(`오너먼트는 한 명당 ${ORN_MAX}개까지예요. 하나를 떼면 다시 달 수 있어요 🎁`, `Up to ${ORN_MAX} ornaments each 🎁`, `1人${ORN_MAX}個までです 🎁`)); return; }
+    const lim = !adm && !prev, oFull = lim && st.myOrn >= ORN_MAX, pFull = lim && (!st.lv.o.pola || st.myPola >= POLA_MAX);
+    if (oFull && pFull) { toast(st.lv.o.pola ? L3(`오너먼트 ${ORN_MAX}개, 폴라로이드 ${POLA_MAX}장을 다 걸었어요. 하나를 떼면 다시 걸 수 있어요`, `You've hung ${ORN_MAX} ornaments and ${POLA_MAX} Polaroids`, `オーナメント${ORN_MAX}個・ポラロイド${POLA_MAX}枚まで飾りました`) : L3(`오너먼트는 한 명당 ${ORN_MAX}개까지예요. 하나를 떼면 다시 달 수 있어요 🎁`, `Up to ${ORN_MAX} ornaments each 🎁`, `1人${ORN_MAX}個までです 🎁`)); return; }
     if (treeOpened()) { toast(L3('편지가 열렸어요! 이제 오너먼트는 못 달아요', 'Letters are open now', '手紙が開きました')); return; }
     const full = st.hung.length >= st.slot || !treeApi, pg = document.querySelector('.tree-page'); if (!pg) return;
     document.querySelectorAll('.tree-sheet,.tree-pop').forEach(x => x.remove());
     const sh = document.createElement('div'); sh.className = 'tree-sheet';
-    const f = { shape: 0, color: Math.floor(Math.random() * 8), to: '숲별' };
+    const f = { shape: oFull ? 4 : 0, color: Math.floor(Math.random() * 8), to: '숲별' };
     sh.innerHTML = `<div class="ts-prev" id="ts-prev"><small>${L3('손가락으로 돌려 보세요', 'Drag to turn', 'ドラッグで回せます')}</small></div><div class="ts-in"><h2>🎁 ${L3('오너먼트 달기', 'Hang an ornament', 'オーナメントを飾る')}</h2>
-      <p class="ts-l">${L3('모양', 'Shape', '形')}</p><div class="ts-row" id="ts-shape">${ORN_S.map((n, k) => k === 4 && !(st.lv.o.pola || adm || (tAdm() && ((TREE_LV[+new URLSearchParams(location.hash.split('?')[1] || '').get('lv') - 1] || {}).o || {}).pola)) ? '' : `<button data-k="${k}">${['🔮', '🧦', '⭐', '☃️', '📷'][k]} ${L3(n, ['Bead', 'Sock', 'Star', 'Snowman', 'Polaroid'][k], ['玉', '靴下', '星', '雪だるま', 'ポラロイド'][k])}</button>`).join('')}</div>
+      <p class="ts-l">${L3('모양', 'Shape', '形')}</p><div class="ts-row" id="ts-shape">${ORN_S.map((n, k) => (k < 4 && oFull) || (k === 4 && pFull && lim && st.lv.o.pola) || k === 4 && !(st.lv.o.pola || adm || (tAdm() && ((TREE_LV[+new URLSearchParams(location.hash.split('?')[1] || '').get('lv') - 1] || {}).o || {}).pola)) ? '' : `<button data-k="${k}">${['🔮', '🧦', '⭐', '☃️', '📷'][k]} ${L3(n, ['Bead', 'Sock', 'Star', 'Snowman', 'Polaroid'][k], ['玉', '靴下', '星', '雪だるま', 'ポラロイド'][k])}</button>`).join('')}</div>
       <div id="ts-pics" hidden><input id="ts-cap" maxlength="16" placeholder="${L3('사진 아래 한 줄 (16자, 모두에게 바로 보여요)', 'Caption under the photo (16, shown to all)', '写真の下の一言(16字、すぐ公開)')}"><p class="ts-l">${L3('사진 고르기', 'Pick a photo', '写真を選ぶ')}</p><div class="ts-pics">${polaPics().map((p, k) => `<button data-k="${k}" title="${esc(p.name)}"><img src="${esc(p.src)}" alt="" loading="lazy" referrerpolicy="no-referrer"></button>`).join('')}</div></div>
       <p class="ts-l ts-colw">${L3('색', 'Color', '色')}</p><div class="ts-row ts-col" id="ts-color">${ORN_C.map((c, k) => `<button data-k="${k}" style="background:${c}" aria-label="${k + 1}"></button>`).join('')}</div>
       <p class="ts-l">${L3('받는 사람', 'To', '宛先')}</p><div class="ts-row" id="ts-to"><button data-k="숲별">${L3('숲별에게', 'To fans', 'ファンへ')}</button><button data-k="포레">${L3('포레스텔라에게', 'To Forestella', 'フォレステラへ')}</button></div>
@@ -6192,7 +6193,7 @@
     sel('#ts-shape', 'shape'); sel('#ts-color', 'color'); sel('#ts-to', 'to');
     const ta = sh.querySelector('#ts-msg'), go = sh.querySelector('.ts-go'), PP = polaPics(), pw = sh.querySelector('#ts-pics');
     const chk = () => { const P = f.shape === 4; pw.hidden = !P; sh.querySelector('#ts-color').hidden = P; sh.querySelector('.ts-colw').hidden = P; sh.querySelector('#ts-prev').hidden = P; go.disabled = !ta.value.trim() || (P && !f.pic); go.textContent = P ? L3('📷 줄에 걸기', '📷 Hang it', '📷 飾る') : full ? L3('🧺 바구니에 넣기', '🧺 Put in basket', '🧺 バスケットへ') : L3('트리에 달러 가기 ›', 'Choose a spot ›', '場所を選ぶ ›'); };
-    sh.querySelectorAll('#ts-shape button').forEach(b => b.addEventListener('click', chk));
+    sh.querySelectorAll('#ts-shape button').forEach(b => b.addEventListener('click', chk)); chk();
     pw.querySelectorAll('button').forEach(b => { b.onclick = () => { pw.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); f.pic = PP[+b.dataset.k].src; chk(); }; });
     ta.oninput = () => { sh.querySelector('#ts-n').textContent = ta.value.length; chk(); };
     sh.querySelector('.ts-cancel').onclick = () => sh.remove();
