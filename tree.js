@@ -240,7 +240,7 @@ export async function mount(el, opt) {
     // 겉면 자리 + 그 자리의 바깥 방향
     surf = (y, a, off) => { rc.set(new T.Vector3(Math.cos(a) * 12, y, Math.sin(a) * 12), new T.Vector3(-Math.cos(a), 0, -Math.sin(a))); const h = rc.intersectObject(t, false)[0]; if (!h) return null; const nrm = h.face.normal.clone().transformDirection(t.matrixWorld); return { p: h.point.add(nrm.clone().multiplyScalar(off)), n: nrm }; };
     const hang = (o, s) => { o.position.copy(s.p); o.lookAt(s.p.clone().add(s.n)); o.rotateZ((rnd() - .5) * .5); o.castShadow = true; spin.add(o); };
-    const ft = ((t && t.userData.ft) || FT) * L.tree * (L.tall || 1), nB = L.beads || 0, nS = L.socks || 0, nSt = L.stars || 0, used = [];
+    const ft = ((t && t.userData.ft) || FT) * L.tree * (L.tall || 1), nB = L.beads || 0, nS = L.socks || 0, nSt = L.stars || 0, used = [], HMIN = Math.min(.5, (ft + .3 * L.tree) / top); // 오너먼트는 잎 아래(밑동)로 안 내려가게 — 레벨업으로 밑동이 길어져도 잎 위로
     // 빈 자리 찾기: 다른 장식과 gap 이상 떨어진 겉면 (여러 번 시도)
     const spot = (gap, off) => { for (let tr = 0; tr < 14; tr++) { const y = ft + .3 * L.tree + rnd() * (hs - ft - 1.0 * L.tree), s = surf(y, rnd() * 6.283, off); if (s && used.every(u => u.p.distanceTo(s.p) > u.r + gap)) return s; } return null; };
     // 숲별 오너먼트 (opt.orns: [{id, shape 0구슬·1양말·2별, color, spot [각도, 높이 비율, 크기, 회전] 또는 null, nick}])
@@ -253,8 +253,8 @@ export async function mount(el, opt) {
     ornMake = (o, sz) => o.shape === 3 ? (() => { const g = new T.Group(), s = snowman(.26 * sz, OC[o.color] || OC[0]); s.position.y = -.22 * sz; g.add(s); return g; })() : o.shape === 1 ? sock(.3 * sz, OC[o.color] || OC[0]) : o.shape === 2 ? star5(.11 * sz, OC[o.color] || OC[2]) : bead(.11 * sz, OC[o.color] || OC[0]);
     ornOff = (o, sz) => (o.shape === 0 ? .1 : o.shape === 3 ? .1 : .06) * sz;
     const at0 = f => { const ry = spin.rotation.y, rz = spin.rotation.z; spin.rotation.set(0, 0, 0); spin.updateMatrixWorld(true); try { return f(); } finally { spin.rotation.set(0, ry, rz); spin.updateMatrixWorld(true); } };
-    hangOrn = (o, m) => at0(() => { const sz = OB * (o.spot ? o.spot[2] : 1); let s = o.spot ? surf(Math.min(o.spot[1], .86) * top, o.spot[0], ornOff(o, sz)) : spot(.13 * sz, ornOff(o, sz)); if (!s) return null;
-      if (o.spot && !pFree(s.p, .12 * sz)) { const h0 = Math.min(o.spot[1], .86); find: for (let d = 1; d <= 10; d++) for (const [dh, da] of [[-.03, 0], [.03, 0], [0, -.1], [0, .1], [-.03, -.1], [.03, .1]]) { const q = surf(Math.max(.05, Math.min(.86, h0 + dh * d)) * top, o.spot[0] + da * d, ornOff(o, sz)); if (q && pFree(q.p, .12 * sz)) { s = q; break find; } } } // 폴라로이드와 겹치면 가까운 빈 곳으로
+    hangOrn = (o, m) => at0(() => { const sz = OB * (o.spot ? o.spot[2] : 1); let s = o.spot ? surf(Math.max(HMIN, Math.min(o.spot[1], .86)) * top, o.spot[0], ornOff(o, sz)) : spot(.13 * sz, ornOff(o, sz)); if (!s) return null;
+      if (o.spot && !pFree(s.p, .12 * sz)) { const h0 = Math.max(HMIN, Math.min(o.spot[1], .86)); find: for (let d = 1; d <= 10; d++) for (const [dh, da] of [[-.03, 0], [.03, 0], [0, -.1], [0, .1], [-.03, -.1], [.03, .1]]) { const q = surf(Math.max(HMIN, Math.min(.86, h0 + dh * d)) * top, o.spot[0] + da * d, ornOff(o, sz)); if (q && pFree(q.p, .12 * sz)) { s = q; break find; } } } // 폴라로이드와 겹치면 가까운 빈 곳으로
       m = m || ornMake(o, sz); m.position.copy(s.p); m.lookAt(s.p.clone().add(s.n)); m.rotateZ(o.spot ? o.spot[3] : (rnd() - .5) * .5);
       m.userData.orn = o; m.traverse(c => { c.castShadow = true; c.userData.orn = o; }); if (!m.parent) spin.add(m); used.push({ p: s.p, r: .13 * sz }); return m; });
     (opt.orns || []).filter(o => o.spot).forEach(o => { const m = hangOrn(o); if (m) ORN.push(m); });
