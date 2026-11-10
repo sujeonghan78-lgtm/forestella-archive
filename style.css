@@ -2637,3 +2637,4 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .tree-page.slim .tree-bot:not(:has(.pp-bot)) { padding-top: 44px; }
 .tree-sheet .ts-cnt2 { margin: -4px 0 6px; font-size: 12.5px; font-weight: 600; opacity: .75; }
 .tl-item .tl-pic { display: flex; align-items: center; gap: 8px; margin: 4px 0; } .tl-item .tl-pic img { width: 56px; height: 64px; object-fit: cover; border: 4px solid #fff; border-bottom-width: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.25); border-radius: 2px; flex: none; } .tl-item .tl-pic b { font-size: 13px; }
+.tree-letters h2 small.tl-cnt { display: inline-flex; gap: 8px; vertical-align: middle; margin-left: 4px; } .tl-cnt span { display: inline-flex; align-items: center; gap: 2px; } .tl-cnt svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
