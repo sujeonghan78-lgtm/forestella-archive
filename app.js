@@ -5953,10 +5953,10 @@
     { n: '아기 나무', en: 'Sapling', ja: '若木', w: 75, slot: 10, o: { tree: .32 } },
     { n: '작은 나무', en: 'Small tree', ja: '小さな木', w: 150, slot: 25, o: { tree: .55 } },
     { n: '트리', en: 'Tree', ja: 'ツリー', w: 400, slot: 50, o: { tree: 1, tall: 1.15, glit: 1, woods: 20, dk: .2 } },
-    { n: '폴라로이드', en: 'Polaroids', ja: 'ポラロイド', w: 1000, slot: 80, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, woods: 54, dk: .4 } },
-    { n: '눈 오는 숲', en: 'Snowy forest', ja: '雪の森', w: 2500, slot: 120, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, snow: 1, sm4: 1, woods: 96, dk: 0.55 } },
-    { n: '오로라', en: 'Aurora', ja: 'オーロラ', w: 5000, slot: 160, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, snow: 1, lights: 1, aurora: 1, sm4: 1, woods: 320, wfar: 2.2, dk: .7 } },
-    { n: '별', en: 'Star', ja: '星', w: 8000, slot: 200, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, snow: 1, star: 1, lights: 1, aurora: 1, sm4: 1, woods: 320, wfar: 2.2, dk: .85 } },
+    { n: '폴라로이드', en: 'Polaroids', ja: 'ポラロイド', w: 1000, slot: 80, pmax: 45, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, woods: 54, dk: .4 } },
+    { n: '눈 오는 숲', en: 'Snowy forest', ja: '雪の森', w: 2500, slot: 120, pmax: 75, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, snow: 1, sm4: 1, woods: 96, dk: 0.55 } },
+    { n: '오로라', en: 'Aurora', ja: 'オーロラ', w: 5000, slot: 160, pmax: 100, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, snow: 1, lights: 1, aurora: 1, sm4: 1, woods: 320, wfar: 2.2, dk: .7 } },
+    { n: '별', en: 'Star', ja: '星', w: 8000, slot: 200, pmax: 100, o: { tree: 1.22, tall: 1.15, trunk: 1.18, glit: 1, pola: 1, snow: 1, star: 1, lights: 1, aurora: 1, sm4: 1, woods: 320, wfar: 2.2, dk: .85 } },
   ];
   // 내 트리 이름 (이 폰에만, sb-tree.name)
   const treeName = () => (treeMine().name || '').trim() || L3('숲별 트리', 'Soopbyeol Tree', 'スッピョルツリー');
@@ -5970,10 +5970,10 @@
   // 시트에 아직 안 올라온 내 물(오늘)은 폰 기록으로 더해서 보여줘요
   const treeX2 = () => new Date(kstDay() + 'T00:00:00Z').getUTCDay() === 6 ? 2 : 1; // 토요일엔 물 한 번이 두 번
   // 폴라로이드 칸 정하기: 고른 칸(slot)은 먼저 보낸 사람 순, 겹치면 가장 가까운 빈 칸, 칸 없는 건 앞에서부터 빈 칸
-  function treePolaGrid(list) {
-    const g = [], near = s => { for (let d = 0; ; d++) { if (s + d >= 0 && !g[s + d]) return s + d; if (d && s - d >= 0 && !g[s - d]) return s - d; } };
-    list.filter(o => o.slot >= 0 && o.slot < 3000).sort((a, b) => (a.at || 0) - (b.at || 0)).forEach(o => { g[near(o.slot)] = o; });
-    list.filter(o => !(o.slot >= 0 && o.slot < 3000)).forEach(o => { g[near(0)] = o; }); return g;
+  function treePolaGrid(list, cap = 3000) { // cap: 이 레벨에서 걸 수 있는 폴라로이드 수 (넘는 칸은 안 씀)
+    const g = [], near = s => { for (let d = 0; ; d++) { if (s + d < cap && !g[s + d]) return s + d; if (d && s - d >= 0 && !g[s - d]) return s - d; if (d > cap) return -1; } };
+    list.filter(o => o.slot >= 0 && o.slot < cap).sort((a, b) => (a.at || 0) - (b.at || 0)).forEach(o => { g[near(o.slot)] = o; });
+    list.filter(o => !(o.slot >= 0 && o.slot < cap)).forEach(o => { const k = near(0); if (k >= 0) g[k] = o; }); return g;
   }
   function treeState() {
     const t = (data && data.tree) || { water: 0, people: 0, by: {} }, me = myUid(), mine = treeMine(), got = new Set(t.by[me] || []), today = kstDay();
@@ -5988,9 +5988,9 @@
     const ids = new Set((t.orn || []).map(o => o.id)), del = new Set((mine.ornDel || []).filter(id => !(window.SB_ORN_UNDEL || new Set()).has(id)));
     const orn = (!TREE_OPEN && isAdmin() ? (mine.torn || []) : (t.orn || []).concat((mine.orn || []).filter(o => !ids.has(o.id)))).filter(o => !del.has(o.id));
     const oc = mine.ornCol || {}, os = mine.ornSpot || {}; orn.forEach(o => { if (oc[o.id] != null && o.by === me) o.color = oc[o.id]; if (os[o.id] && o.by === me) o.spot = os[o.id]; });
-    const slot = TREE_LV[i].slot, myOrn = orn.filter(o => o.by === me && o.shape !== 4).length, myPola = orn.filter(o => o.by === me && o.shape === 4).length, polas = treePolaGrid(orn.filter(o => o.shape === 4)), plain = orn.filter(o => o.shape !== 4);
+    const slot = TREE_LV[i].slot, myOrn = orn.filter(o => o.by === me && o.shape !== 4).length, myPola = orn.filter(o => o.by === me && o.shape === 4).length, pmax = TREE_LV[i].pmax || 0, pAll = orn.filter(o => o.shape === 4).sort((a, b) => (a.at || 0) - (b.at || 0)), polas = treePolaGrid(pAll.slice(0, pmax), pmax), pwait = pAll.slice(pmax), plain = orn.filter(o => o.shape !== 4);
     const todayP = Object.values(t.by).filter(a => a.includes(today)).length + (localN > sheetN && !sheetN ? 1 : 0);
-    return { water, people, todayP, i, lv: TREE_LV[i], next: TREE_LV[i + 1], done, left, todayN, myDays: new Set([...got, ...(mine.water || [])]).size, orn, hung: plain.slice(0, slot), basket: plain.slice(slot), polas, slot, myOrn, myPola };
+    return { water, people, todayP, i, lv: TREE_LV[i], next: TREE_LV[i + 1], done, left, todayN, myDays: new Set([...got, ...(mine.water || [])]).size, orn, hung: plain.slice(0, slot), basket: plain.slice(slot).concat(pwait), polas, pmax, pHung: Math.min(pAll.length, pmax), slot, myOrn, myPola };
   }
   let treeApi = null, treeFrom = '', treeMod = null;
   const treeWeek = () => { const t = kstDay(), d0 = new Date(t + 'T00:00:00Z'), mon = d0.getTime() - ((d0.getUTCDay() + 6) % 7) * 864e5; return [0, 1, 2, 3, 4, 5, 6].map(k => new Date(mon + k * 864e5).toISOString().slice(0, 10)); };
@@ -6027,7 +6027,7 @@
       if (tSlim()) { r.classList.add('fold'); const t = document.createElement('button'); t.className = 'rt-tog'; t.innerHTML = `<svg viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>${L3('꾸미기', 'Decorate', 'デコ')}`; t.onclick = () => r.classList.toggle('open'); r.prepend(t); } } // 관리자 미리보기: 폴라로이드·눈사람·선물 버튼을 '꾸미기' 하나로 접기
     const rd = ['.tree-ppl', '.tree-road', '.tree-dday', '.tree-tline'].map(q => pg.querySelector(q)).find(x => x && x.offsetParent); if (rd) r.style.top = Math.round(rd.getBoundingClientRect().bottom - pg.getBoundingClientRect().top + 8) + 'px'; return r; }
   function treePolaBar(st) {
-    if (!treeApi || !treeApi.polaPage) return; const pk = !!treePolaBar.pick, last = st.polas.length, n = Math.max(1, Math.ceil((last + (last && last % 15 === 0 ? 1 : 0)) / 15)), me = myUid(), mi = st.polas.findIndex(o => o && o.by === me);
+    if (!treeApi || !treeApi.polaPage) return; const pk = !!treePolaBar.pick, last = st.polas.length, n = Math.max(1, Math.min(Math.ceil((st.pmax || 15) / 15), Math.ceil((last + (last && last % 15 === 0 ? 1 : 0)) / 15))), me = myUid(), mi = st.polas.findIndex(o => o && o.by === me);
     let cur = pk ? Math.max(0, n - 1 - (st.polas.slice((n - 1) * 15).length < 15 ? 0 : 0)) : mi >= 0 ? Math.floor(mi / 15) : Math.max(0, Math.ceil(last / 15) - 1); if (pk) { for (let k = 0; k < n; k++) if (Array.from({ length: 15 }, (_, i) => st.polas[k * 15 + i]).some(x => !x)) { cur = k; break; } } treeApi.polaPage(cur);
     document.querySelectorAll('.tree-pp').forEach(x => x.remove()); const pg = document.querySelector('.tree-page'); if (!pg || !(treeApi.polaOn && treeApi.polaOn())) return;
     const bar = document.createElement('div'), bot = tSlim() && pg.querySelector('.tl-row'); bar.className = 'tree-pp' + (bot ? ' pp-bot' : ''); if (bot) bot.before(bar); else treeRt().appendChild(bar); // 관리자 미리보기: 폴라로이드 쪽은 트리 아래 가운데 '‹ 1 / n ›'
@@ -6142,7 +6142,7 @@
     document.querySelectorAll('.tree-sheet,.tree-pop').forEach(x => x.remove());
     const st = treeState(), list = st.orn.filter(o => !k || o.to === k).slice().reverse(), adm = tAdm();
     const sh = document.createElement('div'); sh.className = 'tree-sheet tree-letters';
-    sh.innerHTML = `<div class="ts-in"><h2>📜 ${L3('숲별 트리 편지', 'Tree letters', 'ツリーの手紙')} <small class="tl-cnt"><span aria-label="${L3('오너먼트', 'Ornaments', 'オーナメント')}">${TI.gift}${st.hung.length}/${st.slot}</span><span aria-label="${L3('폴라로이드', 'Polaroids', 'ポラロイド')}"><svg viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>${st.polas.filter(Boolean).length}/${Math.max(1, Math.ceil((st.polas.length + (st.polas.length && st.polas.length % 15 === 0 ? 1 : 0)) / 15)) * 15}</span></small></h2>
+    sh.innerHTML = `<div class="ts-in"><h2>📜 ${L3('숲별 트리 편지', 'Tree letters', 'ツリーの手紙')} <small class="tl-cnt"><span aria-label="${L3('오너먼트', 'Ornaments', 'オーナメント')}">${TI.gift}${st.hung.length}/${st.slot}</span><span aria-label="${L3('폴라로이드', 'Polaroids', 'ポラロイド')}"><svg viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>${st.pHung}/${st.pmax}</span></small></h2>
       ${treeOpened() ? '' : `<p class="ts-note">${L3('관리자 미리보기예요. 12월 24일 0시에 모두에게 열려요.', 'Admin preview. Opens to everyone on Dec 24.', '管理者プレビュー')}</p>`}
       <div class="ts-row tl-chips">${[['', L3('전체', 'All', 'すべて')], ['포레', L3('포레스텔라에게', 'To Forestella', 'フォレステラへ')], ['숲별', L3('숲별에게', 'To fans', 'ファンへ')]].map(([v, n]) => `<button data-k="${v}" class="${v === k ? 'on' : ''}">${n}</button>`).join('')}</div>
       <div class="tl-list">${list.length ? list.map(o => `<div class="tl-item" data-id="${esc(o.id)}"><p class="tp-who"><i style="background:${ORN_C[o.color] || ORN_C[0]}"></i><b>${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}</b> → ${o.to === '포레' ? L3('포레스텔라에게', 'To Forestella', 'フォレステラへ') : L3('숲별에게', 'To fans', 'ファンへ')}${o.at ? ` · ${kstDay(o.at).slice(5).replace('-', '.')}` : ''}</p>${o.shape === 4 && o.pic ? `<p class="tl-pic"><img src="${esc(o.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">${o.cap ? `<b>${esc(o.cap)}</b>` : ''}</p>` : ''}<p class="tp-msg">🔒</p>${adm ? `<button class="tl-hide">${L3('숨기기', 'Hide', '非表示')}</button>` : ''}</div>`).join('') : `<p class="ts-note">${L3('아직 걸린 오너먼트가 없어요', 'No ornaments yet', 'まだありません')}</p>`}</div>
@@ -6201,7 +6201,7 @@
     go.onclick = () => {
       const o = { id: Math.random().toString(36).slice(2, 9), by: myUid(), mine: true, at: Date.now(), shape: f.shape, color: f.color, to: f.to, nick: sh.querySelector('#ts-nick').value.trim().slice(0, 12), text: ta.value.trim().slice(0, 200), pic: f.shape === 4 ? f.pic : '', cap: f.shape === 4 ? sh.querySelector('#ts-cap').value.trim().slice(0, 16) : '' };
       sh.remove();
-      if (f.shape === 4) { treePolaPick(o); return; }
+      if (f.shape === 4) { if (st.pHung >= st.pmax && !prev) { o.slot = -1; o.wait = 1; treeSend(o, null); return; } treePolaPick(o); return; }
       if (full) { treeSend(o, null); return; }
       treeApi.place(o); treePlaceBar(sp => treeSend(o, sp));
     };
@@ -6287,7 +6287,7 @@
         if (adm) mm.torn = (mm.torn || []).concat(rec); else mm.orn = (mm.orn || []).concat(rec).slice(-30);
         boxWrite(TREE_KEY, mm);
         if (spot && treeApi) { treeApi.commit(); } else if (treeApi) treeApi.cancel();
-        toast(o.shape === 4 ? L3('📷 폴라로이드를 걸었어요! 12월 24일 0시에 열려요', '📷 Hung! Opens Dec 24', '📷 飾りました!12月24日に開きます') : spot ? L3('🎁 오너먼트를 달았어요! 12월 24일 0시에 열려요', '🎁 Hung! Opens Dec 24', '🎁 飾りました!12月24日に開きます') : L3('🧺 바구니에 넣었어요. 트리가 자라면 걸려요', '🧺 In the basket — it hangs when the tree grows', '🧺 バスケットに入れました'));
+        toast(o.shape === 4 && !o.wait ? L3('📷 폴라로이드를 걸었어요! 12월 24일 0시에 열려요', '📷 Hung! Opens Dec 24', '📷 飾りました!12月24日に開きます') : spot ? L3('🎁 오너먼트를 달았어요! 12월 24일 0시에 열려요', '🎁 Hung! Opens Dec 24', '🎁 飾りました!12月24日に開きます') : L3('🧺 바구니에 넣었어요. 트리가 자라면 걸려요', '🧺 In the basket — it hangs when the tree grows', '🧺 バスケットに入れました'));
         if (!spot) setTimeout(() => { if (currentRoute() === 'tree') renderBase('tree'); }, 900);
       });
     }).catch(() => { if (treeApi) treeApi.cancel(); toast(L3('보내지 못했어요. 잠시 뒤 다시 해 주세요', 'Could not send. Try again shortly', '送信できませんでした')); });
@@ -6353,7 +6353,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const lv = tl && TREE_LV[tl - 1] ? TREE_LV[tl - 1] : st.lv, sky = qs.get('sky') || undefined;
     let ok = true; try { const c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (err) { ok = false; }
     if (!ok) { el.innerHTML = `<p class="tree-load">${L3('이 폰에선 3D 트리를 볼 수 없어요. 물 주기는 할 수 있어요!', '3D tree is not supported here, but you can still water!', 'この端末では3Dツリーを表示できませんが、水やりはできます!')}</p>`; }
-    else import('./tree.js?v=126').then(m => (treeMod = m).mount(el, { lv: tSlim() && treeMine().noPola ? Object.assign({}, lv.o, { pola: 0 }) : lv.o, people: st.people, water: st.water, sky, cName, orns: (tSlim() && treeMine().noOrn ? [] : st.hung).map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), polas: st.polas.map(o => o && Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, snow4: tSlim() && treeMine().noSnow ? [] : (treeMine().snow4 || []).map(x => x || {}), noGifts: !!treeMine().noGift, onSnow: treeSnowEdit, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); treePolaBar(st); treeSnowBtn(lv); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else if (tl || !treeLvNews()) treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
+    else import('./tree.js?v=127').then(m => (treeMod = m).mount(el, { lv: tSlim() && treeMine().noPola ? Object.assign({}, lv.o, { pola: 0 }) : lv.o, people: st.people, water: st.water, sky, cName, orns: (tSlim() && treeMine().noOrn ? [] : st.hung).map(o => Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), polaMax: st.pmax || 3000, polas: st.polas.map(o => o && Object.assign({}, o, { mine: o.by === myUid(), nick: o.nick || L3('익명의 숲별', 'A fan', '匿名のファン') })), onTap: treeCard, onConst: treeConst, snow4: tSlim() && treeMine().noSnow ? [] : (treeMine().snow4 || []).map(x => x || {}), noGifts: !!treeMine().noGift, onSnow: treeSnowEdit, onPlace: () => { const b = document.getElementById('tp-ok'); if (b) b.disabled = false; } })).then(api => { if (!document.body.contains(el)) { api.destroy(); return; } treeApi = api; const ld = el.querySelector('.tree-load'); if (ld) ld.remove(); treePolaBar(st); treeSnowBtn(lv); setTimeout(() => { const mm = treeMine(); if (treeOpened() && !mm.openSeen) { mm.openSeen = 1; boxWrite(TREE_KEY, mm); treeOpenShow(); } else if (tl || !treeLvNews()) treeAskSpot(); }, 700); }).catch(() => { el.innerHTML = `<p class="tree-load">${L3('트리를 불러오지 못했어요. 새로고침해 주세요.', 'Could not load the tree. Please refresh.', 'ツリーを読み込めませんでした。再読み込みしてください。')}</p>`; });
     const bk = document.getElementById('tree-back'); if (bk) bk.onclick = () => { location.hash = treeFrom || '#/more'; };
     const gf = document.getElementById('tree-gift'); if (gf) gf.onclick = () => treeOrnSheet();
     const sg = document.getElementById('tree-set-go'); if (sg) sg.onclick = () => { const m = treeMine(), cur = treeState().water, base = cur - (m.test || 0); m.test = Math.max(0, Math.round(+document.getElementById('tree-set').value || 0) - base); boxWrite(TREE_KEY, m); renderBase('tree'); };
