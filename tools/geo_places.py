@@ -16,6 +16,8 @@ def sheet_url():
 
 
 def get(url):
+    if not url.startswith('http'):  # 저장소 원본(data/db/*.csv)
+        return open(os.path.join(ROOT, url), encoding='utf-8').read()
     req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept-Language': 'ko'})
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.read().decode('utf-8')

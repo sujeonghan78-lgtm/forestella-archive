@@ -62,7 +62,7 @@ const want = new Set();
 let fromForm = 0;
 for (const [key, pick] of [['x', (h, r) => !(r[h.indexOf('글')] || '').trim() ? r[h.indexOf('링크')] : ''], ['reports', (h, r) => r.join('\n')]]) {
   try {
-    const [head, ...rows] = csvRows(await (await fetch(cfg.match(new RegExp(key + ":\\s*'([^']+)'"))[1])).text());
+    const [head, ...rows] = csvRows(await (async u => /^https?:/.test(u) ? (await fetch(u)).text() : fs.readFileSync(u, 'utf8'))(cfg.match(new RegExp('\\n\\s*' + key + ":\\s*'([^']+)'"))[1]));
     rows.forEach(r => { const v = pick(head, r) || ''; if (key === 'reports' && !/(^|\n)(종류\s*[:：]\s*)?공식X(\s|$)/.test(v)) return; if (key === 'reports') fromForm++; const id = (v.match(/status(?:es)?\/(\d{15,20})/) || [])[1]; if (id && !byId.has(id)) want.add(id); });
   } catch (e) { why.push(`시트 ${key} ${e.message}`); }
 }
