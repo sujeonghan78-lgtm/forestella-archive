@@ -21,6 +21,8 @@ window.CONFIG = {
       content: 'entry.1225620977',  // 통합형 질문 "제보 내용" (종류·날짜·일정·곡·링크·내용을 줄로 넣어요)
     },
   },
+  // 제보 새 줄만 바로 받는 Apps Script 주소 (보관함 스크립트에 doGet을 붙인 뒤 boxApi와 같은 주소를 넣어요). null이면 예전처럼 시트 게시 주소에서 통째로 받아요
+  reportsApi: null,
   // 보관함(♡·직관)을 다른 폰에서 이어 쓰는 Apps Script 웹 앱 주소. 비어 있으면 이 폰에만 저장해요.
   // 의견·제보 사진 올리기: 보관함 Apps Script에 사진 받는 코드를 붙인 뒤 true로 켜요
   photoUpload: true,

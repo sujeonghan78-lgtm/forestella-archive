@@ -1,0 +1,33 @@
+# 팬 제보 탭을 3시간마다 저장소(data/db/reports.csv)에 저장해요.
+# 사이트는 이 저장본을 먼저 받고, 그 뒤에 들어온 새 줄만 Apps Script(config.reportsApi)에서 바로 받아요.
+name: reports-snap
+on:
+  schedule:
+    - cron: '11 */3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: reports-snap
+jobs:
+  snap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: 제보 탭 받기
+        run: |
+          url=$(grep -oE "^\s*reports: '[^']+'" config.js | grep -oE "https://[^']*")
+          curl -sSL --retry 3 --max-time 120 "$url" -o /tmp/reports.csv
+          # 이상하게 받아졌으면(머리줄이 다르거나 갑자기 절반 밑으로 줄면) 그만둬요
+          head -c 20 /tmp/reports.csv | grep -q '타임스탬프' || { echo "::error::제보 탭 머리줄이 달라요"; exit 1; }
+          new=$(wc -c < /tmp/reports.csv); old=$(wc -c < data/db/reports.csv 2>/dev/null || echo 0)
+          [ "$new" -ge $((old / 2)) ] || { echo "::error::제보 탭이 갑자기 줄었어요 ($old → $new)"; exit 1; }
+          cp /tmp/reports.csv data/db/reports.csv
+      - run: |
+          git add data/db/reports.csv
+          git diff --cached --quiet && exit 0
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qm "제보 저장본 갱신"
+          git pull --rebase -q origin main
+          git push

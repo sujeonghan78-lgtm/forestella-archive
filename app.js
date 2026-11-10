@@ -7475,7 +7475,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return done;
   }
   function loadOpinions() {
-    return opLoading = opLoading || window.DATA.fetchText(window.CONFIG.sheets.reports).then(async t => {
+    return opLoading = opLoading || window.DATA.fetchReports().then(async t => {
       opData = window.DATA.buildOpinions(t);
       // 이 기기에서 방금 누른 처리 표시는 시트에 들어오기 전까지 이 기기에 들고 있어요 (시트에 같은 번호가 오면 지워요)
       const local = opMarkLocal().filter(m => !opData.marks.some(x => x.id === m.id && x.n === m.n) && Date.now() - Number(m.n) < 864e5);
@@ -8957,7 +8957,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     // 같이 축하하는 수: 그날은 1분마다 제보 시트만 다시 받아서 바로 바꿔요
     const live = () => {
       if (document.hidden || !annivToday() || !data) return;
-      window.DATA.fetchText(window.CONFIG.sheets.reports + '&_=' + Date.now()).then(t => {
+      window.DATA.fetchReports().then(t => {
         data.anniv = window.DATA.annivOf(t);
         const A = annivToday(); if (A) document.querySelectorAll('.anv-cheer').forEach(w => { w.outerHTML = cheerBtn(A); });
       }).catch(() => {});

@@ -225,13 +225,45 @@
     return res.text();
   }
 
+  // 제보: 옛 줄은 저장소(data/db/reports.csv, 깃허브가 몇 시간마다 저장), 그 뒤 새 줄만 Apps Script(config.reportsApi)에서 바로 받아요.
+  // reportsApi가 없거나 안 되면 예전처럼 구글 시트 게시 주소에서 통째로 받아요.
+  const csvCell = v => /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  async function reportsTail(base) {
+    // 마지막 몇 줄의 타임스탬프를 보내면 Apps Script가 그 뒤 줄만 줘요 (맨 끝 줄이 시트에서 지워졌을 때를 대비해 여러 개)
+    const ts = (base.slice(-30000).match(/^\d{4}\. \d{1,2}\. \d{1,2} (?:오전|오후) \d{1,2}:\d{2}:\d{2}(?=,)/gm) || []).slice(-6);
+    const res = await fetch(window.CONFIG.reportsApi + '?action=reports&last=' + encodeURIComponent(ts.join('|')), { cache: 'no-store' });
+    const j = await res.json();
+    if (!j || !j.ok || !Array.isArray(j.rows)) throw new Error('제보 새 줄을 못 받았어요');
+    let lines = j.rows.map(r => r.map(c => csvCell(String(c == null ? '' : c))).join(','));
+    // 기준 줄을 못 찾아 끝부분을 통째로 받았으면, 이미 있는 줄은 빼요
+    if (!j.found) lines = lines.filter(l => !base.includes(l));
+    return lines.length ? base.replace(/\s+$/, '') + '\r\n' + lines.join('\r\n') : base;
+  }
+  // full이면 저장소 저장본부터 새로 받고, 아니면 지금 들고 있는 것 뒤에 새 줄만 붙여요
+  let repBusy = null;
+  function fetchReports(full) {
+    const s = window.CONFIG.sheets;
+    if (!window.CONFIG.reportsApi) return fetchText(s.reports + (full ? '' : '&_=' + Date.now()));
+    if (!full && repBusy) return repBusy;
+    const run = (async () => {
+      const have = !full && lastRaw && lastRaw.reports;
+      try {
+        const t = await reportsTail(have || await fetchText('data/db/reports.csv'));
+        if (have && lastRaw) lastRaw.reports = t;
+        return t;
+      } catch (e) { if (have) return have; return fetchText(s.reports); }
+    })();
+    if (!full) { repBusy = run; run.finally(() => { repBusy = null; }); }
+    return run;
+  }
+
   // withX가 false면 공식X 탭(가장 큰 시트)은 빼고 받아요. 처음 방문 때 화면을 먼저 띄우려고요.
   async function fetchAll(withX = true) {
     const s = window.CONFIG.sheets;
     const [events, videos, reports, cafe, setlists, xsheet, albums, concerts, yt, ytbc, ytm, ytml, xlinks, xphotos, xauto, xextra, extra, career, naver, places, views] = await Promise.all([
       fetchText(s.events),
       fetchText(s.videos),
-      fetchText(s.reports).catch(() => ''),
+      fetchReports(true).catch(() => ''),
       fetchText('cafe.json').catch(() => ''),
       fetchText('setlists.json').catch(() => ''),
       withX ? fetchText(s.x).catch(() => '') : '',
@@ -1288,6 +1320,9 @@
         const same = raw => Object.keys(raw).every(k => k === 'savedAt' || raw[k] === cached[k]);
         const again = (n) => fetchAll().then(raw => { writeCache(raw); if (!same(raw)) onUpdate(build(raw)); }).catch(() => { if (n) setTimeout(() => again(n - 1), 5000); });
         again(2);
+      } else if (window.CONFIG.reportsApi && Date.now() - cached.savedAt > 60000) {
+        // 저장본이 아직 새것이어도, 그 사이 들어온 제보 몇 줄만 받아서 달라졌으면 다시 그려요
+        setTimeout(() => reportsTail(cached.reports || '').then(t => { if (t !== cached.reports) { cached.reports = t; writeCache(cached); onUpdate(build(cached)); } }).catch(() => {}), 1500);
       }
       return build(cached);
     }
@@ -1332,5 +1367,5 @@
     const dels = rows.filter(r => r.type === '의견삭제').map(r => ({ id: line0(r, '대상'), by: r.by })).filter(d => d.id && d.by);
     return { ops, marks, dels };
   }
-  window.DATA = { load, rebuild: () => lastRaw && build(lastRaw), parseCSV, SONG_LANGS, normDate, songKey, setlistName, slVer, buildOpinions, fetchText, annivOf };
+  window.DATA = { load, rebuild: () => lastRaw && build(lastRaw), parseCSV, SONG_LANGS, normDate, songKey, setlistName, slVer, buildOpinions, fetchText, fetchReports, annivOf };
 })();
