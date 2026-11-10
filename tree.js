@@ -153,6 +153,7 @@ const SC = [0xd8343e, 0x2f6fd8, 0x8a5ad8, 0xff8fc0, 0xf0a030];
 
 // el 안에 트리를 그려요. opt: { lv: {tree,forest,beads,socks,snow,star,gifts}, people, sky }
 export async function mount(el, opt) {
+  const CROWD = Math.max(.72, 1 - Math.max(0, ((opt && opt.orns) || []).length - 100) * .0028); // 오너먼트가 100개 넘으면 조금씩 작게 (200개면 .72배)
   await loadTree();
   const W0 = () => el.clientWidth || 360, H0 = () => el.clientHeight || 420;
   const r = new T.WebGLRenderer({ antialias: true, alpha: false });
@@ -249,7 +250,7 @@ export async function mount(el, opt) {
       const P = []; for (let k = 0; k <= 120; k++) { const f = k / 120, q = surf(ft + .2 + f * (top * .8 - ft - .2), 1.2 + f * 6.283 * 1.8, .16); if (q) P.push(q.p); }
       if (P.length > 10) { const step = (P.length - 6) / 15; for (let i = 0; i < 15; i++) { const k = Math.round(4 + i * step), sz = .34 * Math.max(.75, 1 - k / P.length * .35), c = P[k].clone(); c.y -= sz * .6; PCARD.push({ p: c, r: sz * .72 }); used.push({ p: c, r: sz * .72 }); } } }
     const pFree = (p, r) => PCARD.every(c => c.p.distanceTo(p) > c.r + r);
-    const OSZ = L.tree > 1 ? 1 + (L.tree - 1) * .4 : Math.max(L.tree, .55), OB = 1.25 * OSZ; // 트리가 1보다 커져도 오너먼트는 덜 커져요 (Lv6~)
+    const OSZ = L.tree > 1 ? 1 + (L.tree - 1) * .4 : Math.max(L.tree, .55), OB = 1.25 * OSZ * CROWD; // 트리가 1보다 커져도 오너먼트는 덜 커져요 (Lv6~)
     ornMake = (o, sz) => o.shape === 3 ? (() => { const g = new T.Group(), s = snowman(.26 * sz, OC[o.color] || OC[0]); s.position.y = -.22 * sz; g.add(s); return g; })() : o.shape === 1 ? sock(.3 * sz, OC[o.color] || OC[0]) : o.shape === 2 ? star5(.11 * sz, OC[o.color] || OC[2]) : bead(.11 * sz, OC[o.color] || OC[0]);
     ornOff = (o, sz) => (o.shape === 0 ? .1 : o.shape === 3 ? .1 : .06) * sz;
     const at0 = f => { const ry = spin.rotation.y, rz = spin.rotation.z; spin.rotation.set(0, 0, 0); spin.updateMatrixWorld(true); try { return f(); } finally { spin.rotation.set(0, ry, rz); spin.updateMatrixWorld(true); } };
@@ -365,7 +366,7 @@ export async function mount(el, opt) {
   const setPlace = (a, h) => { if (!placing || !hangOrn) return; const p = placing; p.spot = [a, h, p.spot ? p.spot[2] : 1, p.spot ? p.spot[3] : 0];
     if (!p.m) { p.m = ornMake(p.o, OBs()); p.m.scale.setScalar(p.spot[2]); }
     p.o.spot = p.spot; const sz = p.spot[2]; p.m.scale.setScalar(1); hangOrn(p.o, p.m); p.m.scale.setScalar(sz); p.m.position.add(new T.Vector3()); if (opt.onPlace) opt.onPlace(p.spot); };
-  const OBs = () => 1.25 * Math.max(L.tree || .55, .55);
+  const OBs = () => 1.25 * Math.max(L.tree || .55, .55) * CROWD;
   const twist = () => { const [a, b] = [...pts.values()]; return Math.atan2(b.y - a.y, b.x - a.x); };
   cvs.addEventListener('pointerdown', e => { pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2) { pinch = pd(); tw = twist(); drag = null; moving = false; tap0 = null; return; }
