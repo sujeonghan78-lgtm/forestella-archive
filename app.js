@@ -540,6 +540,7 @@
 
   // ---------- 새 소식 (팬용 업데이트 안내) — 새 소식은 맨 위에 추가 ----------
   const NEWS = [
+    { d: '2026-11-13', t: '비하인드 포스트가 돌아왔어요 📸', s: '지금은 볼 수 없는 예전 네이버 포스트의 포레스텔라 비하인드 글 63개를 다시 읽을 수 있어요. 보관된 글에 팬 아카이브의 고화질 사진을 원래 순서대로 붙였어요. 더보기 → 아카이브 → 비하인드 포스트', a: '#/posts' },
     { d: '2026-11-05', t: '숲별 트리가 열렸어요 🎄', s: '숲별들이 같이 물을 주면 트리가 자라요(하루 5번). 물을 줄 때마다 하늘에 별이 뜨고 별자리가 완성돼요. 오너먼트에 편지를 달면 12월 24일 0시에 한 번에 열려요.', a: '#/tree' },
     { d: '2026-11-04', t: '취향 궁합 · 숲별 모임 💞', s: '내 궁합 링크를 친구에게 보내면 둘의 궁합이 나와요. 여럿이면 방장이 모임(2·6·10명)을 만들어 링크를 모으고 결과를 나눠요. 결과를 볼 때마다 궁합 도감이 채워지고, 숨은 이스터에그도 있어요.', a: '#/match' },
     { d: '2026-11-04', t: '숲별 취향 테스트 🧪', s: '9문항이면 1분! 나의 포레 취향 유형 16가지 중 하나를 찾아요. 홈이나 더보기의 \'취향 궁합\'에서 해 볼 수 있어요.', a: '#/match?test=1' },
@@ -598,7 +599,7 @@
   const POST_DRIVE = 'https://drive.google.com/drive/folders/1rwPtNVMzR8-QcMs8KY4tI7NSbL4db-sH';
   const postImg = (id, w) => `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}=w${w}`;
   const postDay = d => d.slice(0, 4) + '.' + d.slice(5, 7) + '.' + d.slice(8, 10);
-  const POSTS_OPEN = false; // true로 바꾸면 모두에게 보여요 (지금은 관리자 기기만)
+  const POSTS_OPEN = true; // true로 바꾸면 모두에게 보여요 (지금은 관리자 기기만)
   function postsView() {
     if (!POSTS_OPEN && !isAdmin()) return `<div class="about-top"><a class="back" href="#/more">‹ 더보기</a><h1 class="h1">준비 중이에요</h1></div>`;
     const id = decodeURIComponent(location.hash.split('?')[0].split('/')[2] || '');
