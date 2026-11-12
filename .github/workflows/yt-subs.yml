@@ -1,0 +1,49 @@
+# 유튜브 자막 받기 시험 (이 가지에 push하면 실행, 사이트엔 안 올라가요)
+name: yt-subs
+on:
+  push:
+    branches: [claude/project-thread-52vjhe]
+    paths: [subs/want.txt]
+permissions:
+  contents: write
+jobs:
+  subs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q yt-dlp
+      - run: |
+          mkdir -p subs/out
+          for u in $(cat subs/want.txt); do
+            yt-dlp --skip-download --write-subs --write-auto-subs --sub-langs "ko.*,ko" --sub-format vtt \
+              -o "subs/out/%(id)s.%(ext)s" "$u" 2>&1 | tail -20 || true
+          done
+          ls -la subs/out
+          for f in subs/out/*.vtt; do
+            [ -f "$f" ] || continue
+            # 시간 표시·태그·중복 줄 지우고 1분 단위로 묶기
+            python3 - "$f" > "${f%.vtt}.txt" <<'PY'
+          import re,sys
+          cur=None;buf=[];last='';out=[]
+          for line in open(sys.argv[1],encoding='utf-8'):
+              m=re.match(r'(\d+):(\d+):(\d+)\.\d+ -->',line)
+              if m:
+                  mn=int(m[1])*60+int(m[2])
+                  if cur is None or mn!=cur:
+                      if buf: out.append(f"[{cur//60}:{cur%60:02d}] "+' '.join(buf))
+                      cur=mn;buf=[]
+                  continue
+              t=re.sub(r'<[^>]+>','',line).strip()
+              if not t or t in('WEBVTT',) or t.startswith(('Kind:','Language:')) or t==last: continue
+              last=t;buf.append(t)
+          if buf: out.append(f"[{cur//60}:{cur%60:02d}] "+' '.join(buf))
+          print('\n'.join(out))
+          PY
+          done
+          wc -c subs/out/* || true
+          git config user.name "숲별 기록장 봇"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add subs/out
+          git diff --cached --quiet && exit 0
+          git commit -m "자막 받기"
+          git push origin HEAD
