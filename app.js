@@ -631,12 +631,34 @@
         <p>${postDay(p.d)} 올라온 글</p>
       </div>
       ${ev.length ? `<div class="post-ev">${ev.map(e => `<a class="chip" href="#/e/${encodeURIComponent(e.id)}">📅 ${esc(e.title)}</a>`).join('')}</div>` : ''}
+      <div class="post-trbar"><button type="button" class="chip post-tr">🌐 ${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
       <article class="post-body">${body}</article>
       <div class="post-nav">${prev ? `<a href="#/posts/${prev.no}">‹ 이전 글</a>` : '<span></span>'}${next ? `<a href="#/posts/${next.no}">다음 글 ›</a>` : '<span></span>'}</div>
       <p class="src-note">원글: 비트인터렉티브 네이버 포스트 (<a href="${esc(p.src)}" target="_blank" rel="noopener">보관본</a>) · 사진: <a href="${p.f ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(p.f) : POST_DRIVE}" target="_blank" rel="noopener">포레스텔라 아카이브</a> · 사진을 누르면 원본 크기로 볼 수 있어요</p>`;
   }
   // 드라이브가 한꺼번에 많이 부르면 잠깐 막아요 → 조금 기다렸다 다시 불러요 (3번까지)
   window.postRetry = img => { const n = +(img.dataset.n || 0); if (n >= 3) { img.closest('.post-ph').classList.add('post-ph-x'); return; } img.dataset.n = n + 1; setTimeout(() => { img.src = img.src.replace(/=w(\d+)$/, (m, w) => '=w' + (+w + 1)); }, 2500 * (n + 1) + Math.random() * 2000); };
+  // 포스트 번역: 사이트 언어로(한국어면 영어로) 문단마다 구글 번역, 다시 누르면 원문
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.post-tr');
+    if (!b) return;
+    const ps = [...document.querySelectorAll('.post-body .post-tx')];
+    if (b.dataset.on) { ps.forEach(p => { if (p.dataset.orig != null) { p.innerHTML = p.dataset.orig; delete p.dataset.orig; } }); delete b.dataset.on; b.textContent = '🌐 ' + (trTo() === 'ko' ? 'English' : '번역 보기'); return; }
+    const tl = trTo() === 'ko' ? 'en' : trTo();
+    b.textContent = '번역 중…'; b.disabled = true;
+    let bad = 0;
+    for (let i = 0; i < ps.length; i += 6) {
+      await Promise.all(ps.slice(i, i + 6).map(async p => {
+        try {
+          const j = await (await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&dt=t&tl=' + tl + '&q=' + encodeURIComponent(p.textContent))).json();
+          const out = (j[0] || []).map(x => x[0]).join('');
+          if (!out) throw 0;
+          p.dataset.orig = p.innerHTML; p.textContent = out;
+        } catch (err) { bad++; }
+      }));
+    }
+    b.disabled = false; b.dataset.on = '1'; b.textContent = bad ? '일부만 번역됐어요 · 원문 보기' : '원문 보기 (한국어)';
+  });
   async function bindPosts() {
     const box = document.getElementById('posts-box');
     if (!box) return;
