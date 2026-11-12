@@ -1,0 +1,342 @@
+
+<html lang="ko">
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://m.post.naver.com/postfo/noticePage.naver">
+    <meta property="og:image" content="https://ssl.pstatic.net/static/blog/end_post/post_ico_270X270.png">
+    <meta property="og:description" content="2025년 4월 30일 네이버 포스트가 종료됩니다." />
+    <meta property="og:title" content="포스트 서비스 종료 공지" >
+    <title>네이버 포스트</title>
+    <style>
+        @charset "UTF-8";
+
+/* Common Reset */
+body, p, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, dt, dd, table, th, td, form, fieldset, legend, input, textarea, button, select, figure, figurecaption {
+    margin: 0;
+    padding: 0;
+}
+
+body, input, textarea, select, button, h1, h2, h3, h4, h5, h6 {
+    font-size: 14px;
+    line-height: 20px;
+    font-family: Helvetica, AppleSDGothicNeo-Regular, sans-serif;
+}
+
+section, nav, article, aside, hgroup, header, footer {
+    display: block;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    position: relative;
+    height: 100%;
+    background-color: #fff;
+    color: #000;
+    -webkit-text-size-adjust: none;
+    overflow-x: hidden;
+    min-width: 320px;
+}
+
+img, fieldset {
+    border: 0;
+}
+
+img {
+    vertical-align: middle;
+}
+
+ul, ol {
+    list-style: none;
+}
+
+em, address {
+    font-style: normal;
+}
+
+a {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+hr, legend {
+    display: none;
+}
+
+button {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    outline: none;
+    box-shadow: none;
+}
+
+/* Header */
+#header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2010;
+    width: 100%;
+    min-width: 320px;
+    background-color: #00c73c;
+}
+
+#header.main {
+    position: absolute;
+}
+
+#header .gnb {
+    position: relative;
+    height: 44px;
+    z-index: 2002;
+}
+
+#header .gnb .naver_logo {
+    position: absolute;
+    display: block;
+    top: 0;
+    left: 10px;
+    padding: 11px 5px;
+}
+
+#header .gnb .naver_logo:before {
+    content: '\00a0';
+    font-size: 0;
+    line-height: 0;
+}
+
+#header .gnb .naver_logo .ico_naver_logo {
+    vertical-align: top;
+    line-height: 0;
+    font-size: 0;
+    color: transparent;
+    width: 22px;
+    height: 22px;
+    background-image: url(https://ssl.pstatic.net/static/blog/end_post/naver_logo_main.svg);
+    background-repeat: no-repeat;
+    display: inline-block;
+}
+
+#header .gnb .logo1 {
+    position: absolute;
+    display: block;
+    top: 0;
+    left: 42px;
+    padding: 15px 0;
+    line-height: 14px;
+}
+
+#header .gnb .logo1:before {
+    content: '\00a0';
+    font-size: 0;
+    line-height: 0;
+}
+
+#header .gnb .logo1 .ico_post_logo {
+    vertical-align: top;
+    line-height: 0;
+    font-size: 0;
+    color: transparent;
+    background-position: -113px -72px;
+    width: 47px;
+    height: 14px;
+    background-image: url(https://ssl.pstatic.net/static/blog/end_post/sp_common_181109.png);
+    background-repeat: no-repeat;
+    background-size: 255px 233px;
+    display: inline-block;
+}
+
+/* Font-face */
+@font-face {
+    font-family: 'Pretendard';
+    font-weight: 400;
+    font-style: normal;
+    src: local("Pretendard"), url("https://ssl.pstatic.net/static/blog/font/Pretendard-Regular.otf") format("opentype"), url("https://ssl.pstatic.net/static/blog/font/Pretendard-Regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    font-weight: 700;
+    font-style: normal;
+    src: local("Pretendard"), url("https://ssl.pstatic.net/static/blog/font/Pretendard-Bold.otf") format("opentype"), url("https://ssl.pstatic.net/static/blog/font/Pretendard-Bold.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: 'Pretendard';
+    font-weight: 800;
+    font-style: normal;
+    src: local("Pretendard"), url("https://ssl.pstatic.net/static/blog/font/Pretendard-ExtraBold.otf") format("opentype"), url("https://ssl.pstatic.net/static/blog/font/Pretendard-ExtraBold.ttf") format("truetype");
+}
+
+/* End Post Notice */
+.end_post_notice {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+}
+
+.end_post_notice #header {
+    position: static;
+}
+
+.end_post_notice .content_header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: auto 20px 0;
+}
+
+.end_post_notice .content_header .post_icon {
+    width: 50px;
+    height: 50px;
+    background: url(https://ssl.pstatic.net/static/blog/ico_post_50x50.png) 0 0/50px 50px no-repeat;
+}
+
+.end_post_notice .content_header .title {
+    margin-top: 30px;
+    font-family: Pretendard, sans-serif;
+    color: #222;
+    font-size: 30px;
+    font-weight: 800;
+    text-align: center;
+    line-height: 40px;
+    letter-spacing: -1.8px;
+}
+
+@media (min-width: 768px) {
+    .end_post_notice .content_header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: start;
+        width: 677px;
+        margin: auto auto 0;
+    }
+    .end_post_notice .content_header .br {
+        display: none;
+    }
+    .end_post_notice .content_header .post_icon {
+        order: 1;
+        width: 38px;
+        height: 78px;
+        background: url(https://ssl.pstatic.net/static/blog/end_post/ico_post_38x78.png) 0 0/38px 78px no-repeat;
+        margin: 10px 1px 0 0;
+    }
+    .end_post_notice .content_header .title {
+        margin: 0;
+        color: #222;
+        font-size: 44px;
+        line-height: 54px;
+        text-align: left;
+        letter-spacing: -0.8px;
+    }
+}
+
+.end_post_notice .content_main {
+    margin: 30px 20px auto;
+    font-family: Pretendard, sans-serif;
+}
+
+.end_post_notice .content_main .text {
+    color: #333;
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 28px;
+    letter-spacing: -0.3px;
+}
+
+.end_post_notice .content_main .text .strong {
+    font-weight: 700;
+}
+
+.end_post_notice .content_main .text + .text {
+    margin-top: 20px;
+}
+
+.end_post_notice .content_main .link {
+    color: #03c75a;
+    text-decoration: underline;
+}
+
+@media (min-width: 768px) {
+    .end_post_notice .content_main {
+        width: 677px;
+        margin: 30px auto auto;
+    }
+    .end_post_notice .content_main:has(+ .apply_link) {
+        margin: 60px auto 70px;
+    }
+}
+
+.end_post_notice .apply_link {
+    display: block;
+    margin: 0 20px 20px;
+    background-color: #03c75a;
+    border-radius: 6px;
+    line-height: 48px;
+    color: #fff;
+    text-align: center;
+    font-family: "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+@media (min-width: 768px) {
+    .end_post_notice .apply_link {
+        width: 677px;
+        margin: 0 auto auto;
+    }
+}
+
+@media (max-height: 650px) {
+    .end_post_notice {
+        height: 650px;
+        overflow-y: auto;
+    }
+}
+    </style>
+</head>
+<body>
+<div id="wrap" class="end_post_notice">
+    <div id="header" class="main">
+        <div class="gnb" role="banner">
+            <a href="http://www.naver.com" target="_blank" class="naver_logo"><i class="ico_naver_logo" role="img">네이버</i></a>
+            <h1><a href="/" class="logo1"><i class="ico_post_logo" role="img">포스트</i></a></h1>
+        </div>
+    </div>
+    <!--// 디폴트 헤더 -->
+    <div class="content_header">
+        <span class="post_icon" ></span>
+        <h1 class="title">
+            네이버 포스트가<br>
+            2025년 4월 30일 종료<br class="br">되었습니다.
+        </h1>
+    </div>
+    <div class="content_main">
+        <p class="text">
+            안녕하세요. 포스트 운영팀입니다.<br>
+            네이버 포스트는 <strong class="strong">2025년 4월 30일을 마지막으로 종료</strong>되었습니다.
+        </p>
+        <p class="text">
+            
+                
+                    <!-- [D] 백업 신청 기간 만료 후 : -->
+                    관련 문의사항은 <a class="link" href="https://help.naver.com/service/5639/category/bookmark?lang=ko">고객센터</a>에 알려주시면 안내 드리겠습니다.
+           
+        </p>
+        <p class="text">
+            그동안 네이버 포스트를 이용해주셔서 감사합니다.
+        </p>
+    </div>
+</div>
+</body>
+</html>
+
