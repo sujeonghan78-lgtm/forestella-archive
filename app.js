@@ -631,7 +631,7 @@
         <p>${postDay(p.d)} 올라온 글</p>
       </div>
       ${ev.length ? `<div class="post-ev">${ev.map(e => `<a class="chip" href="#/e/${encodeURIComponent(e.id)}">📅 ${esc(e.title)}</a>`).join('')}</div>` : ''}
-      <div class="post-trbar"><a class="chip" href="${p.f ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(p.f) : POST_DRIVE}" target="_blank" rel="noopener">📥 사진 모두 받기</a><button type="button" class="chip post-tr">🌐 ${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
+      <div class="post-trbar"><button type="button" class="chip post-dl" data-no="${p.no}">📥 사진 모두 저장</button><button type="button" class="chip post-tr">🌐 ${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
       <article class="post-body">${body}</article>
       <div class="post-nav">${prev ? `<a href="#/posts/${prev.no}">‹ 이전 글</a>` : '<span></span>'}${next ? `<a href="#/posts/${next.no}">다음 글 ›</a>` : '<span></span>'}</div>
       <p class="src-note">원글: 비트인터렉티브 네이버 포스트 (<a href="${esc(p.src)}" target="_blank" rel="noopener">보관본</a>) · 사진: <a href="${p.f ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(p.f) : POST_DRIVE}" target="_blank" rel="noopener">포레스텔라 아카이브</a> · 사진을 누르면 원본 크기로 볼 수 있어요</p>`;
@@ -658,6 +658,29 @@
       }));
     }
     b.disabled = false; b.dataset.on = '1'; b.textContent = bad ? '일부만 번역됐어요 · 원문 보기' : '원문 보기 (한국어)';
+  });
+  // 사진 모두 저장: 원본 크기로 받아서 폰은 공유 창(사진 n장 저장), 안 되면 한 장씩 내려받기
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.post-dl');
+    if (!b || b.disabled) return;
+    const p = (postsD || []).find(x => String(x.no) === b.dataset.no);
+    if (!p) return;
+    const ids = p.seq.filter(x => x[0] === 'i').map(x => x[1]), files = [];
+    b.disabled = true;
+    for (let i = 0; i < ids.length; i++) {
+      b.textContent = `받는 중 ${i + 1}/${ids.length}`;
+      for (let k = 0; k < 3; k++) {
+        try { const r = await fetch(postImg(ids[i], 2400)); if (!r.ok) throw 0; const bl = await r.blob(); files.push(new File([bl], `${p.d.replace(/-/g, '')}_${String(i + 1).padStart(2, '0')}.jpg`, { type: bl.type || 'image/jpeg' })); break; }
+        catch (err) { await new Promise(z => setTimeout(z, 2000 * (k + 1))); }
+      }
+    }
+    b.disabled = false;
+    if (!files.length) { b.textContent = '받기가 안 돼요 · 다시'; return; }
+    try {
+      if (navigator.canShare && navigator.canShare({ files })) { b.textContent = '📥 사진 모두 저장'; await navigator.share({ files }); return; }
+    } catch (err) { if (err && err.name === 'AbortError') { b.textContent = '📥 사진 모두 저장'; return; } }
+    for (const f of files) { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); await new Promise(z => setTimeout(z, 400)); }
+    b.textContent = `${files.length}장 저장했어요 ✓`;
   });
   async function bindPosts() {
     const box = document.getElementById('posts-box');
