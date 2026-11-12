@@ -2656,4 +2656,4 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .post-nav a{color:var(--green-d);text-decoration:none;font-weight:600}
 .post-ph-x img{display:none}
 .post-ph-x::after{content:'📷 사진 열기';display:block;padding:28px;text-align:center;border-radius:10px;background:var(--soft);color:var(--green-d);font-size:14px}
-.post-trbar{display:flex;justify-content:flex-end;margin:-4px 0 10px}
+.post-trbar{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;margin:-4px 0 10px}

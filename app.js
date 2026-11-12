@@ -631,7 +631,7 @@
         <p>${postDay(p.d)} 올라온 글</p>
       </div>
       ${ev.length ? `<div class="post-ev">${ev.map(e => `<a class="chip" href="#/e/${encodeURIComponent(e.id)}">📅 ${esc(e.title)}</a>`).join('')}</div>` : ''}
-      <div class="post-trbar"><button type="button" class="chip post-tr">🌐 ${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
+      <div class="post-trbar"><a class="chip" href="${p.f ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(p.f) : POST_DRIVE}" target="_blank" rel="noopener">📥 사진 모두 받기</a><button type="button" class="chip post-tr">🌐 ${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
       <article class="post-body">${body}</article>
       <div class="post-nav">${prev ? `<a href="#/posts/${prev.no}">‹ 이전 글</a>` : '<span></span>'}${next ? `<a href="#/posts/${next.no}">다음 글 ›</a>` : '<span></span>'}</div>
       <p class="src-note">원글: 비트인터렉티브 네이버 포스트 (<a href="${esc(p.src)}" target="_blank" rel="noopener">보관본</a>) · 사진: <a href="${p.f ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(p.f) : POST_DRIVE}" target="_blank" rel="noopener">포레스텔라 아카이브</a> · 사진을 누르면 원본 크기로 볼 수 있어요</p>`;
