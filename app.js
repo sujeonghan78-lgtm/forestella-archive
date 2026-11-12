@@ -598,6 +598,7 @@
   const loadPosts = () => postsP = postsP || fetch('data/posts.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []).then(j => (postsD = j));
   const POST_DRIVE = 'https://drive.google.com/drive/folders/1rwPtNVMzR8-QcMs8KY4tI7NSbL4db-sH';
   const postImg = (id, w) => `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}=w${w}`;
+  const PI_DL = '<svg class="pi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>', PI_GL = '<svg class="pi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg>';
   const postDay = d => d.slice(0, 4) + '.' + d.slice(5, 7) + '.' + d.slice(8, 10);
   const POSTS_OPEN = true; // true로 바꾸면 모두에게 보여요 (지금은 관리자 기기만)
   function postsView() {
@@ -615,7 +616,7 @@
       <div class="post-list">${list.map(p => {
         const y = p.d.slice(0, 4), h = y !== yr ? `<h2 class="post-yr">${y}</h2>` : '';
         yr = y;
-        return h + `<a class="post-card" href="#/posts/${p.no}">${p.cover ? `<img src="${postImg(p.cover, 300)}" alt="" loading="lazy">` : '<span class="post-noimg">📸</span>'}<span class="post-ct"><b>${esc(p.t)}</b><span>${postDay(p.d)} · 사진 ${p.n}장</span></span></a>`;
+        return h + `<a class="post-card" href="#/posts/${p.no}">${p.cover ? `<img src="${postImg(p.cover, 300)}" alt="" loading="lazy">` : '<span class="post-noimg"><svg class="pi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/></svg></span>'}<span class="post-ct"><b>${esc(p.t)}</b><span>${postDay(p.d)} · 사진 ${p.n}장</span></span></a>`;
       }).join('')}</div>
       <p class="src-note">글: 비트인터렉티브 네이버 포스트 보관본 · 사진: <a href="${POST_DRIVE}" target="_blank" rel="noopener">포레스텔라 아카이브</a></p>`;
   }
@@ -630,8 +631,8 @@
         <h1 class="h1">${esc(p.t)}</h1>
         <p>${postDay(p.d)} 올라온 글</p>
       </div>
-      ${ev.length ? `<div class="post-ev">${ev.map(e => `<a class="chip" href="#/e/${encodeURIComponent(e.id)}">📅 ${esc(e.title)}</a>`).join('')}</div>` : ''}
-      <div class="post-trbar"><button type="button" class="chip post-dl" data-no="${p.no}">📥 사진 모두 저장</button><button type="button" class="chip post-tr">🌐 ${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
+      ${ev.length ? `<div class="post-ev">${ev.map(e => `<a class="chip" href="#/e/${encodeURIComponent(e.id)}"><svg class="pi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>${esc(e.title)}</a>`).join('')}</div>` : ''}
+      <div class="post-trbar"><button type="button" class="chip post-dl" data-no="${p.no}">${PI_DL}사진 모두 저장</button><button type="button" class="chip post-tr">${PI_GL}${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
       <article class="post-body">${body}</article>
       <div class="post-nav">${prev ? `<a href="#/posts/${prev.no}">‹ 이전 글</a>` : '<span></span>'}${next ? `<a href="#/posts/${next.no}">다음 글 ›</a>` : '<span></span>'}</div>
       <p class="src-note">원글: 비트인터렉티브 네이버 포스트 (<a href="${esc(p.src)}" target="_blank" rel="noopener">보관본</a>) · 사진: <a href="${p.f ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(p.f) : POST_DRIVE}" target="_blank" rel="noopener">포레스텔라 아카이브</a> · 사진을 누르면 원본 크기로 볼 수 있어요</p>`;
@@ -643,7 +644,7 @@
     const b = ev.target.closest('.post-tr');
     if (!b) return;
     const ps = [...document.querySelectorAll('.post-body .post-tx')];
-    if (b.dataset.on) { ps.forEach(p => { if (p.dataset.orig != null) { p.innerHTML = p.dataset.orig; delete p.dataset.orig; } }); delete b.dataset.on; b.textContent = '🌐 ' + (trTo() === 'ko' ? 'English' : '번역 보기'); return; }
+    if (b.dataset.on) { ps.forEach(p => { if (p.dataset.orig != null) { p.innerHTML = p.dataset.orig; delete p.dataset.orig; } }); delete b.dataset.on; b.innerHTML = PI_GL + (trTo() === 'ko' ? 'English' : '번역 보기'); return; }
     const tl = trTo() === 'ko' ? 'en' : trTo();
     b.textContent = '번역 중…'; b.disabled = true;
     let bad = 0;
@@ -677,8 +678,8 @@
     b.disabled = false;
     if (!files.length) { b.textContent = '받기가 안 돼요 · 다시'; return; }
     try {
-      if (navigator.canShare && navigator.canShare({ files })) { b.textContent = '📥 사진 모두 저장'; await navigator.share({ files }); return; }
-    } catch (err) { if (err && err.name === 'AbortError') { b.textContent = '📥 사진 모두 저장'; return; } }
+      if (navigator.canShare && navigator.canShare({ files })) { b.innerHTML = PI_DL + '사진 모두 저장'; await navigator.share({ files }); return; }
+    } catch (err) { if (err && err.name === 'AbortError') { b.innerHTML = PI_DL + '사진 모두 저장'; return; } }
     for (const f of files) { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); await new Promise(z => setTimeout(z, 400)); }
     b.textContent = `${files.length}장 저장했어요 ✓`;
   });
