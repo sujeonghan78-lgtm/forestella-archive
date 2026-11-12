@@ -630,9 +630,9 @@
         <a class="back" href="#/posts">‹ 비하인드 포스트</a>
         <h1 class="h1">${esc(p.t)}</h1>
         <p>${postDay(p.d)} 올라온 글</p>
+        <div class="post-trbar"><button type="button" class="chip post-dl" data-no="${p.no}">${PI_DL}사진 모두 저장</button><button type="button" class="chip post-tr">${PI_GL}${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
       </div>
       ${ev.length ? `<div class="post-ev">${ev.map(e => `<a class="chip" href="#/e/${encodeURIComponent(e.id)}"><svg class="pi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>${esc(e.title)}</a>`).join('')}</div>` : ''}
-      <div class="post-trbar"><button type="button" class="chip post-dl" data-no="${p.no}">${PI_DL}사진 모두 저장</button><button type="button" class="chip post-tr">${PI_GL}${trTo() === 'ko' ? 'English' : '번역 보기'}</button></div>
       <article class="post-body">${body}</article>
       <div class="post-nav">${prev ? `<a href="#/posts/${prev.no}">‹ 이전 글</a>` : '<span></span>'}${next ? `<a href="#/posts/${next.no}">다음 글 ›</a>` : '<span></span>'}</div>
       <p class="src-note">원글: 비트인터렉티브 네이버 포스트 (<a href="${esc(p.src)}" target="_blank" rel="noopener">보관본</a>) · 사진: <a href="${p.f ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(p.f) : POST_DRIVE}" target="_blank" rel="noopener">포레스텔라 아카이브</a> · 사진을 누르면 원본 크기로 볼 수 있어요</p>`;
