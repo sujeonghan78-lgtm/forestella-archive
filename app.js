@@ -592,6 +592,60 @@
     const seen = newsSeen() || new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
     return NEWS.filter(n => n.d > seen);
   }
+  // ---------- 비하인드 포스트 (예전 네이버 포스트 글 + 팬 아카이브 드라이브 사진) ----------
+  let postsP = null, postsD = null;
+  const loadPosts = () => postsP = postsP || fetch('data/posts.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).catch(() => []).then(j => (postsD = j));
+  const POST_DRIVE = 'https://drive.google.com/drive/folders/1rwPtNVMzR8-QcMs8KY4tI7NSbL4db-sH';
+  const postImg = (id, w) => `https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}=w${w}`;
+  const postDay = d => d.slice(0, 4) + '.' + d.slice(5, 7) + '.' + d.slice(8, 10);
+  const POSTS_OPEN = false; // true로 바꾸면 모두에게 보여요 (지금은 관리자 기기만)
+  function postsView() {
+    if (!POSTS_OPEN && !isAdmin()) return `<div class="about-top"><a class="back" href="#/more">‹ 더보기</a><h1 class="h1">준비 중이에요</h1></div>`;
+    const id = decodeURIComponent(location.hash.split('?')[0].split('/')[2] || '');
+    return `<div id="posts-box" data-id="${esc(id)}"><p class="status">글을 불러오는 중이에요…</p></div>`;
+  }
+  function postsListHtml(list) {
+    let yr = '';
+    return `<div class="about-top">
+        <a class="back" href="#/more">‹ 더보기</a>
+        <h1 class="h1">비하인드 포스트</h1>
+        <p>예전 네이버 포스트에 올라왔던 포레스텔라 비하인드 글 ${list.length}개예요. 지금은 원래 자리에서 볼 수 없어서, 보관된 글에 팬 아카이브에 모인 고화질 사진을 붙였어요.</p>
+      </div>
+      <div class="post-list">${list.map(p => {
+        const y = p.d.slice(0, 4), h = y !== yr ? `<h2 class="post-yr">${y}</h2>` : '';
+        yr = y;
+        return h + `<a class="post-card" href="#/posts/${p.no}">${p.cover ? `<img src="${postImg(p.cover, 300)}" alt="" loading="lazy">` : '<span class="post-noimg">📸</span>'}<span class="post-ct"><b>${esc(p.t)}</b><span>${postDay(p.d)} · 사진 ${p.n}장</span></span></a>`;
+      }).join('')}</div>
+      <p class="src-note">글: 비트인터렉티브 네이버 포스트 보관본 · 사진: <a href="${POST_DRIVE}" target="_blank" rel="noopener">포레스텔라 아카이브</a></p>`;
+  }
+  function postHtml(p, list) {
+    const i = list.indexOf(p), prev = list[i + 1], next = list[i - 1];
+    const body = p.seq.map(([k, v]) => k === 'i'
+      ? `<a class="post-ph" href="https://drive.google.com/file/d/${encodeURIComponent(v)}/view" target="_blank" rel="noopener"><img src="${postImg(v, 1000)}" alt="" loading="lazy" onerror="postRetry(this)"></a>`
+      : `<p class="post-tx">${esc(v).replace(/\n/g, '<br>')}</p>`).join('');
+    const ev = (p.ev || []).map(id => (data.events || []).find(e => e.id === id)).filter(Boolean);
+    return `<div class="about-top">
+        <a class="back" href="#/posts">‹ 비하인드 포스트</a>
+        <h1 class="h1">${esc(p.t)}</h1>
+        <p>${postDay(p.d)} 올라온 글</p>
+      </div>
+      ${ev.length ? `<div class="post-ev">${ev.map(e => `<a class="chip" href="#/e/${encodeURIComponent(e.id)}">📅 ${esc(e.title)}</a>`).join('')}</div>` : ''}
+      <article class="post-body">${body}</article>
+      <div class="post-nav">${prev ? `<a href="#/posts/${prev.no}">‹ 이전 글</a>` : '<span></span>'}${next ? `<a href="#/posts/${next.no}">다음 글 ›</a>` : '<span></span>'}</div>
+      <p class="src-note">원글: 비트인터렉티브 네이버 포스트 (<a href="${esc(p.src)}" target="_blank" rel="noopener">보관본</a>) · 사진: <a href="${p.f ? 'https://drive.google.com/drive/folders/' + encodeURIComponent(p.f) : POST_DRIVE}" target="_blank" rel="noopener">포레스텔라 아카이브</a> · 사진을 누르면 원본 크기로 볼 수 있어요</p>`;
+  }
+  // 드라이브가 한꺼번에 많이 부르면 잠깐 막아요 → 조금 기다렸다 다시 불러요 (3번까지)
+  window.postRetry = img => { const n = +(img.dataset.n || 0); if (n >= 3) { img.closest('.post-ph').classList.add('post-ph-x'); return; } img.dataset.n = n + 1; setTimeout(() => { img.src = img.src.replace(/=w(\d+)$/, (m, w) => '=w' + (+w + 1)); }, 2500 * (n + 1) + Math.random() * 2000); };
+  async function bindPosts() {
+    const box = document.getElementById('posts-box');
+    if (!box) return;
+    const list = (await loadPosts()).slice().sort((a, b) => b.d.localeCompare(a.d));
+    if (!document.body.contains(box)) return;
+    const id = box.dataset.id, p = id && list.find(x => String(x.no) === id);
+    box.innerHTML = p ? postHtml(p, list) : postsListHtml(list);
+    if (p) window.scrollTo(0, 0);
+  }
+
   function newsView() {
     const unread = new Set(newsUnread());
     try { if (NEWS.length) localStorage.setItem(NEWS_SEEN, NEWS[0].d); } catch (err) { /* 저장 못 해도 괜찮아요 */ }
@@ -4374,6 +4428,7 @@
           ${item('#/program', '<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8"/>', '프로그램별')}
           ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표')}
           ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기')}
+          ${POSTS_OPEN || isAdmin() ? item('#/posts', '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>', '비하인드 포스트', !POSTS_OPEN && '나만') : ''}
           ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동')}
           ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일')}
           ${item('#/days', '<path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/>', '함께한 기념일', annivToday() && '오늘')}`)}
@@ -6462,6 +6517,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     add: addView,
     opinion: opinionView,
     news: newsView,
+    posts: postsView,
     days: daysView,
     story: storyView,
     fan: fanView,
@@ -8738,6 +8794,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (name === 'map') bindMap();
     if (name === 'more') bindMore();
     if (name === 'placefind') bindPlaceFind();
+    if (name === 'posts') bindPosts();
     if (name === 'home') bindAsk();
     if (name === 'yt') bindYt();
     if (name === 'timeline') bindTimeline();
