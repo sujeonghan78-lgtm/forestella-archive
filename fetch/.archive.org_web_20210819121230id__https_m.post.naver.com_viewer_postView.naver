@@ -1,7 +1,1 @@
-Your request is being blocked because our system has flagged it as suspected abusive bot traffic that is degrading the performance of the Wayback Machine.
-<p>
-We recognize this might be a false positive designation, that you might be a normal human and browser just trying to use our service.  We apologize if that is the case.
-<p>
-Please know we are actively working to provide better service to humans and block high-volume robotic traffic that is overloading our systems.  We wish that was an easier task.  
-<p>
-Please email info@archive.org with your OS/Browser and IP number if you would like us to look into this.
+{"data":null,"code":403,"name":"AbuseAlleviationError","status":40305,"message":"Anonymous access to domain web.archive.org blocked until Thu Nov 12 2026 15:38:38 GMT+0000 (Coordinated Universal Time) due to previous abuse found on https://web.archive.org/web/20260820071256id_/https://sports.ndtv.com/cricket/icc-rankings: DDoS attack suspected: Too many requests","readableMessage":"AbuseAlleviationError: Anonymous access to domain web.archive.org blocked until Thu Nov 12 2026 15:38:38 GMT+0000 (Coordinated Universal Time) due to previous abuse found on https://web.archive.org/web/20260820071256id_/https://sports.ndtv.com/cricket/icc-rankings: DDoS attack suspected: Too many requests"}
