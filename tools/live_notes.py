@@ -19,7 +19,7 @@ SURE = re.compile(r'(배두훈|강형호|조민규|고우림|두훈|형호|민�
 # 자막이 소리 나는 대로 받아 적은 곡 이름 → 정식 표기
 FIX = {'빠르라 피아노': 'Parla più piano', '인 운알트라 비타': "In Un'altra Vita", '스카브로 페어': 'Scarborough Fair',
        '나우 위 아 프리': 'Now We Are Free', '아마게돈': 'Armageddon', '스노우 글로브': 'Snow Globe', '유토피아': 'UTOPIA',
-       '이너 유니버스': 'Inner Universe', '샤갈 스트림': "Chagall's Dream", '불후의명곡': '불후의 명곡'}
+       '이너 유니버스': 'Inner Universe', '샤갈 스트림': "Chagall's Dream", '불후의명곡': '불후의 명곡', '세아라': 'Save Our Lives'}
 # 확실한 이름은 (?) 빼기 (프로그램·곡·장소·사람)
 CERTAIN = ['불후의 명곡', '열린음악회', '뮤직뱅크', '가요대축제', '유퀴즈', '유퀴즈 온 더 블럭', '전참시', '전지적 참견 시점', '나 혼자 산다',
            '구해줘! 홈즈', 'SNL', 'MAMA', 'Mnet MAMA', '엠카', '코첼라', '고척돔', '체조경기장', '올림픽홀', '서울 올림픽공원 올림픽홀',
