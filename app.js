@@ -8717,8 +8717,8 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         ${(e.ytStage || []).length ? `<hr class="divider"><section class="d-block"><div class="block-head"><h2 class="h3">방송 영상 <span class="song-count">${e.ytStage.length}</span>${help('방송사 공식 유튜브 영상 중 제목의 프로그램 이름과 방송 날짜로 이 일정에 붙인 거예요. 가끔 다른 회차일 수 있어요.')}</h2></div>${ytStrip(e.ytStage)}</section>` : ''}
         ${xBlock(e)}
         ${related}
-        <hr class="divider">
-        <section class="d-block">
+        <hr class="divider"${e.liveOnly ? ' hidden' : ''}>
+        <section class="d-block"${e.liveOnly ? ' hidden' : ''}>
           <div class="block-head"><h2 class="h3">이날 부른 곡${e.songSource !== '참고' && e.songs.length ? ` <span class="song-count">${e.songs.length}</span>` : ''}${help('방송·공식 영상이나 인터넷에 올라온 정보로 확인된 곡이에요. 빠진 곡이 있을 수 있어요. ▶를 누르면 그날 영상이 열려요.')}</h2></div>
           ${songs}
           ${e.videoMemo && e.songSource !== '참고' ? `<p class="src-note">${esc(e.videoMemo)}</p>` : ''}
@@ -8916,13 +8916,48 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       inp.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { box.innerHTML = draw(inp.value.trim()); }, 250); });
     });
   }
+  // 줄마다 고치기: 줄 번호 = 탭:초:원문 해시 (요약을 다시 만들어도 같은 줄이면 같아요)
+  const lvKey = r => { let h = 5381; for (const c of String(r.t || '')) h = (h * 33 + c.charCodeAt(0)) >>> 0; return `${r.tab}:${r.s}:${h.toString(36)}`; };
+  const lvFixOf = (n, r) => ((data.liveFix || {})[n.vid] || {})[lvKey(r)];
+  function lvFixState(n, r) {
+    const fx = lvFixOf(n, r), k = lvKey(r);
+    return (fx && fx.props || []).map(p => {
+      const mine = p.by === myUid(), done = slOked(`lf:${n.vid}:${k}:${p.to}`);
+      const btn = !mine && !done ? `<button type="button" class="bpill lvf-ok" data-to="${esc(p.to)}">맞아요</button>${noBtn('lv', n.vid + ':' + k, p.to)}` : '';
+      const adm = isAdmin() ? `<button type="button" class="link-btn pl-adm" data-mid="${esc(p.id)}">바로 확정 (관리자)</button>` : '';
+      return `<div class="sl-state lvf-state"><span class="src-badge">고친 글 · ${p.n}/2</span><span class="sl-state-msg"><b>${esc(p.to)}</b> ${mine ? '내가 보낸 글이에요. 다른 두 분이 맞다고 하면 바뀌어요.' : done ? '고마워요! 5~10분쯤 뒤 반영돼요.' : '이렇게 고치는 게 맞으면 눌러 주세요.'}</span>${btn}${adm}</div>`;
+    }).join('');
+  }
   function liveRowHtml(n, r) {
+    const fx0 = lvFixOf(n, r);
+    if (fx0 && fx0.done) r = { ...r, orig: r.t, t: fx0.done, song: r.song ? fx0.done : r.song };
     const sos = r.song ? liveSongs(r.song) : [];
     const name = sos.length ? `${lvTxt(r.t)} ${sos.map(so => `<a class="lv-term lv-song" href="#/song/${encodeURIComponent(so.key)}">🎵 ${esc(so.name)}</a>`).join(' ')}` : lvLinkify(r.t);
     const evs = r.tab === 'songs' ? [] : liveEvents(n, r);
     const evHtml = evs.length ? `<span class="lv-evs">${evs.map(e => `<a class="lv-ev" href="#/e/${encodeURIComponent(e.id)}">${lvIco('ev')}${esc(e.date.slice(2).replace(/-/g, '.'))} ${esc(e.title.replace(/^(\[[^\]]*\]\s*)+/, '').slice(0, 22))}</a>`).join('')}</span>` : '';
-    return `<div class="lv-row" data-s="${r.s}"><button type="button" class="lv-t" data-s="${r.s}">${lvTime(r.s)}</button><div class="lv-x"><span class="lv-tx">${name}</span>${r.w ? `<small class="lv-tx">${lvTxt(r.w)}</small>` : ''}${evHtml}</div><button type="button" class="lv-ln" aria-label="이 장면 링크 복사" data-copy="${esc(link(`#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}`))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button></div>`;
+    return `<div class="lv-row" data-s="${r.s}"><button type="button" class="lv-t" data-s="${r.s}">${lvTime(r.s)}</button><div class="lv-x"><span class="lv-tx">${name}</span>${r.w ? `<small class="lv-tx">${lvTxt(r.w)}</small>` : ''}${evHtml}</div><button type="button" class="lv-ln" aria-label="이 장면 링크 복사" data-copy="${esc(link(`#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}`))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button>${(window.CONFIG.form || {}).fields ? `<button type="button" class="lv-ln lv-pen" aria-label="이 줄 고치기" data-k="${esc(lvKey(r.orig ? { ...r, t: r.orig } : r))}" data-t="${esc(r.t)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg></button>` : ''}</div>${lvFixState(n, r.orig ? { ...r, t: r.orig } : r)}`;
   }
+  document.addEventListener('click', ev => {
+    const pen = ev.target.closest('.lv-pen'), ok = ev.target.closest('.lvf-ok'), snd = ev.target.closest('.lvf-send');
+    if (!pen && !ok && !snd) return;
+    const lv = ev.target.closest('.lv'), n = lv && liveNotes && liveNotes[lv.dataset.vid];
+    if (!n) return;
+    if (pen) {
+      const row = pen.closest('.lv-row'), nx = row.nextElementSibling;
+      if (nx && nx.classList.contains('lvf-form')) { nx.remove(); return; }
+      row.insertAdjacentHTML('afterend', `<div class="op-form lvf-form" data-k="${esc(pen.dataset.k)}" data-was="${esc(pen.dataset.t)}"><textarea class="lvf-in" rows="3" maxlength="300">${esc(pen.dataset.t)}</textarea><button type="button" class="bpill add-send lvf-send">보내기</button><p class="src-note lvf-msg">틀린 부분만 고쳐서 보내 주세요. 다른 두 분이 맞다고 하면 바뀌어요.</p></div>`);
+      const ta = row.nextElementSibling.querySelector('textarea'); ta.focus(); return;
+    }
+    const box = (snd || ok).closest('.lvf-form') || null, st = ok && ok.closest('.lvf-state');
+    const k = box ? box.dataset.k : st.previousElementSibling && [...st.parentNode.children].slice(0, [...st.parentNode.children].indexOf(st)).reverse().find(x => x.classList.contains('lv-row'))?.querySelector('.lv-pen')?.dataset.k;
+    const to = (snd ? box.querySelector('.lvf-in').value : ok.dataset.to || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+    if (!k || !to) return;
+    if (snd && to === box.dataset.was.replace(/\s+/g, ' ').trim()) { box.querySelector('.lvf-msg').textContent = '고친 곳이 없어요.'; return; }
+    const b = snd || ok; b.disabled = true; b.textContent = '보내는 중…';
+    formPost(`종류: ${snd ? '라이브수정' : '라이브확인'}\n일정: [ID ${n.ev}] ${n.title}\n라이브: ${n.vid}\n줄: ${k}\n전: ${snd ? box.dataset.was : ''}\n후: ${to}\n누가: ${myUid()}`)
+      .then(() => { slOkAdd(`lf:${n.vid}:${k}:${to}`); if (snd) { b.textContent = '보냈어요 ✓'; box.querySelector('.lvf-msg').textContent = '보냈어요! 5~10분쯤 뒤 이 줄 밑에 확인 요청으로 떠요.'; } else { b.textContent = '보냈어요 ✓'; } })
+      .catch(() => { b.disabled = false; b.textContent = '다시 보내기'; });
+  });
   function liveBox(n, parts) {
     const all = liveList(), i = all.indexOf(n), prev = all[i - 1], next = all[i + 1];
     const pos = (() => { try { return (JSON.parse(localStorage.getItem('sb-live-pos') || '{}'))[n.vid] || 0; } catch (err) { return 0; } })();
