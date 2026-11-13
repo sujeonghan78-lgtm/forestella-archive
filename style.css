@@ -2712,3 +2712,14 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .lv-ico { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; margin-right: 4px; flex: none; }
 .lv-ev .lv-ico { width: 12px; height: 12px; margin-right: 3px; }
 .lv-stick .lv-all { margin: 0 0 8px; } .lv-stick .chips { margin-bottom: 4px; }
+.lv-trb { display: inline-flex; align-items: center; gap: 2px; margin: 6px 0 8px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card, #fff); color: var(--green-2); font-size: calc(12px * var(--fs)); cursor: pointer; }
+.lv-trb:disabled { opacity: .6; }
+.gl-list { display: grid; gap: 10px; margin-top: 6px; }
+.gl-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: var(--card, #fff); }
+.gl-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.gl-h b { font-size: calc(16px * var(--fs)); }
+.gl-en { color: var(--green-2); font-size: calc(13px * var(--fs)); }
+.gl-card p { margin: 6px 0 0; font-size: calc(13px * var(--fs)); line-height: 1.55; }
+.gl-card small { display: block; margin-top: 4px; color: var(--muted); }
+.gl-go { display: flex; gap: 12px; margin-top: 8px; font-size: calc(12px * var(--fs)); }
+.gl-go a { color: var(--green-2); display: inline-flex; align-items: center; }
