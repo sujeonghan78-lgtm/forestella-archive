@@ -4479,6 +4479,7 @@
           ${item('#/timeline', '<path d="M12 3v18"/><circle cx="12" cy="7" r="2"/><circle cx="12" cy="15" r="2"/><path d="M14 7h6M4 15h6"/>', '연표')}
           ${item('#/releases', '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>', '음반 이야기')}
           ${POSTS_OPEN || isAdmin() ? item('#/posts', '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>', '비하인드 포스트', !POSTS_OPEN && '나만') : ''}
+          ${LIVE_OPEN || isAdmin() ? item('#/live', '<rect x="3" y="5" width="18" height="13" rx="3"/><path d="M10 9l5 2.5-5 2.5z"/>', '라이브 다시보기', !LIVE_OPEN && '나만') : ''}
           ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동')}
           ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일')}
           ${item('#/days', '<path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/>', '함께한 기념일', annivToday() && '오늘')}`)}
@@ -6568,6 +6569,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     opinion: opinionView,
     news: newsView,
     posts: postsView,
+    live: liveView,
     days: daysView,
     story: storyView,
     fan: fanView,
@@ -8695,6 +8697,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         ${spBlock(e)}
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
         ${thumb}
+        ${liveOn() ? `<div class="lv-slot"></div>` : ''}
         ${castBlock(e)}
         ${e.ytOnly ? '' : tmiBox('e:' + e.id, e.title)}
         ${editBox(e)}
@@ -8722,6 +8725,158 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       </div>`;
   }
 
+  // ---------- 라이브 방송 요약 (data/live_notes.json, 자동 자막을 NotebookLM으로 정리) ----------
+  const LIVE_OPEN = false; // true로 바꾸면 모두에게 보여요 (지금은 관리자 기기만)
+  const liveOn = () => LIVE_OPEN || isAdmin();
+  let liveNotes = null, liveLoad = null;
+  const LV_TABS = [['tl', '타임라인'], ['songs', '🎵 노래'], ['mo', '👤 멤버'], ['news', '📢 소식'], ['tmi', '💡 TMI'], ['fan', '💚 숲별']];
+  const LV_MEM = [['두훈', '배두훈'], ['형호', '강형호'], ['민규', '조민규'], ['우림', '고우림']];
+  const lvTime = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = String(s % 60).padStart(2, '0'); return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`; };
+  const lvTxt = t => esc(t || '').replace(/\(\?\)/g, '<sup class="lv-q" title="자동 자막 기준이라 다를 수 있어요">?</sup>');
+  function loadLive() {
+    if (!liveLoad) liveLoad = fetch('data/live_notes.json?v=' + (window.CONFIG.dataVer || '')).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => { liveNotes = j; liveLink(); return j; });
+    return liveLoad;
+  }
+  // 라이브마다 이어 붙일 일정: 영상이 붙은 일정 → 같은 날 유튜브 라이브 일정 → 없으면 라이브만의 일정(lv-영상ID, 연표엔 안 나와요)
+  function liveLink() {
+    const vids = e => [e.videoId, e.ytMain && e.ytMain.id, ...(e.ytBehind || []).map(v => v.id), ...(e.ytStage || []).map(v => v.id)].filter(Boolean);
+    Object.entries(liveNotes).forEach(([vid, n]) => {
+      n.vid = vid;
+      const ov = (data.official || []).find(x => x.id === vid);
+      if (ov && ov.title) n.title = ov.title;
+      let e = data.events.find(x => vids(x).includes(vid));
+      if (!e) e = data.events.find(x => x.date === n.date && /유튜브/.test(x.category) && /라이브|live/i.test(x.title) && !vids(x).length);
+      if (!e) {
+        const v = (data.official || []).find(x => x.id === vid) || { id: vid, date: n.date, title: n.title };
+        const id = 'lv-' + vid;
+        if (!data.byId.has(id)) data.byId.set(id, { id, ytOnly: v, liveOnly: true, date: n.date, category: '유튜브', title: v.title || n.title, place: '포레스텔라 공식 유튜브', songs: [], songKeys: [], related: [], members: [], videoId: vid });
+        e = data.byId.get(id);
+      }
+      n.ev = e.id;
+    });
+  }
+  const liveList = () => Object.values(liveNotes || {}).sort((a, b) => a.date.localeCompare(b.date) || a.vid.localeCompare(b.vid));
+  function liveRows(n, tab, mem, q) {
+    let rows = (n[tab] || []).map(r => {
+      if (tab === 'tl') return { s: r[0], t: r[1], w: r[2] };
+      if (tab === 'songs') return { s: r[0], t: r[1], w: [r[2], r[3]].filter(Boolean).join(' · '), song: r[1] };
+      if (tab === 'mo') return { s: r[0], t: r[2], w: r[1] };
+      return { s: r[0], t: r[1] };
+    });
+    if (mem) { const [a, b] = LV_MEM.find(m => m[0] === mem); rows = rows.filter(r => (r.w || '').includes(a) || (r.t || '').includes(a) || (r.w || '').includes(b)); }
+    if (q) { const qq = q.toLowerCase(); rows = rows.filter(r => ((r.t || '') + ' ' + (r.w || '')).toLowerCase().includes(qq)); }
+    return rows.sort((a, b) => a.s - b.s);
+  }
+  function liveRowHtml(n, r) {
+    const so = r.song && data.songs.get(window.DATA.songKey(r.song.replace(/\(\?\)/g, '').split(' / ')[0].trim()));
+    const name = so ? `<a href="#/song/${encodeURIComponent(so.key)}">${lvTxt(r.t)} ›</a>` : lvTxt(r.t);
+    return `<div class="lv-row" data-s="${r.s}"><button type="button" class="lv-t" data-s="${r.s}">${lvTime(r.s)}</button><div class="lv-x">${name}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div><button type="button" class="lv-ln" aria-label="이 장면 링크 복사" data-copy="${esc(link(`#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}`))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button></div>`;
+  }
+  function liveBox(n, parts) {
+    const all = liveList(), i = all.indexOf(n), prev = all[i - 1], next = all[i + 1];
+    const pos = (() => { try { return (JSON.parse(localStorage.getItem('sb-live-pos') || '{}'))[n.vid] || 0; } catch (err) { return 0; } })();
+    const sum = n.sum || [];
+    return `
+      <hr class="divider">
+      <section class="d-block lv" data-vid="${esc(n.vid)}">
+        <div class="block-head"><h2 class="h3">📝 방송 요약${LIVE_OPEN ? '' : ' <span class="new-tag">나만</span>'}</h2>${help('라이브 영상의 자동 자막을 바탕으로 정리한 요약이에요. 시간을 누르면 그 장면부터 재생돼요. ? 표시는 자동 자막이라 이름이나 곡명이 다를 수 있는 곳이에요.')}</div>
+        ${parts.length > 1 ? `<div class="chips lv-parts">${parts.map((p, k) => `<a class="chip${p === n ? ' on' : ''}" href="#/e/${encodeURIComponent(p.ev)}?lv=${p.vid}">${k + 1}부</a>`).join('')}</div>` : ''}
+        <div class="lv-player"><button type="button" class="lv-start" data-s="${pos > 60 ? pos : 0}"><img src="${ytThumb(n.vid)}" alt="" loading="lazy"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span><span class="thumb-cap">${pos > 60 ? `${lvTime(pos)}부터 이어보기` : '여기서 바로 보기'}</span></button></div>
+        <div class="lv-sum">${sum.slice(0, 3).map(s => `<p>${lvTxt(s)}</p>`).join('')}${sum.length > 3 ? `<details><summary>더보기</summary>${sum.slice(3).map(s => `<p>${lvTxt(s)}</p>`).join('')}</details>` : ''}</div>
+        <div class="chips lv-tabs">${LV_TABS.filter(([k]) => (n[k] || []).length).map(([k, t], j) => `<button type="button" class="chip${j ? '' : ' on'}" data-tab="${k}">${t} <small>${n[k].length}</small></button>`).join('')}</div>
+        <div class="lv-tools"><div class="chips lv-mem">${LV_MEM.map(([m]) => `<button type="button" class="chip" data-mem="${m}">${m}</button>`).join('')}</div><input type="search" class="lv-q-in" placeholder="이 방송에서 찾기" aria-label="이 방송에서 찾기"></div>
+        <div class="lv-list"></div>
+        ${(n.kw || []).length ? `<p class="lv-kw">${n.kw.filter(k => !/^포레스텔라$|^라이브 방송$/.test(k)).map(k => `<button type="button" class="lv-kwb">#${lvTxt(k)}</button>`).join(' ')}</p>` : ''}
+        <p class="src-note">자동 자막을 바탕으로 정리한 거라 실제와 다를 수 있어요.</p>
+        ${prev || next ? `<div class="lv-nav">${prev ? `<a href="#/e/${encodeURIComponent(prev.ev)}?lv=${prev.vid}">‹ ${esc(prev.date.slice(2).replace(/-/g, '.'))} ${esc(prev.title.slice(0, 14))}</a>` : '<span></span>'}${next ? `<a href="#/e/${encodeURIComponent(next.ev)}?lv=${next.vid}">${esc(next.date.slice(2).replace(/-/g, '.'))} ${esc(next.title.slice(0, 14))} ›</a>` : ''}</div>` : ''}
+      </section>`;
+  }
+  // 유튜브 플레이어 (IFrame API, 안 되면 그냥 embed)
+  let ytApi = null;
+  const loadYtApi = () => ytApi || (ytApi = new Promise(res => {
+    if (window.YT && window.YT.Player) return res(window.YT);
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (prev) prev(); res(window.YT); };
+    const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; s.onerror = () => res(null); document.head.appendChild(s);
+    setTimeout(() => res(window.YT && window.YT.Player ? window.YT : null), 6000);
+  }));
+  let lvTick = null;
+  function livePlay(sec, box) {
+    const lv = box.closest('.lv'), vid = lv.dataset.vid, pl = lv.querySelector('.lv-player');
+    pl.classList.add('on');
+    if (lv._p && lv._p.seekTo) { lv._p.seekTo(sec, true); lv._p.playVideo(); return; }
+    if (lv._p === 'embed' || lv._p === 'wait') { if (lv._p === 'embed') pl.querySelector('iframe').src = `https://www.youtube.com/embed/${vid}?start=${sec}&autoplay=1&playsinline=1&rel=0`; return; }
+    lv._p = 'wait';
+    pl.innerHTML = '<div class="lv-frame"></div>';
+    loadYtApi().then(YT => {
+      const el = pl.querySelector('.lv-frame');
+      if (!YT) { lv._p = 'embed'; el.outerHTML = `<iframe src="https://www.youtube.com/embed/${vid}?start=${sec}&autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`; return; }
+      const p = new YT.Player(el, { videoId: vid, playerVars: { start: sec, autoplay: 1, playsinline: 1, rel: 0 }, events: { onReady: () => { lv._p = p; p.playVideo(); } } });
+      clearInterval(lvTick);
+      lvTick = setInterval(() => {
+        if (!document.body.contains(lv)) { clearInterval(lvTick); return; }
+        if (!p.getCurrentTime) return;
+        const t = Math.floor(p.getCurrentTime());
+        let cur = null;
+        lv.querySelectorAll('.lv-row').forEach(r => { r.classList.remove('now'); if (+r.dataset.s <= t) cur = r; });
+        if (cur) cur.classList.add('now');
+        if (t > 60 && p.getPlayerState && p.getPlayerState() === 1) { try { const o = JSON.parse(localStorage.getItem('sb-live-pos') || '{}'); o[vid] = t; localStorage.setItem('sb-live-pos', JSON.stringify(o)); } catch (err) { /* 넘어가요 */ } }
+      }, 1000);
+    });
+  }
+  function bindLiveBox(lv, n) {
+    const st = { tab: (LV_TABS.find(([k]) => (n[k] || []).length) || ['tl'])[0], mem: '', q: '' };
+    const draw = () => {
+      const rows = liveRows(n, st.tab, st.mem, st.q);
+      lv.querySelector('.lv-list').innerHTML = rows.length ? rows.map(r => liveRowHtml(n, r)).join('') : '<p class="src-note">맞는 줄이 없어요.</p>';
+      lv.querySelector('.lv-mem').hidden = !['tl', 'mo', 'songs'].includes(st.tab);
+    };
+    lv.addEventListener('click', ev => {
+      const t = ev.target.closest('.lv-t, .lv-start'); if (t) { livePlay(+t.dataset.s, t); return; }
+      const tb = ev.target.closest('[data-tab]'); if (tb) { st.tab = tb.dataset.tab; lv.querySelectorAll('.lv-tabs .chip').forEach(c => c.classList.toggle('on', c === tb)); draw(); return; }
+      const mb = ev.target.closest('[data-mem]'); if (mb) { st.mem = st.mem === mb.dataset.mem ? '' : mb.dataset.mem; lv.querySelectorAll('.lv-mem .chip').forEach(c => c.classList.toggle('on', c.dataset.mem === st.mem)); draw(); return; }
+      const kb = ev.target.closest('.lv-kwb'); if (kb) { const inp = lv.querySelector('.lv-q-in'); inp.value = kb.textContent.slice(1).replace('?', ''); st.q = inp.value; st.tab = 'tl'; lv.querySelectorAll('.lv-tabs .chip').forEach(c => c.classList.toggle('on', c.dataset.tab === 'tl')); draw(); inp.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+      if (ev.target.closest('.lv-q')) toast('자동 자막 기준이라 이름이나 곡명이 다를 수 있어요');
+    });
+    lv.querySelector('.lv-q-in').addEventListener('input', ev => { st.q = ev.target.value.trim(); draw(); });
+    draw();
+    const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+    if (qs.get('lv') === n.vid && qs.get('t')) setTimeout(() => { lv.scrollIntoView({ block: 'start' }); const s = +qs.get('t'); const row = lv.querySelector(`.lv-row[data-s="${s}"]`); if (row) row.classList.add('now'); livePlay(s, lv.querySelector('.lv-start') || lv.querySelector('.lv-player')); }, 80);
+    else if (qs.get('lv') === n.vid) setTimeout(() => lv.scrollIntoView({ block: 'start' }), 80);
+  }
+  function fillLive(box, e) {
+    const slot = box.querySelector('.lv-slot');
+    if (!slot) return;
+    loadLive().then(() => {
+      if (!document.body.contains(slot)) return;
+      const parts = liveList().filter(n => n.ev === e.id);
+      if (!parts.length) return;
+      const pick = new URLSearchParams(location.hash.split('?')[1] || '').get('lv');
+      const n = parts.find(p => p.vid === pick) || parts[0];
+      slot.innerHTML = liveBox(n, parts);
+      const th = box.querySelector('a.thumb');
+      if (th && parts.some(p => th.href.includes(p.vid))) th.remove();
+      bindLiveBox(slot.querySelector('.lv'), n);
+    });
+  }
+  // 라이브 모아보기 (#/live)
+  function liveView() {
+    if (!liveOn()) return `<div class="about-top"><a class="back" href="#/more">‹ 더보기</a><h1 class="h1">준비 중이에요</h1></div>`;
+    return `<div class="about-top"><a class="back" href="#/more">‹ 더보기</a><h1 class="h1">라이브 다시보기${LIVE_OPEN ? '' : ' <span class="new-tag">나만</span>'}</h1><p class="sub">공식 유튜브 라이브를 요약과 타임라인으로 봐요. 시간을 누르면 그 장면부터 재생돼요.</p></div><div id="lv-page"><p class="src-note">불러오는 중…</p></div>`;
+  }
+  function bindLive() {
+    const el = document.getElementById('lv-page'); if (!el) return;
+    loadLive().then(() => {
+      const q = new URLSearchParams(location.hash.split('?')[1] || ''), k = q.get('k') || '';
+      const all = liveList().slice().reverse();
+      const chips = `<div class="chips lv-k">${[['', '전체'], ['songs', '🎵 노래 모음'], ['news', '📢 소식 모음']].map(([v, t]) => `<a class="chip${k === v ? ' on' : ''}" href="#/live${v ? '?k=' + v : ''}">${t}</a>`).join('')}</div>`;
+      let body;
+      if (!k) body = all.map(n => `<a class="lv-card" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}"><img src="${ytThumb(n.vid)}" alt="" loading="lazy"><div><small>${esc(n.date.replace(/-/g, '.'))}</small><b>${lvTxt(n.title)}</b><p>${lvTxt((n.sum || [])[0] || '')}</p></div></a>`).join('');
+      else body = all.map(n => { const rows = liveRows(n, k); return rows.length ? `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${lvTxt(r.t)}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div></a>`).join('')}</div>` : ''; }).join('');
+      el.innerHTML = chips + `<div class="lv-page-list">${body || '<p class="src-note">아직 없어요.</p>'}</div>`;
+    });
+  }
+
   const sheet = document.createElement('div');
   sheet.className = 'sheet-wrap';
   new MutationObserver(() => { clearTimeout(syncT); syncT = setTimeout(() => window.syncAlbum(), 60); }).observe(sheet, { childList: true, subtree: true });
@@ -8741,11 +8896,13 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   function showSheet(id) {
     const e = data.byId.get(decodeURIComponent((id || '').split('?')[0]));
     const box = sheet.querySelector('.sheet');
+    if (!e && /^lv-/.test(id || '') && liveOn() && !liveNotes) { loadLive().then(() => { if (currentRoute() === 'e') showSheet(id); }); return; }
     box.innerHTML = e ? detailView(e) : `
       <div class="sheet-body"><p class="empty">이 기록을 찾지 못했어요. 주소가 바뀌었거나 숨김 처리된 일정일 수 있어요.</p></div>`;
     sheet.hidden = false;
     document.body.classList.add('sheet-open');
     box.scrollTop = 0;
+    if (e) fillLive(box, e);
     const plo = box.querySelector('#pl-open');
     if (plo) setTimeout(() => plo.scrollIntoView({ block: 'start' }), 50);
     const spo = /[?&]sp=1/.test(location.hash) && box.querySelector('.sp-box');
@@ -8854,6 +9011,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (name === 'add') bindAdd();
     if (name === 'opinion') bindOpinion();
     if (name === 'admin') bindAdmin();
+    if (name === 'live') bindLive();
   }
 
   // 반환값: 바탕 화면을 새로 그렸는지 (스크롤을 맨 위로 올릴지)
