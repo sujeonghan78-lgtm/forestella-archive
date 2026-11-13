@@ -8818,7 +8818,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       return { s: r[0], t: r[1] };
     }).map(r => ({ ...r, tab }));
     if (mem) { const [a, b] = LV_MEM.find(m => m[0] === mem); rows = rows.filter(r => (r.w || '').includes(a) || (r.t || '').includes(a) || (r.w || '').includes(b)); }
-    if (q) { const qq = q.toLowerCase(); rows = rows.filter(r => ((r.t || '') + ' ' + (r.w || '')).toLowerCase().includes(qq)); }
+    if (q) { const mt = matcher(q); if (mt) rows = rows.filter(r => mt(lvFold((r.t || '') + ' ' + (r.w || '')))); }
     return rows.sort((a, b) => a.s - b.s);
   }
   // 글 속 날짜(8월 31일)나 소식에 나온 프로그램·콘서트 이름으로 사이트 일정 찾기
@@ -8961,26 +8961,30 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       const chips = `<div class="chips lv-k">${[['', '전체'], ['songs', '노래'], ['news', '소식'], ['mo', '멤버별'], ['tmi', 'TMI'], ['fan', '숲별']].map(([v, t]) => `<a class="chip${k === v ? ' on' : ''}" href="#/live${v ? '?k=' + v : ''}">${lvIco(v)}${t}</a>`).join('')}</div>`
         + (k === 'mo' ? `<div class="chips lv-k lv-mem-k">${[['', '모두'], ...LV_MEM.map(m => [m[0], m[0]])].map(([v, t]) => `<a class="chip${mem === v ? ' on' : ''}" href="#/live?k=mo${v ? '&m=' + encodeURIComponent(v) : ''}">${t}</a>`).join('')}</div>` : '');
       const sbox = `<div class="searchbox lv-all"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input type="search" id="lv-all-in" placeholder="모든 라이브에서 찾기 (예: 고우칩, 불후, 군대)" value="${esc(qq)}" aria-label="모든 라이브에서 찾기"></div>`;
-      let body;
-      if (qq) {
-        const low = qq.toLowerCase(), hit = x => String(x || '').toLowerCase().includes(low);
-        const qrx = new RegExp(qq.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), mark = h => h.replace(qrx, m => `<mark>${m}</mark>`);
-        let total = 0;
-        body = all.map(n => {
-          const rows = [];
-          LV_TABS.forEach(([tk, tn]) => liveRows(n, tk).forEach(r => { if (hit(r.t) || hit(r.w)) rows.push({ ...r, tn }); }));
-          const sumHit = [n.title, ...(n.sum || []), ...(n.kw || [])].some(hit);
-          if (!rows.length && !sumHit) return '';
-          rows.sort((x, y) => x.s - y.s); total += rows.length || 1;
-          return `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${mark(lvTxt(r.t))}<small>${esc(r.tn)}${r.w ? ' · ' + mark(lvTxt(r.w)) : ''}</small></div></a>`).join('')}</div>`;
-        }).join('');
-        body = `<p class="sub">${total ? `${total}곳에서 찾았어요` : '찾은 곳이 없어요'}</p>` + body;
-      } else if (!k) body = all.map(n => `<a class="lv-card" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}"><img src="${ytThumb(n.vid)}" alt="" loading="lazy"><div><small>${esc(n.date.replace(/-/g, '.'))}</small><b>${lvTxt(n.title)}</b><p>${lvTxt((n.sum || [])[0] || '')}</p></div></a>`).join('');
-      else body = (k === 'mo' ? all.slice().reverse() : all).map(n => { const rows = liveRows(n, k, mem); return rows.length ? `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${lvTxt(r.t)}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div></a>`).join('')}</div>` : ''; }).join('');
-      el.innerHTML = sbox + chips + `<div class="lv-page-list">${body || '<p class="src-note">아직 없어요.</p>'}</div>`;
-      const inp = document.getElementById('lv-all-in');
+      const listHtml = qq => {
+        let body;
+        if (qq) {
+          const mt = matcher(qq), hit = x => !!mt && mt(lvFold(String(x || '')));   // 통합검색과 같은 규칙: 띄어쓰기·초성·줄임말(보랩·넬판 등)
+          const qrx = new RegExp(qq.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), mark = h => h.replace(qrx, m => `<mark>${m}</mark>`);
+          let total = 0;
+          body = all.map(n => {
+            const rows = [];
+            LV_TABS.forEach(([tk, tn]) => liveRows(n, tk).forEach(r => { if (hit(r.t) || hit(r.w)) rows.push({ ...r, tn }); }));
+            const sumHit = [n.title, ...(n.sum || []), ...(n.kw || [])].some(hit);
+            if (!rows.length && !sumHit) return '';
+            rows.sort((x, y) => x.s - y.s); total += rows.length || 1;
+            return `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${mark(lvTxt(r.t))}<small>${esc(r.tn)}${r.w ? ' · ' + mark(lvTxt(r.w)) : ''}</small></div></a>`).join('')}</div>`;
+          }).join('');
+          body = `<p class="sub">${total ? `${total}곳에서 찾았어요` : '찾은 곳이 없어요'}</p>` + body;
+        } else if (!k) body = all.map(n => `<a class="lv-card" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}"><img src="${ytThumb(n.vid)}" alt="" loading="lazy"><div><small>${esc(n.date.replace(/-/g, '.'))}</small><b>${lvTxt(n.title)}</b><p>${lvTxt((n.sum || [])[0] || '')}</p></div></a>`).join('');
+        else body = (k === 'mo' ? all.slice().reverse() : all).map(n => { const rows = liveRows(n, k, mem); return rows.length ? `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${lvTxt(r.t)}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div></a>`).join('')}</div>` : ''; }).join('');
+        return body || '<p class="src-note">아직 없어요.</p>';
+      };
+      el.innerHTML = sbox + chips + `<div class="lv-page-list">${listHtml(qq)}</div>`;
+      const inp = document.getElementById('lv-all-in'), box = el.querySelector('.lv-page-list');
       let tm = null;
-      inp.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { const v = inp.value.trim(); history.replaceState(null, '', '#/live' + (v ? '?q=' + encodeURIComponent(v) : k ? '?k=' + k : '')); bindLive(); setTimeout(() => { const i2 = document.getElementById('lv-all-in'); if (i2) { i2.focus(); i2.setSelectionRange(i2.value.length, i2.value.length); } }, 0); }, 350); });
+      // 검색창은 다시 그리지 않고 결과만 바꿔요 (한 글자마다 키보드가 다시 열리던 문제)
+      inp.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { const v = inp.value.trim(); history.replaceState(null, '', '#/live' + (v ? '?q=' + encodeURIComponent(v) : k ? '?k=' + k : '')); box.innerHTML = listHtml(v); }, 300); });
     });
   }
 
