@@ -8789,15 +8789,40 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       if (tab === 'songs') return { s: r[0], t: r[1], w: [r[2], r[3]].filter(Boolean).join(' · '), song: r[1] };
       if (tab === 'mo') return { s: r[0], t: r[2], w: r[1] };
       return { s: r[0], t: r[1] };
-    });
+    }).map(r => ({ ...r, tab }));
     if (mem) { const [a, b] = LV_MEM.find(m => m[0] === mem); rows = rows.filter(r => (r.w || '').includes(a) || (r.t || '').includes(a) || (r.w || '').includes(b)); }
     if (q) { const qq = q.toLowerCase(); rows = rows.filter(r => ((r.t || '') + ' ' + (r.w || '')).toLowerCase().includes(qq)); }
     return rows.sort((a, b) => a.s - b.s);
   }
+  // 글 속 날짜(8월 31일)나 소식에 나온 프로그램·콘서트 이름으로 사이트 일정 찾기
+  const lvDay = d => Math.round(new Date(d) / 864e5);
+  function liveEvents(n, r) {
+    const out = [], t = String(r.t || ''), base = lvDay(n.date);
+    const push = e => { if (e && !e.ytOnly && e.id !== n.ev && !out.includes(e) && out.length < 3) out.push(e); };
+    for (const m of t.matchAll(/(?:(20\d{2})년\s*)?(\d{1,2})월\s*(\d{1,2})(일)?(?:\s*\([^)]{1,3}\))?(?:\s*[~～-]\s*(?:(\d{1,2})월\s*)?(\d{1,2})일)?/g)) {
+      if (!m[4] && !m[6]) continue;
+      let y = +(m[1] || n.date.slice(0, 4));
+      const mk = (yy, mo, d) => `${yy}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      if (!m[1] && lvDay(mk(y, m[2], m[3])) < base - 3) y++;
+      [mk(y, m[2], m[3]), m[6] && mk(y, m[5] || m[2], m[6])].filter(Boolean).forEach(d => data.events.filter(e => e.date === d).forEach(push));
+    }
+    if (r.tab === 'news' || r.tab === 'tl') {
+      const d = lvTerms();
+      (t.match(d.rx || /$^/) || []).forEach(m => {
+        const href = d.terms.get(m); if (!href || href.startsWith('#/song/')) return;
+        const key = decodeURIComponent(href.split('/').pop()).split('?')[0];
+        const tour = href.startsWith('#/tour/') && (data.tours || []).find(x => x.id === key);
+        data.events.filter(e => { const g = lvDay(e.date) - base; return g >= -3 && g <= 60 && (tour ? (tour.dates || []).includes(e.date) && e.category === '공연' : href.startsWith('#/program/') && e.title.includes(key)); }).slice(0, 2).forEach(push);
+      });
+    }
+    return out;
+  }
   function liveRowHtml(n, r) {
     const sos = r.song ? liveSongs(r.song) : [];
     const name = sos.length ? `${lvTxt(r.t)} ${sos.map(so => `<a class="lv-term lv-song" href="#/song/${encodeURIComponent(so.key)}">🎵 ${esc(so.name)}</a>`).join(' ')}` : lvLinkify(r.t);
-    return `<div class="lv-row" data-s="${r.s}"><button type="button" class="lv-t" data-s="${r.s}">${lvTime(r.s)}</button><div class="lv-x">${name}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div><button type="button" class="lv-ln" aria-label="이 장면 링크 복사" data-copy="${esc(link(`#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}`))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button></div>`;
+    const evs = r.tab === 'songs' ? [] : liveEvents(n, r);
+    const evHtml = evs.length ? `<span class="lv-evs">${evs.map(e => `<a class="lv-ev" href="#/e/${encodeURIComponent(e.id)}">📅 ${esc(e.date.slice(2).replace(/-/g, '.'))} ${esc(e.title.replace(/^(\[[^\]]*\]\s*)+/, '').slice(0, 22))}</a>`).join('')}</span>` : '';
+    return `<div class="lv-row" data-s="${r.s}"><button type="button" class="lv-t" data-s="${r.s}">${lvTime(r.s)}</button><div class="lv-x">${name}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}${evHtml}</div><button type="button" class="lv-ln" aria-label="이 장면 링크 복사" data-copy="${esc(link(`#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}`))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button></div>`;
   }
   function liveBox(n, parts) {
     const all = liveList(), i = all.indexOf(n), prev = all[i - 1], next = all[i + 1];

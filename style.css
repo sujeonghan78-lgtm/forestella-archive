@@ -2707,3 +2707,5 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .lv-all { margin: 4px 0 10px; }
 .lv-all input { flex: 1; border: 0; background: none; font-size: calc(14px * var(--fs)); color: var(--ink); outline: none; min-width: 0; }
 .lv-page-list mark { background: var(--he3f5c9); color: inherit; border-radius: 3px; }
+.lv-evs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.lv-ev { display: inline-block; background: var(--tag-bg); color: var(--tag-ink); border-radius: 8px; padding: 2px 8px; font-size: calc(11px * var(--fs)); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
