@@ -8980,7 +8980,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         else body = (k === 'mo' ? all.slice().reverse() : all).map(n => { const rows = liveRows(n, k, mem); return rows.length ? `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${lvTxt(r.t)}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div></a>`).join('')}</div>` : ''; }).join('');
         return body || '<p class="src-note">아직 없어요.</p>';
       };
-      el.innerHTML = sbox + chips + `<div class="lv-page-list">${listHtml(qq)}</div>`;
+      el.innerHTML = `<div class="stick lv-stick">${sbox}${chips}</div>` + `<div class="lv-page-list">${listHtml(qq)}</div>`;
       const inp = document.getElementById('lv-all-in'), box = el.querySelector('.lv-page-list');
       let tm = null;
       // 검색창은 다시 그리지 않고 결과만 바꿔요 (한 글자마다 키보드가 다시 열리던 문제)
