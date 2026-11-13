@@ -40,12 +40,18 @@ CERT_RX = re.compile('(' + '|'.join(re.escape(k) for k in sorted(CERTAIN, key=le
 UNSURE = ['저녁 축하 노래', 'FNL 공연', '숲속의 방', '지옥의 환상곡', '우리우리 설날은', '별이 빛나는 밤', '별밤', '발렌시아', 'VALENCIA',
           '매일 매일', '다시는 너를', 'Days', '김몽초', '굿바이 유튜버', '오나 갑자기 내게 다가와', '고등학교 입시곡', '힐링 캠프',
           '크리스마스 다 함께', '바미로']
-KEEP_RX = re.compile('(' + '|'.join(re.escape(k) for k in UNSURE) + r')\(\?\)')
+# 11-13 수정 님 답: 아래로 고치고 나머지 (?)는 다 빼기
+SUB = [(r"(In Un'altra Vita'?)\s*\((?:숲속의 방|지옥의 환상곡)\(\?\)\)", r'\1'), (r'저녁 축하 노래', '전역 축하 노래'),
+       (r'FNL 공연', '포레스텔라 나이트 라이브 쇼(FNL) 공연'), (r'까치까치 설날은\s*/\s*우리우리 설날은(\(\?\))?', '설날'),
+       (r'우리우리 설날은(\(\?\))?', '설날'), (r'별이 빛나는 밤\(\?\)\(별밤\(\?\)\)', '별이 빛나는 밤에(별밤)'), (r'별이 빛나는 밤\(\?\)', '별이 빛나는 밤에')]
+UNSURE = []
+KEEP_RX = re.compile('(' + '|'.join(re.escape(k) for k in UNSURE) + r')\(\?\)' if UNSURE else r'(?!x)x')
 
 def clean(s):
     s = SURE.sub(r'\1', SCORE.sub('', s.replace('`', ''))).strip(' *-·\t|')
     s = CERT_RX.sub(r'\1', FIX_RX.sub(lambda m: m.group(0) if m.group(1) in FIX_Q and not m.group(2) else FIX[m.group(1)], s))
     s = re.sub(r'(\(([A-Z]+)\))\(\2\)', r'\1', s)
+    for rx, to in SUB: s = re.sub(rx, to, s)
     s = KEEP_RX.sub(lambda m: m.group(1) + '\0', s).replace('(?)', '').replace('\0', '(?)')   # 마마(MAMA)(MAMA) → 하나만
     s = re.sub(r"([A-Za-z][\w' ]+)\s*\(\s*\1\s*\)", r'\1', s, flags=re.I)   # Parla più piano(Parla Più Piano) → 하나만
     return re.sub(r'\s{2,}', ' ', s)
