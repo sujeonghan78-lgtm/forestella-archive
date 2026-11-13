@@ -2673,10 +2673,13 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .bp-k { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .18em; color: #C98E2B; }
 .bp-body h2 { margin: 4px 0 6px; font-size: 22px; letter-spacing: -.01em; }
 .bp-how { display: inline-block; margin: 0 0 12px; padding: 4px 12px; border-radius: 99px; background: #F3F1EA; font-size: 13px; font-weight: 600; color: #5B5446; }
-.bp-fig { margin: 0 0 14px; border-radius: 14px; overflow: hidden; background: #F6F3EC; }
-.bp-fig img { display: block; width: 100%; aspect-ratio: 720 / 351; object-fit: cover; }
-.bp-fig figcaption { padding: 8px 12px 9px; font-size: 12px; line-height: 1.45; color: #6B6355; }
-.bp-more { margin: -4px 0 14px; font-size: 12.5px; color: #8A7A55; }
+.bp-img { display: block; width: 100%; aspect-ratio: 720 / 351; object-fit: cover; border-radius: 14px; margin: 0 0 14px; }
+.bp-medals { display: flex; justify-content: center; gap: 10px; }
+.bp-medals .bp-medal { margin-left: 0; margin-right: 0; }
+.bp-list { list-style: none; margin: 6px 0 14px; padding: 0; display: grid; gap: 6px; }
+.bp-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 12px; background: #F6F3EC; font-size: 14.5px; }
+.bp-list span { font-size: 12.5px; font-weight: 600; color: #8A7A55; white-space: nowrap; }
+.bp-more-x { margin: -4px 0 14px; font-size: 12.5px; color: #8A7A55; }
 .bp-b { display: flex; gap: 8px; }
 .bp-b button { flex: 1; min-height: 46px; border-radius: 14px; font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; }
 .bp-x { flex: 0 0 34% !important; border: 1px solid #E5E2DA; background: #fff; color: #6B6355; }

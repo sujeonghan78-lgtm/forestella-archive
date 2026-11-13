@@ -3225,7 +3225,6 @@
   const cardBadges = (st = boxStats()) => [...annivBadges(), ...CARD_BADGES.map(([k, ic, name, how, f]) => { const r = f(st); return { k, ic, name: typeof r === 'string' ? r : name, how: typeof r === 'string' ? `같은 투어 ${parseInt(r, 10)}번 직관` : how, got: !!r }; })];
   // 새로 받은 뱃지 알림: 사이트를 열 때 직관 기록으로 새로 받은 뱃지가 있으면 한 번 떠요 (본 것은 sb-badge-seen)
   const BADGE_SEEN = 'sb-badge-seen';
-  const BADGE_NOTE = { y12: '라디오스타에서 김구라가 우림에게 “공연을 1년에 12번 간다면?”', m12: '라디오스타에서 나온 “공연을 1년에 12번 간다면?” 그걸 한 달에!' };
   const BADGE_IMG = { y12: 'covers/badge-rs12.jpg', m12: 'covers/badge-rs12.jpg' };
   const BADGE_NEW = ['y12', 'm12'];  // 처음 알림을 켤 때, 이미 받은 다른 뱃지는 조용히 본 걸로 쳐요
   function badgePop() {
@@ -3236,15 +3235,15 @@
     const fresh = cardBadges().filter(b => b.got && got.includes(b.k) && !seen.includes(b.k));
     if (!fresh.length) return;
     boxWrite(BADGE_SEEN, [...seen, ...fresh.map(b => b.k)]);
-    const B = fresh[0], note = BADGE_NOTE[B.k], el = document.createElement('div');
+    const B = fresh[0], el = document.createElement('div');
     el.className = 'mt-pop bp-pop'; el.setAttribute('role', 'dialog');
-    const img = BADGE_IMG[B.k];
-    el.innerHTML = `<div class="bp-card${img ? ' has-img' : ''}">
+    const img = fresh.map(b => BADGE_IMG[b.k]).find(Boolean), many = fresh.length > 1;
+    el.innerHTML = `<div class="bp-card">
       <div class="bp-top"></div>
-      <div class="mt-pop-ic bp-medal"><span>${B.ic}</span></div>
-      <div class="bp-body"><p class="bp-k">NEW BADGE</p><h2>${esc(B.name)}</h2><p class="bp-how">${esc(B.how)}</p>
-        ${img || note ? `<figure class="bp-fig">${img ? `<img src="${img}" alt="">` : ''}${note ? `<figcaption>${esc(note)}</figcaption>` : ''}</figure>` : ''}
-        ${fresh.length > 1 ? `<p class="bp-more">그리고 ${fresh.slice(1).map(x => `${x.ic} <b>${esc(x.name)}</b>`).join(' · ')}</p>` : ''}
+      <div class="bp-medals">${fresh.slice(0, 3).map(b => `<div class="mt-pop-ic bp-medal"><span>${b.ic}</span></div>`).join('')}</div>
+      <div class="bp-body"><p class="bp-k">NEW BADGE${many ? ' × ' + fresh.length : ''}</p>
+        ${many ? `<ul class="bp-list">${fresh.map(b => `<li><b>${b.ic} ${esc(b.name)}</b><span>${esc(b.how)}</span></li>`).join('')}</ul>` : `<h2>${esc(B.name)}</h2><p class="bp-how">${esc(B.how)}</p>`}
+        ${img ? `<img class="bp-img" src="${img}" alt="">` : ''}
         <div class="bp-b"><button type="button" class="bp-x mt-pop-x">닫기</button><button type="button" class="bp-add">숲별 카드에 넣기</button></div></div></div>`;
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.classList.add('show'); const r = el.querySelector('.mt-pop-ic').getBoundingClientRect(); anvBurst(r.left + r.width / 2, r.top + r.height / 2, 20); });
