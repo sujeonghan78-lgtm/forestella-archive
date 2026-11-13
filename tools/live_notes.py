@@ -48,13 +48,15 @@ UNSURE = []
 KEEP_RX = re.compile('(' + '|'.join(re.escape(k) for k in UNSURE) + r')\(\?\)' if UNSURE else r'(?!x)x')
 
 def clean(s):
-    s = SURE.sub(r'\1', SCORE.sub('', s.replace('`', ''))).strip(' *-·\t|')
+    return re.sub(r'\s{2,}', ' ', fix(s.replace('`', '')).strip(' *-·\t|'))
+
+def fix(s):   # 줄바꿈·글머리는 그대로 두고 고치기만 (txt 수정본 만들 때도 씀)
+    s = SURE.sub(r'\1', SCORE.sub('', s))
     s = CERT_RX.sub(r'\1', FIX_RX.sub(lambda m: m.group(0) if m.group(1) in FIX_Q and not m.group(2) else FIX[m.group(1)], s))
     s = re.sub(r'(\(([A-Z]+)\))\(\2\)', r'\1', s)
     for rx, to in SUB: s = re.sub(rx, to, s)
     s = KEEP_RX.sub(lambda m: m.group(1) + '\0', s).replace('(?)', '').replace('\0', '(?)')   # 마마(MAMA)(MAMA) → 하나만
-    s = re.sub(r"([A-Za-z][\w' ]+)\s*\(\s*\1\s*\)", r'\1', s, flags=re.I)   # Parla più piano(Parla Più Piano) → 하나만
-    return re.sub(r'\s{2,}', ' ', s)
+    return re.sub(r"([A-Za-z][\w' ]+)[ \t]*\([ \t]*\1[ \t]*\)", r'\1', s, flags=re.I)   # Parla più piano(Parla Più Piano) → 하나만
 
 def entries(body, n):
     body = re.sub(r'시:분\s*\|[^\n]*?(?=\s\d{1,2}:\d{2}\s*\||\n|$)', ' ', body)   # 양식 머리줄
@@ -105,6 +107,12 @@ def parse(txt):
     return res
 
 notes = {}
+# python3 tools/live_notes.py <정리 폴더> --txt <내보낼 폴더> : 사이트와 같은 수정을 한 txt 수정본도 만들기
+if '--txt' in sys.argv:
+    out = sys.argv[sys.argv.index('--txt') + 1]; os.makedirs(out, exist_ok=True)
+    for f in sorted(os.listdir(SRC)):
+        if f.endswith('.txt'):
+            open(os.path.join(out, f), 'w', encoding='utf-8').write('\n'.join(fix(l) for l in open(os.path.join(SRC, f), encoding='utf-8').read().split('\n')))
 for f in sorted(os.listdir(SRC)):
     m = re.match(r'(\d{8})_정리(\d?)\.txt$', f)
     if not m: continue
