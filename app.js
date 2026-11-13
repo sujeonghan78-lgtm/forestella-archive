@@ -3209,6 +3209,9 @@
     ['walk', '🌿', '숲길 산책', '직관 5번', s => s.went.length >= 5],
     ['keeper', '🌲', '숲지기', '직관 10번', s => s.went.length >= 10],
     ['grand', '🏕️', '숲의 터줏대감', '직관 30번', s => s.went.length >= 30],
+    // 라디오스타에서 우림이 말한 '1년에 열두 번 공연 보러 가면?' (같은 해 / 같은 달 직관 12번)
+    ['y12', '📅', '열두 번의 숲', '1년에 직관 12번', s => { const m = new Map(); s.went.forEach(e => m.set(e.date.slice(0, 4), (m.get(e.date.slice(0, 4)) || 0) + 1)); return Math.max(0, ...m.values()) >= 12; }],
+    ['m12', '🔥', '한 달에 열두 번', '한 달에 직관 12번', s => { const m = new Map(); s.went.forEach(e => m.set(e.date.slice(0, 7), (m.get(e.date.slice(0, 7)) || 0) + 1)); return Math.max(0, ...m.values()) >= 12; }],
     ['trip', '🧭', '숲 원정대', '직관 지역 3곳 이상', s => s.regionN >= 3],
     ['ncha', '🎟️', 'N차 숲별', '같은 투어 2번 이상', s => { const m = new Map(); s.went.forEach(e => { const t = tourOfDate(e.date); if (t) m.set(t.id, (m.get(t.id) || 0) + 1); }); const n = Math.max(0, ...m.values()); return n >= 2 && `${n}차 숲별`; }],
     ['studio', '📺', '방청 요정', '방송 방청 1번', s => s.went.some(s.isBc)],

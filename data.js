@@ -358,6 +358,7 @@
     // 가장 최근 판을 다른 두 사람이 '맞아요'(종류: 셋리확인, 같은 버전)로 누르면 확정이에요. 사람 구분은 브라우저마다 만든 임의 번호(누가:)로 해요
     // 팬 제보 현황 화면(#/fan)에 쓸 기록: 언제 · 무엇을 · 어느 일정에
     const fanLog = [];
+    const fanMerged = {};  // 이미 있는 일정에 붙인 팬 새일정 {팬 일정 ID: 붙인 일정 ID}: 예전 주소·직관 기록이 붙인 일정으로 가요
     const tourFan = new Map();
     // '아니에요'(종류: 아니에요 / 대상: sl|ev|pl|nm|gc / 키 / 값 / 누가): 확정 전 제안에 올린 사람 말고 두 명이 아니라고 하면 그 제안은 빠져요
     const NO = {};
@@ -407,6 +408,7 @@
           if (!same.place && line0(r, '장소')) same.place = line0(r, '장소');
           if (!same.videoId && vid) same.videoId = vid;
         }
+        if (same) fanMerged[id] = same.id;
         fanLog.push({ k: same ? 'join' : 'ev', id: same ? same.id : id, at: tsMs(r.time), by: r.by, title: r.title, songs: r.song ? r.song.split(/\s+\/\s+/).filter(Boolean).length : 0 });
         if (r.song) rows.push({ type: '셋리스트', title: `[ID ${same ? same.id : id}]`, song: r.song, by: r.by, time: r.time, newEv: true });
       });
@@ -600,7 +602,7 @@
     // 카페에서 자동으로 가져온 일정이 이미 있는 일정(시트·보충·팬 등록)과 같은 날 같은 일정이면 하나로 합쳐요.
     // 이미 있던 일정을 남기고(셋리·직관 기록이 거기 붙어 있어서) 빈 장소·시간만 카페 것으로 채워요.
     // 같은 날 1부·2부처럼 숫자가 다르면 다른 일정으로 봐요
-    const autoMerge = {};
+    const autoMerge = { ...fanMerged };
     {
       const tok = t => new Set(String(t || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').split(' ').filter(w => w.length > 1));
       const nums = t => [...String(t || '').matchAll(/\d+/g)].map(m => m[0]).filter(n => !/^20\d\d$/.test(n)).sort().join(',');
