@@ -1575,6 +1575,7 @@
         { label: '💬 가사', n: (data.lyrics || []).filter(l => l.key === so.key && l.kind !== '떼창').length, html: flatBox(lyricBox(so)) },
         { label: '💡 TMI', n: tmiOf('s:' + so.key).length, html: tmiBox('s:' + so.key, so.name) },
         { label: '버전', n: songMemoN(so), html: flatBox(songMemos(so)) },
+        ...(liveOn() && liveNotes ? [liveSongTab(so)] : []),
       ])}
       ${songFixState(so)}${songEditBox(so)}`;
   }
@@ -7870,7 +7871,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     try { localStorage.setItem(DT_MARK + '-ok', JSON.stringify(dt)); } catch (err) { /* 괜찮아요 */ }
     try { localStorage.setItem(EV_HIDE, JSON.stringify([...set])); localStorage.setItem(EV_HIDE + '-to', JSON.stringify(merge)); } catch (err) { /* 괜찮아요 */ }
     const next = window.DATA.rebuild();
-    if (next) { data = myHide(next); searchIndex = null; baseHash = null; render(); }
+    if (next) { data = myHide(next); searchIndex = null; if (liveNotes) liveLink(); baseHash = null; render(); }
   }
   // 반영한 팬 제보 숨기기(관리자): 일정 숨김과 같은 서명 줄로 보내요 (번호가 r로 시작해서 시트 일정 탭은 안 건드려요)
   document.addEventListener('click', async ev => {
@@ -8733,6 +8734,32 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const LV_MEM = [['두훈', '배두훈'], ['형호', '강형호'], ['민규', '조민규'], ['우림', '고우림']];
   const lvTime = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = String(s % 60).padStart(2, '0'); return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`; };
   const lvTxt = t => esc(t || '').replace(/\(\?\)/g, '<sup class="lv-q" title="자동 자막 기준이라 다를 수 있어요">?</sup>');
+  // 사이트에 있는 곡·음반·콘서트·프로그램 이름을 글 속에서 찾아 그 화면으로 이어요
+  const lvNorm = x => String(x || '').toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+  let lvDict = null;
+  function lvTerms() {
+    if (lvDict && lvDict.data === data) return lvDict;
+    const terms = new Map(), loose = new Map();
+    const add = (t, href, min) => { t = String(t || '').trim(); if (lvNorm(t).length >= min && !terms.has(t)) terms.set(t, href); };
+    data.songs.forEach(so => { const h = '#/song/' + encodeURIComponent(so.key); [so.name, so.key].forEach(x => { const k = lvNorm(x); if (k.length >= 2 && !loose.has(k)) loose.set(k, so); }); if (!/^[가-힣]{1,2}$/.test(so.name)) add(so.name, h, 3); });
+    (data.albums || []).forEach(a => add(a.name, albHref(a), 3));
+    (data.tours || []).forEach(t => { const core = (t.name.match(/[<〈]([^>〉]+)[>〉]/) || [])[1] || t.name.replace(/\d{4}|포레스텔라|콘서트|전국\s*투어|투어|in\s+\S+/gi, '').trim(); add(core, '#/tour/' + encodeURIComponent(t.id), 3); });
+    programList().forEach(pg => add(pg.name, progHref(pg.name), 3));
+    ['배두훈', '강형호', '조민규', '고우림'].forEach(m => terms.delete(m));
+    const list = [...terms.keys()].sort((x, y) => y.length - x.length).map(t => esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    lvDict = { data, terms, loose, rx: list.length ? new RegExp('(' + list.join('|') + ')', 'g') : null };
+    return lvDict;
+  }
+  const lvLinkify = t => { const d = lvTerms(), seen = new Set(); let h = lvTxt(t); if (!d.rx) return h; return h.replace(d.rx, m => { const raw = m.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"'); const href = d.terms.get(raw); if (!href || seen.has(href)) return m; seen.add(href); return `<a class="lv-term" href="${href}">${m}</a>`; }).replace(/(<a class="lv-term"[^>]*>[^<]*<\/a>)<sup class="lv-q"[^>]*>\?<\/sup>/g, '$1'); };
+  // 곡 이름 (?)·괄호·'/'로 나눠서 비슷한 곡 찾기
+  function liveSongs(raw) {
+    const d = lvTerms(), out = [];
+    String(raw || '').replace(/\(\?\)/g, '').split(/\s*\/\s*/).forEach(seg => {
+      const cands = [seg, seg.replace(/\([^)]*\)/g, ''), ...(seg.match(/\(([^)]+)\)/g) || []).map(x => x.slice(1, -1))];
+      for (const c of cands) { const so = data.songs.get(window.DATA.songKey(c.trim())) || d.loose.get(lvNorm(c)); if (so) { if (!out.includes(so)) out.push(so); break; } }
+    });
+    return out;
+  }
   function loadLive() {
     if (!liveLoad) liveLoad = fetch('data/live_notes.json?v=' + (window.CONFIG.dataVer || '')).then(r => r.ok ? r.json() : {}).catch(() => ({})).then(j => { liveNotes = j; liveLink(); return j; });
     return liveLoad;
@@ -8768,8 +8795,8 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return rows.sort((a, b) => a.s - b.s);
   }
   function liveRowHtml(n, r) {
-    const so = r.song && data.songs.get(window.DATA.songKey(r.song.replace(/\(\?\)/g, '').split(' / ')[0].trim()));
-    const name = so ? `<a href="#/song/${encodeURIComponent(so.key)}">${lvTxt(r.t)} ›</a>` : lvTxt(r.t);
+    const sos = r.song ? liveSongs(r.song) : [];
+    const name = sos.length ? `${lvTxt(r.t)} ${sos.map(so => `<a class="lv-term lv-song" href="#/song/${encodeURIComponent(so.key)}">🎵 ${esc(so.name)}</a>`).join(' ')}` : lvLinkify(r.t);
     return `<div class="lv-row" data-s="${r.s}"><button type="button" class="lv-t" data-s="${r.s}">${lvTime(r.s)}</button><div class="lv-x">${name}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div><button type="button" class="lv-ln" aria-label="이 장면 링크 복사" data-copy="${esc(link(`#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}`))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button></div>`;
   }
   function liveBox(n, parts) {
@@ -8859,6 +8886,15 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       bindLiveBox(slot.querySelector('.lv'), n);
     });
   }
+  // 곡 화면 '🎙 라이브': 그 곡을 부른 장면 + 글 속에 곡 이름이 나온 장면
+  function liveSongTab(so) {
+    const rows = [];
+    liveList().forEach(n => LV_TABS.forEach(([tk, tn]) => liveRows(n, tk).forEach(r => {
+      if (tk === 'songs' ? liveSongs(r.song).includes(so) : (so.name.length >= 3 || /[a-z]{4}/i.test(so.name)) && String(r.t).includes(so.name)) rows.push({ n, r, tn });
+    })));
+    const html = rows.length ? `<div class="lv-list">${rows.map(({ n, r, tn }) => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${lvTxt(r.t)}<small>${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} · ${esc(tn)}</small></div></a>`).join('')}</div><p class="src-note">라이브 자동 자막 요약에서 찾은 거라 다를 수 있어요.</p>` : '';
+    return { label: '🎙 라이브', n: rows.length, html };
+  }
   // 라이브 모아보기 (#/live)
   function liveView() {
     if (!liveOn()) return `<div class="about-top"><a class="back" href="#/more">‹ 더보기</a><h1 class="h1">준비 중이에요</h1></div>`;
@@ -8867,13 +8903,31 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   function bindLive() {
     const el = document.getElementById('lv-page'); if (!el) return;
     loadLive().then(() => {
-      const q = new URLSearchParams(location.hash.split('?')[1] || ''), k = q.get('k') || '';
+      if (!document.body.contains(el)) return;
+      const q = new URLSearchParams(location.hash.split('?')[1] || ''), k = q.get('k') || '', qq = (q.get('q') || '').trim();
       const all = liveList().slice().reverse();
       const chips = `<div class="chips lv-k">${[['', '전체'], ['songs', '🎵 노래 모음'], ['news', '📢 소식 모음']].map(([v, t]) => `<a class="chip${k === v ? ' on' : ''}" href="#/live${v ? '?k=' + v : ''}">${t}</a>`).join('')}</div>`;
+      const sbox = `<div class="searchbox lv-all"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input type="search" id="lv-all-in" placeholder="모든 라이브에서 찾기 (예: 고우칩, 불후, 군대)" value="${esc(qq)}" aria-label="모든 라이브에서 찾기"></div>`;
       let body;
-      if (!k) body = all.map(n => `<a class="lv-card" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}"><img src="${ytThumb(n.vid)}" alt="" loading="lazy"><div><small>${esc(n.date.replace(/-/g, '.'))}</small><b>${lvTxt(n.title)}</b><p>${lvTxt((n.sum || [])[0] || '')}</p></div></a>`).join('');
+      if (qq) {
+        const low = qq.toLowerCase(), hit = x => String(x || '').toLowerCase().includes(low);
+        const qrx = new RegExp(qq.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), mark = h => h.replace(qrx, m => `<mark>${m}</mark>`);
+        let total = 0;
+        body = all.map(n => {
+          const rows = [];
+          LV_TABS.forEach(([tk, tn]) => liveRows(n, tk).forEach(r => { if (hit(r.t) || hit(r.w)) rows.push({ ...r, tn }); }));
+          const sumHit = [n.title, ...(n.sum || []), ...(n.kw || [])].some(hit);
+          if (!rows.length && !sumHit) return '';
+          rows.sort((x, y) => x.s - y.s); total += rows.length || 1;
+          return `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${mark(lvTxt(r.t))}<small>${esc(r.tn)}${r.w ? ' · ' + mark(lvTxt(r.w)) : ''}</small></div></a>`).join('')}</div>`;
+        }).join('');
+        body = `<p class="sub">${total ? `${total}곳에서 찾았어요` : '찾은 곳이 없어요'}</p>` + body;
+      } else if (!k) body = all.map(n => `<a class="lv-card" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}"><img src="${ytThumb(n.vid)}" alt="" loading="lazy"><div><small>${esc(n.date.replace(/-/g, '.'))}</small><b>${lvTxt(n.title)}</b><p>${lvTxt((n.sum || [])[0] || '')}</p></div></a>`).join('');
       else body = all.map(n => { const rows = liveRows(n, k); return rows.length ? `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${lvTxt(r.t)}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div></a>`).join('')}</div>` : ''; }).join('');
-      el.innerHTML = chips + `<div class="lv-page-list">${body || '<p class="src-note">아직 없어요.</p>'}</div>`;
+      el.innerHTML = sbox + chips + `<div class="lv-page-list">${body || '<p class="src-note">아직 없어요.</p>'}</div>`;
+      const inp = document.getElementById('lv-all-in');
+      let tm = null;
+      inp.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { const v = inp.value.trim(); history.replaceState(null, '', '#/live' + (v ? '?q=' + encodeURIComponent(v) : k ? '?k=' + k : '')); bindLive(); setTimeout(() => { const i2 = document.getElementById('lv-all-in'); if (i2) { i2.focus(); i2.setSelectionRange(i2.value.length, i2.value.length); } }, 0); }, 350); });
     });
   }
 
@@ -9053,9 +9107,10 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   async function start() {
     showLoading();
     try {
-      data = myHide(await window.DATA.load(next => { data = myHide(next); searchIndex = null; if (currentRoute() !== 'e') baseHash = null; render(); syncHides(); }));
+      data = myHide(await window.DATA.load(next => { data = myHide(next); searchIndex = null; if (liveNotes) liveLink(); if (currentRoute() !== 'e') baseHash = null; render(); syncHides(); }));
       render();
       syncHides();
+      if (liveOn()) loadLive().then(() => { if (currentRoute() === 'song') { baseHash = null; render(); } });
       boxPull();
       setTimeout(heartSync, 4000);
     } catch (err) {
