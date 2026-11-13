@@ -216,7 +216,7 @@
         by: line(c, '누가'), ver: line(c, '버전'), raw: c,
       };
     // 공식 X 링크 올리기로 들어온 줄은 제보가 아니라서 빼요
-    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && r.type !== '기념' && r.type !== '취향' && r.type !== '물' && r.type !== '오너먼트' && r.type !== '오너먼트삭제' && r.type !== '오너먼트색' && r.type !== '오너먼트자리' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요|기념|취향|물|오너먼트|오너먼트삭제|오너먼트색|오너먼트자리)$/.test(r.type))));
+    }).filter(r => all || (r.type !== '공식X' && r.type !== '셋리스트' && r.type !== '셋리확인' && r.type !== '새일정' && r.type !== '일정확인' && r.type !== '의견' && r.type !== '의견처리' && r.type !== '의견삭제' && r.type !== '일정숨김' && r.type !== '날짜수정' && r.type !== '날짜확인' && r.type !== '날짜확정' && r.type !== '날짜아님' && r.type !== '삭제요청' && r.type !== '장소좌표' && r.type !== '좌표확인' && r.type !== '장소수정' && r.type !== '장소확인' && r.type !== '캐스팅' && r.type !== '가사' && r.type !== '떼창' && r.type !== 'TMI' && r.type !== 'TMI답글' && r.type !== '신고' && r.type !== '숨김요청' && r.type !== '가사삭제' && r.type !== '하트' && r.type !== '언어수정' && r.type !== '곡수정' && r.type !== '셋리예측' && r.type !== '아니에요' && r.type !== '기념' && r.type !== '취향' && r.type !== '물' && r.type !== '오너먼트' && r.type !== '오너먼트삭제' && r.type !== '오너먼트색' && r.type !== '오너먼트자리' && r.type !== '라이브수정' && r.type !== '라이브확인' && !/^공식X\s/.test(r.title))).filter(r => r.title || r.song || r.date || r.message || (all && /^(의견처리|의견삭제|일정숨김|날짜확정|장소좌표|좌표확인|하트|가사삭제|언어수정|곡수정|신고|숨김요청|셋리예측|아니에요|기념|취향|물|오너먼트|오너먼트삭제|오너먼트색|오너먼트자리)$/.test(r.type))));
   }
 
   async function fetchText(url) {
@@ -1305,7 +1305,27 @@
     votes.filter(v => !v.ok).forEach(v => { const so = songs.get(songAlias[v.k] || v.k); if (so) (so.fixProps = so.fixProps || []).push(v); });
     let career = [];
     try { career = JSON.parse(raw.career || '{}').items || []; } catch (e) { /* 없으면 넘어가요 */ }
-    return { events, videos, reports, byId, songs, songAlias, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, anniv: annivAll, taste: tasteAll, tree: treeAll, autoMerge, viewsInfo, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
+    // 라이브 요약 줄 고치기(종류: 라이브수정 라이브/줄/후 → 맞아요는 라이브확인): 올린 사람 말고 두 명이 맞다고 하거나 관리자가 확정('lf'+번호 숨김 서명)하면 바뀌어요
+    const liveFix = {};
+    if (raw.reports) {
+      const lx = {}, okMark = window.SB_EV_HIDE || new Set();
+      buildReports(toObjects(raw.reports), true).forEach(r => {
+        if ((r.type !== '라이브수정' && r.type !== '라이브확인') || !r.by) return;
+        const vid = line0(r, '라이브'), k = line0(r, '줄'), to = line0(r, '후').replace(/\s+/g, ' ').trim().slice(0, 300);
+        if (!vid || !k || !to) return;
+        const o = lx[vid + '|' + k] = lx[vid + '|' + k] || {}, p = o[to] = o[to] || { to, by: '', who: new Set(), at: 0 };
+        if (r.type === '라이브수정' && !p.by) { p.by = r.by; p.at = tsMs(r.time); } else p.who.add(r.by);
+      });
+      Object.entries(lx).forEach(([key, o]) => {
+        const [vid, k] = key.split('|');
+        const ps = Object.values(o).filter(p => p.by && !([...p.who].filter(x => x !== p.by).length < 2 && noN('lv', vid + ':' + k, p.to, p.by) >= 2));
+        if (!ps.length) return;
+        ps.forEach(p => { p.who.delete(p.by); p.n = Math.min(p.who.size, 2); p.id = 'lf' + slVer([vid, k, p.to]); p.done = p.who.size >= 2 || okMark.has(p.id); });
+        const done = ps.filter(p => p.done).sort((a, b) => b.at - a.at)[0];
+        (liveFix[vid] = liveFix[vid] || {})[k] = { done: done ? done.to : '', props: done ? [] : ps.map(p => ({ to: p.to, by: p.by, n: p.n, id: p.id })) };
+      });
+    }
+    return { events, videos, reports, byId, songs, songAlias, liveFix, lyrics: lyricsAll, flagged: flaggedAll, bans: bansAll, hearts: heartsAll, preds: predsAll, anniv: annivAll, taste: tasteAll, tree: treeAll, autoMerge, viewsInfo, tours, xFeed, albums, concerts, official, career, extra, evMarks, dtMarks, delReqs, fan, pins, hidden: hidden.map(e => ({ id: e.id, date: e.date, title: e.title })), savedAt: raw.savedAt };
   }
 
   // 저장된 데이터가 있으면 바로 보여주고, 오래됐으면 뒤에서 새로 받아요.

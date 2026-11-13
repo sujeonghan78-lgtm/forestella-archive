@@ -1,0 +1,611 @@
+{
+ "_note": "숲별 용어 사전. pub=true만 사전 화면에 보이고, 번역은 전부 씀. kind: 멤버·팬덤·콘텐츠·별명·방송·공연",
+ "words": [
+  {
+   "ko": "배두훈",
+   "en": "Bae Doo-hoon",
+   "kind": "멤버",
+   "pub": true,
+   "alias": [
+    "두훈"
+   ],
+   "desc": "포레스텔라 멤버"
+  },
+  {
+   "ko": "강형호",
+   "en": "Kang Hyung-ho",
+   "kind": "멤버",
+   "pub": true,
+   "alias": [
+    "형호"
+   ],
+   "desc": "포레스텔라 멤버"
+  },
+  {
+   "ko": "조민규",
+   "en": "Cho Min-gyu",
+   "kind": "멤버",
+   "pub": true,
+   "alias": [
+    "민규"
+   ],
+   "desc": "포레스텔라 멤버"
+  },
+  {
+   "ko": "고우림",
+   "en": "Ko Woo-rim",
+   "kind": "멤버",
+   "pub": true,
+   "alias": [
+    "우림"
+   ],
+   "desc": "포레스텔라 멤버"
+  },
+  {
+   "ko": "듄 · 클 · 밍 · 욺",
+   "en": "Dyun · Keul · Ming · Ulm",
+   "kind": "멤버",
+   "pub": true,
+   "tr": false,
+   "desc": "팬들이 부르는 멤버 한 글자 애칭 (듄 배두훈, 클 강형호, 밍 조민규, 욺 고우림)"
+  },
+  {
+   "ko": "피타",
+   "en": "PITTA",
+   "kind": "멤버",
+   "pub": true,
+   "desc": "강형호의 솔로 활동 이름"
+  },
+  {
+   "ko": "포레스텔라",
+   "en": "Forestella",
+   "kind": "멤버",
+   "pub": true,
+   "alias": [
+    "포레"
+   ],
+   "desc": "그룹 이름"
+  },
+  {
+   "ko": "숲별",
+   "en": "Soopbyeol",
+   "kind": "팬덤",
+   "pub": true,
+   "desc": "포레스텔라 공식 팬덤 이름 (숲 + 별)"
+  },
+  {
+   "ko": "숲별봉",
+   "en": "Soopbyeol-bong (official lightstick)",
+   "kind": "팬덤",
+   "pub": true,
+   "desc": "공식 응원봉. 2022년 3월 라이브에서 처음 공개"
+  },
+  {
+   "ko": "숲별 n기",
+   "en": "Soopbyeol membership (n-th gen)",
+   "kind": "팬덤",
+   "pub": true,
+   "tr": false,
+   "desc": "공식 팬클럽 기수. 1기 2021.11, 2기 2022.11, 2.5기 2024.7, 3기 2025"
+  },
+  {
+   "ko": "시그",
+   "en": "season's greetings",
+   "kind": "팬덤",
+   "pub": true,
+   "alias": [
+    "시소그"
+   ],
+   "desc": "시즌 그리팅(달력·굿즈 세트) 줄임말"
+  },
+  {
+   "ko": "로얄콘",
+   "en": "The Royal concert",
+   "kind": "공연",
+   "pub": true,
+   "desc": "2021-22 · 2022-23 콘서트 'The Royal'의 줄임말"
+  },
+  {
+   "ko": "앙콘",
+   "en": "encore concert",
+   "kind": "공연",
+   "pub": true,
+   "alias": [
+    "앙코르 콘서트",
+    "앵콘"
+   ],
+   "desc": "앙코르 콘서트 줄임말"
+  },
+  {
+   "ko": "포레스텔라 나이트 라이브 쇼",
+   "en": "Forestella Night Live Show (FNL)",
+   "kind": "공연",
+   "pub": true,
+   "alias": [
+    "FNL"
+   ],
+   "desc": "고우림 군 복무 중 세 멤버가 연 단독 쇼"
+  },
+  {
+   "ko": "포레시피",
+   "en": "Forecipe",
+   "kind": "콘텐츠",
+   "pub": true,
+   "desc": "공식 유튜브 리얼리티 힐링 예능"
+  },
+  {
+   "ko": "포레위키",
+   "en": "Forewiki",
+   "kind": "콘텐츠",
+   "pub": true,
+   "desc": "공식 유튜브 자체 콘텐츠"
+  },
+  {
+   "ko": "포레미파솔",
+   "en": "Foremipasol",
+   "kind": "콘텐츠",
+   "pub": true,
+   "desc": "공식 유튜브 비하인드 영상 시리즈"
+  },
+  {
+   "ko": "지편한 세상",
+   "en": "Jipyeonhan Sesang",
+   "kind": "콘텐츠",
+   "pub": true,
+   "desc": "유튜브 예능 콘텐츠"
+  },
+  {
+   "ko": "고우칩",
+   "en": "Gouchip",
+   "kind": "별명",
+   "pub": true,
+   "desc": "고우림 별명. 2021 포레올림픽 라이브에서 과자 녹여 먹기 시간을 넘겨서 생김"
+  },
+  {
+   "ko": "나가거든 시절",
+   "en": "the 'Nagageodeun' era",
+   "kind": "별명",
+   "pub": true,
+   "alias": [
+    "나가거든"
+   ],
+   "desc": "조민규가 리더로서 까칠했던 20대 초반 시절을 부르는 말"
+  },
+  {
+   "ko": "정화수 파트",
+   "en": "the 'Jeonghwasu' part",
+   "kind": "별명",
+   "pub": true,
+   "alias": [
+    "정화수"
+   ],
+   "desc": "팬들이 강형호의 솔로 파트를 부르는 말"
+  },
+  {
+   "ko": "불후의 명곡",
+   "en": "Immortal Songs",
+   "kind": "방송",
+   "pub": true,
+   "alias": [
+    "불후"
+   ],
+   "desc": "KBS2 음악 경연 프로그램"
+  },
+  {
+   "ko": "열린음악회",
+   "en": "Open Concert",
+   "kind": "방송",
+   "pub": true,
+   "desc": "KBS1 음악 프로그램"
+  },
+  {
+   "ko": "뮤직뱅크",
+   "en": "Music Bank",
+   "kind": "방송",
+   "pub": true,
+   "desc": "KBS2 음악 방송"
+  },
+  {
+   "ko": "엠카",
+   "en": "M Countdown",
+   "kind": "방송",
+   "pub": true,
+   "desc": "Mnet 음악 방송 엠카운트다운"
+  },
+  {
+   "ko": "유퀴즈",
+   "en": "You Quiz on the Block",
+   "kind": "방송",
+   "pub": true,
+   "alias": [
+    "유퀴즈 온 더 블럭"
+   ],
+   "desc": "tvN 토크 예능"
+  },
+  {
+   "ko": "전참시",
+   "en": "The Manager",
+   "kind": "방송",
+   "pub": true,
+   "alias": [
+    "전지적 참견 시점"
+   ],
+   "desc": "MBC 관찰 예능 '전지적 참견 시점'"
+  },
+  {
+   "ko": "나 혼자 산다",
+   "en": "I Live Alone",
+   "kind": "방송",
+   "pub": true,
+   "desc": "MBC 관찰 예능"
+  },
+  {
+   "ko": "구해줘! 홈즈",
+   "en": "Where Is My Home?",
+   "kind": "방송",
+   "pub": true,
+   "desc": "MBC 예능"
+  },
+  {
+   "ko": "가요대축제",
+   "en": "KBS Song Festival",
+   "kind": "방송",
+   "pub": true,
+   "desc": "KBS 연말 음악 축제"
+  },
+  {
+   "ko": "팬텀싱어",
+   "en": "Phantom Singer",
+   "kind": "방송",
+   "pub": true,
+   "desc": "JTBC 남성 4중창 오디션. 포레스텔라는 시즌 2 우승팀"
+  },
+  {
+   "ko": "별이 빛나는 밤에",
+   "en": "Starry Night (MBC radio)",
+   "kind": "방송",
+   "pub": true,
+   "alias": [
+    "별밤"
+   ],
+   "desc": "MBC 라디오"
+  },
+  {
+   "ko": "비트인터렉티브",
+   "en": "Beat Interactive",
+   "kind": "팬덤",
+   "pub": true,
+   "desc": "포레스텔라 소속사"
+  },
+  {
+   "ko": "포레 사이드 아웃",
+   "en": "Fore Side Out",
+   "kind": "콘텐츠",
+   "pub": false,
+   "desc": "2024.08 라이브 코너"
+  },
+  {
+   "ko": "뉴텔라",
+   "en": "Newtella",
+   "kind": "별명",
+   "pub": false
+  },
+  {
+   "ko": "장충스텔라",
+   "en": "Jangchungstella",
+   "kind": "별명",
+   "pub": false
+  },
+  {
+   "ko": "조나리자",
+   "en": "Jo-na Lisa",
+   "kind": "별명",
+   "pub": false
+  },
+  {
+   "ko": "노인정",
+   "en": "Noinjeong (seniors' club)",
+   "kind": "별명",
+   "pub": false
+  },
+  {
+   "ko": "최고봉",
+   "en": "Choegobong",
+   "kind": "별명",
+   "pub": false
+  },
+  {
+   "ko": "숲요",
+   "en": "Soopyo",
+   "kind": "별명",
+   "pub": false
+  },
+  {
+   "ko": "렌트",
+   "en": "RENT (musical)",
+   "kind": "공연",
+   "pub": false
+  },
+  {
+   "ko": "더 웨이브",
+   "en": "THE WAVE",
+   "kind": "공연",
+   "pub": false
+  },
+  {
+   "ko": "미스티크",
+   "en": "Mystique",
+   "kind": "공연",
+   "pub": false
+  },
+  {
+   "ko": "설날",
+   "en": "Seollal (Lunar New Year)",
+   "kind": "별명",
+   "pub": false
+  },
+  {
+   "ko": "걸환장",
+   "en": "Geolhwanjang",
+   "kind": "방송",
+   "pub": false
+  },
+  {
+   "ko": "넬판",
+   "en": "Nella Fantasia",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Nella Fantasia",
+   "desc": "'Nella Fantasia'를 줄여 부르는 말"
+  },
+  {
+   "ko": "보랩",
+   "en": "Bohemian Rhapsody",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Bohemian Rhapsody",
+   "desc": "'Bohemian Rhapsody'를 줄여 부르는 말"
+  },
+  {
+   "ko": "스카페",
+   "en": "Scarborough Fair",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Scarborough Fair",
+   "desc": "'Scarborough Fair'를 줄여 부르는 말"
+  },
+  {
+   "ko": "하새태",
+   "en": "하늘과 새벽과 태양",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "하늘과 새벽과 태양",
+   "desc": "'하늘과 새벽과 태양'를 줄여 부르는 말"
+  },
+  {
+   "ko": "위아챔",
+   "en": "We Are The Champions",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "We Are The Champions",
+   "desc": "'We Are The Champions'를 줄여 부르는 말"
+  },
+  {
+   "ko": "챔스",
+   "en": "Champions",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Champions",
+   "desc": "'Champions'를 줄여 부르는 말"
+  },
+  {
+   "ko": "유챈마",
+   "en": "You Change My World",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "You Change My World",
+   "desc": "'You Change My World'를 줄여 부르는 말"
+  },
+  {
+   "ko": "럽런아",
+   "en": "Love Runs Out",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Love Runs Out",
+   "desc": "'Love Runs Out'를 줄여 부르는 말"
+  },
+  {
+   "ko": "사옵사",
+   "en": "The Sound of Silence",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "The Sound of Silence",
+   "desc": "'The Sound of Silence'를 줄여 부르는 말"
+  },
+  {
+   "ko": "마페띵",
+   "en": "My Favorite Things",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "My Favorite Things",
+   "desc": "'My Favorite Things'를 줄여 부르는 말"
+  },
+  {
+   "ko": "쉡옵유",
+   "en": "Shape of You",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Shape of You",
+   "desc": "'Shape of You'를 줄여 부르는 말"
+  },
+  {
+   "ko": "데슷파",
+   "en": "Despacito",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Despacito",
+   "desc": "'Despacito'를 줄여 부르는 말"
+  },
+  {
+   "ko": "신밤",
+   "en": "신라의 달밤",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "신라의 달밤",
+   "desc": "'신라의 달밤'를 줄여 부르는 말"
+  },
+  {
+   "ko": "비말럽",
+   "en": "Be My Love",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Be My Love",
+   "desc": "'Be My Love'를 줄여 부르는 말"
+  },
+  {
+   "ko": "팬오페",
+   "en": "The Phantom of the Opera",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "The Phantom of the Opera",
+   "desc": "'The Phantom of the Opera'를 줄여 부르는 말"
+  },
+  {
+   "ko": "빨라쀼",
+   "en": "Parla più piano",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Parla più piano",
+   "desc": "'Parla più piano'를 줄여 부르는 말"
+  },
+  {
+   "ko": "탐보틀",
+   "en": "Time in a Bottle",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Time in a Bottle",
+   "desc": "'Time in a Bottle'를 줄여 부르는 말"
+  },
+  {
+   "ko": "스크",
+   "en": "Smooth Criminal",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "Smooth Criminal",
+   "desc": "'Smooth Criminal'를 줄여 부르는 말"
+  },
+  {
+   "ko": "암커밍",
+   "en": "I'm Coming Now",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "I'm Coming Now",
+   "desc": "'I'm Coming Now'를 줄여 부르는 말"
+  },
+  {
+   "ko": "포랖",
+   "en": "For Life",
+   "kind": "곡 줄임말",
+   "pub": true,
+   "tr": false,
+   "song": "For Life",
+   "desc": "'For Life'를 줄여 부르는 말"
+  },
+  {
+   "ko": "포레올림픽",
+   "en": "Folympics",
+   "kind": "콘텐츠",
+   "pub": true,
+   "desc": "2021년 8월 첫 공식 유튜브 라이브. 멤버들이 게임으로 겨룸"
+  },
+  {
+   "ko": "무엇이든 물어보살",
+   "en": "Ask Me Anything (Mulbosal)",
+   "kind": "콘텐츠",
+   "pub": false,
+   "desc": "라이브 해답 카드 코너"
+  },
+  {
+   "ko": "응꾸",
+   "en": "lightstick decorating",
+   "kind": "팬덤",
+   "pub": true,
+   "desc": "응원봉 꾸미기 줄임말"
+  },
+  {
+   "ko": "카꾸",
+   "en": "carnation decorating",
+   "kind": "콘텐츠",
+   "pub": false,
+   "desc": "카네이션 꾸미기"
+  },
+  {
+   "ko": "파트 체인지",
+   "en": "Part Change",
+   "kind": "콘텐츠",
+   "pub": true,
+   "desc": "멤버끼리 파트를 바꿔 부르기"
+  },
+  {
+   "ko": "이선좌",
+   "en": "\"seat already taken\"",
+   "kind": "팬덤",
+   "pub": true,
+   "desc": "티켓팅 때 뜨는 \"이미 선택된 좌석입니다\"의 줄임말"
+  },
+  {
+   "ko": "포카 앨범",
+   "en": "photocard album",
+   "kind": "팬덤",
+   "pub": true,
+   "desc": "포토카드 형태 앨범"
+  },
+  {
+   "ko": "원더케이",
+   "en": "1theK",
+   "kind": "방송",
+   "pub": true,
+   "desc": "음악 유튜브 채널"
+  },
+  {
+   "ko": "KBS 연예대상",
+   "en": "KBS Entertainment Awards",
+   "kind": "방송",
+   "pub": true,
+   "desc": "KBS 연말 시상식"
+  },
+  {
+   "ko": "MAMA",
+   "en": "MAMA Awards",
+   "kind": "방송",
+   "pub": true,
+   "desc": "Mnet 연말 시상식"
+  },
+  {
+   "ko": "김비트",
+   "en": "Kim Beat",
+   "kind": "별명",
+   "pub": false,
+   "desc": "소속사 비트인터렉티브를 사람처럼 부르는 말"
+  }
+ ]
+}
