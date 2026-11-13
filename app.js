@@ -8730,7 +8730,18 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const LIVE_OPEN = false; // true로 바꾸면 모두에게 보여요 (지금은 관리자 기기만)
   const liveOn = () => LIVE_OPEN || isAdmin();
   let liveNotes = null, liveLoad = null;
-  const LV_TABS = [['tl', '타임라인'], ['songs', '🎵 노래'], ['mo', '👤 멤버'], ['news', '📢 소식'], ['tmi', '💡 TMI'], ['fan', '💚 숲별']];
+  const LV_TABS = [['tl', '타임라인'], ['songs', '노래'], ['mo', '멤버'], ['news', '소식'], ['tmi', 'TMI'], ['fan', '숲별']];
+  // 라인 아이콘 (칩·탭용)
+  const LV_ICO = {
+    tl: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+    songs: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+    mo: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/>',
+    news: '<path d="M4 10v4h3l6 4V6L7 10z"/><path d="M16.5 9a4 4 0 0 1 0 6"/>',
+    tmi: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/>',
+    fan: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+    ev: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'
+  };
+  const lvIco = k => LV_ICO[k] ? `<svg class="lv-ico" viewBox="0 0 24 24" aria-hidden="true">${LV_ICO[k]}</svg>` : '';
   const LV_MEM = [['두훈', '배두훈'], ['형호', '강형호'], ['민규', '조민규'], ['우림', '고우림']];
   const lvTime = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = String(s % 60).padStart(2, '0'); return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`; };
   const lvTxt = t => esc(t || '').replace(/\(\?\)/g, '<sup class="lv-q" title="자동 자막 기준이라 다를 수 있어요">?</sup>');
@@ -8837,7 +8848,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const sos = r.song ? liveSongs(r.song) : [];
     const name = sos.length ? `${lvTxt(r.t)} ${sos.map(so => `<a class="lv-term lv-song" href="#/song/${encodeURIComponent(so.key)}">🎵 ${esc(so.name)}</a>`).join(' ')}` : lvLinkify(r.t);
     const evs = r.tab === 'songs' ? [] : liveEvents(n, r);
-    const evHtml = evs.length ? `<span class="lv-evs">${evs.map(e => `<a class="lv-ev" href="#/e/${encodeURIComponent(e.id)}">📅 ${esc(e.date.slice(2).replace(/-/g, '.'))} ${esc(e.title.replace(/^(\[[^\]]*\]\s*)+/, '').slice(0, 22))}</a>`).join('')}</span>` : '';
+    const evHtml = evs.length ? `<span class="lv-evs">${evs.map(e => `<a class="lv-ev" href="#/e/${encodeURIComponent(e.id)}">${lvIco('ev')}${esc(e.date.slice(2).replace(/-/g, '.'))} ${esc(e.title.replace(/^(\[[^\]]*\]\s*)+/, '').slice(0, 22))}</a>`).join('')}</span>` : '';
     return `<div class="lv-row" data-s="${r.s}"><button type="button" class="lv-t" data-s="${r.s}">${lvTime(r.s)}</button><div class="lv-x">${name}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}${evHtml}</div><button type="button" class="lv-ln" aria-label="이 장면 링크 복사" data-copy="${esc(link(`#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}`))}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button></div>`;
   }
   function liveBox(n, parts) {
@@ -8851,7 +8862,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         ${parts.length > 1 ? `<div class="chips lv-parts">${parts.map((p, k) => `<a class="chip${p === n ? ' on' : ''}" href="#/e/${encodeURIComponent(p.ev)}?lv=${p.vid}">${k + 1}부</a>`).join('')}</div>` : ''}
         <div class="lv-player"><button type="button" class="lv-start" data-s="${pos > 60 ? pos : 0}"><img src="${ytThumb(n.vid)}" alt="" loading="lazy"><span class="thumb-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg></span><span class="thumb-cap">${pos > 60 ? `${lvTime(pos)}부터 이어보기` : '여기서 바로 보기'}</span></button></div>
         <div class="lv-sum">${sum.slice(0, 3).map(s => `<p>${lvTxt(s)}</p>`).join('')}${sum.length > 3 ? `<details><summary>더보기</summary>${sum.slice(3).map(s => `<p>${lvTxt(s)}</p>`).join('')}</details>` : ''}</div>
-        <div class="chips lv-tabs">${LV_TABS.filter(([k]) => (n[k] || []).length).map(([k, t], j) => `<button type="button" class="chip${j ? '' : ' on'}" data-tab="${k}">${t} <small>${n[k].length}</small></button>`).join('')}</div>
+        <div class="chips lv-tabs">${LV_TABS.filter(([k]) => (n[k] || []).length).map(([k, t], j) => `<button type="button" class="chip${j ? '' : ' on'}" data-tab="${k}">${lvIco(k)}${t} <small>${n[k].length}</small></button>`).join('')}</div>
         <div class="lv-tools"><div class="chips lv-mem">${LV_MEM.map(([m]) => `<button type="button" class="chip" data-mem="${m}">${m}</button>`).join('')}</div><input type="search" class="lv-q-in" placeholder="이 방송에서 찾기" aria-label="이 방송에서 찾기"></div>
         <div class="lv-list"></div>
         ${(n.kw || []).length ? `<p class="lv-kw">${n.kw.filter(k => !/^포레스텔라$|^라이브 방송$/.test(k)).map(k => `<button type="button" class="lv-kwb">#${lvTxt(k)}</button>`).join(' ')}</p>` : ''}
@@ -8945,9 +8956,10 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const el = document.getElementById('lv-page'); if (!el) return;
     loadLive().then(() => {
       if (!document.body.contains(el)) return;
-      const q = new URLSearchParams(location.hash.split('?')[1] || ''), k = q.get('k') || '', qq = (q.get('q') || '').trim();
+      const q = new URLSearchParams(location.hash.split('?')[1] || ''), k = q.get('k') || '', qq = (q.get('q') || '').trim(), mem = k === 'mo' && LV_MEM.some(m => m[0] === q.get('m')) ? q.get('m') : '';
       const all = liveList().slice().reverse();
-      const chips = `<div class="chips lv-k">${[['', '전체'], ['songs', '🎵 노래 모음'], ['news', '📢 소식 모음']].map(([v, t]) => `<a class="chip${k === v ? ' on' : ''}" href="#/live${v ? '?k=' + v : ''}">${t}</a>`).join('')}</div>`;
+      const chips = `<div class="chips lv-k">${[['', '전체'], ['songs', '노래'], ['news', '소식'], ['mo', '멤버별'], ['tmi', 'TMI'], ['fan', '숲별']].map(([v, t]) => `<a class="chip${k === v ? ' on' : ''}" href="#/live${v ? '?k=' + v : ''}">${lvIco(v)}${t}</a>`).join('')}</div>`
+        + (k === 'mo' ? `<div class="chips lv-k lv-mem-k">${[['', '모두'], ...LV_MEM.map(m => [m[0], m[0]])].map(([v, t]) => `<a class="chip${mem === v ? ' on' : ''}" href="#/live?k=mo${v ? '&m=' + encodeURIComponent(v) : ''}">${t}</a>`).join('')}</div>` : '');
       const sbox = `<div class="searchbox lv-all"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input type="search" id="lv-all-in" placeholder="모든 라이브에서 찾기 (예: 고우칩, 불후, 군대)" value="${esc(qq)}" aria-label="모든 라이브에서 찾기"></div>`;
       let body;
       if (qq) {
@@ -8964,7 +8976,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         }).join('');
         body = `<p class="sub">${total ? `${total}곳에서 찾았어요` : '찾은 곳이 없어요'}</p>` + body;
       } else if (!k) body = all.map(n => `<a class="lv-card" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}"><img src="${ytThumb(n.vid)}" alt="" loading="lazy"><div><small>${esc(n.date.replace(/-/g, '.'))}</small><b>${lvTxt(n.title)}</b><p>${lvTxt((n.sum || [])[0] || '')}</p></div></a>`).join('');
-      else body = all.map(n => { const rows = liveRows(n, k); return rows.length ? `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${lvTxt(r.t)}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div></a>`).join('')}</div>` : ''; }).join('');
+      else body = (k === 'mo' ? all.slice().reverse() : all).map(n => { const rows = liveRows(n, k, mem); return rows.length ? `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x">${lvTxt(r.t)}${r.w ? `<small>${lvTxt(r.w)}</small>` : ''}</div></a>`).join('')}</div>` : ''; }).join('');
       el.innerHTML = sbox + chips + `<div class="lv-page-list">${body || '<p class="src-note">아직 없어요.</p>'}</div>`;
       const inp = document.getElementById('lv-all-in');
       let tm = null;
