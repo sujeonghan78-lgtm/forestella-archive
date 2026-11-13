@@ -8746,11 +8746,27 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     (data.tours || []).forEach(t => { const core = (t.name.match(/[<〈]([^>〉]+)[>〉]/) || [])[1] || t.name.replace(/\d{4}|포레스텔라|콘서트|전국\s*투어|투어|in\s+\S+/gi, '').trim(); add(core, '#/tour/' + encodeURIComponent(t.id), 3); });
     programList().forEach(pg => add(pg.name, progHref(pg.name), 3));
     ['배두훈', '강형호', '조민규', '고우림'].forEach(m => terms.delete(m));
-    const list = [...terms.keys()].sort((x, y) => y.length - x.length).map(t => esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    lvDict = { data, terms, loose, rx: list.length ? new RegExp('(' + list.join('|') + ')', 'g') : null };
+    // 방송에서 부른 이름 → 사이트 이름 (한글로 읽은 이름 등)
+    const byFold = new Map([...terms].map(([k, v]) => [lvFold(k), v]));
+    Object.entries(LV_ALIAS).forEach(([al, to]) => { const h = byFold.get(lvFold(to)); if (h && !terms.has(al)) terms.set(al, h); });
+    const fterms = new Map(); terms.forEach((v, k) => { const f = lvFold(esc(k)); if (!fterms.has(f)) fterms.set(f, v); });
+    const list = [...fterms.keys()].sort((x, y) => y.length - x.length).map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    lvDict = { data, terms, fterms, loose, rx: list.length ? new RegExp('(' + list.join('|') + ')', 'g') : null };
     return lvDict;
   }
-  const lvLinkify = t => { const d = lvTerms(), seen = new Set(); let h = lvTxt(t); if (!d.rx) return h; return h.replace(d.rx, m => { const raw = m.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"'); const href = d.terms.get(raw); if (!href || seen.has(href)) return m; seen.add(href); return `<a class="lv-term" href="${href}">${m}</a>`; }).replace(/(<a class="lv-term"[^>]*>[^<]*<\/a>)<sup class="lv-q"[^>]*>\?<\/sup>/g, '$1'); };
+  // 대소문자·악센트 무시 (글자 수는 그대로라 원문 자리에 그대로 링크를 씌울 수 있어요)
+  const lvFold = x => [...String(x || '')].map(c => { if (c.charCodeAt(0) > 0x24f) return c; const n = c.normalize('NFD')[0].toLowerCase(); return n.length === 1 ? n : c; }).join('');
+  const LV_ALIAS = { '미스티크': 'Mystique', '더 웨이브': 'THE WAVE', '유토피아': 'UTOPIA', '스노우 글로브': 'Snow Globe', '아마게돈': 'Armageddon', '더 레거시': 'THE LEGACY', '일루셔니스트': 'THE ILLUSIONIST', '더 라이트': 'The Light' };
+  const lvLinkify = t => {
+    const d = lvTerms(), seen = new Set(), h = lvTxt(t); if (!d.rx) return h;
+    const f = lvFold(h); let out = '', last = 0, m; d.rx.lastIndex = 0;
+    while ((m = d.rx.exec(f))) {
+      const href = d.fterms.get(m[0]), a = m.index, b = a + m[0].length;
+      if (!href || seen.has(href) || h.slice(0, a).lastIndexOf('<') > h.slice(0, a).lastIndexOf('>')) continue;
+      seen.add(href); out += h.slice(last, a) + `<a class="lv-term" href="${href}">${h.slice(a, b)}</a>`; last = b;
+    }
+    return (out + h.slice(last)).replace(/(<a class="lv-term"[^>]*>[^<]*<\/a>)<sup class="lv-q"[^>]*>\?<\/sup>/g, '$1');
+  };
   // 곡 이름 (?)·괄호·'/'로 나눠서 비슷한 곡 찾기
   function liveSongs(raw) {
     const d = lvTerms(), out = [];
@@ -8808,8 +8824,8 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     }
     if (r.tab === 'news' || r.tab === 'tl') {
       const d = lvTerms();
-      (t.match(d.rx || /$^/) || []).forEach(m => {
-        const href = d.terms.get(m); if (!href || href.startsWith('#/song/')) return;
+      (lvFold(esc(t)).match(d.rx || /$^/) || []).forEach(m => {
+        const href = d.fterms.get(m); if (!href || href.startsWith('#/song/')) return;
         const key = decodeURIComponent(href.split('/').pop()).split('?')[0];
         const tour = href.startsWith('#/tour/') && (data.tours || []).find(x => x.id === key);
         data.events.filter(e => { const g = lvDay(e.date) - base; return g >= -3 && g <= 60 && (tour ? (tour.dates || []).includes(e.date) && e.category === '공연' : href.startsWith('#/program/') && e.title.includes(key)); }).slice(0, 2).forEach(push);

@@ -36,10 +36,17 @@ FIX_Q = {'MISTY', '마마', '피타'}   # (?) 붙은 것만 바꾸기
 FIX_RX = re.compile('(' + '|'.join(re.escape(k) for k in sorted(FIX, key=len, reverse=True)) + r')(\(\?\))?')
 CERT_RX = re.compile('(' + '|'.join(re.escape(k) for k in sorted(CERTAIN, key=len, reverse=True)) + r')\(\?\)')
 
+# 아직 확인 안 된 것만 (?) 남기고 나머지는 다 빼기 (11-13 수정 님 '이미 정리된 것도 빼')
+UNSURE = ['저녁 축하 노래', 'FNL 공연', '숲속의 방', '지옥의 환상곡', '우리우리 설날은', '별이 빛나는 밤', '별밤', '발렌시아', 'VALENCIA',
+          '매일 매일', '다시는 너를', 'Days', '김몽초', '굿바이 유튜버', '오나 갑자기 내게 다가와', '고등학교 입시곡', '힐링 캠프',
+          '크리스마스 다 함께', '바미로']
+KEEP_RX = re.compile('(' + '|'.join(re.escape(k) for k in UNSURE) + r')\(\?\)')
+
 def clean(s):
     s = SURE.sub(r'\1', SCORE.sub('', s.replace('`', ''))).strip(' *-·\t|')
     s = CERT_RX.sub(r'\1', FIX_RX.sub(lambda m: m.group(0) if m.group(1) in FIX_Q and not m.group(2) else FIX[m.group(1)], s))
-    s = re.sub(r'(\(([A-Z]+)\))\(\2\)', r'\1', s)   # 마마(MAMA)(MAMA) → 하나만
+    s = re.sub(r'(\(([A-Z]+)\))\(\2\)', r'\1', s)
+    s = KEEP_RX.sub(lambda m: m.group(1) + '\0', s).replace('(?)', '').replace('\0', '(?)')   # 마마(MAMA)(MAMA) → 하나만
     s = re.sub(r"([A-Za-z][\w' ]+)\s*\(\s*\1\s*\)", r'\1', s, flags=re.I)   # Parla più piano(Parla Più Piano) → 하나만
     return re.sub(r'\s{2,}', ' ', s)
 
@@ -71,7 +78,7 @@ def parse(txt):
         m = re.search(r'(?m)^[#\s*]*' + rx + r'[^\n:]*:?', txt)
         if m: pos.append((m.start(), m.end(), k))
     pos.sort()
-    res = {'title': clean(head['title']), 'members': head['mem']}
+    res = {'title': clean(head['title']), 'members': clean(head['mem'])}
     for n, (a, b, k) in enumerate(pos):
         body = txt[b: pos[n + 1][0] if n + 1 < len(pos) else len(txt)]
         if k == 'sum':
