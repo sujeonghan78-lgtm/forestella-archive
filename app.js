@@ -8921,7 +8921,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const b = ev.target.closest('.lv-trb'); if (!b) return;
     const on = !lvTrOn(); try { localStorage.setItem('sb-lv-tr', on ? '1' : '0'); } catch (err) {}
     document.querySelectorAll('.lv-trb').forEach(x => { x.innerHTML = lvTrLabel(); });
-    const root = b.closest('.lv, #lv-page');
+    const root = b.closest('.lv, #lv-page') || document.getElementById('lv-page');
     if (on) { b.disabled = true; lvTrApply(root).finally(() => { b.disabled = false; }); }
     else document.querySelectorAll('.lv-tx[data-tr]').forEach(e => { e.innerHTML = e.dataset.ko; delete e.dataset.tr; delete e.dataset.ko; e.removeAttribute('title'); });
   });
@@ -9091,7 +9091,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   // 라이브 모아보기 (#/live)
   function liveView() {
     if (!liveOn()) return `<div class="about-top"><a class="back" href="#/more">‹ 더보기</a><h1 class="h1">준비 중이에요</h1></div>`;
-    return `<div class="about-top"><a class="back" href="#/more">‹ 더보기</a><h1 class="h1">라이브 다시보기${LIVE_OPEN ? '' : ' <span class="new-tag">나만</span>'}</h1><p class="sub">공식 유튜브 라이브를 요약과 타임라인으로 봐요. 시간을 누르면 그 장면부터 재생돼요.</p></div><div id="lv-page"><p class="src-note">불러오는 중…</p></div>`;
+    return `<div class="about-top"><a class="back" href="#/more">‹ 더보기</a><h1 class="h1">라이브 다시보기${LIVE_OPEN ? '' : ' <span class="new-tag">나만</span>'}</h1><p class="sub">공식 유튜브 라이브를 요약과 타임라인으로 봐요. 시간을 누르면 그 장면부터 재생돼요.</p><button type="button" class="lv-trb lv-trb-top">${lvTrLabel()}</button></div><div id="lv-page"><p class="src-note">불러오는 중…</p></div>`;
   }
   function bindLive() {
     const el = document.getElementById('lv-page'); if (!el) return;
@@ -9121,7 +9121,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         else body = (k === 'mo' ? all.slice().reverse() : all).map(n => { const rows = liveRows(n, k, mem); return rows.length ? `<div class="lv-grp"><a class="lv-grp-h" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}">${esc(n.date.replace(/-/g, '.'))} · ${lvTxt(n.title)} ›</a>${rows.map(r => `<a class="lv-row" href="#/e/${encodeURIComponent(n.ev)}?lv=${n.vid}&t=${r.s}"><span class="lv-t">${lvTime(r.s)}</span><div class="lv-x"><span class="lv-tx">${lvTxt(r.t)}</span>${r.w ? `<small class="lv-tx">${lvTxt(r.w)}</small>` : ''}</div></a>`).join('')}</div>` : ''; }).join('');
         return body || '<p class="src-note">아직 없어요.</p>';
       };
-      el.innerHTML = `<div class="stick lv-stick">${sbox}${chips}<button type="button" class="lv-trb">${lvTrLabel()}</button></div>` + `<div class="lv-page-list">${listHtml(qq)}</div>`; lvTrApply(el);
+      el.innerHTML = `<div class="stick lv-stick">${sbox}${chips}</div>` + `<div class="lv-page-list">${listHtml(qq)}</div>`; lvTrApply(el);
       const inp = document.getElementById('lv-all-in'), box = el.querySelector('.lv-page-list');
       let tm = null;
       // 검색창은 다시 그리지 않고 결과만 바꿔요 (한 글자마다 키보드가 다시 열리던 문제)

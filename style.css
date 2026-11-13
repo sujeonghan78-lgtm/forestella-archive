@@ -2749,3 +2749,4 @@ hr.divider[hidden], .d-block[hidden] { display: none; }
 .lvf-form { margin: 0 0 10px 0; }
 .lvf-form textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; font-size: calc(13px * var(--fs)); }
 .lvf-state { margin: -2px 0 10px; }
+.lv-trb-top { margin: 10px 0 0; background: rgba(255,255,255,.85); }
