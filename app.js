@@ -3210,7 +3210,7 @@
     ['keeper', '🌲', '숲지기', '직관 10번', s => s.went.length >= 10],
     ['grand', '🏕️', '숲의 터줏대감', '직관 30번', s => s.went.length >= 30],
     // 라디오스타에서 우림이 말한 '1년에 열두 번 공연 보러 가면?' (같은 해 / 같은 달 직관 12번)
-    ['y12', '📅', '열두 번의 숲', '1년에 직관 12번', s => { const m = new Map(); s.went.forEach(e => m.set(e.date.slice(0, 4), (m.get(e.date.slice(0, 4)) || 0) + 1)); return Math.max(0, ...m.values()) >= 12; }],
+    ['y12', '🎪', '열두 번의 숲', '1년에 직관 12번', s => { const m = new Map(); s.went.forEach(e => m.set(e.date.slice(0, 4), (m.get(e.date.slice(0, 4)) || 0) + 1)); return Math.max(0, ...m.values()) >= 12; }],
     ['m12', '🔥', '한 달에 열두 번', '한 달에 직관 12번', s => { const m = new Map(); s.went.forEach(e => m.set(e.date.slice(0, 7), (m.get(e.date.slice(0, 7)) || 0) + 1)); return Math.max(0, ...m.values()) >= 12; }],
     ['trip', '🧭', '숲 원정대', '직관 지역 3곳 이상', s => s.regionN >= 3],
     ['ncha', '🎟️', 'N차 숲별', '같은 투어 2번 이상', s => { const m = new Map(); s.went.forEach(e => { const t = tourOfDate(e.date); if (t) m.set(t.id, (m.get(t.id) || 0) + 1); }); const n = Math.max(0, ...m.values()); return n >= 2 && `${n}차 숲별`; }],
@@ -3223,6 +3223,37 @@
     ['y5', '✨', '5년차 숲별', '입덕 5년', () => ddayOf(card.since) > 365 * 5],
   ];
   const cardBadges = (st = boxStats()) => [...annivBadges(), ...CARD_BADGES.map(([k, ic, name, how, f]) => { const r = f(st); return { k, ic, name: typeof r === 'string' ? r : name, how: typeof r === 'string' ? `같은 투어 ${parseInt(r, 10)}번 직관` : how, got: !!r }; })];
+  // 새로 받은 뱃지 알림: 사이트를 열 때 직관 기록으로 새로 받은 뱃지가 있으면 한 번 떠요 (본 것은 sb-badge-seen)
+  const BADGE_SEEN = 'sb-badge-seen';
+  const BADGE_NOTE = { y12: '라디오스타에서 우림이 “공연을 1년에 12번 간다면?”', m12: '라디오스타에서 우림이 “공연을 1년에 12번 간다면?” 그걸 한 달에!' };
+  const BADGE_IMG = { y12: 'covers/badge-rs12.jpg', m12: 'covers/badge-rs12.jpg' };
+  const BADGE_NEW = ['y12', 'm12'];  // 처음 알림을 켤 때, 이미 받은 다른 뱃지는 조용히 본 걸로 쳐요
+  function badgePop() {
+    if (!data || document.querySelector('.mt-pop')) return;
+    let seen = boxRead(BADGE_SEEN);
+    const got = CARD_BADGES.map(b => b[0]).filter(k => cardBadges().some(b => b.k === k && b.got));
+    if (!Array.isArray(seen)) { seen = got.filter(k => !BADGE_NEW.includes(k)); boxWrite(BADGE_SEEN, seen); }
+    const fresh = cardBadges().filter(b => b.got && got.includes(b.k) && !seen.includes(b.k));
+    if (!fresh.length) return;
+    boxWrite(BADGE_SEEN, [...seen, ...fresh.map(b => b.k)]);
+    const B = fresh[0], note = BADGE_NOTE[B.k], el = document.createElement('div');
+    el.className = 'mt-pop'; el.setAttribute('role', 'dialog');
+    el.innerHTML = `<div class="mt-pop-in"><p class="mt-pop-k">🎉 새 뱃지를 받았어요!</p><div class="mt-pop-ic">${B.ic}</div><h2>${esc(B.name)}</h2><p>${esc(B.how)}</p>
+      ${fresh.length > 1 ? `<p class="mt-pop-more">그리고 ${fresh.slice(1).map(x => `${x.ic} <b>${esc(x.name)}</b>`).join(' · ')}</p>` : ''}
+      ${BADGE_IMG[B.k] ? `<img class="bp-img" src="${BADGE_IMG[B.k]}" alt="">` : ''}
+      ${note ? `<small>${esc(note)}</small>` : '<small>숲별 카드에 넣을 수 있어요</small>'}
+      <div class="mt-pop-b"><button type="button" class="mt-go bp-add">💳 숲별 카드에 넣기</button><button type="button" class="mt-sub-btn mt-pop-x">닫기</button></div></div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.classList.add('show'); const r = el.querySelector('.mt-pop-ic').getBoundingClientRect(); anvBurst(r.left + r.width / 2, r.top + r.height / 2, 20); });
+    const close = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); };
+    el.querySelector('.mt-pop-x').onclick = close; el.onclick = ev => { if (ev.target === el) close(); };
+    el.querySelector('.bp-add').onclick = () => {
+      const on = (card.badges || []).filter(k => cardBadges().some(b => b.k === k && b.got));
+      if (on.length < 3) { card.badges = [...on, ...fresh.map(b => b.k).filter(k => !on.includes(k))].slice(0, 3); cardSave(); toast('숲별 카드에 넣었어요.'); }
+      else toast('뱃지는 3개까지예요. 카드에서 바꿔 주세요.');
+      close(); location.hash = '#/card';
+    };
+  }
   const STK_KEY = 'sb-card-stk';
   let cardStk = boxRead(STK_KEY) || [];  // [{ src, x, y, w, r, shape }] 카드 바깥 틀 기준 위치
   let cardStkImg = new Map(), cardSel = -1, cardExport = false;
@@ -8900,6 +8931,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       syncHides();
       boxPull();
       setTimeout(heartSync, 4000);
+      setTimeout(badgePop, 2500);
     } catch (err) {
       showError(err);
     }
