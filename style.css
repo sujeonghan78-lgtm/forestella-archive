@@ -2663,4 +2663,21 @@ body.tree-full .toast { z-index: 70; bottom: calc(235px + env(safe-area-inset-bo
 .pi{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .post-noimg .pi{width:26px;height:26px;color:var(--muted)}
 .about-top .post-trbar .chip{padding:3px 9px;min-height:0;height:auto;font-size:12px;line-height:1.4}
-.bp-img { display: block; width: 100%; border-radius: 12px; margin: 2px 0 8px; }
+.bp-pop { background: rgba(14, 22, 18, .62); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.bp-card { position: relative; width: 100%; max-width: 330px; border-radius: 24px; background: #fff; color: #23302A; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.35); transform: translateY(16px) scale(.94); transition: transform .4s cubic-bezier(.2,1.3,.4,1); }
+.bp-pop.show .bp-card { transform: none; }
+.bp-top { height: 70px; background: linear-gradient(135deg, #FBEFD5, #F6DCE3 60%, #DDE9F5); }
+.bp-medal { position: relative; width: 76px; height: 76px; margin: -38px auto 0; border-radius: 50%; background: linear-gradient(145deg, #FFE9A8, #E7B54C 55%, #C98E2B); padding: 4px; box-shadow: 0 6px 16px rgba(160,110,20,.35); animation: none; }
+.bp-medal span { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; background: #FFFBF0; font-size: 38px; line-height: 1; animation: mtPopIc 1.8s ease-in-out infinite; }
+.bp-body { padding: 10px 22px 18px; text-align: center; }
+.bp-k { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .18em; color: #C98E2B; }
+.bp-body h2 { margin: 4px 0 6px; font-size: 22px; letter-spacing: -.01em; }
+.bp-how { display: inline-block; margin: 0 0 12px; padding: 4px 12px; border-radius: 99px; background: #F3F1EA; font-size: 13px; font-weight: 600; color: #5B5446; }
+.bp-fig { margin: 0 0 14px; border-radius: 14px; overflow: hidden; background: #F6F3EC; }
+.bp-fig img { display: block; width: 100%; aspect-ratio: 720 / 351; object-fit: cover; }
+.bp-fig figcaption { padding: 8px 12px 9px; font-size: 12px; line-height: 1.45; color: #6B6355; }
+.bp-more { margin: -4px 0 14px; font-size: 12.5px; color: #8A7A55; }
+.bp-b { display: flex; gap: 8px; }
+.bp-b button { flex: 1; min-height: 46px; border-radius: 14px; font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+.bp-x { flex: 0 0 34% !important; border: 1px solid #E5E2DA; background: #fff; color: #6B6355; }
+.bp-add { border: 0; background: #23302A; color: #fff; }
