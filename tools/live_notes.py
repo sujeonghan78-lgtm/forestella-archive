@@ -16,8 +16,26 @@ TIME = r'(?<![\d:])(\d{1,2}):(\d{2})(?![\d:])'
 SCORE = re.compile(r'\s*\d+(?:\.\d+)?\s*(?:초|dB|데시벨|점)(?:으로|로|의|를|을|에)?(?=[\s,.)]|$)')
 SURE = re.compile(r'(배두훈|강형호|조민규|고우림|두훈|형호|민규|우림|포레스텔라|숲별)\(\?\)')
 
+# 자막이 소리 나는 대로 받아 적은 곡 이름 → 정식 표기
+FIX = {'빠르라 피아노': 'Parla più piano', '인 운알트라 비타': "In Un'altra Vita", '스카브로 페어': 'Scarborough Fair',
+       '나우 위 아 프리': 'Now We Are Free', '아마게돈': 'Armageddon', '스노우 글로브': 'Snow Globe', '유토피아': 'UTOPIA',
+       '이너 유니버스': 'Inner Universe', '샤갈 스트림': "Chagall's Dream", '불후의명곡': '불후의 명곡'}
+# 확실한 이름은 (?) 빼기 (프로그램·곡·장소·사람)
+CERTAIN = ['불후의 명곡', '열린음악회', '뮤직뱅크', '가요대축제', '유퀴즈', '유퀴즈 온 더 블럭', '전참시', '전지적 참견 시점', '나 혼자 산다',
+           '구해줘! 홈즈', 'SNL', 'MAMA', 'Mnet MAMA', '엠카', '코첼라', '고척돔', '체조경기장', '올림픽홀', '서울 올림픽공원 올림픽홀',
+           '비트인터렉티브', '숲별봉', '렌트', '뮤지컬 렌트', 'KOOL', 'Utopia', 'UTOPIA', 'Everything', 'Snow Globe', 'Armageddon',
+           'Scarborough Fair', 'Now We Are Free', "In Un'altra Vita", 'Parla più piano', 'Parla Più Piano', 'Piano', 'Inner Universe',
+           "Chagall's Dream", 'My Eden', '꽃병', '제비꽃', '달팽이', '내 마음에 주단을 깔고', '바람이 분다', '테스형', '라젠카', '아브라카다브라',
+           '검은 고양이 네로', '어버이 은혜', '스승의 은혜', '생일 축하 노래', '레이디 가가', '칸노 요코', 'Kanno Yoko', '김세황', '황성제',
+           '더 웨이브', 'THE LEGACY', '뉴노멀 라이브', '모노드라마', '스파이', '숲별 3기', '숲별 2.5기', '시즌 그리팅', '포레시피', '포레위키',
+           '포레스텔라 나이트 라이브 쇼', '블랙 콘서트', '삼달리', '인사이드 아웃', '살리에르', '아마데우스', '모나리자']
+FIX_RX = re.compile('(' + '|'.join(re.escape(k) for k in sorted(FIX, key=len, reverse=True)) + r')(\(\?\))?')
+CERT_RX = re.compile('(' + '|'.join(re.escape(k) for k in sorted(CERTAIN, key=len, reverse=True)) + r')\(\?\)')
+
 def clean(s):
     s = SURE.sub(r'\1', SCORE.sub('', s.replace('`', ''))).strip(' *-·\t|')
+    s = CERT_RX.sub(r'\1', FIX_RX.sub(lambda m: FIX[m.group(1)], s))
+    s = re.sub(r"([A-Za-z][\w' ]+)\s*\(\s*\1\s*\)", r'\1', s, flags=re.I)   # Parla più piano(Parla Più Piano) → 하나만
     return re.sub(r'\s{2,}', ' ', s)
 
 def entries(body, n):
