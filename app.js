@@ -6488,22 +6488,20 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const TB_PC = ['#fff0b3', '#e3eed8', '#f8dcd3'];
   // 쪽 배치 틀: 쪽마다 돌아가며 — 큰 글 하나 + 작은 글들 / 종이 두 장 겹침 + 작은 글 / 크기 다른 펜글씨. 폴라로이드가 있는 쪽은 폴라로이드가 중심
   const TB_TPL = ['hero', 'scatter', 'layer', 'list', 'quote', 'tape'];
-  function tbRole(pg, el) {
-    el.classList.remove('tb-quote', 'tb-li', 'tb-tag', 'tb-wide', 'tb-tiny', 'tb-hero', 'tb-lay1', 'tb-lay2', 'tb-sm', 'tb-sc', 'tb-sc-big', 'tb-alt', 'tb-pp', 'tb-postit', 'tb-grid', 'tb-lined', 'tb-torn', 'tb-dood', 'tb-dd0', 'tb-dd1', 'tb-dd2');
+  function tbRole(pg, el) { // 글 길이로 모양을 정해요 (손편지 느낌): 아주 짧음=펜 크게+손그림 동그라미, 짧음=형광펜 한 줄, 중간=찢은 줄노트, 긴 글=접었다 편 편지
+    el.classList.remove('tb-c1', 'tb-c2', 'tb-c3', 'tb-c4', 'tb-alt', 'tb-pp', 'tb-lined', 'tb-torn', 'tb-postit', 'tb-grid');
     el.querySelectorAll('.tb-fx').forEach(f => f.remove());
     if (!el.classList.contains('tb-orn')) return;
-    const T = pg.dataset.tpl, no = +pg.dataset.no, m = el.querySelector('.tb-m'), len = ((m && m.textContent) || '').length, h = tbH(el.dataset.id);
-    const k = [...pg.querySelectorAll('.tb-orn')].indexOf(el), hasPair = !!pg.querySelector('.tb-pair');
-    const paper = P => { el.classList.add('tb-pp', 'tb-' + P); el.style.setProperty('--pc', TB_PC[(no + k) % TB_PC.length]); el.style.setProperty('--tc3', TB_TAPE[(no + k + 1) % TB_TAPE.length]); if (P !== 'postit') { const t = document.createElement('i'); t.className = 'tb-fx tb-fx-tape'; el.appendChild(t); } };
-    const wide = len > 70;
-    if (!hasPair && T === 'hero' && !pg.querySelector('.tb-hero') && len <= 110) { el.classList.add('tb-hero'); paper(no % 4 < 2 ? 'lined' : 'postit'); return; }
-    if (T === 'layer' && pg.querySelectorAll('.tb-lay1, .tb-lay2').length < (hasPair ? 1 : 2) && len <= 90) { const n = pg.querySelector('.tb-lay1') ? 2 : 1; el.classList.add('tb-lay' + n); if (len <= 12) el.classList.add('tb-tiny'); paper(n === 1 ? (no % 2 ? 'grid' : 'torn') : 'postit'); return; }
-    if (T === 'quote' && !pg.querySelector('.tb-quote') && len <= 60) { el.classList.add('tb-quote'); return; } // 인용구처럼 가운데 크게
-    if (T === 'list') { el.classList.add('tb-li'); el.style.setProperty('--lc', ['#7fa88c', '#d9a520', '#c0533a'][k % 3]); return; } // 목록처럼 한 줄씩
-    if (T === 'tape' && len <= 24) { el.classList.add('tb-tag'); el.style.setProperty('--tc3', TB_TAPE[(no + k) % TB_TAPE.length]); return; } // 마스킹 테이프 위에 쓴 글
-    if (T === 'scatter') { el.classList.add('tb-sc'); if (wide) el.classList.add('tb-wide'); if (len <= 24) el.classList.add('tb-sc-big'); if (k % 2) el.classList.add('tb-alt'); if (len <= 40 && h % 3 === 0) el.classList.add('tb-dood', 'tb-dd' + (h >>> 4) % 3); return; }
-    el.classList.add('tb-sm'); if (wide) el.classList.add('tb-wide'); if (k % 2) el.classList.add('tb-alt');
+    const m = el.querySelector('.tb-m'), t = ((m && m.textContent) || '').trim(), len = [...t].length, h = tbH(el.dataset.id);
+    const k = [...pg.querySelectorAll('.tb-orn')].indexOf(el), no = +pg.dataset.no || 0, c = (no + k) % 3;
+    el.style.setProperty('--hc', ['rgba(242,212,138,.75)', 'rgba(185,211,168,.8)', 'rgba(234,167,154,.6)'][c]);
+    el.style.setProperty('--tc3', TB_TAPE[(c + 1) % 3]);
+    if (len <= 8) { el.classList.add('tb-c1', 'tb-dd' + (h % 2)); return; }
+    if (len <= 30) { el.classList.add('tb-c2'); if (k % 2) el.classList.add('tb-alt'); return; }
+    if (len <= 80) { el.classList.add('tb-c3', 'tb-pp', h % 2 ? 'tb-lined' : 'tb-torn'); if (k % 2) el.classList.add('tb-alt'); const tp = document.createElement('i'); tp.className = 'tb-fx tb-fx-tape'; el.appendChild(tp); return; }
+    el.classList.add('tb-c4');
   }
+
   const TB_MAG = ['#e66b6b', '#5b9bd5', '#f2c14e', '#6cbf84', '#b48ad8'];
   const TB_PEN = ['<svg viewBox="0 0 60 40"><path d="M56 6C40 4 18 10 8 30" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round"/><path d="M5 22l3 9 8-5" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M56 30c-8-14-20-4-14 2s10-8-6-16S14 14 6 18" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12l-6 6 8 3" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M54 34C44 20 30 14 8 14" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 3"/><path d="M14 8l-7 6 7 6" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="34" y="10" font-size="8" fill="#3f6e5a" font-family="Gaegu">♡</text></svg>'];
   function tbStyle(it) {
