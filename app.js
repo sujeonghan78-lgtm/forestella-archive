@@ -6483,21 +6483,26 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   // 글을 다 풀어 넣은 뒤 꾸밈: 길이로 칸 너비, 글마다 손글씨 글꼴·이름 정렬·날짜 쓰는 법을 번호로 골라요
   const TB_KEY = /(사랑해요?|사랑합니다|고마워요?|고맙습니다|감사합니다|행복해요?|행복하세요|응원해요?|응원합니다|함께|기억해요?|보고 싶어요?|건강하세요|ありがとう|大好き|愛してる|応援)/;
   const tbDayFmt = (d, h) => { const m = +d.slice(5, 7), dd = +d.slice(8); return [`${m}.${dd}`, `${m}월 ${dd}일`, `${m}/${dd}`, `${dd}일`, `${m}.${String(dd).padStart(2, '0')}`][h % 5]; };
+  const TB_PAPER = ['postit', 'postit', 'lined', 'grid', 'kraft', 'torn', 'card', 'postit', 'lined', 'board'];
+  const TB_PC = ['#fff1a8', '#ffd9e2', '#d8f0e3', '#dfe7ff', '#ffe2c4', '#efe0ff', '#e6f5b8', '#c9eef0', '#ffd0c2'];
+  const TB_MAG = ['#e66b6b', '#5b9bd5', '#f2c14e', '#6cbf84', '#b48ad8'];
+  const TB_PEN = ['<svg viewBox="0 0 60 40"><path d="M56 6C40 4 18 10 8 30" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round"/><path d="M5 22l3 9 8-5" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M56 30c-8-14-20-4-14 2s10-8-6-16S14 14 6 18" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12l-6 6 8 3" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M54 34C44 20 30 14 8 14" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 3"/><path d="M14 8l-7 6 7 6" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="34" y="10" font-size="8" fill="#3f6e5a" font-family="Gaegu">♡</text></svg>'];
   function tbStyle(it) {
     const h = tbH(it.dataset.id), m = it.querySelector('.tb-m'), t = (m && m.textContent) || '', len = t.length, who = it.querySelector('.tb-who'), pair = it.classList.contains('tb-pair');
     const note = pair ? it.querySelector('.tb-note') : it;
     note.classList.add(['tb-wl', 'tb-wc', 'tb-wr'][(h >>> 5) % 3]);
+    if (/[\u3040-\u30ff]/.test(t)) note.classList.add('tb-ja'); // 일본어 글은 일본어 손글씨체로만
+    if (pair && (h >>> 3) % 2 === 0) { const el = document.createElement('i'); el.className = 'tb-pen tb-pen' + ((h >>> 6) % 3); el.innerHTML = TB_PEN[(h >>> 6) % 3]; it.appendChild(el); } // 폴라로이드 쪽을 가리키는 펜 화살표
     if (pair) { if (len > 60) it.classList.add('tb-stack'); return; } // 폴라로이드는 원래 글씨, 긴 글은 사진 아래로
     note.classList.add('tb-f' + ((h >>> 2) % 5), len <= 30 ? 'tb-short' : len <= 80 ? 'tb-mid' : 'tb-long');
     if ((h >>> 9) % 2) note.classList.add('tb-right');
-    // 종이 꾸밈: 포스트잇·줄 노트 조각·모눈 종이·손그림 낙서 (글마다 번호로 고정)
-    const g = tbH(it.dataset.id + 'paper'), bg = g % 10;
-    if (bg < 2) { note.classList.add('tb-postit'); note.style.setProperty('--pc', ['#fff1a8', '#ffd9e2', '#d8f0e3', '#dfe7ff'][(g >>> 4) % 4]); }
-    else if (bg === 2) note.classList.add('tb-lined');
-    else if (bg === 3) note.classList.add('tb-grid');
-    else if (len <= 40 && (g >>> 6) % 3 === 0) note.classList.add('tb-dood', 'tb-dd' + ((g >>> 9) % 3));
-    // 밑줄은 마음이 담긴 말(사랑해요·고마워요·응원해요 같은 낱말)에만, 그 부분만
-    const k = t.match(TB_KEY); if (k && m) { const i = t.indexOf(k[0]); m.innerHTML = esc(t.slice(0, i)) + `<mark class="tb-mk${(h >>> 7) % 2}">${esc(k[0])}</mark>` + esc(t.slice(i + k[0].length)); }
+    // 종이 꾸밈: 글마다 하나씩 (포스트잇·줄 노트·모눈·크라프트·찢은 종이·메모 카드·클립보드) + 붙이는 것(테이프·클립·자석·압정)
+    const g = tbH(it.dataset.id + 'paper'), P = TB_PAPER[g % TB_PAPER.length];
+    note.classList.add('tb-pp', 'tb-' + (P === 'board' && len < 50 ? 'card' : P));
+    note.style.setProperty('--pc', TB_PC[(g >>> 4) % TB_PC.length]);
+    note.style.setProperty('--tc3', TB_TAPE[(g >>> 7) % TB_TAPE.length]);
+    if (P !== 'board') { const fx = ['tape', 'tape', 'tape2', 'clip', 'mag', 'pin', ''][(g >>> 10) % 7]; if (fx) { const el = document.createElement('i'); el.className = 'tb-fx tb-fx-' + fx; if (fx === 'mag') el.style.setProperty('--mc', TB_MAG[(g >>> 13) % TB_MAG.length]); note.appendChild(el); } }
+    if (len <= 40 && (g >>> 16) % 3 === 0) note.classList.add('tb-dood', 'tb-dd' + ((g >>> 18) % 3));
   }
   function tbPola(id, photo, cap, extra = '') { // 폴라로이드: 실제 비율(88:107), 정사각 사진 + 아래 두꺼운 여백에 제목 한 줄
     const ph = tbH(id);
@@ -6518,11 +6523,11 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     else if (pick === 1) add('tb-stamp', '<b>숲별</b><small>2026</small>'); // 동그란 도장
     else if (pick === 2) add('tb-wave'); // 아래 손그림 물결선
     else if (pick === 3) add('tb-dots'); // 아래 작은 별 점선
-    else if (pick === 4) add('tb-ticket', 'FORESTELLA ♪ ADMIT ONE'); // 티켓 조각
+    else if (pick === 4) add('tb-corner tb-corner2'); // 왼쪽 위 테이프
   }
   function tbLvPage(list) { // 연달아 오른 레벨은 한 쪽에 — 트리 사진을 붙인 폴라로이드처럼
     const last = list[list.length - 1][0], id = 'lv' + last;
-    return `<section class="tb-page tb-lv" data-sec="lv">${tbPola(id, `<span class="tb-lv-art">${TB_LV_ART[last] || '🎄'}</span>`, `Lv${last + 1} ${esc(lvN(TREE_LV[last]))}`, ' tb-big')}<div class="tb-lv-txt">${list.map(([i, d]) => `<h2>Lv${i + 1} ${esc(lvN(TREE_LV[i]))}</h2><p>${L3(`${tbFmt(d)}, 트리가 한 뼘 자랐어요`, `${tbFmt(d)}: the tree grew`, `${tbFmt(d)}、ツリーが育ちました`)}</p>`).join('')}</div><span class="tb-pn"></span></section>`;
+    return `<section class="tb-page tb-lv" data-sec="lv"><div class="tb-lv-stks">${list.map(([i], k) => `<span class="tb-lv-stk" style="--r:${k % 2 ? 8 : -6}deg">${TB_LV_ART[i] || '🎄'}</span>`).join('')}</div><div class="tb-lv-txt">${list.map(([i, d]) => `<h2>Lv${i + 1} ${esc(lvN(TREE_LV[i]))}</h2><p>${L3(`${tbFmt(d)}, 트리가 한 뼘 자랐어요`, `${tbFmt(d)}: the tree grew`, `${tbFmt(d)}、ツリーが育ちました`)}</p>`).join('')}</div><span class="tb-pn"></span></section>`;
   }
   function treeBookView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || ''), demo = qs.get('demo') === '1' && isAdmin(), to = qs.get('to') || '';
@@ -6540,6 +6545,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         <section class="tb-page tb-intro" data-sec="intro"><h2>${L3('이 책은요', 'About this book', 'この本は')}</h2><p>${L3(`2026년 11월 5일부터 12월 24일까지<br><b>${n.people}명</b>의 숲별이 물을 주고<br>오너먼트 <b>${n.orn}개</b>와 폴라로이드 <b>${n.pola}장</b>을 달았어요.`, `From Nov 5 to Dec 24, 2026,<br><b>${n.people}</b> fans watered the tree and hung<br><b>${n.orn}</b> ornaments and <b>${n.pola}</b> polaroids.`, `2026年11月5日から12月24日まで<br><b>${n.people}人</b>が水をあげ<br>オーナメント<b>${n.orn}個</b>とポラロイド<b>${n.pola}枚</b>を飾りました。`)}</p><p class="tb-sm">${L3('한 장 한 장, 달린 순서대로 담았어요.', 'In the order they were hung.', '飾られた順に')}</p><span class="tb-pn"></span></section>
         <section class="tb-page tb-end" data-sec="end"><h2>${L3('숲별 트리를 꾸민 숲별 일동', 'From all the fans who decorated the tree', 'ツリーを飾ったファン一同')}</h2><div class="tb-stats"><div><b>${n.fans}</b><span>${L3('명', 'fans', '人')}</span></div><div><b>${n.all}</b><span>${L3('편지', 'letters', '手紙')}</span></div></div><p class="tb-sm">${L3('늘 고마워요, 포레스텔라 💚', 'Thank you always, Forestella 💚', 'いつもありがとう、フォレステラ 💚')}</p><span class="tb-pn"></span></section>
       </div><div id="tb-src" hidden>${src2}</div>
+      <div class="tb-progw"><i id="tb-prog"></i></div>
       <div class="tb-bar"><button class="tb-nav" id="tb-prev" aria-label="${L3('앞 쪽', 'Previous', '前へ')}">‹</button><button class="tb-cnt" id="tb-cnt"></button><button class="tb-nav" id="tb-next" aria-label="${L3('다음 쪽', 'Next', '次へ')}">›</button></div>
       <div class="tb-toc" id="tb-toc" hidden></div></div>`;
   }
@@ -6567,7 +6573,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     await Promise.all([...srcEl.querySelectorAll('[data-id]')].map(it => { const o = orn.find(x => x.id === it.dataset.id); if (!o || o.plain) return null; it.dataset.rd = 1;
       return treeRead(o).then(t => { const m = it.querySelector('.tb-m'); if (m) m.textContent = t == null ? '🔒' : t; }).catch(() => {}); }));
     if (!document.getElementById('tb-font')) { const l = document.createElement('link'); l.id = 'tb-font'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Pen+Script&family=Hi+Melody&family=Gamja+Flower&family=Poor+Story&family=Yomogi&display=swap'; document.head.appendChild(l); }
-    await Promise.race([Promise.all([document.fonts ? document.fonts.ready : null, document.fonts ? document.fonts.load('16px Gaegu').catch(() => {}) : null, ...['20px "Nanum Pen Script"', '16px "Hi Melody"', '16px "Gamja Flower"', '16px "Poor Story"', '16px Yomogi'].map(f => document.fonts ? document.fonts.load(f).catch(() => {}) : null)]), new Promise(r => setTimeout(r, 3000))]);
+    await Promise.race([Promise.all([document.fonts ? document.fonts.ready : null, document.fonts ? document.fonts.load('16px Gaegu').catch(() => {}) : null, ...['20px "Nanum Pen Script"', '16px "Hi Melody"', '16px "Gamja Flower"', '16px "Poor Story"', '16px Yomogi'].map(f => document.fonts ? document.fonts.load(f).catch(() => {}) : null), document.fonts ? document.fonts.load('16px Yomogi', srcEl.textContent.replace(/[^\u3000-\u30ff\u4e00-\u9fff\uff00-\uffef]/g, '') || 'あ').catch(() => {}) : null]), new Promise(r => setTimeout(r, 3000))]);
     if (!book.isConnected) return; book.classList.remove('tb-wait'); srcEl.querySelectorAll('.tb-it').forEach(tbStyle);
     { const top = book.getBoundingClientRect().top, h = Math.max(320, window.innerHeight - top - 74), w = Math.min(book.parentNode.clientWidth, Math.round(h * 148 / 210)); book.style.width = w + 'px'; book.style.height = Math.round(w * 210 / 148) + 'px'; } // 화면 가득 (책 비율 148:210)
     tbPack(book);
@@ -6588,7 +6594,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     let pf = null; // 종이 넘김 (StPageFlip, lib/page-flip.browser.js). 못 불러오면 예전 방식
     const go = d => { if (pf) { d > 0 ? pf.flipNext() : pf.flipPrev(); return; } const j = tbI + d; if (j < 0 || j >= N) return; show(j, d); };
     const goTo = n => { if (pf) pf.turnToPage(n), after(n); else show(n); };
-    const after = n => { tbI = n; document.getElementById('tb-cnt').textContent = `${n + 1} / ${N}`; try { localStorage.setItem('sb-tbook-p', n); } catch (e) {} read(n); };
+    const after = n => { tbI = n; document.getElementById('tb-cnt').textContent = `${n + 1} / ${N}`; const pb = document.getElementById('tb-prog'); if (pb) pb.style.width = ((n + 1) / N * 100) + '%'; try { localStorage.setItem('sb-tbook-p', n); } catch (e) {} read(n); };
     const startPf = () => { if (!window.St || !window.St.PageFlip || !book.isConnected) return;
       const r = book.getBoundingClientRect(); pages.forEach(p => p.classList.add('on'));
       pf = new window.St.PageFlip(book, { width: Math.round(r.width), height: Math.round(r.height), size: 'fixed', usePortrait: true, showCover: false, startPage: tbI, maxShadowOpacity: .35, flippingTime: 650, mobileScrollSupport: false, disableFlipByClick: true, clickEventForward: true, drawShadow: true, useMouseEvents: false });
