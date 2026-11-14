@@ -6555,14 +6555,14 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       document.getElementById('tb-cnt').textContent = `${tbI + 1} / ${N}`;
       try { localStorage.setItem('sb-tbook-p', tbI); } catch (e) {} read(tbI); };
     let pf = null; // 종이 넘김 (StPageFlip, lib/page-flip.browser.js). 못 불러오면 예전 방식
-    const go = d => { if (pf) { d > 0 ? pf.flipNext() : pf.flipPrev(); return; } const j = tbI + d; if (j < 0 || j >= N) return; show(j, d); };
+    const go = d => { if (pf) { d > 0 ? pf.flipNext() : pf.flipPrev(); return; } /* flipPrev: 세로 한 쪽 모드에선 lib 고친 판(left+10)으로 */ const j = tbI + d; if (j < 0 || j >= N) return; show(j, d); };
     const goTo = n => { if (pf) pf.turnToPage(n), after(n); else show(n); };
     const after = n => { tbI = n; document.getElementById('tb-cnt').textContent = `${n + 1} / ${N}`; const pb = document.getElementById('tb-prog'); if (pb) pb.style.width = ((n + 1) / N * 100) + '%'; try { localStorage.setItem('sb-tbook-p', n); } catch (e) {} read(n); };
     const startPf = () => { if (!window.St || !window.St.PageFlip || !book.isConnected) return;
       const r = book.getBoundingClientRect(); pages.forEach(p => p.classList.add('on'));
       pf = new window.St.PageFlip(book, { width: Math.round(r.width), height: Math.round(r.height), size: 'fixed', usePortrait: true, showCover: false, startPage: tbI, maxShadowOpacity: .35, flippingTime: 650, mobileScrollSupport: false, disableFlipByClick: true, clickEventForward: true, drawShadow: true, useMouseEvents: false });
       pf.loadFromHTML(pages); book.classList.add('tb-pf'); pf.on('flip', e => after(e.data)); after(tbI); };
-    if (window.St && window.St.PageFlip) startPf(); else { const sc = document.createElement('script'); sc.src = 'lib/page-flip.browser.js?v=1'; sc.onload = startPf; document.head.appendChild(sc); }
+    if (window.St && window.St.PageFlip) startPf(); else { const sc = document.createElement('script'); sc.src = 'lib/page-flip.browser.js?v=2'; sc.onload = startPf; document.head.appendChild(sc); }
     document.getElementById('tb-prev').onclick = () => go(-1); document.getElementById('tb-next').onclick = () => go(1);
     book.onclick = e => { if (e.target.closest('a,button')) return; const r = book.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; if (x < .3) go(-1); else if (x > .7) go(1);
       else { const it = e.target.closest('.tb-it'), m = it && it.querySelector('.tb-m'); if (!m || m.scrollHeight <= m.clientHeight + 2) return; const f = document.createElement('div'); f.className = 'tb-full'; f.innerHTML = `<div><p></p>${it.querySelector('.tb-who').outerHTML}<button>${L3('닫기', 'Close', '閉じる')}</button></div>`; f.querySelector('p').textContent = m.textContent; f.onclick = ev => { if (ev.target === f || ev.target.tagName === 'BUTTON') f.remove(); }; document.body.appendChild(f); } };
