@@ -2832,188 +2832,36 @@ body.tb-full .tb-live { position: fixed; inset: 0; z-index: 60; background: line
 .tb-book.tb-wait { opacity: .35; }
 .tb-page { overflow: hidden; } .tb-m { overflow-wrap: anywhere; }
 
-/* ── 📖 트리 책: 스크랩북 꾸밈 (11-14) — 색·글씨는 이 칸만 바꾸면 돼요 ── */
-.tb-wrap { --tb-paper: #fbf6ea; --tb-ink: #3b3128; --tb-sub: #9a8b78; --tb-accent: #c0533a; --tb-plain: 'Gowun Dodum', var(--sans); --tb-pen: 'Nanum Pen Script', 'Yomogi', 'Gaegu', var(--sans); }
-.tb-page { background: var(--tb-paper) radial-gradient(rgba(120,100,70,.09) 1px, transparent 1.2px) 0 0 / 13px 13px; color: var(--tb-ink); font-family: 'Gaegu', 'Yomogi', var(--sans); padding: 9% 9% 10%; }
-.tb-page h1, .tb-page h2 { font-family: var(--tb-pen); font-weight: 400; }
-.tb-msg .tb-in { display: flex; flex-direction: column; }
-.tb-pdate { font-family: var(--tb-plain); font-size: 9.5px; letter-spacing: 1px; color: var(--tb-sub); margin: 0 0 8px; }
-.tb-items { gap: 22px 8% !important; align-content: flex-start; }
-.tb-items.tb-spread { flex: 1; align-content: space-evenly; }
-/* 손글씨 글꼴 다섯 가지 (일본어는 Yomogi로) */
-.tb-f0 .tb-m { font-family: 'Gaegu', 'Yomogi', sans-serif; font-size: 15px; }
-.tb-f1 .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif; font-size: 19px; line-height: 1.25 !important; }
-.tb-f2 .tb-m { font-family: 'Hi Melody', 'Yomogi', sans-serif; font-size: 16px; }
-.tb-f3 .tb-m { font-family: 'Gamja Flower', 'Yomogi', sans-serif; font-size: 15px; }
-.tb-f4 .tb-m { font-family: 'Poor Story', 'Yomogi', sans-serif; font-size: 14.5px; }
-/* 폴라로이드: 규격 고정 88:107, 글씨는 원래 글꼴 */
-.tb-pola { position: relative; flex: none !important; width: 100%; aspect-ratio: 88 / 107; background: #fff; padding: 6.5% 6.5% 0 !important; box-sizing: border-box; box-shadow: 0 2px 6px rgba(60,40,20,.18); transform: rotate(var(--r, 0deg)) !important; margin: 0; display: flex; flex-direction: column; }
-.tb-pola .tb-ph { width: 100%; aspect-ratio: 1; background: #d9e2d3; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.tb-pola figcaption { flex: 1; display: flex; align-items: center; justify-content: center; font-family: var(--tb-plain); font-size: 11px; color: #3b3128; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
-.tb-pola::before, .tb-pola.tb-tape2::after { content: ''; position: absolute; width: 42%; height: 15px; background: var(--tc); opacity: .82; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.4) 0 4px, transparent 4px 9px); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
-.tb-pola.tb-tape1::before { top: -8px; left: 29%; transform: rotate(var(--ta)); }
-.tb-pola.tb-tape2::before { top: 2px; left: -10%; width: 32%; transform: rotate(-38deg); }
-.tb-pola.tb-tape2::after { bottom: 6px; right: -10%; width: 32%; transform: rotate(-38deg); background-color: var(--tc2); }
-.tb-pair { flex: 0 0 100%; display: flex; gap: 6%; align-items: center; }
-.tb-pair.tb-rev { flex-direction: row-reverse; }
-.tb-pair .tb-pola { width: 46%; }
-.tb-pair .tb-note { flex: 1; min-width: 0; }
-.tb-pair .tb-m { font-family: var(--tb-plain); font-size: 12.5px; line-height: 1.55; }
-.tb-pair.tb-stack { flex-direction: column; align-items: flex-start; gap: 10px; } .tb-pair.tb-stack.tb-rev { align-items: flex-end; }
-.tb-pair.tb-stack .tb-pola { width: 52%; } .tb-pair.tb-stack .tb-note { width: 100%; }
-/* 글귀: 짧은 건 한 줄에 둘, 중간은 폭 좁게, 긴 건 넓게 */
-.tb-note { transform: rotate(var(--r, 0deg)); box-sizing: border-box; }
-.tb-note .tb-m { margin: 0 0 3px !important; color: var(--tb-ink); display: block !important; line-height: 1.4; overflow-wrap: anywhere; }
-.tb-note .tb-who { font-family: var(--tb-plain); font-size: 9px !important; color: var(--tb-sub); opacity: .75; margin: 2px 0 0; }
-.tb-orn { border: 0 !important; padding: 0 !important; display: block !important; }
-.tb-orn.tb-short { flex: 0 0 46% !important; } .tb-orn.tb-mid { flex: 0 0 72% !important; } .tb-orn.tb-long { flex: 0 0 100% !important; }
-.tb-orn.tb-mid.tb-right { margin-left: auto; }
-.tb-wl .tb-who { text-align: left; } .tb-wc .tb-who { text-align: center; } .tb-wr .tb-who { text-align: right; }
-mark.tb-mk0 { background: linear-gradient(transparent 55%, rgba(255,214,107,.6) 55%); color: inherit; }
-mark.tb-mk1 { background: none; color: inherit; text-decoration: underline wavy rgba(192,83,58,.55); text-underline-offset: 4px; }
-.tb-fit .tb-note .tb-m { font-size: 13px !important; } .tb-clip .tb-note .tb-m { display: -webkit-box !important; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
-.tb-solo .tb-orn { flex-basis: 90% !important; text-align: center; } .tb-solo .tb-note .tb-m { font-size: 19px !important; line-height: 1.6 !important; }
-.tb-stk { position: absolute; width: 20px; height: 20px; transform: rotate(var(--r)); pointer-events: none; opacity: .9; } .tb-stk svg { width: 100%; height: 100%; display: block; }
-.tb-cover, .tb-lv { background: var(--tb-paper) radial-gradient(rgba(120,100,70,.09) 1px, transparent 1.2px) 0 0 / 13px 13px !important; color: var(--tb-ink) !important; }
-.tb-pola.tb-big { width: 60%; margin: 0 auto 14px; }
-.tb-pola.tb-big .tb-ph { background: linear-gradient(#10243a, #1d4a3c); }
-.tb-pola .tb-lv-art { font-size: 60px; line-height: 1; margin: 0; filter: drop-shadow(0 0 14px rgba(160,255,200,.35)); }
-.tb-cover h1 { font-size: 46px !important; margin: 6px 0 0 !important; transform: rotate(-2deg); color: var(--tb-ink); }
-.tb-cover p { font-size: 15px; opacity: .75; }
-.tb-lv-txt h2 { font-size: 28px; margin: 0; color: var(--tb-accent); transform: rotate(-2deg); } .tb-lv-txt p { font-size: 15px; margin: 2px 0 8px; }
-.tb-intro p, .tb-end p { font-size: 16px; } .tb-intro h2, .tb-end h2 { font-size: 34px; color: var(--tb-accent); transform: rotate(-2deg); }
-.tb-stats b { font-family: var(--tb-pen); font-weight: 400; font-size: 42px !important; color: var(--tb-accent) !important; }
-.tb-pn { font-family: var(--tb-plain); font-size: 10px !important; }
-
-/* 글씨 최대 크기 한계: 폰 글자 크게 설정해도 이 이상은 안 커져요 */
-.tb-note .tb-m { max-height: none; } .tb-wrap { -webkit-text-size-adjust: none; text-size-adjust: none; }
-/* ── 📖 트리 책: 더 넣은 꾸밈 (11-14 밤) ── */
-.tb-orn.tb-postit, .tb-orn.tb-lined, .tb-orn.tb-grid { padding: 10px 12px 8px !important; position: relative; }
-.tb-postit { background: var(--pc); box-shadow: 0 3px 6px -2px rgba(60,40,20,.25); border-radius: 1px 1px 10px 1px; }
-.tb-lined { background: #fffdf7 repeating-linear-gradient(transparent 0 21px, rgba(110,150,200,.28) 21px 22px); border-left: 2px solid rgba(220,110,110,.35); box-shadow: 0 1px 3px rgba(60,40,20,.15); -webkit-mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; padding-top: 12px !important; }
-.tb-grid { background: #fff linear-gradient(rgba(120,160,140,.18) 1px, transparent 1px) 0 0 / 11px 11px, linear-gradient(90deg, rgba(120,160,140,.18) 1px, transparent 1px) 0 0 / 11px 11px; box-shadow: 0 1px 3px rgba(60,40,20,.15); }
-.tb-grid-x::before { content: ''; position: absolute; top: -7px; left: 50%; width: 38%; height: 13px; transform: translateX(-50%) rotate(var(--ta, -3deg)); background: var(--tc2); opacity: .8; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.4) 0 4px, transparent 4px 9px); }
-.tb-dood { position: relative; }
-.tb-dood::after { content: ''; position: absolute; width: 22px; height: 22px; right: -6px; top: -12px; background: no-repeat center / contain; opacity: .7; pointer-events: none; }
-.tb-dd0::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 20s-7-4.6-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4c0 5-7 9.6-7 9.6z' fill='none' stroke='%23c0533a' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-.tb-dd1::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3l2.2 5.6 6 .4-4.6 3.8 1.5 5.8L12 15.4 6.9 18.6l1.5-5.8L3.8 9l6-.4z' fill='none' stroke='%23d9a520' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-.tb-dd2::after { width: 26px; right: -8px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%237fa88c' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M4 8l2 2M9 4v3M14 8l-2 2'/%3E%3Cpath d='M5 16c3-3 6 3 9 0s5 2 6 0'/%3E%3C/g%3E%3C/svg%3E"); }
-.tb-pola.tb-pclip::before { content: ''; position: absolute; top: -10px; left: 18%; width: 11px; height: 30px; background: none; border: 2px solid #9aa3ab; border-radius: 6px; box-shadow: none; opacity: 1; transform: rotate(-8deg); }
-.tb-pola.tb-pclip::after { content: ''; position: absolute; top: -6px; left: calc(18% + 3px); width: 5px; height: 20px; border: 2px solid #9aa3ab; border-radius: 4px; transform: rotate(-8deg); }
-.tb-deco { position: absolute; pointer-events: none; font-style: normal; }
-.tb-corner { top: 12px; right: -14px; width: 70px; height: 16px; background: var(--tc); opacity: .75; transform: rotate(40deg); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.4) 0 4px, transparent 4px 9px); }
-.tb-stamp { right: 6%; bottom: 4.5%; width: 40px; height: 40px; border: 2px solid rgba(192,83,58,.5); border-radius: 50%; color: rgba(192,83,58,.6); display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-14deg); font-family: var(--tb-plain); line-height: 1.05; box-shadow: inset 0 0 0 2px var(--tb-paper), inset 0 0 0 3px rgba(192,83,58,.35); }
-.tb-stamp b { font-size: 10px; } .tb-stamp small { font-size: 7.5px; }
-.tb-wave { left: 30%; right: 30%; bottom: 4%; height: 8px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 8'%3E%3Cpath d='M0 4q5-4 10 0t10 0' fill='none' stroke='%23b5a48c' stroke-width='1.2'/%3E%3C/svg%3E") repeat-x 0 0 / 20px 8px; opacity: .8; }
-.tb-dots { left: 28%; right: 28%; bottom: 4.3%; height: 8px; background: radial-gradient(circle, #d9b45a 1.4px, transparent 1.8px) repeat-x 0 50% / 12px 8px; opacity: .75; }
-/* 티켓 조각 뺌 */ .tb-ticket-x { left: 5%; bottom: 3.5%; padding: 3px 8px 3px 10px; background: #f3e3c3; color: #8a6a3e; font-family: var(--tb-plain); font-size: 7.5px; letter-spacing: .08em; transform: rotate(-4deg); border-left: 2px dashed #fbf6ea; -webkit-mask: radial-gradient(3px at 0 50%, #0000 98%, #000) 0 0 / 100% 100%; mask: radial-gradient(3px at 0 50%, #0000 98%, #000); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-
-/* ── 📖 트리 책: 꾸밈 2차 (11-14 밤) ── */
-.tb-progw { height: 4px; background: #e6e0d2; border-radius: 99px; margin: 10px auto 0; overflow: hidden; max-width: 100%; }
-.tb-progw i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #7fb07a, #c0533a); border-radius: 99px; transition: width .35s; }
-.tb-ja .tb-m { font-family: 'Yomogi', var(--tb-plain) !important; font-size: 14px !important; }
-.tb-orn.tb-pp { padding: 11px 12px 8px !important; position: relative; }
-.tb-pair .tb-note.tb-pp { padding: 10px 11px 8px; position: relative; }
-.tb-pair { position: relative; }
-.tb-kraft { background: #d9bf98 radial-gradient(rgba(120,80,40,.12) 1px, transparent 1.3px) 0 0 / 6px 6px; color: #3b2a1a; box-shadow: 0 1px 3px rgba(60,40,20,.2); }
-.tb-kraft .tb-who { color: #6b5238 !important; }
-.tb-torn { background: #fff; box-shadow: 0 1px 3px rgba(60,40,20,.15); -webkit-mask: linear-gradient(#000, #000) top / 100% calc(100% - 6px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 9px 6px repeat-x; mask: linear-gradient(#000, #000) top / 100% calc(100% - 6px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 9px 6px repeat-x; padding-bottom: 12px !important; }
-.tb-card { background: #fff linear-gradient(var(--pc), var(--pc)) 0 0 / 100% 18% no-repeat; box-shadow: 0 1px 4px rgba(60,40,20,.18); border-radius: 2px; padding-top: 16px !important; }
-.tb-board { background: #c79a63 linear-gradient(90deg, rgba(255,255,255,.06), rgba(0,0,0,.06)); padding: 22px 9px 9px !important; border-radius: 8px; box-shadow: 0 2px 5px rgba(60,40,20,.3); }
-.tb-board .tb-m, .tb-board .tb-who { background: #fff; position: relative; }
-.tb-board .tb-m { padding: 8px 10px 2px; margin: 0 !important; } .tb-board .tb-who { padding: 0 10px 8px; margin: 0; opacity: 1; }
-.tb-board::before { content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 40%; height: 16px; background: linear-gradient(#d9dde1, #9aa3ab); border-radius: 4px 4px 2px 2px; box-shadow: 0 1px 2px rgba(0,0,0,.3); z-index: 1; }
-.tb-fx { position: absolute; pointer-events: none; font-style: normal; z-index: 1; }
-.tb-fx-tape { top: -8px; left: 50%; width: 42%; height: 14px; transform: translateX(-50%) rotate(var(--ta, -3deg)); background: var(--tc3); opacity: .8; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.4) 0 4px, transparent 4px 9px); }
-.tb-fx-tape2 { top: -6px; left: -10px; width: 44px; height: 13px; transform: rotate(-35deg); background: var(--tc3); opacity: .8; background-image: radial-gradient(rgba(255,255,255,.5) 1.2px, transparent 1.6px); background-size: 6px 6px; }
-.tb-fx-clip { top: -9px; left: 22%; width: 18px; height: 12px; background: #2f3640; border-radius: 2px 2px 4px 4px; }
-.tb-fx-clip::before { content: ''; position: absolute; left: 3px; right: 3px; top: -7px; height: 9px; border: 1.6px solid #9aa3ab; border-bottom: 0; border-radius: 6px 6px 0 0; }
-.tb-fx-mag { top: -7px; right: 14%; width: 15px; height: 15px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.7) 0 2px, transparent 3px), var(--mc); box-shadow: 0 2px 2px rgba(0,0,0,.25); }
-.tb-fx-pin { top: -5px; left: 50%; width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0 1.5px, transparent 2.5px), #d9534f; box-shadow: 1px 2px 2px rgba(0,0,0,.25); }
-.tb-pen { position: absolute; width: 46px; height: 30px; top: -18px; left: 44%; pointer-events: none; opacity: .85; }
-.tb-pair.tb-rev .tb-pen { left: auto; right: 44%; transform: scaleX(-1); }
-.tb-pair.tb-stack .tb-pen { display: none; }
-.tb-pen svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.tb-corner2 { right: auto; left: -14px; transform: rotate(-40deg); }
-.tb-lv-stks { display: flex; gap: 14px; justify-content: center; margin-bottom: 18px; }
-.tb-lv-stk { font-size: 58px; line-height: 1; display: inline-block; transform: rotate(var(--r)); filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(0 2px 3px rgba(60,40,20,.3)); }
-.tb-lv-txt h2 { font-family: var(--tb-pen) !important; }
-
-/* ── 📖 트리 책: 종이 4가지로 줄임, 테이프 안 잘리게 (11-14 밤) ── */
-.tb-items { padding-top: 10px; }
-.tb-lined, .tb-torn { -webkit-mask: none !important; mask: none !important; background: none !important; box-shadow: none !important; border: 0 !important; isolation: isolate; }
-.tb-lined::before, .tb-torn::before { content: ''; position: absolute; inset: 0; z-index: -1; background: #fffdf7 repeating-linear-gradient(transparent 0 21px, rgba(110,150,200,.28) 21px 22px); border-left: 2px solid rgba(220,110,110,.35); filter: drop-shadow(0 1px 1.5px rgba(60,40,20,.18)); }
-.tb-lined::before { -webkit-mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; }
-.tb-torn::before { -webkit-mask: linear-gradient(#000, #000) top / 100% calc(100% - 6px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 9px 6px repeat-x; mask: linear-gradient(#000, #000) top / 100% calc(100% - 6px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 9px 6px repeat-x; }
-.tb-grid { isolation: isolate; }
-
-/* ── 📖 트리 책: 섞기 (종이 1~2개 + 펜글씨, 글씨체 2개, 엇갈린 배치) 11-14 ── */
-.tb-items { align-items: flex-start !important; }
-.tb-orn { margin-top: var(--dy, 0px) !important; translate: var(--dx, 0px) 0; }
-.tb-orn:not(.tb-pp) { padding: 2px 4px !important; }
-
-/* ── 📖 트리 책: 쪽 배치 틀 3가지 (11-14) ── */
-.tb-msg .tb-orn { translate: none; margin-top: 0 !important; }
-.tb-msg .tb-orn .tb-m { font-family: 'Gaegu', 'Yomogi', sans-serif !important; font-size: 15.5px !important; line-height: 1.45 !important; }
-.tb-msg .tb-orn.tb-ja .tb-m { font-family: 'Yomogi', sans-serif !important; font-size: 14px !important; }
-/* 큰 글 하나 */
-.tb-orn.tb-hero { flex: 0 0 84% !important; margin: 4px auto 6px !important; padding: 18px 18px 12px !important; transform: rotate(-1.2deg); }
-.tb-orn.tb-hero .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 23px !important; line-height: 1.35 !important; }
-.tb-orn.tb-hero .tb-who { font-size: 10px !important; }
-/* 종이 두 장 겹침 */
-.tb-orn.tb-lay1, .tb-orn.tb-lay2 { flex: 0 0 66% !important; padding: 14px 14px 16px !important; }
-.tb-orn.tb-lay1 { margin-right: auto !important; transform: rotate(-2.5deg); z-index: 1; }
-.tb-orn.tb-lay2 { margin-left: auto !important; margin-top: -12px !important; transform: rotate(2deg); z-index: 2; box-shadow: 0 4px 8px -3px rgba(60,40,20,.3); }
-.tb-orn.tb-lay1 .tb-m, .tb-orn.tb-lay2 .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 19px !important; }
-/* 작은 펜글씨 */
-.tb-orn.tb-sm { flex: 0 0 46% !important; padding: 2px 2px !important; transform: none; }
-.tb-orn.tb-sm.tb-alt { margin-top: 12px !important; }
-/* 크기 다른 펜글씨: 왼쪽·오른쪽 번갈아 */
-.tb-orn.tb-sc { flex: 0 0 66% !important; margin-right: auto !important; padding: 2px 4px !important; }
-.tb-orn.tb-sc.tb-alt { margin-left: auto !important; margin-right: 0 !important; text-align: right; }
-.tb-orn.tb-sc.tb-alt .tb-who { text-align: right; }
-.tb-orn.tb-sc-big { flex-basis: 74% !important; }
-.tb-orn.tb-sc-big .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 28px !important; color: #2f5a46 !important; }
-.tb-orn.tb-sc:nth-child(3n) .tb-m { color: #8a3b2a !important; }
-.tb-postit { box-shadow: 0 4px 7px -3px rgba(60,40,20,.28); }
-.tb-layered .tb-items { row-gap: 30px !important; padding-top: 18px; align-content: center !important; }
-.tb-layered .tb-orn.tb-lay2 { margin-top: -34px !important; }
-
-/* 긴 글은 쪽 너비 가득, 아주 짧은 글 종이는 작게, 섞은 순서라 쪽 위 날짜는 숨김 (11-14) */
-.tb-orn.tb-sm.tb-wide, .tb-orn.tb-sc.tb-wide { flex: 0 0 100% !important; margin-left: 0 !important; margin-right: 0 !important; }
-.tb-orn.tb-lay1.tb-tiny, .tb-orn.tb-lay2.tb-tiny { flex-basis: 46% !important; }
-.tb-solo .tb-orn.tb-sm, .tb-solo .tb-orn.tb-sc { flex: 0 0 92% !important; margin: 0 auto !important; text-align: left; }
-.tb-msg .tb-pdate { visibility: hidden; }
-
-/* 틀 4~6: 목록·인용구·테이프 글 (11-14) */
-.tb-orn.tb-li { flex: 0 0 100% !important; padding: 0 0 0 22px !important; position: relative; transform: none; }
-.tb-orn.tb-li::before { content: '♥'; position: absolute; left: 2px; top: 2px; font-size: 13px; color: var(--lc); }
-.tb-orn.tb-li .tb-who { display: inline; margin-left: 6px; }
-.tb-orn.tb-li .tb-m { display: inline !important; }
-.tb-orn.tb-quote { flex: 0 0 100% !important; text-align: center; padding: 18px 10% 8px !important; position: relative; transform: rotate(-1deg); }
-.tb-orn.tb-quote .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 30px !important; line-height: 1.3 !important; color: #2f5a46 !important; }
-.tb-orn.tb-quote::before, .tb-orn.tb-quote::after { position: absolute; font-family: Georgia, serif; font-size: 44px; color: #eaa79a; line-height: 1; }
-.tb-orn.tb-quote::before { content: '“'; left: 2%; top: 0; } .tb-orn.tb-quote::after { content: '”'; right: 2%; bottom: 14px; }
-.tb-orn.tb-quote .tb-who { text-align: center !important; margin-top: 8px; }
-.tb-orn.tb-tag { flex: 0 0 auto !important; max-width: 78%; padding: 7px 16px 5px !important; background: var(--tc3) repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 5px, transparent 5px 11px); opacity: .95; transform: rotate(var(--r)); -webkit-mask: conic-gradient(from -45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / 5px 7px repeat-y, linear-gradient(#000, #000) center / calc(100% - 10px) 100% no-repeat, conic-gradient(from 135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / 5px 7px repeat-y; mask: conic-gradient(from -45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / 5px 7px repeat-y, linear-gradient(#000, #000) center / calc(100% - 10px) 100% no-repeat, conic-gradient(from 135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / 5px 7px repeat-y; }
-.tb-orn.tb-tag .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 20px !important; }
-.tb-orn.tb-tag .tb-who { color: #6b5a48 !important; opacity: .8; }
-
-/* ── 📖 트리 책: 길이로 모양 정하기 — 손편지 느낌 (11-15) ── */
-.tb-msg .tb-orn .tb-m, .tb-msg .tb-orn.tb-ja .tb-m { color: var(--tb-ink) !important; }
-.tb-orn.tb-c1 { flex: 0 0 auto !important; margin: 6px 6% !important; padding: 12px 20px 8px !important; position: relative; text-align: center; transform: rotate(var(--r)); }
-.tb-orn.tb-c1 .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 28px !important; line-height: 1.2 !important; }
-.tb-orn.tb-c1 .tb-who { text-align: center !important; }
-.tb-orn.tb-c1::after { content: ''; position: absolute; inset: -4px -8px; pointer-events: none; background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60' preserveAspectRatio='none'%3E%3Cpath d='M52 4C24 2 4 14 5 30s22 27 48 26 43-12 42-28S72 3 44 7' fill='none' stroke='%23c0533a' stroke-width='1.6' stroke-linecap='round' vector-effect='non-scaling-stroke' opacity='.7'/%3E%3C/svg%3E"); }
-.tb-orn.tb-c1.tb-dd1::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60' preserveAspectRatio='none'%3E%3Cpath d='M50 57C30 46 4 36 5 17 6 6 20 1 33 4c8 2 14 8 17 14 3-6 9-12 17-14 13-3 27 2 28 13 1 19-25 29-45 40' fill='none' stroke='%237fa88c' stroke-width='1.6' stroke-linecap='round' vector-effect='non-scaling-stroke' opacity='.8'/%3E%3C/svg%3E"); inset: -10px -14px -6px; }
-.tb-orn.tb-c2 { flex: 0 0 47% !important; padding: 2px 0 !important; margin: 0 !important; transform: rotate(var(--r)); }
-.tb-orn.tb-c2 .tb-m { display: inline !important; font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 21px !important; line-height: 1.5 !important; background: linear-gradient(transparent 52%, var(--hc) 52%, var(--hc) 88%, transparent 88%); -webkit-box-decoration-break: clone; box-decoration-break: clone; padding: 0 3px; }
-.tb-orn.tb-c2 .tb-who { display: block; margin-top: 4px !important; }
-.tb-orn.tb-c2.tb-alt { margin-top: 14px !important; }
-.tb-orn.tb-c3 { flex: 0 0 64% !important; margin-right: auto !important; padding: 14px 14px 12px !important; transform: rotate(var(--r)); }
-.tb-orn.tb-c3.tb-alt { margin-left: auto !important; margin-right: 0 !important; }
-.tb-orn.tb-c3 .tb-m { font-size: 15.5px !important; line-height: 22px !important; }
-.tb-orn.tb-c4 { flex: 0 0 100% !important; padding: 18px 18px 14px !important; background: #fffdf8 !important; transform: rotate(var(--r)); box-shadow: 0 2px 6px rgba(60,40,20,.16); background-image: linear-gradient(transparent calc(50% - 1px), rgba(120,100,70,.12) calc(50% - 1px), rgba(255,255,255,.9) 50%, transparent calc(50% + 2px)), linear-gradient(rgba(60,40,20,.035), transparent 50%, rgba(60,40,20,.03)) !important; border-radius: 1px; }
-.tb-orn.tb-c4 .tb-m { font-size: 15.5px !important; line-height: 1.6 !important; }
-.tb-pola figcaption { white-space: normal !important; display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: ellipsis; line-height: 1.3; text-align: center; }
-.tree-tline a.tree-book { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: inherit; }
+/* ── 📖 트리 책: 시집 같은 편지 모음집 (11-15 새로) — 색·크기는 이 칸만 바꾸면 돼요 ── */
+.tb-wrap { --tb-paper: #fbf8f1; --tb-ink: #2f3a33; --tb-sub: #8f8a7e; --tb-accent: #3f6b4f; --tb-gold: #b8955a; }
+.tb-page { font-family: var(--tb-serif); padding: 11% 9.5%; }
+.tb-page:not(.tb-locked) { background: var(--tb-paper) !important; color: var(--tb-ink) !important; }
+.tb-page:not(.tb-locked)::before { content: ''; position: absolute; inset: 3.3%; border: 1px solid rgba(63,107,79,.35); outline: 1px solid rgba(63,107,79,.18); outline-offset: -4px; pointer-events: none; }
+.tb-in { display: flex; flex-direction: column; text-align: center; }
+.tb-rh { position: absolute; top: -6.5%; left: 0; right: 0; margin: 0; font-size: 9.5px; letter-spacing: .25em; color: var(--tb-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-pn { bottom: -6.5%; font-size: 10px; color: var(--tb-gold); opacity: 1; letter-spacing: .1em; }
+.tb-items { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 0; }
+.tb-done .tb-items { flex: 1; justify-content: center; }
+.tb-it { display: block; flex: none; border: 0; padding: 0; }
+.tb-it + .tb-it::before { content: '✦ ✦ ✦'; display: block; color: var(--tb-gold); font-size: 9px; letter-spacing: .6em; margin: 8px 0 8px .6em; }
+.tb-m { font-size: 14.5px; line-height: 1.6; margin: 0; word-break: keep-all; overflow-wrap: anywhere; }
+.tb-s .tb-m { font-size: 19px; font-weight: 700; color: var(--tb-accent); }
+.tb-who { font-size: 10.5px; color: var(--tb-sub); margin: 3px 0 0; letter-spacing: .04em; }
+.tb-solo .tb-m { font-size: 18px; line-height: 1.8; }
+.tb-fit .tb-m { font-size: 13px; } .tb-fit .tb-s .tb-m { font-size: 16px; } .tb-fit .tb-it + .tb-it::before { margin: 5px 0; }
+.tb-pola { flex: none; width: 46%; margin: 0 auto 8px; background: #fff; padding: 2.3% 2.3% 0; box-shadow: 0 1px 5px rgba(0,0,0,.14); transform: none; box-sizing: border-box; }
+.tb-pola figcaption { height: 2.4em; line-height: 2.4em; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-pola .tb-lv-art { font-size: 60px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 100%; margin: 0; }
+.tb-cover .tb-in, .tb-lv .tb-in, .tb-intro .tb-in, .tb-end .tb-in { justify-content: center; align-items: center; }
+.tb-orn-mark { color: var(--tb-gold); font-size: 11px; letter-spacing: .6em; margin: 0 0 14px .6em; }
+.tb-cover h1 { font-size: 30px; color: var(--tb-accent); margin: 6px 0 8px; }
+.tb-cover p { font-size: 13px; opacity: .8; margin: 2px 0; line-height: 1.7; }
+.tb-cover .tb-yr { font-size: 10px; letter-spacing: .3em; color: var(--tb-gold); margin-top: 14px; }
+.tb-intro h2, .tb-end h2 { font-size: 20px; color: var(--tb-accent); margin: 0 0 14px; }
+.tb-intro p, .tb-end p { font-size: 14px; line-height: 2; }
+.tb-stats b { font-size: 28px; }
+.tb-lv h2 { font-size: 19px; color: var(--tb-accent); margin: 0; }
+.tb-lv p { font-size: 13px; color: var(--tb-sub); margin: 3px 0 0; }
+.tb-lv-row + .tb-lv-row::before { content: '✦ ✦ ✦'; display: block; color: var(--tb-gold); font-size: 9px; letter-spacing: .6em; margin: 12px 0 12px .6em; }
+.tb-progw { height: 3px; background: #e2e5dc; border-radius: 99px; margin: 10px auto 0; overflow: hidden; max-width: 100%; }
+.tb-progw i { display: block; height: 100%; width: 0; background: var(--tb-accent); border-radius: 99px; transition: width .35s; }
