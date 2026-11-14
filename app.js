@@ -3627,7 +3627,7 @@
         const t = b.ic + ' ' + b.name;
         ctx.font = font(600, 10.5); const tw = ctx.measureText(t).width;
         ctx.font = font(400, 8.5); const hw = ctx.measureText(b.how).width;
-        const w = tw + 5 + hw + 18;
+        const w = tw + (hw ? 5 + hw : 0) + 18;
         if (bx > P && bx + w > P + IN) { bx = P; by += 26; }
         const x0 = bx, y1 = by;
         ops.push(() => {
