@@ -2751,3 +2751,17 @@ hr.divider[hidden], .d-block[hidden] { display: none; }
 .lvf-state { margin: -2px 0 10px; }
 .lv-trb-top { margin: 10px 0 0; background: rgba(255,255,255,.85); }
 .sn-sheet .sn-cols button.sn-none { background: #fff linear-gradient(135deg, transparent 45%, #d8343e 45%, #d8343e 55%, transparent 55%); }
+.ar-row { align-items: flex-start; }
+.ar-row .dy-t b { color: var(--muted); }
+.ar-row .ar-msg { display: block; margin-top: 2px; color: var(--ink); }
+.ar-adm { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.ar-adm select { font-size: 16px; padding: 2px 4px; }
+.ar-up { flex: none; min-width: 44px; min-height: 32px; border: 1px solid var(--line); border-radius: 99px; background: var(--card, #fff); color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.ar-up.on { color: #D0587E; border-color: #F2C3D1; background: #FDF0F4; }
+.ar-new { margin-top: 8px; }
+.ar-new summary { list-style: none; cursor: pointer; padding: 10px 4px; font-size: 14px; font-weight: 600; color: var(--green, #3f8f4f); }
+.ar-new summary::-webkit-details-marker { display: none; }
+.ar-form label { display: block; margin-bottom: 8px; font-size: 13px; }
+.ar-form input[type=date], .ar-form input[type=text], .ar-form input[type=url], .ar-form select, .ar-form textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-size: 16px; background: var(--card, #fff); color: inherit; }
+.ar-form .ar-chk { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.ar-form .ar-chk input { width: auto; margin: 0; flex: none; }

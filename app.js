@@ -4517,8 +4517,7 @@
           ${GLOSS_OPEN || isAdmin() ? item('#/words', '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/>', '숲별 사전', !GLOSS_OPEN && '나만') : ''}
           ${LIVE_OPEN || isAdmin() ? item('#/live', '<rect x="3" y="5" width="18" height="13" rx="3"/><path d="M10 9l5 2.5-5 2.5z"/>', '라이브 다시보기', !LIVE_OPEN && '나만') : ''}
           ${item('#/members', '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>', '멤버 개인 활동')}
-          ${item('#/search?cat=' + encodeURIComponent('생일'), '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', '기념일')}
-          ${item('#/days', '<path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/>', '함께한 기념일', annivToday() && '오늘')}`)}
+          ${item('#/days', '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M12 12.6l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z"/>', '기념일', annivToday() && '오늘')}`)}
         ${grp('숲별 소통', `
           ${TREE_OPEN || isAdmin() ? item('#/tree', '<path d="M12 3l5 7h-3l4 6H6l4-6H7z"/><path d="M12 16v5"/>', '숲별 트리', !TREE_OPEN && '나만') : ''}
           ${item('#/story', '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>', '숲별 이야기', nNew(storyUnread().length) && 'NEW ' + nNew(storyUnread().length))}
@@ -6546,7 +6545,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         const box = document.getElementById('home-tree'); if (box) box.outerHTML = homeTree(); const fb = document.getElementById('tree-fab'); if (fb) fb.remove(); bindHomeTree();
       }).catch(() => { b.disabled = false; toast(L3('보내지 못했어요. 잠시 뒤 다시 눌러 주세요', 'Could not send. Try again shortly', '送信できませんでした')); }); };
   }
-  function giftView() { return `<a class="back" href="#/days">‹ 함께한 기념일</a><section class="gift-box" id="gift-box"><p class="empty">${L3('선물 상자를 여는 중…', 'Opening your gift…', 'プレゼントを開けています…')}</p></section>`; }
+  function giftView() { return `<a class="back" href="#/days">‹ 기념일</a><section class="gift-box" id="gift-box"><p class="empty">${L3('선물 상자를 여는 중…', 'Opening your gift…', 'プレゼントを開けています…')}</p></section>`; }
     // 기념일 이름 번역 (팬텀싱어 우승 9주년 → Phantom Singer win · 9th anniversary)
   const memL = n => { const L = window.SB_LANG; return (L && L.lang !== 'ko' && L.tr && L.tr(n)) || n; };
   const anvNameL = nm => { const m = /^(.+?) (\d+)주년$/.exec(nm || ''), B = { '팬텀싱어 우승': ['Phantom Singer win', 'ファントムシンガー優勝'], '포레스텔라 데뷔': ['Forestella debut', 'フォレステラ デビュー'], '포레스텔라 결성': ['Forestella formed', 'フォレステラ結成'], '입덕': ['Fan anniversary', '推し活'], '배두훈 데뷔': ['Bae Doo-hoon debut', 'ペ・ドゥフン デビュー'] };
@@ -9270,6 +9269,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
 
   // 반환값: 바탕 화면을 새로 그렸는지 (스크롤을 맨 위로 올릴지)
   function render() {
+    annivSync();
     const name = currentRoute();
     if (!data) { setTabs(name === 'e' ? 'home' : name); return false; }
     if (name === 'e') {
@@ -9349,24 +9349,77 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return `
       <div class="about-top">
         <a class="back" href="#/more">‹ 더보기</a>
-        <h1 class="h1">${L3('함께한 기념일', 'Our anniversaries', '一緒に迎えた記念日')}</h1>
+        <h1 class="h1">${L3('기념일', 'Anniversaries', '記念日')}</h1>
         <p>${L3('이 폰에 자동으로 모여요. 기념일에 들르면 여기에 남아요.', 'Saved on this phone automatically. Visit on an anniversary and it stays here.', 'このスマホに自動で記録されます。記念日に訪れるとここに残ります。')}</p>
       </div>
       <div class="dy-hero">${card.since ? `<small>${L3('포레스텔라와 함께한 지', 'With Forestella for', 'フォレステラと一緒に')}</small><b>D+${ddayOf(card.since).toLocaleString()}</b>` : `<small>${L3('숲별 기록장과 함께한 지', 'With Soopbyeol Archive for', 'スッピョル記録帳と一緒に')}</small><b>${L3(fd + '일', fd + (fd === 1 ? ' day' : ' days'), fd + '日')}</b>`}${annivToday() ? `<span>${esc(L3(`오늘은 ${annivToday().name}`, `Today: ${anvNameL(annivToday().name)}`, `今日は${anvNameL(annivToday().name)}`))}</span>${cheerBtn(annivToday())}` : ''}</div>
       ${(() => { const q = (new URLSearchParams(location.hash.split('?')[1] || '').get('m') || '').replace(/^(\d\d)(\d\d)$/, '$1-$2'); const A = annivToday(), md = q || (A && !A.my ? A.d.slice(5) : ''); return md ? annivMemory(md) : ''; })()}
       ${isAdmin() ? (() => { const y = +today.slice(0, 4), rec = ANNIVS.map(x => [`${y}-${x[0]}`, x]).filter(([d]) => d <= today && ds(d, today) <= 30); return rec.length ? `<section class="mg"><h2 class="mg-h">${L3('🎁 기념일 하루 더 열어 주기', '🎁 Give one more anniversary day', '🎁 記念日をもう1日プレゼント')} <small>${L3('관리자만 보여요', 'Admin only', '管理者のみ')}</small></h2><p class="mt-sub">${L3('링크를 받은 폰은 24시간 동안 그 기념일처럼 숨은 숲이 나와요. 링크는 만든 뒤 하루 안에 열어야 하고, 폰마다 한 번만 돼요.', 'The phone that opens the link gets hidden forests for 24 hours, like on the day. Open within a day of making it; once per phone.', 'リンクを開いたスマホでは24時間、記念日のように隠れた森が出ます。作成から1日以内に開いてください。スマホごとに1回だけです。')}</p>${rec.map(([d, x]) => `<button type="button" class="mt-sub-btn gift-make" data-k="an-${x[0].replace('-', '')}-${y}">${x[3]} ${dot(d)} ${esc(L3(`${x[2]} 링크 만들기`, `${anvBaseL(x[2])} · make link`, `${anvBaseL(x[2])} リンク作成`))}</button>`).join('')}</section>` : ''; })() : ''}
       <section class="mg"><h2 class="mg-h">${L3('나의 기념일', 'My anniversaries', 'わたしの記念日')}</h2><div class="dy-list">${mine.map(x => x[1]).join('')}</div></section>
-      <section class="mg"><h2 class="mg-h">${L3('포레스텔라 기념일', 'Forestella anniversaries', 'フォレステラの記念日')}</h2><div class="dy-list">${group.map(x => x[1]).join('')}</div></section>`;
+      <section class="mg"><h2 class="mg-h">${L3('포레스텔라 기념일', 'Forestella anniversaries', 'フォレステラの記念日')}</h2><div class="dy-list">${group.map(x => x[1]).join('')}${annivReqBox()}</div><a class="more-link" href="#/search?cat=${encodeURIComponent('생일')}">${L3('🎂 생일·기념일 일정 모아보기 ›', '🎂 Birthday & anniversary events ›', '🎂 誕生日・記念日の予定 ›')}</a></section>`;
   }
 
   // 기념일: 그날 하루 화면에 잎·별이 흩날리고, 가끔 뜨는 숨은 숲을 누르면 뱃지를 받아요
-  const ANNIVS = [
+  const ANNIV_BASE = [
     ['11-03', 2017, '팬텀싱어 우승', '🏆', { evq: /팬텀싱어 ?2 \((1[23]|1~13)회\)|우승팀 포레스텔라 첫 번째 팬미팅/, songs: ['Come Un Eterno Addio', 'Il Mirto e la Rosa', "In Un'altra Vita", 'Maldita Sea Mi Suerte'], vq: /팬텀싱어\s?2|팬텀싱어 시즌2/, from: '2017-08-01', to: '2018-02-28', prog: '팬텀싱어' }],
     ['09-26', 2017, '결성', '🌿', { prog: '팬텀싱어' }],
     ['03-14', 2018, '데뷔', '🌲', { day: '2018-03-14', from: '2018-03-01', to: '2018-03-31', vq: /데뷔|Mosaic|Into the Forest|Ever Green/i }],
     ['11-15', 2013, '배두훈 데뷔', '🌟', { evq: /풍월주/ }],
     ['07-15', 0, '배두훈 생일', '🎂', { m: '배두훈' }], ['03-08', 0, '강형호 생일', '🎂', { m: '강형호' }], ['11-19', 0, '조민규 생일', '🎂', { m: '조민규' }], ['07-10', 0, '고우림 생일', '🎂', { m: '고우림' }],
   ];
+  // 팬이 신청하고 관리자가 넣은 기념일(관리자 서명 'ao'+신청 번호, 아이콘은 서명에 같이)도 여기에 붙어요
+  const ANNIVS = ANNIV_BASE.slice();
+  const annivReqs = () => ((data && data.annivReq) || []).map(a => { const h = window.SB_EV_HIDE || new Set(); return { ...a, ok: h.has('ao' + a.id), no: h.has('ax' + a.id), ic: (window.SB_EV_MERGE || {})['ao' + a.id] || '🎉' }; });
+  function annivSync() {
+    const add = annivReqs().filter(a => a.ok && !ANNIV_BASE.some(x => x[0] === a.md)).filter((a, i, l) => l.findIndex(b => b.md === a.md) === i);
+    ANNIVS.length = 0; ANNIVS.push(...ANNIV_BASE, ...add.map(a => [a.md, a.y || 0, a.name, a.ic, a.y ? { day: `${a.y}-${a.md}` } : {}]));
+  }
+  const AR_UP = 'sb-ar-up', AR_ICONS = ['🎉', '🌟', '✨', '🎤', '🎼', '💿', '🎬', '📺', '🌸', '🌙', '💚', '🎂'];
+  const arMd = md => md.replace(/^0?(\d+)-0?(\d+)$/, (_, a, b) => `${a}월 ${b}일`);
+  function annivReqBox() {
+    const mine = new Set(boxRead(AR_UP) || []), me = myUid(), admin = isAdmin();
+    const list = annivReqs().filter(a => !a.ok && !a.no).sort((a, b) => b.up.length - a.up.length || b.at - a.at);
+    const rows = list.map(a => { const on = mine.has(a.id) || (a.up.includes(me) && !mine.has('-' + a.id)), n = a.up.filter(x => x !== me).length + (on ? 1 : 0);
+      return `<div class="dy-row ar-row"><span class="dy-ic">📝</span><span class="dy-t"><b>${esc(a.name)}</b><small>${a.y ? a.y + '.' + a.md.replace('-', '.') : arMd(a.md)}${a.who ? ' · ' + esc(a.who) : ''} · 신청 중</small>${a.msg ? `<small class="ar-msg">${esc(a.msg)}</small>` : ''}${a.link ? `<small><a href="${esc(a.link)}" target="_blank" rel="noopener">근거 링크 ↗</a></small>` : ''}
+        ${admin ? `<span class="ar-adm"><select class="ar-ic" aria-label="아이콘">${AR_ICONS.map(x => `<option>${x}</option>`).join('')}</select><button type="button" class="chip on ar-ok" data-id="${a.id}">넣기</button><button type="button" class="link-btn ar-no" data-id="${a.id}">거절</button></span>` : ''}</span>
+        <button type="button" class="ar-up${on ? ' on' : ''}" data-id="${a.id}" aria-pressed="${on}" aria-label="나도 원해요">${on ? '♥' : '♡'} ${n || ''}</button></div>`; }).join('');
+    const mem = ['포레스텔라', '배두훈', '강형호', '조민규', '고우림'];
+    return `${rows}<details class="ar-new"><summary>＋ 기념일 신청하기</summary><div class="op-form ar-form">
+      <p class="src-note">포레스텔라·멤버와 관련된 날을 알려 주세요. 확인한 뒤 기념일에 넣어요.</p>
+      <label>날짜 <input type="date" id="ar-date" min="2000-01-01" max="${todayIso()}"></label>
+      <label class="ar-chk"><input type="checkbox" id="ar-noy"> 생일처럼 연도 없이 해마다</label>
+      <label>이름 <input type="text" id="ar-name" maxlength="30" placeholder="예: 두훈 데뷔"></label>
+      <label>누구 <select id="ar-who">${mem.map(x => `<option>${x}</option>`).join('')}</select></label>
+      <label>근거 링크 <small>(선택)</small><input type="url" id="ar-link" placeholder="https://"></label>
+      <label>한마디 <small>(선택)</small><textarea id="ar-msg" rows="2" maxlength="200"></textarea></label>
+      <button type="button" class="btn ar-send">신청 보내기</button></div></details>`;
+  }
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest('.ar-up, .ar-ok, .ar-no, .ar-send');
+    if (!b) return;
+    if (b.matches('.ar-send')) {
+      const g = id => document.getElementById(id), d = g('ar-date').value, name = g('ar-name').value.trim().replace(/\s+/g, ' '), noy = g('ar-noy').checked;
+      if (!/^\d{4}-\d\d-\d\d$/.test(d)) { toast('날짜를 골라 주세요.'); return; }
+      if (name.length < 2) { toast('기념일 이름을 적어 주세요.'); return; }
+      if (ANNIVS.some(x => x[0] === d.slice(5))) { toast('그날은 이미 기념일이 있어요.'); return; }
+      const link = g('ar-link').value.trim(), msg = g('ar-msg').value.trim().replace(/\n+/g, ' ');
+      b.disabled = true;
+      try { await formPost(`종류: 기념일신청\n기념일: ${d.slice(5)}\n연도: ${noy ? '' : d.slice(0, 4)}\n이름: ${name}\n누구: ${g('ar-who').value}\n링크: ${/^https?:\/\//.test(link) ? link : ''}\n누가: ${myUid()}\n내용: ${msg}`); toast('신청했어요! 몇 분 뒤 목록에 떠요.'); b.closest('details').open = false; ['ar-date', 'ar-name', 'ar-link', 'ar-msg'].forEach(k => { g(k).value = ''; }); }
+      catch (err) { toast('보내지 못했어요. 잠시 뒤 다시 해 주세요.'); }
+      b.disabled = false; return;
+    }
+    const id = b.dataset.id;
+    if (b.matches('.ar-up')) {
+      const on = b.getAttribute('aria-pressed') !== 'true', s = new Set(boxRead(AR_UP) || []);
+      s.delete(id); s.delete('-' + id); s.add(on ? id : '-' + id); boxWrite(AR_UP, [...s].slice(-200));
+      formPost(`종류: 기념일동의\n대상: ${id}\n누가: ${myUid()}`).catch(() => {});
+      render(); return;
+    }
+    if (!isAdmin()) return;
+    b.disabled = true;
+    try { if (b.matches('.ar-ok')) { await sendEvMark('ao' + id, '숨김', b.parentNode.querySelector('.ar-ic').value); toast('기념일에 넣었어요.'); } else { await sendEvMark('ax' + id, '숨김'); toast('거절했어요.'); } annivSync(); render(); }
+    catch (err) { b.disabled = false; toast('보내지 못했어요.'); }
+  });
   // 추억하러 가기: 그 기념일과 관련된 일정·곡·영상·공식 X
   function annivMemory(md) {
     const A = ANNIVS.find(x => x[0] === md);
@@ -9442,7 +9495,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       <div class="anv-top">${num ? `<span class="anv-num">${num}<small>th</small></span>` : `<span class="anv-num anv-numic">${a.ic}</span>`}<span class="anv-tt"><small>${a.since ? esc(a.since) + L3(' → 오늘', ' → today', ' → 今日') : 'HAPPY DAY'}</small><b>${esc(anvNameL(a.name))}</b><em>${a.my ? L3('포레스텔라와 함께한 날을 축하해요', 'Happy anniversary with Forestella', 'フォレステラと過ごした日々に乾杯') : num ? L3(`숲별들과 함께 맞는 ${num}번째 오늘`, `Our ${num}th today, together with fans`, `ファンと一緒に迎える${num}回目の今日`) : L3('숲별 모두 같이 축하해요', 'Let’s all celebrate together', 'みんなで一緒にお祝いしよう')}</em></span></div>
       ${cheerBtn(a)}
       ${a.my ? '' : `<a class="anv-mem" href="#/days?m=${a.d.slice(5).replace('-', '')}">${L3('추억하러 가기 ›', 'Look back ›', '思い出を見る ›')}</a>`}
-      <div class="anv-foot"><span>${L3(`숨은 숲 ${annivGoal(a)}개를 찾아보세요`, `Find ${annivGoal(a)} hidden forests`, `隠れた森を${annivGoal(a)}個探そう`)}</span><a href="#/days">${L3('함께한 기념일 ›', 'Our anniversaries ›', '一緒に迎えた記念日 ›')}</a></div>`;
+      <div class="anv-foot"><span>${L3(`숨은 숲 ${annivGoal(a)}개를 찾아보세요`, `Find ${annivGoal(a)} hidden forests`, `隠れた森を${annivGoal(a)}個探そう`)}</span><a href="#/days">${L3('기념일 ›', 'Anniversaries ›', '一緒に迎えた記念日 ›')}</a></div>`;
     document.body.appendChild(b);
     requestAnimationFrame(() => b.classList.add('show'));
     const close = () => { b.classList.remove('show'); setTimeout(() => b.remove(), 400); };
