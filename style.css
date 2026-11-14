@@ -2751,3 +2751,4 @@ hr.divider[hidden], .d-block[hidden] { display: none; }
 .lvf-state { margin: -2px 0 10px; }
 .lv-trb-top { margin: 10px 0 0; background: rgba(255,255,255,.85); }
 .sn-sheet .sn-cols button.sn-none { background: #fff linear-gradient(135deg, transparent 45%, #d8343e 45%, #d8343e 55%, transparent 55%); }
+.sn-sheet .sn-rn { background: none; border: 0; padding: 2px 4px; vertical-align: middle; cursor: pointer; } .sn-sheet .sn-rn svg { width: 15px; height: 15px; fill: none; stroke: #6b7b80; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
