@@ -4232,7 +4232,7 @@
   };
   // 공연 + 뮤지컬 + '기타'로 들어온 축제·행사·팬사인회도 같이 보여줘요 (방송 녹화·영화 개봉은 빼요)
   // 음반 발매일은 가는 행사가 아니라서 빼요 (발매 기념 팬싸인회·쇼케이스는 남겨요)
-  const isLocalEvent = e => !e.ytOnly && !/발매(\s*\([^)]*\))?\s*$/.test(e.title || '') && (e.category === '공연' || e.category === '뮤지컬' || (e.category === '기타' && !/녹화|개봉/.test(e.title)));
+  const isLocalEvent = e => !e.ytOnly && !e.cancel && !/발매(\s*\([^)]*\))?\s*$/.test(e.title || '') && (e.category === '공연' || e.category === '뮤지컬' || (e.category === '기타' && !/녹화|개봉/.test(e.title)));
   const hasVideo = e => !!(e.videoId || e.related.length || e.ytMain || (e.ytStage || []).length);
   let localQ = '';
   const LOCAL_REG = ['서울', '경기·인천', '강원', '충청', '전라', '경상', '제주', '해외', '그 외'];
@@ -6549,7 +6549,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   function giftView() { return `<a class="back" href="#/days">‹ 함께한 기념일</a><section class="gift-box" id="gift-box"><p class="empty">${L3('선물 상자를 여는 중…', 'Opening your gift…', 'プレゼントを開けています…')}</p></section>`; }
     // 기념일 이름 번역 (팬텀싱어 우승 9주년 → Phantom Singer win · 9th anniversary)
   const memL = n => { const L = window.SB_LANG; return (L && L.lang !== 'ko' && L.tr && L.tr(n)) || n; };
-  const anvNameL = nm => { const m = /^(.+?) (\d+)주년$/.exec(nm || ''), B = { '팬텀싱어 우승': ['Phantom Singer win', 'ファントムシンガー優勝'], '포레스텔라 데뷔': ['Forestella debut', 'フォレステラ デビュー'], '포레스텔라 결성': ['Forestella formed', 'フォレステラ結成'], '입덕': ['Fan anniversary', '推し活'] };
+  const anvNameL = nm => { const m = /^(.+?) (\d+)주년$/.exec(nm || ''), B = { '팬텀싱어 우승': ['Phantom Singer win', 'ファントムシンガー優勝'], '포레스텔라 데뷔': ['Forestella debut', 'フォレステラ デビュー'], '포레스텔라 결성': ['Forestella formed', 'フォレステラ結成'], '입덕': ['Fan anniversary', '推し活'], '배두훈 데뷔': ['Bae Doo-hoon debut', 'ペ・ドゥフン デビュー'] };
     if (!m) { const b = /^(.+) 생일$/.exec(nm || ''); return b ? L3(nm, `${memL(b[1])}'s birthday`, `${memL(b[1])} 誕生日`) : nm; }
     const base = B[m[1]] || [m[1], m[1]], n = +m[2], th = n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th';
     return L3(nm, `${base[0]} · ${n}${th} anniversary`, `${base[1]} ${n}周年`); };
@@ -8729,7 +8729,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         <h1 class="d-title">${esc(e.title)}</h1>
         ${rest}
         ${e.place || e.note ? `<p class="sub">${esc([e.place, e.note].filter(Boolean).join(' · '))}</p>` : ''}
-        <div class="box-row ev-acts">${goBtn(e)}${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) ? '' : wentBtns(e)}</div>
+        <div class="box-row ev-acts">${goBtn(e)}${boxBtn('e', e.id, 'bpill')}${/생일|유튜브|네이버TV/.test(e.category) || e.cancel ? '' : wentBtns(e)}</div>
         ${goBtn(e) ? `<p class="sub go-with" data-id="${esc(e.id)}">${goWith(e.id)}</p>` : ''}
         ${spBlock(e)}
         ${e.auto ? `<p class="src-note">공식 팬카페 스케줄에서 자동으로 가져온 일정이에요.</p>` : ''}
@@ -9364,6 +9364,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     ['11-03', 2017, '팬텀싱어 우승', '🏆', { evq: /팬텀싱어 ?2 \((1[23]|1~13)회\)|우승팀 포레스텔라 첫 번째 팬미팅/, songs: ['Come Un Eterno Addio', 'Il Mirto e la Rosa', "In Un'altra Vita", 'Maldita Sea Mi Suerte'], vq: /팬텀싱어\s?2|팬텀싱어 시즌2/, from: '2017-08-01', to: '2018-02-28', prog: '팬텀싱어' }],
     ['09-26', 2017, '결성', '🌿', { prog: '팬텀싱어' }],
     ['03-14', 2018, '데뷔', '🌲', { day: '2018-03-14', from: '2018-03-01', to: '2018-03-31', vq: /데뷔|Mosaic|Into the Forest|Ever Green/i }],
+    ['11-15', 2013, '배두훈 데뷔', '🌟', { evq: /풍월주/ }],
     ['07-15', 0, '배두훈 생일', '🎂', { m: '배두훈' }], ['03-08', 0, '강형호 생일', '🎂', { m: '강형호' }], ['11-19', 0, '조민규 생일', '🎂', { m: '조민규' }], ['07-10', 0, '고우림 생일', '🎂', { m: '고우림' }],
   ];
   // 추억하러 가기: 그 기념일과 관련된 일정·곡·영상·공식 X

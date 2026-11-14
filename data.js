@@ -602,6 +602,8 @@
     // 카페에서 자동으로 가져온 일정이 이미 있는 일정(시트·보충·팬 등록)과 같은 날 같은 일정이면 하나로 합쳐요.
     // 이미 있던 일정을 남기고(셋리·직관 기록이 거기 붙어 있어서) 빈 장소·시간만 카페 것으로 채워요.
     // 같은 날 1부·2부처럼 숫자가 다르면 다른 일정으로 봐요
+    // extra.cancel {일정ID: 이유}: 잡혔다가 취소된 공연은 남기되 제목 앞에 '공연 취소'를 붙여요 (직관·지도·공연 목록에선 빠져요)
+    Object.entries(extra.cancel || {}).forEach(([id, why]) => { const e = events.find(x => x.id === id); if (e && !e.cancel) { e.cancel = why || '취소'; e.title = '[공연 취소] ' + e.title; } });
     const autoMerge = { ...fanMerged };
     {
       const tok = t => new Set(String(t || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').split(' ').filter(w => w.length > 1));
