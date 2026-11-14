@@ -2752,3 +2752,49 @@ hr.divider[hidden], .d-block[hidden] { display: none; }
 .lv-trb-top { margin: 10px 0 0; background: rgba(255,255,255,.85); }
 .sn-sheet .sn-cols button.sn-none { background: #fff linear-gradient(135deg, transparent 45%, #d8343e 45%, #d8343e 55%, transparent 55%); }
 .sn-sheet .sn-rn { background: none; border: 0; padding: 2px 4px; vertical-align: middle; cursor: pointer; } .sn-sheet .sn-rn svg { width: 15px; height: 15px; fill: none; stroke: #6b7b80; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── 📖 트리 책 (#/treebook) ── 색·글씨는 아래 변수만 바꾸면 돼요 */
+.tb-wrap { --tb-paper: #fbf8f1; --tb-ink: #2b3a2e; --tb-sub: #8a958a; --tb-accent: #3f7a46; --tb-night: #13283a; --tb-serif: 'Gowun Batang', var(--serif); padding: 0 16px 24px; }
+.tb-note { font-size: 12px; color: #a46b00; background: #fff6df; border-radius: 8px; padding: 6px 10px; margin: 6px 0; }
+.tb-chips { display: flex; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
+.tb-chips a { font-size: 13px; padding: 5px 11px; border-radius: 99px; background: #eef2ec; color: var(--tb-ink); text-decoration: none; }
+.tb-chips a.on { background: var(--tb-accent); color: #fff; }
+.tb-book { position: relative; max-width: 420px; aspect-ratio: 148 / 210; margin: 0 auto; perspective: 1600px; user-select: none; -webkit-user-select: none; }
+.tb-page { position: absolute; inset: 0; display: none; background: var(--tb-paper); color: var(--tb-ink); border-radius: 4px 10px 10px 4px; box-shadow: 0 6px 20px rgba(0,0,0,.14), inset 8px 0 14px -10px rgba(0,0,0,.25); padding: 9% 8%; box-sizing: border-box; overflow: hidden; }
+.tb-page.on { display: block; }
+.tb-book.tb-fl .tb-page.on { animation: tbFlipL .45s ease; transform-origin: left center; }
+.tb-book.tb-fr .tb-page.on { animation: tbFlipR .45s ease; transform-origin: right center; }
+@keyframes tbFlipL { from { transform: rotateY(-35deg); opacity: .4; } to { transform: none; opacity: 1; } }
+@keyframes tbFlipR { from { transform: rotateY(35deg); opacity: .4; } to { transform: none; opacity: 1; } }
+.tb-page h1, .tb-page h2 { font-family: var(--tb-serif); font-weight: 700; }
+.tb-cover, .tb-lv { background: var(--tb-night); color: #fff; text-align: center; display: none; }
+.tb-cover.on, .tb-lv.on, .tb-intro.on, .tb-end.on { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.tb-cover-art { font-size: 110px; line-height: 1; margin-bottom: 18px; filter: drop-shadow(0 0 24px rgba(160,255,200,.35)); }
+.tb-cover h1 { font-size: 30px; margin: 4px 0; } .tb-cover p { opacity: .8; margin: 4px 0; }
+.tb-locked .tb-ribbon { position: absolute; left: 0; right: 0; top: 48%; height: 14px; background: #c8463d; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.tb-dday { font-size: 22px; font-weight: 700; color: #ffd36b; }
+.tb-intro p { line-height: 2; } .tb-sm { font-size: 12px; opacity: .65; }
+.tb-lv-art { font-size: 90px; margin-bottom: 14px; }
+.tb-date { font-size: 12px; letter-spacing: 1px; color: var(--tb-accent); border-bottom: 1px solid #cfd9cc; padding-bottom: 6px; margin: 0 0 12px; }
+.tb-items { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tb-orn { grid-column: 1 / -1; display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px dashed #d6ddd2; padding-bottom: 8px; }
+.tb-ball { width: 22px; height: 22px; flex: none; border-radius: 50%; background: var(--c); box-shadow: inset -3px -3px 6px rgba(0,0,0,.25); margin-top: 2px; }
+.tb-ball.tb-s2 { border-radius: 0; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); box-shadow: none; }
+.tb-ball.tb-s1 { border-radius: 4px 4px 10px 10px; } .tb-ball.tb-s3 { background: #f4f7fb; border: 2px solid var(--c); box-sizing: border-box; }
+.tb-pola { background: #fff; padding: 6px 6px 4px; box-shadow: 0 1px 4px rgba(0,0,0,.15); transform: rotate(-1.2deg); }
+.tb-pola:nth-child(even) { transform: rotate(1deg); }
+.tb-ph { aspect-ratio: 1; background: #dfe7dc; overflow: hidden; } .tb-ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tb-cap { display: block; font-size: 11px; margin-top: 4px; }
+.tb-m { font-size: 13px; line-height: 1.5; margin: 3px 0 2px; word-break: keep-all; overflow-wrap: anywhere; }
+.tb-pola .tb-m { font-size: 11.5px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tb-who { font-size: 10.5px; color: var(--tb-sub); margin: 0; }
+.tb-stats { display: flex; gap: 36px; margin: 18px 0; } .tb-stats b { display: block; font-size: 30px; color: var(--tb-accent); }
+.tb-pn { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 11px; opacity: .45; }
+.tb-bar { display: flex; justify-content: center; align-items: center; gap: 14px; margin: 12px 0 0; }
+.tb-nav { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #d5ddd2; background: #fff; font-size: 22px; color: var(--tb-ink); }
+.tb-cnt { border: 0; background: #eef2ec; border-radius: 99px; padding: 8px 16px; font-size: 13px; color: var(--tb-ink); min-width: 84px; }
+.tb-toc { max-width: 420px; margin: 10px auto 0; background: #fff; border: 1px solid #e3e8e1; border-radius: 12px; padding: 6px; display: grid; gap: 2px; }
+.tb-toc[hidden] { display: none; }
+.tb-toc button { display: flex; justify-content: space-between; border: 0; background: none; padding: 9px 10px; font-size: 14px; text-align: left; border-radius: 8px; color: var(--tb-ink); }
+.tb-toc button:hover { background: #f3f6f2; } .tb-toc small { opacity: .5; }
+
