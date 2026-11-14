@@ -2838,14 +2838,14 @@ body.tb-full .tb-live { position: fixed; inset: 0; z-index: 60; background: line
 .tb-page h1, .tb-page h2 { font-family: var(--tb-pen); font-weight: 400; }
 .tb-msg .tb-in { display: flex; flex-direction: column; }
 .tb-pdate { font-family: var(--tb-plain); font-size: 9.5px; letter-spacing: 1px; color: var(--tb-sub); margin: 0 0 8px; }
-.tb-items { gap: 12px 4% !important; align-content: flex-start; }
+.tb-items { gap: 22px 8% !important; align-content: flex-start; }
 .tb-items.tb-spread { flex: 1; align-content: space-evenly; }
 /* 손글씨 글꼴 다섯 가지 (일본어는 Yomogi로) */
-.tb-f0 .tb-m { font-family: 'Gaegu', 'Yomogi', sans-serif; font-size: 16.5px; }
-.tb-f1 .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif; font-size: 21px; line-height: 1.25 !important; }
-.tb-f2 .tb-m { font-family: 'Hi Melody', 'Yomogi', sans-serif; font-size: 18px; }
-.tb-f3 .tb-m { font-family: 'Gamja Flower', 'Yomogi', sans-serif; font-size: 16.5px; }
-.tb-f4 .tb-m { font-family: 'Poor Story', 'Yomogi', sans-serif; font-size: 16px; }
+.tb-f0 .tb-m { font-family: 'Gaegu', 'Yomogi', sans-serif; font-size: 15px; }
+.tb-f1 .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif; font-size: 19px; line-height: 1.25 !important; }
+.tb-f2 .tb-m { font-family: 'Hi Melody', 'Yomogi', sans-serif; font-size: 16px; }
+.tb-f3 .tb-m { font-family: 'Gamja Flower', 'Yomogi', sans-serif; font-size: 15px; }
+.tb-f4 .tb-m { font-family: 'Poor Story', 'Yomogi', sans-serif; font-size: 14.5px; }
 /* 폴라로이드: 규격 고정 88:107, 글씨는 원래 글꼴 */
 .tb-pola { position: relative; flex: none !important; width: 100%; aspect-ratio: 88 / 107; background: #fff; padding: 6.5% 6.5% 0 !important; box-sizing: border-box; box-shadow: 0 2px 6px rgba(60,40,20,.18); transform: rotate(var(--r, 0deg)) !important; margin: 0; display: flex; flex-direction: column; }
 .tb-pola .tb-ph { width: 100%; aspect-ratio: 1; background: #d9e2d3; overflow: hidden; display: flex; align-items: center; justify-content: center; }
@@ -2864,15 +2864,15 @@ body.tb-full .tb-live { position: fixed; inset: 0; z-index: 60; background: line
 /* 글귀: 짧은 건 한 줄에 둘, 중간은 폭 좁게, 긴 건 넓게 */
 .tb-note { transform: rotate(var(--r, 0deg)); box-sizing: border-box; }
 .tb-note .tb-m { margin: 0 0 3px !important; color: var(--tb-ink); display: block !important; line-height: 1.4; overflow-wrap: anywhere; }
-.tb-note .tb-who { font-family: var(--tb-plain); font-size: 9.5px !important; color: var(--tb-sub); margin: 0; }
+.tb-note .tb-who { font-family: var(--tb-plain); font-size: 9px !important; color: var(--tb-sub); opacity: .75; margin: 2px 0 0; }
 .tb-orn { border: 0 !important; padding: 0 !important; display: block !important; }
-.tb-orn.tb-short { flex: 0 0 48% !important; } .tb-orn.tb-mid { flex: 0 0 72% !important; } .tb-orn.tb-long { flex: 0 0 100% !important; }
+.tb-orn.tb-short { flex: 0 0 46% !important; } .tb-orn.tb-mid { flex: 0 0 72% !important; } .tb-orn.tb-long { flex: 0 0 100% !important; }
 .tb-orn.tb-mid.tb-right { margin-left: auto; }
 .tb-wl .tb-who { text-align: left; } .tb-wc .tb-who { text-align: center; } .tb-wr .tb-who { text-align: right; }
 mark.tb-mk0 { background: linear-gradient(transparent 55%, rgba(255,214,107,.6) 55%); color: inherit; }
 mark.tb-mk1 { background: none; color: inherit; text-decoration: underline wavy rgba(192,83,58,.55); text-underline-offset: 4px; }
 .tb-fit .tb-note .tb-m { font-size: 13px !important; } .tb-clip .tb-note .tb-m { display: -webkit-box !important; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
-.tb-solo .tb-orn { flex-basis: 90% !important; text-align: center; } .tb-solo .tb-note .tb-m { font-size: 22px !important; line-height: 1.6 !important; }
+.tb-solo .tb-orn { flex-basis: 90% !important; text-align: center; } .tb-solo .tb-note .tb-m { font-size: 19px !important; line-height: 1.6 !important; }
 .tb-stk { position: absolute; width: 20px; height: 20px; transform: rotate(var(--r)); pointer-events: none; opacity: .9; } .tb-stk svg { width: 100%; height: 100%; display: block; }
 .tb-cover, .tb-lv { background: var(--tb-paper) radial-gradient(rgba(120,100,70,.09) 1px, transparent 1.2px) 0 0 / 13px 13px !important; color: var(--tb-ink) !important; }
 .tb-pola.tb-big { width: 60%; margin: 0 auto 14px; }
@@ -2884,3 +2884,6 @@ mark.tb-mk1 { background: none; color: inherit; text-decoration: underline wavy 
 .tb-intro p, .tb-end p { font-size: 16px; } .tb-intro h2, .tb-end h2 { font-size: 34px; color: var(--tb-accent); transform: rotate(-2deg); }
 .tb-stats b { font-family: var(--tb-pen); font-weight: 400; font-size: 42px !important; color: var(--tb-accent) !important; }
 .tb-pn { font-family: var(--tb-plain); font-size: 10px !important; }
+
+/* 글씨 최대 크기 한계: 폰 글자 크게 설정해도 이 이상은 안 커져요 */
+.tb-note .tb-m { max-height: none; } .tb-wrap { -webkit-text-size-adjust: none; text-size-adjust: none; }

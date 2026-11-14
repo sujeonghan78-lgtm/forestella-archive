@@ -6476,22 +6476,22 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const tbFmt = d => L3(`${+d.slice(5, 7)}월 ${+d.slice(8)}일`, `${d.slice(5).replace('-', '/')}`, `${+d.slice(5, 7)}月${+d.slice(8)}日`);
   const TB_LV_ART = ['🌰', '🌱', '🌿', '🌲', '🎄', '📸', '❄️', '🌌', '⭐'];
   // 스크랩북 꾸밈: 글마다 정해진 값(번호로 만든 수)으로 기울기·위치·테이프 색을 골라서 새로고침해도 그대로
+  const TB_MAX = 6; // 한 쪽에 글 최대 6개 (너무 빽빽하지 않게)
   const tbH = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
   const TB_TAPE = ['#f6d26b', '#f4a7b9', '#a8d8c8', '#b9c7f0', '#f7b98a', '#d7c1f0'];
-  const tbVars = (id, k = 0) => { const h = tbH(id + k); return `--r:${((h % 9) - 4) * .7}deg;--dx:${(h >> 4) % 14 - 7}px;--tc:${TB_TAPE[(h >> 8) % TB_TAPE.length]};--ta:${((h >> 11) % 11) - 5}deg;--tc2:${TB_TAPE[(h >> 14) % TB_TAPE.length]}`; };
+  const tbVars = (id, k = 0) => { const h = tbH(id + k); return `--r:${((h % 9) - 4) * .7}deg;--dx:${(h >>> 4) % 14 - 7}px;--tc:${TB_TAPE[(h >>> 8) % TB_TAPE.length]};--ta:${((h >>> 11) % 11) - 5}deg;--tc2:${TB_TAPE[(h >>> 14) % TB_TAPE.length]}`; };
   // 글을 다 풀어 넣은 뒤 꾸밈: 길이로 칸 너비, 글마다 손글씨 글꼴·이름 정렬·날짜 쓰는 법을 번호로 골라요
   const TB_KEY = /(사랑해요?|사랑합니다|고마워요?|고맙습니다|감사합니다|행복해요?|행복하세요|응원해요?|응원합니다|함께|기억해요?|보고 싶어요?|건강하세요|ありがとう|大好き|愛してる|応援)/;
   const tbDayFmt = (d, h) => { const m = +d.slice(5, 7), dd = +d.slice(8); return [`${m}.${dd}`, `${m}월 ${dd}일`, `${m}/${dd}`, `${dd}일`, `${m}.${String(dd).padStart(2, '0')}`][h % 5]; };
   function tbStyle(it) {
     const h = tbH(it.dataset.id), m = it.querySelector('.tb-m'), t = (m && m.textContent) || '', len = t.length, who = it.querySelector('.tb-who'), pair = it.classList.contains('tb-pair');
     const note = pair ? it.querySelector('.tb-note') : it;
-    if (who && it.dataset.d) who.textContent += ' · ' + tbDayFmt(it.dataset.d, h >> 3);
-    note.classList.add(['tb-wl', 'tb-wc', 'tb-wr'][(h >> 5) % 3]);
+    note.classList.add(['tb-wl', 'tb-wc', 'tb-wr'][(h >>> 5) % 3]);
     if (pair) { if (len > 60) it.classList.add('tb-stack'); return; } // 폴라로이드는 원래 글씨, 긴 글은 사진 아래로
-    note.classList.add('tb-f' + ((h >> 2) % 5), len <= 30 ? 'tb-short' : len <= 80 ? 'tb-mid' : 'tb-long');
-    if ((h >> 9) % 2) note.classList.add('tb-right');
+    note.classList.add('tb-f' + ((h >>> 2) % 5), len <= 30 ? 'tb-short' : len <= 80 ? 'tb-mid' : 'tb-long');
+    if ((h >>> 9) % 2) note.classList.add('tb-right');
     // 밑줄은 마음이 담긴 말(사랑해요·고마워요·응원해요 같은 낱말)에만, 그 부분만
-    const k = t.match(TB_KEY); if (k && m) { const i = t.indexOf(k[0]); m.innerHTML = esc(t.slice(0, i)) + `<mark class="tb-mk${(h >> 7) % 2}">${esc(k[0])}</mark>` + esc(t.slice(i + k[0].length)); }
+    const k = t.match(TB_KEY); if (k && m) { const i = t.indexOf(k[0]); m.innerHTML = esc(t.slice(0, i)) + `<mark class="tb-mk${(h >>> 7) % 2}">${esc(k[0])}</mark>` + esc(t.slice(i + k[0].length)); }
   }
   function tbPola(id, photo, cap, extra = '') { // 폴라로이드: 실제 비율(88:107), 정사각 사진 + 아래 두꺼운 여백에 제목 한 줄
     return `<figure class="tb-pola ${tbH(id) % 3 ? 'tb-tape1' : 'tb-tape2'}${extra}" style="${tbVars(id, 1)}"><div class="tb-ph">${photo}</div><figcaption>${cap}</figcaption></figure>`;
@@ -6504,7 +6504,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const TB_STK = ['<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6z" fill="#f5c83c"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z" fill="#f4a7b9"/></svg>', '<svg viewBox="0 0 24 24"><g fill="#f7b98a"><circle cx="12" cy="6" r="4"/><circle cx="18" cy="11" r="4"/><circle cx="15" cy="18" r="4"/><circle cx="9" cy="18" r="4"/><circle cx="6" cy="11" r="4"/></g><circle cx="12" cy="12" r="3" fill="#fff3b0"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 2c.8 5 2 6.2 7 7-5 .8-6.2 2-7 7-.8-5-2-6.2-7-7 5-.8 6.2-2 7-7z" fill="#a8d8c8"/></svg>', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#b9e3a0"/><circle cx="9" cy="10" r="1.2" fill="#3b2f25"/><circle cx="15" cy="10" r="1.2" fill="#3b2f25"/><path d="M8.5 14c2 2 5 2 7 0" stroke="#3b2f25" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>'];
   function tbStickers(pg, n) { // 쪽 귀퉁이에 작은 스티커 두세 개
     const spots = [['3%', '2%'], ['89%', '2.5%'], ['30%', '1.5%'], ['64%', '1.5%'], ['3%', '94%']], h = tbH('p' + n);
-    [0, 1].forEach(k => { const [l, t] = spots[(h + k * 2) % spots.length], el = document.createElement('i'); el.className = 'tb-stk'; el.style.cssText = `left:${l};top:${t};--r:${((h >> k) % 30) - 15}deg`; el.innerHTML = TB_STK[(h + k * 3) % TB_STK.length]; pg.appendChild(el); });
+    [0, 1].forEach(k => { const [l, t] = spots[(h + k * 2) % spots.length], el = document.createElement('i'); el.className = 'tb-stk'; el.style.cssText = `left:${l};top:${t};--r:${((h >>> k) % 30) - 15}deg`; el.innerHTML = TB_STK[(h + k * 3) % TB_STK.length]; pg.appendChild(el); });
   }
   function tbLvPage(list) { // 연달아 오른 레벨은 한 쪽에 — 트리 사진을 붙인 폴라로이드처럼
     const last = list[list.length - 1][0], id = 'lv' + last;
@@ -6540,7 +6540,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       if (el.dataset.lv) { lvWait.push(...JSON.parse(el.dataset.lv)); if (!pg) close(); return; }
       if (!pg) open(); const box = pg.querySelector('.tb-items'), d = el.dataset.d, day = { parentNode: null, remove() {} };
       box.appendChild(el);
-      if (over(pg) && box.querySelectorAll('.tb-it').length > 1) { el.remove(); if (day.parentNode) day.remove(); close(); open(); lastD = ''; pg.querySelector('.tb-items').appendChild(el); }
+      if ((over(pg) || box.querySelectorAll('.tb-it').length > TB_MAX) && box.querySelectorAll('.tb-it').length > 1) { el.remove(); if (day.parentNode) day.remove(); close(); open(); lastD = ''; pg.querySelector('.tb-items').appendChild(el); }
       if (over(pg)) pg.classList.add('tb-fit'); if (over(pg)) pg.classList.add('tb-clip');
       lastD = d; });
     close(); srcEl.remove();
