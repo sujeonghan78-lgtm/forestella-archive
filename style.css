@@ -2754,12 +2754,13 @@ hr.divider[hidden], .d-block[hidden] { display: none; }
 .sn-sheet .sn-rn { background: none; border: 0; padding: 2px 4px; vertical-align: middle; cursor: pointer; } .sn-sheet .sn-rn svg { width: 15px; height: 15px; fill: none; stroke: #6b7b80; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ── 📖 트리 책 (#/treebook) ── 색·글씨는 아래 변수만 바꾸면 돼요 */
-.tb-wrap { --tb-paper: #fbf8f1; --tb-ink: #2b3a2e; --tb-sub: #8a958a; --tb-accent: #3f7a46; --tb-night: #13283a; --tb-serif: 'Gowun Batang', var(--serif); padding: 0 16px 24px; }
+/* 화면 가득: 옆 여백 줄임 */
+.tb-wrap { --tb-paper: #fbf8f1; --tb-ink: #2b3a2e; --tb-sub: #8a958a; --tb-accent: #3f7a46; --tb-night: #13283a; --tb-serif: 'Gowun Batang', var(--serif); padding: 0 8px 16px; }
 .tb-note { font-size: 12px; color: #a46b00; background: #fff6df; border-radius: 8px; padding: 6px 10px; margin: 6px 0; }
 .tb-chips { display: flex; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
 .tb-chips a { font-size: 13px; padding: 5px 11px; border-radius: 99px; background: #eef2ec; color: var(--tb-ink); text-decoration: none; }
 .tb-chips a.on { background: var(--tb-accent); color: #fff; }
-.tb-book { position: relative; max-width: 420px; aspect-ratio: 148 / 210; margin: 0 auto; perspective: 1600px; user-select: none; -webkit-user-select: none; }
+.tb-book { position: relative; width: min(100%, calc((100dvh - 230px) * 148 / 210)); aspect-ratio: 148 / 210; margin: 0 auto; perspective: 1600px; user-select: none; -webkit-user-select: none; }
 .tb-page { position: absolute; inset: 0; display: none; background: var(--tb-paper); color: var(--tb-ink); border-radius: 4px 10px 10px 4px; box-shadow: 0 6px 20px rgba(0,0,0,.14), inset 8px 0 14px -10px rgba(0,0,0,.25); padding: 9% 8%; box-sizing: border-box; overflow: hidden; }
 .tb-page.on { display: block; }
 .tb-book.tb-fl .tb-page.on { animation: tbFlipL .45s ease; transform-origin: left center; }
@@ -2798,3 +2799,10 @@ hr.divider[hidden], .d-block[hidden] { display: none; }
 .tb-toc button { display: flex; justify-content: space-between; border: 0; background: none; padding: 9px 10px; font-size: 14px; text-align: left; border-radius: 8px; color: var(--tb-ink); }
 .tb-toc button:hover { background: #f3f6f2; } .tb-toc small { opacity: .5; }
 
+
+.tb-fit .tb-m { font-size: 11.5px; } .tb-fit .tb-who { font-size: 9.5px; }
+.tb-clip .tb-m { display: -webkit-box; -webkit-line-clamp: 9; -webkit-box-orient: vertical; overflow: hidden; }
+.tb-clip .tb-pola .tb-m { -webkit-line-clamp: 3; }
+.tb-full { position: fixed; inset: 0; z-index: 80; background: rgba(10,20,15,.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.tb-full > div { background: var(--tb-paper, #fbf8f1); color: #2b3a2e; border-radius: 12px; padding: 20px; max-width: 420px; max-height: 80vh; overflow: auto; }
+.tb-full p { white-space: pre-wrap; line-height: 1.7; margin: 0 0 8px; } .tb-full button { margin-top: 12px; border: 0; background: #eef2ec; border-radius: 99px; padding: 8px 18px; }

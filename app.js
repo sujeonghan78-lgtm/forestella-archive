@@ -6520,6 +6520,9 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
         const moved = [...box.children].pop(); const nb = nx.querySelector('.tb-items'); const isP = moved.classList.contains('tb-pola'), firstOrn = [...nb.children].find(x => !x.classList.contains('tb-pola'));
         if (isP) nb.insertBefore(moved, [...nb.children].find(x => !x.classList.contains('tb-pola')) || null); else nb.insertBefore(moved, firstOrn || null);
         if (guard === 39) { cur.style.display = cur.style.visibility = ''; } else { const still = box.getBoundingClientRect().bottom > cur.getBoundingClientRect().bottom - 28; if (!still) { cur.style.display = cur.style.visibility = ''; head(cur); cur = nx; } } } });
+    // 한 개만 있어도 넘치는 긴 글: 글씨 줄이고, 그래도 넘치면 줄여 보이고 가운데를 누르면 전체
+    book.querySelectorAll('.tb-msg').forEach(pg => { const over = () => { const it = pg.querySelector('.tb-items'); return it && it.getBoundingClientRect().bottom > pg.getBoundingClientRect().bottom - 28; };
+      pg.style.display = 'block'; pg.style.visibility = 'hidden'; if (over()) pg.classList.add('tb-fit'); if (over()) pg.classList.add('tb-clip'); pg.style.display = pg.style.visibility = ''; });
     [...book.querySelectorAll('.tb-page')].forEach((pg, n) => { pg.dataset.n = n; const pn = pg.querySelector('.tb-pn'); if (pn) pn.textContent = n + 1; });
     document.querySelectorAll('#tb-toc button').forEach(b => { const el = document.getElementById('tb' + b.dataset.pg); if (el) { b.dataset.n = el.dataset.n; b.querySelector('small').textContent = +el.dataset.n + 1; } });
     const pages = [...book.querySelectorAll('.tb-page')], N = pages.length, wide = () => false; // 사이트 화면 폭이 좁아서 펼친 두 쪽은 안 써요 (나중에 쓰려면 여기만)
@@ -6533,7 +6536,8 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       void step; };
     const go = d => { const step = wide() ? (tbI === 0 ? 1 : 2) : 1, j = tbI + d * step; if (j < 0 || j >= N) return; show(j, d); };
     document.getElementById('tb-prev').onclick = () => go(-1); document.getElementById('tb-next').onclick = () => go(1);
-    book.onclick = e => { if (e.target.closest('a,button')) return; const r = book.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; if (x < .3) go(-1); else if (x > .7) go(1); };
+    book.onclick = e => { if (e.target.closest('a,button')) return; const r = book.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; if (x < .3) go(-1); else if (x > .7) go(1);
+      else { const it = e.target.closest('.tb-orn,.tb-pola'), m = it && it.querySelector('.tb-m'); if (!m || m.scrollHeight <= m.clientHeight + 2) return; const f = document.createElement('div'); f.className = 'tb-full'; f.innerHTML = `<div><p></p>${it.querySelector('.tb-who').outerHTML}<button>${L3('닫기', 'Close', '閉じる')}</button></div>`; f.querySelector('p').textContent = m.textContent; f.onclick = ev => { if (ev.target === f || ev.target.tagName === 'BUTTON') f.remove(); }; document.body.appendChild(f); } };
     let sx = null; book.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
     book.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); });
     const toc = document.getElementById('tb-toc'); document.getElementById('tb-cnt').onclick = () => { toc.hidden = !toc.hidden; };
