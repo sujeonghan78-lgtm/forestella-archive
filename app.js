@@ -9546,7 +9546,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     ['11-03', 2017, '팬텀싱어 우승', '🏆', { evq: /팬텀싱어 ?2 \((1[23]|1~13)회\)|우승팀 포레스텔라 첫 번째 팬미팅/, songs: ['Come Un Eterno Addio', 'Il Mirto e la Rosa', "In Un'altra Vita", 'Maldita Sea Mi Suerte'], vq: /팬텀싱어\s?2|팬텀싱어 시즌2/, from: '2017-08-01', to: '2018-02-28', prog: '팬텀싱어' }],
     ['09-26', 2017, '결성', '🌿', { prog: '팬텀싱어' }],
     ['03-14', 2018, '데뷔', '🌲', { day: '2018-03-14', from: '2018-03-01', to: '2018-03-31', vq: /데뷔|Mosaic|Into the Forest|Ever Green/i }],
-    ['11-15', 2013, '배두훈 데뷔', '🌟', { evq: /풍월주/ }],
+    ['11-15', 2013, '배두훈 데뷔', '🌟', { evq: /풍월주/, noHunt: 1 }],
     ['07-15', 0, '배두훈 생일', '🎂', { m: '배두훈' }], ['03-08', 0, '강형호 생일', '🎂', { m: '강형호' }], ['11-19', 0, '조민규 생일', '🎂', { m: '조민규' }], ['07-10', 0, '고우림 생일', '🎂', { m: '고우림' }],
   ];
   // 추억하러 가기: 그 기념일과 관련된 일정·곡·영상·공식 X
@@ -9581,6 +9581,8 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const name = a[1] ? `${a[2] === '데뷔' || a[2] === '결성' ? '포레스텔라 ' + a[2] : a[2]} ${n}주년` : a[2];
     return { d, ic: a[3], name, since: a[1] ? `${a[1]}.${a[0].replace('-', '.')}` : '', k: 'an-' + a[0].replace('-', '') + '-' + y };
   }
+  // noHunt: 숨은 숲·뱃지 없이 같이 축하하기만 하는 기념일
+  const annivHunt = a => !!a.my || !((ANNIVS.find(x => x[0] === a.d.slice(5)) || [])[4] || {}).noHunt;
   const annivGoal = a => +((a.name.match(/(\d+)주년/) || [])[1] || 5) || 5;
   const annivBadges = () => Object.entries(anvStore().bdg || {}).map(([k, b]) => ({ k, ic: b.ic, name: b.gold ? `금빛 ${b.name}` : b.name, how: b.gold ? '숨은 숲 모두 찾기' : '그날 숨은 숲 찾기', got: true, gold: !!b.gold }));
   const LEAF = '<svg viewBox="0 0 24 24"><path d="M5 19C5 10 11 4 20 4c0 9-6 15-15 15z" fill="currentColor"/><path d="M5 19L14 10" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></svg>';
@@ -9624,7 +9626,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       <div class="anv-top">${num ? `<span class="anv-num">${num}<small>th</small></span>` : `<span class="anv-num anv-numic">${a.ic}</span>`}<span class="anv-tt"><small>${a.since ? esc(a.since) + L3(' → 오늘', ' → today', ' → 今日') : 'HAPPY DAY'}</small><b>${esc(anvNameL(a.name))}</b><em>${a.my ? L3('포레스텔라와 함께한 날을 축하해요', 'Happy anniversary with Forestella', 'フォレステラと過ごした日々に乾杯') : num ? L3(`숲별들과 함께 맞는 ${num}번째 오늘`, `Our ${num}th today, together with fans`, `ファンと一緒に迎える${num}回目の今日`) : L3('숲별 모두 같이 축하해요', 'Let’s all celebrate together', 'みんなで一緒にお祝いしよう')}</em></span></div>
       ${cheerBtn(a)}
       ${a.my ? '' : `<a class="anv-mem" href="#/days?m=${a.d.slice(5).replace('-', '')}">${L3('추억하러 가기 ›', 'Look back ›', '思い出を見る ›')}</a>`}
-      <div class="anv-foot"><span>${L3(`숨은 숲 ${annivGoal(a)}개를 찾아보세요`, `Find ${annivGoal(a)} hidden forests`, `隠れた森を${annivGoal(a)}個探そう`)}</span><a href="#/days">${L3('함께한 기념일 ›', 'Our anniversaries ›', '一緒に迎えた記念日 ›')}</a></div>`;
+      <div class="anv-foot"><span>${!annivHunt(a) ? L3('오늘 같이 축하해요', 'Celebrate together today', '今日は一緒にお祝い') : L3(`숨은 숲 ${annivGoal(a)}개를 찾아보세요`, `Find ${annivGoal(a)} hidden forests`, `隠れた森を${annivGoal(a)}個探そう`)}</span><a href="#/days">${L3('함께한 기념일 ›', 'Our anniversaries ›', '一緒に迎えた記念日 ›')}</a></div>`;
     document.body.appendChild(b);
     requestAnimationFrame(() => b.classList.add('show'));
     const close = () => { b.classList.remove('show'); setTimeout(() => b.remove(), 400); };
@@ -9671,7 +9673,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     // 그날 숲 목표 개수(주년 수, 생일·입덕은 5개)를 다 찾으면 금빛 뱃지가 되고 숲은 더 안 나와요
     const goal = annivGoal(a), foundN = () => ((anvStore().found || {})[a.d] || 0);
     const pop = () => {
-      if (foundN() >= goal) return;
+      if (foundN() >= goal || !annivHunt(a)) return;
       if (document.hidden || !annivToday()) return next();
       const t = document.createElement('button');
       t.type = 'button'; t.className = 'anv-stk'; t.setAttribute('aria-label', L3('숨은 숲', 'Hidden forest', '隠れた森'));
