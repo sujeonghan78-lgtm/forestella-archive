@@ -3449,7 +3449,7 @@
     block('최애곡', B.favs.slice(0, 6));
     block('소취곡', B.wishes.slice(0, 6));
     if (B.best) block('최고의 날', [B.best.date.replace(/-/g, '.'), B.best.title]);
-    if (B.bdg.length) block('뱃지', B.bdg.map(b => `${b.gold ? '✦ ' : ''}${b.ic} ${b.name}${b.how ? ` (${b.how})` : ''}`));
+    if (B.bdg.length) block('뱃지', B.bdg.map(b => `${b.ic} ${b.name}${b.how ? ` (${b.how})` : ''}`));
     if (card.debut.trim() || B.favs.length || B.wishes.length || B.best || B.bdg.length) dash();
     row('합계', B.dd || 'D+', { b: true, sz: 20 });
     row('결제', '평생 할부 · 숲별카드', { c: MUTE, sz: 11 });
@@ -9532,7 +9532,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   // noHunt: 숨은 숲·뱃지 없이 같이 축하하기만 하는 기념일
   const annivHunt = a => !!a.my || !((ANNIVS.find(x => x[0] === a.d.slice(5)) || [])[4] || {}).noHunt;
   const annivGoal = a => +((a.name.match(/(\d+)주년/) || [])[1] || 5) || 5;
-  const annivBadges = () => Object.entries(anvStore().bdg || {}).map(([k, b]) => ({ k, ic: b.ic, name: b.gold ? `금빛 ${b.name}` : b.name, how: b.gold ? '' : '그날 숨은 숲 찾기', got: true, gold: !!b.gold }));
+  const annivBadges = () => Object.entries(anvStore().bdg || {}).map(([k, b]) => ({ k, ic: b.ic, name: b.name, how: '', got: true, gold: !!b.gold }));
   const LEAF = '<svg viewBox="0 0 24 24"><path d="M5 19C5 10 11 4 20 4c0 9-6 15-15 15z" fill="currentColor"/><path d="M5 19L14 10" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></svg>';
   const STAR = '<svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.9L22 9.3l-5.8 4.6 2 7.1L12 17l-6.2 4 2-7.1L2 9.3l7.4-.4z" fill="currentColor"/></svg>';
   const TREE = '<svg viewBox="0 0 48 56"><path d="M24 3L9 24h7L6 38h36L32 24h7z" fill="#3f8f4f" stroke="#245c31" stroke-width="2" stroke-linejoin="round"/><rect x="20" y="38" width="8" height="12" rx="2" fill="#8a5a36"/><circle cx="19" cy="22" r="1.6" fill="#ffe27a"/><circle cx="29" cy="30" r="1.6" fill="#ffe27a"/><circle cx="24" cy="13" r="1.6" fill="#ffe27a"/></svg>';
