@@ -6490,21 +6490,35 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (pair) { if (len > 60) it.classList.add('tb-stack'); return; } // 폴라로이드는 원래 글씨, 긴 글은 사진 아래로
     note.classList.add('tb-f' + ((h >>> 2) % 5), len <= 30 ? 'tb-short' : len <= 80 ? 'tb-mid' : 'tb-long');
     if ((h >>> 9) % 2) note.classList.add('tb-right');
+    // 종이 꾸밈: 포스트잇·줄 노트 조각·모눈 종이·손그림 낙서 (글마다 번호로 고정)
+    const g = tbH(it.dataset.id + 'paper'), bg = g % 10;
+    if (bg < 2) { note.classList.add('tb-postit'); note.style.setProperty('--pc', ['#fff1a8', '#ffd9e2', '#d8f0e3', '#dfe7ff'][(g >>> 4) % 4]); }
+    else if (bg === 2) note.classList.add('tb-lined');
+    else if (bg === 3) note.classList.add('tb-grid');
+    else if (len <= 40 && (g >>> 6) % 3 === 0) note.classList.add('tb-dood', 'tb-dd' + ((g >>> 9) % 3));
     // 밑줄은 마음이 담긴 말(사랑해요·고마워요·응원해요 같은 낱말)에만, 그 부분만
     const k = t.match(TB_KEY); if (k && m) { const i = t.indexOf(k[0]); m.innerHTML = esc(t.slice(0, i)) + `<mark class="tb-mk${(h >>> 7) % 2}">${esc(k[0])}</mark>` + esc(t.slice(i + k[0].length)); }
   }
   function tbPola(id, photo, cap, extra = '') { // 폴라로이드: 실제 비율(88:107), 정사각 사진 + 아래 두꺼운 여백에 제목 한 줄
-    return `<figure class="tb-pola ${tbH(id) % 3 ? 'tb-tape1' : 'tb-tape2'}${extra}" style="${tbVars(id, 1)}"><div class="tb-ph">${photo}</div><figcaption>${cap}</figcaption></figure>`;
+    const ph = tbH(id);
+    return `<figure class="tb-pola ${ph % 5 === 0 ? 'tb-pclip' : ph % 3 ? 'tb-tape1' : 'tb-tape2'}${extra}" style="${tbVars(id, 1)}"><div class="tb-ph">${photo}</div><figcaption>${cap}</figcaption></figure>`;
   }
   function tbItem(o) {
     const who = `<p class="tb-who">— ${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}${o.to === '숲별' ? ` · ${L3('숲별에게', 'to fans', 'ファンへ')}` : ''}</p>`, h = tbH(o.id), msg = `<p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>`;
     if (o.shape === 4) return `<div class="tb-it tb-pair${h % 2 ? ' tb-rev' : ''}" data-id="${esc(o.id)}" style="${tbVars(o.id)}">${tbPola(o.id, o.pic ? `<img src="${esc(o.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '', esc(o.cap || ''))}<div class="tb-note">${msg}${who}</div></div>`;
     return `<div class="tb-it tb-orn tb-note" data-id="${esc(o.id)}" style="${tbVars(o.id)}">${msg}${who}</div>`;
   }
-  const TB_STK = ['<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6z" fill="#f5c83c"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z" fill="#f4a7b9"/></svg>', '<svg viewBox="0 0 24 24"><g fill="#f7b98a"><circle cx="12" cy="6" r="4"/><circle cx="18" cy="11" r="4"/><circle cx="15" cy="18" r="4"/><circle cx="9" cy="18" r="4"/><circle cx="6" cy="11" r="4"/></g><circle cx="12" cy="12" r="3" fill="#fff3b0"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 2c.8 5 2 6.2 7 7-5 .8-6.2 2-7 7-.8-5-2-6.2-7-7 5-.8 6.2-2 7-7z" fill="#a8d8c8"/></svg>', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#b9e3a0"/><circle cx="9" cy="10" r="1.2" fill="#3b2f25"/><circle cx="15" cy="10" r="1.2" fill="#3b2f25"/><path d="M8.5 14c2 2 5 2 7 0" stroke="#3b2f25" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>'];
-  function tbStickers(pg, n) { // 쪽 귀퉁이에 작은 스티커 두세 개
+  const TB_STK = ['<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6z" fill="#f5c83c"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z" fill="#f4a7b9"/></svg>', '<svg viewBox="0 0 24 24"><g fill="#f7b98a"><circle cx="12" cy="6" r="4"/><circle cx="18" cy="11" r="4"/><circle cx="15" cy="18" r="4"/><circle cx="9" cy="18" r="4"/><circle cx="6" cy="11" r="4"/></g><circle cx="12" cy="12" r="3" fill="#fff3b0"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 2c.8 5 2 6.2 7 7-5 .8-6.2 2-7 7-.8-5-2-6.2-7-7 5-.8 6.2-2 7-7z" fill="#a8d8c8"/></svg>', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#b9e3a0"/><circle cx="9" cy="10" r="1.2" fill="#3b2f25"/><circle cx="15" cy="10" r="1.2" fill="#3b2f25"/><path d="M8.5 14c2 2 5 2 7 0" stroke="#3b2f25" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>', '<svg viewBox="0 0 24 24"><g stroke="#8fb8d8" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7"/><path d="M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5"/></g></svg>', '<svg viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="12" rx="1.5" fill="#e98b7a"/><rect x="3" y="6" width="18" height="4" rx="1" fill="#f2a597"/><path d="M12 6v15" stroke="#f6d26b" stroke-width="2.4"/><path d="M12 6c-2-4-6-3-5-1 .6 1.2 3 1 5 1 2 0 4.4.2 5-1 1-2-3-3-5 1z" fill="#f6d26b"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 2l7 10h-3l4 6H4l4-6H5z" fill="#7fb07a"/><rect x="10.5" y="18" width="3" height="4" fill="#a07850"/><circle cx="12" cy="2.6" r="1.6" fill="#f5c83c"/></svg>', '<svg viewBox="0 0 24 24"><path d="M7 4h7a3 3 0 0 1 3 3v6l3 2a2.5 2.5 0 0 1-3 4l-3-2H8a3 3 0 0 1-3-3V6a2 2 0 0 1 2-2z" fill="#c9a0dc"/><rect x="5" y="15" width="10" height="3" rx="1" fill="#fff" opacity=".7"/></svg>'];
+  function tbStickers(pg, n) { // 쪽 귀퉁이에 작은 스티커 두 개 + 쪽마다 하나씩 다른 꾸밈
     const spots = [['3%', '2%'], ['89%', '2.5%'], ['30%', '1.5%'], ['64%', '1.5%'], ['3%', '94%']], h = tbH('p' + n);
     [0, 1].forEach(k => { const [l, t] = spots[(h + k * 2) % spots.length], el = document.createElement('i'); el.className = 'tb-stk'; el.style.cssText = `left:${l};top:${t};--r:${((h >>> k) % 30) - 15}deg`; el.innerHTML = TB_STK[(h + k * 3) % TB_STK.length]; pg.appendChild(el); });
+    const add = (c, html = '') => { const el = document.createElement('i'); el.className = 'tb-deco ' + c; el.style.setProperty('--tc', TB_TAPE[(h >>> 6) % TB_TAPE.length]); el.innerHTML = html; pg.appendChild(el); };
+    const pick = (h >>> 10) % 6;
+    if (pick === 0) add('tb-corner'); // 귀퉁이 마스킹 테이프
+    else if (pick === 1) add('tb-stamp', '<b>숲별</b><small>2026</small>'); // 동그란 도장
+    else if (pick === 2) add('tb-wave'); // 아래 손그림 물결선
+    else if (pick === 3) add('tb-dots'); // 아래 작은 별 점선
+    else if (pick === 4) add('tb-ticket', 'FORESTELLA ♪ ADMIT ONE'); // 티켓 조각
   }
   function tbLvPage(list) { // 연달아 오른 레벨은 한 쪽에 — 트리 사진을 붙인 폴라로이드처럼
     const last = list[list.length - 1][0], id = 'lv' + last;

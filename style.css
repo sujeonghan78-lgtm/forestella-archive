@@ -2887,3 +2887,23 @@ mark.tb-mk1 { background: none; color: inherit; text-decoration: underline wavy 
 
 /* 글씨 최대 크기 한계: 폰 글자 크게 설정해도 이 이상은 안 커져요 */
 .tb-note .tb-m { max-height: none; } .tb-wrap { -webkit-text-size-adjust: none; text-size-adjust: none; }
+/* ── 📖 트리 책: 더 넣은 꾸밈 (11-14 밤) ── */
+.tb-orn.tb-postit, .tb-orn.tb-lined, .tb-orn.tb-grid { padding: 10px 12px 8px !important; position: relative; }
+.tb-postit { background: var(--pc); box-shadow: 0 3px 6px -2px rgba(60,40,20,.25); border-radius: 1px 1px 10px 1px; }
+.tb-lined { background: #fffdf7 repeating-linear-gradient(transparent 0 21px, rgba(110,150,200,.28) 21px 22px); border-left: 2px solid rgba(220,110,110,.35); box-shadow: 0 1px 3px rgba(60,40,20,.15); -webkit-mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; padding-top: 12px !important; }
+.tb-grid { background: #fff linear-gradient(rgba(120,160,140,.18) 1px, transparent 1px) 0 0 / 11px 11px, linear-gradient(90deg, rgba(120,160,140,.18) 1px, transparent 1px) 0 0 / 11px 11px; box-shadow: 0 1px 3px rgba(60,40,20,.15); }
+.tb-grid::before { content: ''; position: absolute; top: -7px; left: 50%; width: 38%; height: 13px; transform: translateX(-50%) rotate(var(--ta, -3deg)); background: var(--tc2); opacity: .8; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.4) 0 4px, transparent 4px 9px); }
+.tb-dood { position: relative; }
+.tb-dood::after { content: ''; position: absolute; width: 22px; height: 22px; right: -6px; top: -12px; background: no-repeat center / contain; opacity: .7; pointer-events: none; }
+.tb-dd0::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 20s-7-4.6-7-9.6A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.4c0 5-7 9.6-7 9.6z' fill='none' stroke='%23c0533a' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.tb-dd1::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3l2.2 5.6 6 .4-4.6 3.8 1.5 5.8L12 15.4 6.9 18.6l1.5-5.8L3.8 9l6-.4z' fill='none' stroke='%23d9a520' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.tb-dd2::after { width: 26px; right: -8px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%237fa88c' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M4 8l2 2M9 4v3M14 8l-2 2'/%3E%3Cpath d='M5 16c3-3 6 3 9 0s5 2 6 0'/%3E%3C/g%3E%3C/svg%3E"); }
+.tb-pola.tb-pclip::before { content: ''; position: absolute; top: -10px; left: 18%; width: 11px; height: 30px; background: none; border: 2px solid #9aa3ab; border-radius: 6px; box-shadow: none; opacity: 1; transform: rotate(-8deg); }
+.tb-pola.tb-pclip::after { content: ''; position: absolute; top: -6px; left: calc(18% + 3px); width: 5px; height: 20px; border: 2px solid #9aa3ab; border-radius: 4px; transform: rotate(-8deg); }
+.tb-deco { position: absolute; pointer-events: none; font-style: normal; }
+.tb-corner { top: 12px; right: -14px; width: 70px; height: 16px; background: var(--tc); opacity: .75; transform: rotate(40deg); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.4) 0 4px, transparent 4px 9px); }
+.tb-stamp { right: 6%; bottom: 4.5%; width: 40px; height: 40px; border: 2px solid rgba(192,83,58,.5); border-radius: 50%; color: rgba(192,83,58,.6); display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-14deg); font-family: var(--tb-plain); line-height: 1.05; box-shadow: inset 0 0 0 2px var(--tb-paper), inset 0 0 0 3px rgba(192,83,58,.35); }
+.tb-stamp b { font-size: 10px; } .tb-stamp small { font-size: 7.5px; }
+.tb-wave { left: 30%; right: 30%; bottom: 4%; height: 8px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 8'%3E%3Cpath d='M0 4q5-4 10 0t10 0' fill='none' stroke='%23b5a48c' stroke-width='1.2'/%3E%3C/svg%3E") repeat-x 0 0 / 20px 8px; opacity: .8; }
+.tb-dots { left: 28%; right: 28%; bottom: 4.3%; height: 8px; background: radial-gradient(circle, #d9b45a 1.4px, transparent 1.8px) repeat-x 0 50% / 12px 8px; opacity: .75; }
+.tb-ticket { left: 5%; bottom: 3.5%; padding: 3px 8px 3px 10px; background: #f3e3c3; color: #8a6a3e; font-family: var(--tb-plain); font-size: 7.5px; letter-spacing: .08em; transform: rotate(-4deg); border-left: 2px dashed #fbf6ea; -webkit-mask: radial-gradient(3px at 0 50%, #0000 98%, #000) 0 0 / 100% 100%; mask: radial-gradient(3px at 0 50%, #0000 98%, #000); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
