@@ -6520,8 +6520,15 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       lastD = d; });
     close(); srcEl.remove();
   }
-  function bindTreeBook() {
-    const book = document.getElementById('tb-book'); if (!book) return;
+  // 글씨 넘침 막기: 글꼴이 다 내려오고, 잠긴 편지 글을 다 풀어 넣은 뒤에 쪽을 재서 나눠요
+  async function bindTreeBook() {
+    const book = document.getElementById('tb-book'), srcEl = document.getElementById('tb-src'); if (!book || !srcEl) return;
+    book.classList.add('tb-wait');
+    const orn = treeState().orn || [];
+    await Promise.all([...srcEl.querySelectorAll('[data-id]')].map(it => { const o = orn.find(x => x.id === it.dataset.id); if (!o || o.plain) return null; it.dataset.rd = 1;
+      return treeRead(o).then(t => { const m = it.querySelector('.tb-m'); if (m) m.textContent = t == null ? '🔒' : t; }).catch(() => {}); }));
+    await Promise.race([document.fonts ? document.fonts.ready : null, new Promise(r => setTimeout(r, 2500))]);
+    if (!book.isConnected) return; book.classList.remove('tb-wait');
     { const top = book.getBoundingClientRect().top, h = Math.max(320, window.innerHeight - top - 74), w = Math.min(book.parentNode.clientWidth, Math.round(h * 148 / 210)); book.style.width = w + 'px'; book.style.height = Math.round(w * 210 / 148) + 'px'; } // 화면 가득 (책 비율 148:210)
     tbPack(book);
     book.querySelectorAll('.tb-page').forEach(p => { const inn = document.createElement('div'); inn.className = 'tb-in'; while (p.firstChild) inn.appendChild(p.firstChild); p.appendChild(inn); }); // 넘김 도구가 쪽 겉 상자를 쓰니 안쪽 칸에 배치

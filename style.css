@@ -2828,3 +2828,6 @@ body.tb-full .tb-live { position: fixed; inset: 0; z-index: 60; background: line
 .tb-pf .tb-page { box-shadow: none; border-radius: 0; }
 .tb-pf.tb-book { filter: drop-shadow(0 8px 18px rgba(0,0,0,.18)); }
 .tb-live .tb-toc { position: absolute; left: 12px; right: 12px; bottom: 64px; z-index: 5; max-height: 50vh; overflow: auto; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+
+.tb-book.tb-wait { opacity: .35; }
+.tb-page { overflow: hidden; } .tb-m { overflow-wrap: anywhere; }
