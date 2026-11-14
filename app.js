@@ -9372,7 +9372,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const annivReqs = () => ((data && data.annivReq) || []).map(a => { const h = window.SB_EV_HIDE || new Set(); return { ...a, ok: h.has('ao' + a.id), no: h.has('ax' + a.id), ic: (window.SB_EV_MERGE || {})['ao' + a.id] || '🎉' }; });
   function annivSync() {
     const add = annivReqs().filter(a => a.ok && !ANNIV_BASE.some(x => x[0] === a.md)).filter((a, i, l) => l.findIndex(b => b.md === a.md) === i);
-    ANNIVS.length = 0; ANNIVS.push(...ANNIV_BASE, ...add.map(a => [a.md, a.y || 0, a.name, a.ic, a.y ? { day: `${a.y}-${a.md}` } : {}]));
+    ANNIVS.length = 0; ANNIVS.push(...ANNIV_BASE, ...add.map(a => [a.md, a.y || 0, a.name, a.ic, a.y ? { day: `${a.y}-${a.md}`, noHunt: 1 } : { noHunt: 1 }]));
   }
   const AR_UP = 'sb-ar-up', AR_ICONS = ['🎉', '🌟', '✨', '🎤', '🎼', '💿', '🎬', '📺', '🌸', '🌙', '💚', '🎂'];
   const arMd = md => md.replace(/^0?(\d+)-0?(\d+)$/, (_, a, b) => `${a}월 ${b}일`);
