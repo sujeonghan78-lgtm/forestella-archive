@@ -2938,3 +2938,11 @@ mark.tb-mk1 { background: none; color: inherit; text-decoration: underline wavy 
 .tb-lv-stks { display: flex; gap: 14px; justify-content: center; margin-bottom: 18px; }
 .tb-lv-stk { font-size: 58px; line-height: 1; display: inline-block; transform: rotate(var(--r)); filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(0 2px 3px rgba(60,40,20,.3)); }
 .tb-lv-txt h2 { font-family: var(--tb-pen) !important; }
+
+/* ── 📖 트리 책: 종이 4가지로 줄임, 테이프 안 잘리게 (11-14 밤) ── */
+.tb-items { padding-top: 10px; }
+.tb-lined, .tb-torn { -webkit-mask: none !important; mask: none !important; background: none !important; box-shadow: none !important; border: 0 !important; isolation: isolate; }
+.tb-lined::before, .tb-torn::before { content: ''; position: absolute; inset: 0; z-index: -1; background: #fffdf7 repeating-linear-gradient(transparent 0 21px, rgba(110,150,200,.28) 21px 22px); border-left: 2px solid rgba(220,110,110,.35); filter: drop-shadow(0 1px 1.5px rgba(60,40,20,.18)); }
+.tb-lined::before { -webkit-mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; }
+.tb-torn::before { -webkit-mask: linear-gradient(#000, #000) top / 100% calc(100% - 6px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 9px 6px repeat-x; mask: linear-gradient(#000, #000) top / 100% calc(100% - 6px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 9px 6px repeat-x; }
+.tb-grid { isolation: isolate; }

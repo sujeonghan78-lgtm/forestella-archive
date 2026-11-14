@@ -6483,7 +6483,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   // 글을 다 풀어 넣은 뒤 꾸밈: 길이로 칸 너비, 글마다 손글씨 글꼴·이름 정렬·날짜 쓰는 법을 번호로 골라요
   const TB_KEY = /(사랑해요?|사랑합니다|고마워요?|고맙습니다|감사합니다|행복해요?|행복하세요|응원해요?|응원합니다|함께|기억해요?|보고 싶어요?|건강하세요|ありがとう|大好き|愛してる|応援)/;
   const tbDayFmt = (d, h) => { const m = +d.slice(5, 7), dd = +d.slice(8); return [`${m}.${dd}`, `${m}월 ${dd}일`, `${m}/${dd}`, `${dd}일`, `${m}.${String(dd).padStart(2, '0')}`][h % 5]; };
-  const TB_PAPER = ['postit', 'postit', 'lined', 'grid', 'kraft', 'torn', 'card', 'postit', 'lined', 'board'];
+  const TB_PAPER = ['postit', 'lined', 'grid', 'torn', 'postit', 'lined', 'grid', 'torn', 'postit', 'lined'];
   const TB_PC = ['#fff1a8', '#ffd9e2', '#d8f0e3', '#dfe7ff', '#ffe2c4', '#efe0ff', '#e6f5b8', '#c9eef0', '#ffd0c2'];
   const TB_MAG = ['#e66b6b', '#5b9bd5', '#f2c14e', '#6cbf84', '#b48ad8'];
   const TB_PEN = ['<svg viewBox="0 0 60 40"><path d="M56 6C40 4 18 10 8 30" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round"/><path d="M5 22l3 9 8-5" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M56 30c-8-14-20-4-14 2s10-8-6-16S14 14 6 18" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12l-6 6 8 3" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M54 34C44 20 30 14 8 14" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 3"/><path d="M14 8l-7 6 7 6" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="34" y="10" font-size="8" fill="#3f6e5a" font-family="Gaegu">♡</text></svg>'];
@@ -6496,17 +6496,17 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (pair) { if (len > 60) it.classList.add('tb-stack'); return; } // 폴라로이드는 원래 글씨, 긴 글은 사진 아래로
     note.classList.add('tb-f' + ((h >>> 2) % 5), len <= 30 ? 'tb-short' : len <= 80 ? 'tb-mid' : 'tb-long');
     if ((h >>> 9) % 2) note.classList.add('tb-right');
-    // 종이 꾸밈: 글마다 하나씩 (포스트잇·줄 노트·모눈·크라프트·찢은 종이·메모 카드·클립보드) + 붙이는 것(테이프·클립·자석·압정)
+    // 종이 꾸밈: 글마다 하나씩 (포스트잇·줄 노트·모눈·찢은 줄 노트) + 마스킹 테이프
     const g = tbH(it.dataset.id + 'paper'), P = TB_PAPER[g % TB_PAPER.length];
-    note.classList.add('tb-pp', 'tb-' + (P === 'board' && len < 50 ? 'card' : P));
+    note.classList.add('tb-pp', 'tb-' + P);
     note.style.setProperty('--pc', TB_PC[(g >>> 4) % TB_PC.length]);
     note.style.setProperty('--tc3', TB_TAPE[(g >>> 7) % TB_TAPE.length]);
-    if (P !== 'board') { const fx = ['tape', 'tape', 'tape2', 'clip', 'mag', 'pin', ''][(g >>> 10) % 7]; if (fx) { const el = document.createElement('i'); el.className = 'tb-fx tb-fx-' + fx; if (fx === 'mag') el.style.setProperty('--mc', TB_MAG[(g >>> 13) % TB_MAG.length]); note.appendChild(el); } }
+    if (P !== 'postit' && (g >>> 10) % 3) { const el = document.createElement('i'); el.className = 'tb-fx tb-fx-tape'; note.appendChild(el); } // 붙이는 건 마스킹 테이프만 (포스트잇은 원래 붙으니 없음)
     if (len <= 40 && (g >>> 16) % 3 === 0) note.classList.add('tb-dood', 'tb-dd' + ((g >>> 18) % 3));
   }
   function tbPola(id, photo, cap, extra = '') { // 폴라로이드: 실제 비율(88:107), 정사각 사진 + 아래 두꺼운 여백에 제목 한 줄
     const ph = tbH(id);
-    return `<figure class="tb-pola ${ph % 5 === 0 ? 'tb-pclip' : ph % 3 ? 'tb-tape1' : 'tb-tape2'}${extra}" style="${tbVars(id, 1)}"><div class="tb-ph">${photo}</div><figcaption>${cap}</figcaption></figure>`;
+    return `<figure class="tb-pola ${ph % 3 ? 'tb-tape1' : 'tb-tape2'}${extra}" style="${tbVars(id, 1)}"><div class="tb-ph">${photo}</div><figcaption>${cap}</figcaption></figure>`;
   }
   function tbItem(o) {
     const who = `<p class="tb-who">— ${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}${o.to === '숲별' ? ` · ${L3('숲별에게', 'to fans', 'ファンへ')}` : ''}</p>`, h = tbH(o.id), msg = `<p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>`;
