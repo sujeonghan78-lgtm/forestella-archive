@@ -2951,3 +2951,30 @@ mark.tb-mk1 { background: none; color: inherit; text-decoration: underline wavy 
 .tb-items { align-items: flex-start !important; }
 .tb-orn { margin-top: var(--dy, 0px) !important; translate: var(--dx, 0px) 0; }
 .tb-orn:not(.tb-pp) { padding: 2px 4px !important; }
+
+/* ── 📖 트리 책: 쪽 배치 틀 3가지 (11-14) ── */
+.tb-msg .tb-orn { translate: none; margin-top: 0 !important; }
+.tb-msg .tb-orn .tb-m { font-family: 'Gaegu', 'Yomogi', sans-serif !important; font-size: 15.5px !important; line-height: 1.45 !important; }
+.tb-msg .tb-orn.tb-ja .tb-m { font-family: 'Yomogi', sans-serif !important; font-size: 14px !important; }
+/* 큰 글 하나 */
+.tb-orn.tb-hero { flex: 0 0 84% !important; margin: 4px auto 6px !important; padding: 18px 18px 12px !important; transform: rotate(-1.2deg); }
+.tb-orn.tb-hero .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 23px !important; line-height: 1.35 !important; }
+.tb-orn.tb-hero .tb-who { font-size: 10px !important; }
+/* 종이 두 장 겹침 */
+.tb-orn.tb-lay1, .tb-orn.tb-lay2 { flex: 0 0 66% !important; padding: 14px 14px 16px !important; }
+.tb-orn.tb-lay1 { margin-right: auto !important; transform: rotate(-2.5deg); z-index: 1; }
+.tb-orn.tb-lay2 { margin-left: auto !important; margin-top: -12px !important; transform: rotate(2deg); z-index: 2; box-shadow: 0 4px 8px -3px rgba(60,40,20,.3); }
+.tb-orn.tb-lay1 .tb-m, .tb-orn.tb-lay2 .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 19px !important; }
+/* 작은 펜글씨 */
+.tb-orn.tb-sm { flex: 0 0 46% !important; padding: 2px 2px !important; transform: none; }
+.tb-orn.tb-sm.tb-alt { margin-top: 12px !important; }
+/* 크기 다른 펜글씨: 왼쪽·오른쪽 번갈아 */
+.tb-orn.tb-sc { flex: 0 0 66% !important; margin-right: auto !important; padding: 2px 4px !important; }
+.tb-orn.tb-sc.tb-alt { margin-left: auto !important; margin-right: 0 !important; text-align: right; }
+.tb-orn.tb-sc.tb-alt .tb-who { text-align: right; }
+.tb-orn.tb-sc-big { flex-basis: 74% !important; }
+.tb-orn.tb-sc-big .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 28px !important; color: #2f5a46 !important; }
+.tb-orn.tb-sc:nth-child(3n) .tb-m { color: #8a3b2a !important; }
+.tb-postit { box-shadow: 0 4px 7px -3px rgba(60,40,20,.28); }
+.tb-layered .tb-items { row-gap: 30px !important; padding-top: 18px; align-content: center !important; }
+.tb-layered .tb-orn.tb-lay2 { margin-top: -34px !important; }

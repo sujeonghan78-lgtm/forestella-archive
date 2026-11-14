@@ -6478,13 +6478,27 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   // 스크랩북 꾸밈: 글마다 정해진 값(번호로 만든 수)으로 기울기·위치·테이프 색을 골라서 새로고침해도 그대로
   const TB_MAX = 6; // 한 쪽에 글 최대 6개 (너무 빽빽하지 않게)
   const tbH = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
-  const TB_TAPE = ['#f6d26b', '#f4a7b9', '#a8d8c8', '#b9c7f0', '#f7b98a', '#d7c1f0'];
+  const TB_TAPE = ['#b9d3a8', '#f2d48a', '#eaa79a']; // 색은 세 가지로: 초록·크림 노랑·빨강 포인트
   const tbVars = (id, k = 0) => { const h = tbH(id + k); return `--r:${((h % 9) - 4) * .7}deg;--dx:${(h >>> 4) % 14 - 7}px;--dy:${(h >>> 18) % 16}px;--tc:${TB_TAPE[(h >>> 8) % TB_TAPE.length]};--ta:${((h >>> 11) % 11) - 5}deg;--tc2:${TB_TAPE[(h >>> 14) % TB_TAPE.length]}`; };
   // 글을 다 풀어 넣은 뒤 꾸밈: 길이로 칸 너비, 글마다 손글씨 글꼴·이름 정렬·날짜 쓰는 법을 번호로 골라요
   const TB_KEY = /(사랑해요?|사랑합니다|고마워요?|고맙습니다|감사합니다|행복해요?|행복하세요|응원해요?|응원합니다|함께|기억해요?|보고 싶어요?|건강하세요|ありがとう|大好き|愛してる|応援)/;
   const tbDayFmt = (d, h) => { const m = +d.slice(5, 7), dd = +d.slice(8); return [`${m}.${dd}`, `${m}월 ${dd}일`, `${m}/${dd}`, `${dd}일`, `${m}.${String(dd).padStart(2, '0')}`][h % 5]; };
   const TB_PAPER = ['postit', 'grid', 'lined', 'torn'];
-  const TB_PC = ['#fff1a8', '#ffd9e2', '#d8f0e3', '#dfe7ff', '#ffe2c4', '#efe0ff', '#e6f5b8', '#c9eef0', '#ffd0c2'];
+  const TB_PC = ['#fff0b3', '#e3eed8', '#f8dcd3'];
+  // 쪽 배치 틀: 쪽마다 돌아가며 — 큰 글 하나 + 작은 글들 / 종이 두 장 겹침 + 작은 글 / 크기 다른 펜글씨. 폴라로이드가 있는 쪽은 폴라로이드가 중심
+  const TB_TPL = ['hero', 'layer', 'scatter'];
+  function tbRole(pg, el) {
+    el.classList.remove('tb-hero', 'tb-lay1', 'tb-lay2', 'tb-sm', 'tb-sc', 'tb-sc-big', 'tb-alt', 'tb-pp', 'tb-postit', 'tb-grid', 'tb-lined', 'tb-torn', 'tb-dood', 'tb-dd0', 'tb-dd1', 'tb-dd2');
+    el.querySelectorAll('.tb-fx').forEach(f => f.remove());
+    if (!el.classList.contains('tb-orn')) return;
+    const T = pg.dataset.tpl, no = +pg.dataset.no, m = el.querySelector('.tb-m'), len = ((m && m.textContent) || '').length, h = tbH(el.dataset.id);
+    const k = [...pg.querySelectorAll('.tb-orn')].indexOf(el), hasPair = !!pg.querySelector('.tb-pair');
+    const paper = P => { el.classList.add('tb-pp', 'tb-' + P); el.style.setProperty('--pc', TB_PC[(no + k) % TB_PC.length]); el.style.setProperty('--tc3', TB_TAPE[(no + k + 1) % TB_TAPE.length]); if (P !== 'postit') { const t = document.createElement('i'); t.className = 'tb-fx tb-fx-tape'; el.appendChild(t); } };
+    if (!hasPair && T === 'hero' && !pg.querySelector('.tb-hero') && len <= 110) { el.classList.add('tb-hero'); paper(no % 4 < 2 ? 'lined' : 'postit'); return; }
+    if (T === 'layer' && pg.querySelectorAll('.tb-lay1, .tb-lay2').length < (hasPair ? 1 : 2) && len <= 90) { const n = pg.querySelector('.tb-lay1') ? 2 : 1; el.classList.add('tb-lay' + n); paper(n === 1 ? (no % 2 ? 'grid' : 'torn') : 'postit'); return; }
+    if (T === 'scatter') { el.classList.add('tb-sc'); if (len <= 24) el.classList.add('tb-sc-big'); if (k % 2) el.classList.add('tb-alt'); if (len <= 40 && h % 3 === 0) el.classList.add('tb-dood', 'tb-dd' + (h >>> 4) % 3); return; }
+    el.classList.add('tb-sm'); if (k % 2) el.classList.add('tb-alt');
+  }
   const TB_MAG = ['#e66b6b', '#5b9bd5', '#f2c14e', '#6cbf84', '#b48ad8'];
   const TB_PEN = ['<svg viewBox="0 0 60 40"><path d="M56 6C40 4 18 10 8 30" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round"/><path d="M5 22l3 9 8-5" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M56 30c-8-14-20-4-14 2s10-8-6-16S14 14 6 18" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12l-6 6 8 3" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M54 34C44 20 30 14 8 14" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 3"/><path d="M14 8l-7 6 7 6" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="34" y="10" font-size="8" fill="#3f6e5a" font-family="Gaegu">♡</text></svg>'];
   function tbStyle(it) {
@@ -6497,14 +6511,6 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     note.classList.add('tb-f' + ((h >>> 2) % 2), len <= 30 ? 'tb-short' : len <= 80 ? 'tb-mid' : 'tb-long');
     if ((h >>> 9) % 2) note.classList.add('tb-right');
     // 종이 꾸밈: 글마다 하나씩 (포스트잇·줄 노트·모눈·찢은 줄 노트) + 마스킹 테이프
-    // 종이는 글 10개 중 3개쯤만 (포스트잇·모눈·줄노트·찢은 종이 섞어서), 나머지는 바탕에 펜으로 쓴 글. 쪽마다 2개 넘으면 묶은 뒤 뺌
-    const g = tbH(it.dataset.id + 'paper');
-    if (g % 10 < 3) { const P = TB_PAPER[(g >>> 20) % 4];
-      note.classList.add('tb-pp', 'tb-' + P);
-      note.style.setProperty('--pc', TB_PC[(g >>> 4) % TB_PC.length]);
-      note.style.setProperty('--tc3', TB_TAPE[(g >>> 7) % TB_TAPE.length]);
-      if (P !== 'postit') { const el = document.createElement('i'); el.className = 'tb-fx tb-fx-tape'; note.appendChild(el); } // 포스트잇은 원래 붙으니 테이프 없음
-    } else if (len <= 40 && (g >>> 16) % 3 === 0) note.classList.add('tb-dood', 'tb-dd' + ((g >>> 18) % 3));
   }
   function tbPola(id, photo, cap, extra = '') { // 폴라로이드: 실제 비율(88:107), 정사각 사진 + 아래 두꺼운 여백에 제목 한 줄
     const ph = tbH(id);
@@ -6522,9 +6528,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const add = (c, html = '') => { const el = document.createElement('i'); el.className = 'tb-deco ' + c; el.style.setProperty('--tc', TB_TAPE[(h >>> 6) % TB_TAPE.length]); el.innerHTML = html; pg.appendChild(el); };
     if (pg.dataset.sec) { add('tb-corner' + ((h >>> 9) % 2 ? ' tb-corner2' : '')); return; }
     const pick = (h >>> 10) % 5;
-    if (pick === 0) add('tb-stamp', '<b>숲별</b><small>2026</small>');
-    else if (pick === 1) add('tb-wave');
-    else if (pick === 2) add('tb-dots');
+    if (pick === 1) add('tb-wave');
   }
 
   function tbLvPage(list) { // 연달아 오른 레벨은 한 쪽에 — 트리 사진을 붙인 폴라로이드처럼
@@ -6556,13 +6560,14 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const srcEl = document.getElementById('tb-src'), end = book.querySelector('.tb-end'), lvWait = [];
     const over = pg => { const last = pg.querySelector('.tb-items').lastElementChild; return last && last.getBoundingClientRect().bottom > pg.getBoundingClientRect().bottom - 30; };
     let pg = null, lastD = '', first = true;
-    const close = () => { if (pg) { pg.style.display = pg.style.visibility = ''; const ds = [...pg.querySelectorAll('.tb-it[data-d]')].map(x => x.dataset.d).sort(); if (ds.length) pg.querySelector('.tb-pdate').textContent = tbFmt(ds[0]) + (ds[0] !== ds[ds.length - 1] ? ' – ' + tbFmt(ds[ds.length - 1]) : ''); pg.querySelector('.tb-items').classList.add('tb-spread'); const its = pg.querySelectorAll('.tb-it'); if (its.length === 1 && its[0].classList.contains('tb-orn')) pg.classList.add('tb-solo'); } pg = null; if (lvWait.length) { end.insertAdjacentHTML('beforebegin', tbLvPage(lvWait.splice(0))); } };
-    const open = () => { pg = document.createElement('section'); pg.className = 'tb-page tb-msg'; if (first) { pg.dataset.sec = 'msg'; first = false; } pg.innerHTML = '<p class="tb-pdate">&nbsp;</p><div class="tb-items"></div><span class="tb-pn"></span>'; end.before(pg); pg.style.display = 'block'; pg.style.visibility = 'hidden'; lastD = ''; };
+    const close = () => { if (pg) { pg.style.display = pg.style.visibility = ''; const ds = [...pg.querySelectorAll('.tb-it[data-d]')].map(x => x.dataset.d).sort(); if (ds.length) pg.querySelector('.tb-pdate').textContent = tbFmt(ds[0]) + (ds[0] !== ds[ds.length - 1] ? ' – ' + tbFmt(ds[ds.length - 1]) : ''); if (!pg.querySelector('.tb-lay2')) pg.querySelector('.tb-items').classList.add('tb-spread'); else pg.classList.add('tb-layered'); const its = pg.querySelectorAll('.tb-it'); if (its.length === 1 && its[0].classList.contains('tb-orn')) pg.classList.add('tb-solo'); } pg = null; if (lvWait.length) { end.insertAdjacentHTML('beforebegin', tbLvPage(lvWait.splice(0))); } };
+    let pno = 0;
+    const open = () => { pg = document.createElement('section'); pg.className = 'tb-page tb-msg'; pg.dataset.no = pno; pg.dataset.tpl = TB_TPL[pno++ % TB_TPL.length]; if (first) { pg.dataset.sec = 'msg'; first = false; } pg.innerHTML = '<p class="tb-pdate">&nbsp;</p><div class="tb-items"></div><span class="tb-pn"></span>'; end.before(pg); pg.style.display = 'block'; pg.style.visibility = 'hidden'; lastD = ''; };
     [...srcEl.children].forEach(el => {
       if (el.dataset.lv) { lvWait.push(...JSON.parse(el.dataset.lv)); if (!pg) close(); return; }
       if (!pg) open(); const box = pg.querySelector('.tb-items'), d = el.dataset.d, day = { parentNode: null, remove() {} };
-      box.appendChild(el);
-      if ((over(pg) || box.querySelectorAll('.tb-it').length > TB_MAX) && box.querySelectorAll('.tb-it').length > 1) { el.remove(); if (day.parentNode) day.remove(); close(); open(); lastD = ''; pg.querySelector('.tb-items').appendChild(el); }
+      box.appendChild(el); tbRole(pg, el);
+      if ((over(pg) || box.querySelectorAll('.tb-it').length > TB_MAX) && box.querySelectorAll('.tb-it').length > 1) { el.remove(); if (day.parentNode) day.remove(); close(); open(); lastD = ''; pg.querySelector('.tb-items').appendChild(el); tbRole(pg, el); }
       if (over(pg)) pg.classList.add('tb-fit'); if (over(pg)) pg.classList.add('tb-clip');
       lastD = d; });
     close(); srcEl.remove();
@@ -6583,7 +6588,6 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const pages = [...book.querySelectorAll('.tb-page')], N = pages.length;
     pages.forEach((p, n) => { const pn = p.querySelector('.tb-pn'); if (pn) pn.textContent = n + 1; });
     pages.forEach((p, n) => { if (!p.classList.contains('tb-cover')) tbStickers(p, n); });
-    pages.forEach(p => [...p.querySelectorAll('.tb-pp')].slice(2).forEach(x => { x.classList.remove('tb-pp', 'tb-postit', 'tb-grid', 'tb-lined', 'tb-torn'); x.querySelectorAll('.tb-fx').forEach(f => f.remove()); }));
     const SEC = { cover: L3('표지', 'Cover', '表紙'), intro: L3('소개', 'Intro', '紹介'), msg: L3('편지', 'Letters', '手紙'), lv: L3('트리가 자란 날', 'Growth', '成長'), end: L3('마무리', 'The end', 'おわりに') };
     const toc = document.getElementById('tb-toc');
     toc.innerHTML = pages.map((p, n) => p.dataset.sec ? `<button data-n="${n}">${SEC[p.dataset.sec]}${p.dataset.sec === 'lv' ? ' · ' + esc(p.querySelector('h2:last-of-type').textContent) : ''}<small>${n + 1}</small></button>` : '').join('');
