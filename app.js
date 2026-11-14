@@ -6452,7 +6452,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   // 디자인(색·글씨·한 쪽 개수)은 style.css 'tb-' 칸과 아래 TB 값만 바꾸면 돼요
   const TBOOK_PUBLIC = false; // false면 관리자 기기에만 (배포 '올려줘' 뒤 true)
   const TB = { cap: 7, polaW: 1.75 }; // 한 쪽에 담을 만큼(오너먼트 7줄, 폴라 두 장이 한 줄). 화면에서 넘치면 bindTreeBook이 다음 쪽으로 넘겨요 쪽 안에선 폴라 먼저, 오너먼트 아래
-  let tbI = 0, tbPages = [];
+  let tbI = 0;
   function tbDemo() { // 미리보기용 예시 (주소에 ?demo=1)
     const nick = ['숲별 하나', '별빛', '초록잎', '겨울숲', '노래나무', '새벽별', '눈송이', '솔방울'], msg = ['올해도 네 분 목소리로 겨울을 버텼어요. 고마워요!', '처음 직관 갔던 날을 아직도 기억해요 🌲', '크리스마스 콘서트 꼭 갈게요!', '숲별이라 행복해요. 건강하세요', '내년에도 같이 걸어요', '노래로 위로받는 하루하루예요', '따뜻한 연말 보내세요 ❄', '늘 응원해요. 사랑해요 💚'];
     const t0 = Date.parse('2026-11-05T12:00:00+09:00'), orn = [];
@@ -6464,84 +6464,95 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const by = (data && data.tree && data.tree.by) || {}, per = {}; Object.values(by).forEach(a => a.forEach(d => { per[d] = (per[d] || 0) + (new Date(d + 'T00:00:00Z').getUTCDay() === 6 ? 2 : 1); }));
     let sum = 0; const out = []; Object.keys(per).sort().forEach(d => { sum += per[d]; TREE_LV.forEach((l, i) => { if (i && sum >= l.w && !out.some(x => x[0] === i)) out.push([i, d]); }); }); return out;
   }
+  // 쪽 재료: 날짜순 글 + 그 사이 레벨 오른 표시. 실제 쪽 나누기는 화면 크기를 재서 bindTreeBook이 해요
   function tbBuild(src, to) {
-    const items = src.orn.filter(o => !to || o.to === to).slice().sort((a, b) => (a.at || 0) - (b.at || 0)), pages = [], fmt = d => `${+d.slice(5, 7)}월 ${+d.slice(8)}일`;
-    const fans = new Set(items.map(o => o.by || o.nick)).size, nP = items.filter(o => o.shape === 4).length;
-    pages.push({ k: 'cover', sec: L3('표지', 'Cover', '表紙') });
-    pages.push({ k: 'intro', sec: L3('소개', 'Intro', '紹介'), n: { people: src.people, fans, orn: items.length - nP, pola: nP } });
-    const lv = src.lvDays.slice(), wait = []; let cur = null, w = 0, first = true; // 레벨 쪽은 그날이 지난 뒤 다음 쪽 넘김 자리에 끼워요(쪽이 반만 차지 않게)
-    const lvPg = ([i, d]) => ({ k: 'lv', i, d, sec: L3('트리가 자란 날', 'Growth', '成長') });
-    const flush = () => { if (cur && cur.items.length) pages.push(cur); cur = null; w = 0; wait.splice(0).forEach(x => pages.push(lvPg(x))); };
-    items.forEach(o => { const d = kstDay(o.at || Date.now());
-      while (lv.length && lv[0][1] <= d) wait.push(lv.shift());
-      const ow = o.shape === 4 ? TB.polaW : 1;
-      if (!cur || w + ow > TB.cap + .01) { flush(); cur = { k: 'msg', items: [], sec: first ? L3('편지', 'Letters', '手紙') : '' }; first = false; }
-      cur.items.push(o); w += ow; cur.from = cur.from || d; cur.to = d; });
-    flush(); lv.forEach(x => pages.push(lvPg(x)));
-    pages.push({ k: 'end', sec: L3('마무리', 'The end', 'おわりに'), n: { fans, all: items.length } });
-    pages.forEach(p => { if (p.k === 'msg') p.when = p.from === p.to ? fmt(p.from) : `${fmt(p.from)} ~ ${fmt(p.to)}`; });
-    return pages;
+    const items = src.orn.filter(o => !to || o.to === to).slice().sort((a, b) => (a.at || 0) - (b.at || 0)), seq = [], lv = src.lvDays.slice();
+    items.forEach(o => { const d = kstDay(o.at || Date.now()); while (lv.length && lv[0][1] <= d) seq.push({ t: 'lv', x: lv.shift() }); seq.push({ t: 'o', o, d }); });
+    lv.forEach(x => seq.push({ t: 'lv', x }));
+    const nP = items.filter(o => o.shape === 4).length;
+    return { seq, n: { people: src.people, fans: new Set(items.map(o => o.by || o.nick)).size, orn: items.length - nP, pola: nP, all: items.length } };
   }
-  function tbPage(p, n, N) {
-    const who = o => `<p class="tb-who">— ${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}${o.at ? ` · ${kstDay(o.at).slice(5).replace('-', '.')}` : ''}${o.to === '숲별' ? ` · ${L3('숲별에게', 'to fans', 'ファンへ')}` : ''}</p>`;
-    const body = p.k === 'cover' ? `<div class="tb-cover-art">🎄</div><h1>${esc(treeName())}</h1><p>${L3('2026 겨울, 숲별들이 함께 꾸민 나무', 'Winter 2026, a tree decorated by fans together', '2026年冬、みんなで飾った木')}</p>`
-      : p.k === 'intro' ? `<h2>${L3('이 책은요', 'About this book', 'この本は')}</h2><p>${L3(`2026년 11월 5일부터 12월 24일까지<br><b>${p.n.people}명</b>의 숲별이 물을 주고<br>오너먼트 <b>${p.n.orn}개</b>와 폴라로이드 <b>${p.n.pola}장</b>을 달았어요.`, `From Nov 5 to Dec 24, 2026,<br><b>${p.n.people}</b> fans watered the tree and hung<br><b>${p.n.orn}</b> ornaments and <b>${p.n.pola}</b> polaroids.`, `2026年11月5日から12月24日まで<br><b>${p.n.people}人</b>が水をあげ<br>オーナメント<b>${p.n.orn}個</b>とポラロイド<b>${p.n.pola}枚</b>を飾りました。`)}</p><p class="tb-sm">${L3('한 장 한 장, 달린 순서대로 담았어요.', 'In the order they were hung.', '飾られた順に')}</p>`
-      : p.k === 'lv' ? `<div class="tb-lv-art">${['🌰', '🌱', '🌿', '🌲', '🎄', '📸', '❄️', '🌌', '⭐'][p.i] || '🎄'}</div><h2>Lv${p.i + 1} ${esc(lvN(TREE_LV[p.i]))}</h2><p>${L3(`${+p.d.slice(5, 7)}월 ${+p.d.slice(8)}일, 트리가 한 뼘 자랐어요`, `${p.d.slice(5).replace('-', '/')}: the tree grew`, `${+p.d.slice(5, 7)}月${+p.d.slice(8)}日、ツリーが育ちました`)}</p>`
-      : p.k === 'end' ? `<h2>${L3('숲별 트리를 꾸민 숲별 일동', 'From all the fans who decorated the tree', 'ツリーを飾ったファン一同')}</h2><div class="tb-stats"><div><b>${p.n.fans}</b><span>${L3('명', 'fans', '人')}</span></div><div><b>${p.n.all}</b><span>${L3('편지', 'letters', '手紙')}</span></div></div><p class="tb-sm">${L3('늘 고마워요, 포레스텔라 💚', 'Thank you always, Forestella 💚', 'いつもありがとう、フォレステラ 💚')}</p>`
-      : `<p class="tb-date">${esc(p.when)}</p><div class="tb-items">${p.items.filter(o => o.shape === 4).concat(p.items.filter(o => o.shape !== 4)).map(o => o.shape === 4
-        ? `<div class="tb-pola" data-id="${esc(o.id)}" data-d="${kstDay(o.at || 0)}"><div class="tb-ph">${o.pic ? `<img src="${esc(o.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</div>${o.cap ? `<b class="tb-cap">${esc(o.cap)}</b>` : ''}<p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>${who(o)}</div>`
-        : `<div class="tb-orn" data-id="${esc(o.id)}" data-d="${kstDay(o.at || 0)}"><span class="tb-ball tb-s${o.shape || 0}" style="--c:${ORN_C[o.color] || ORN_C[0]}"></span><div><p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>${who(o)}</div></div>`).join('')}</div>`;
-    return `<section class="tb-page tb-${p.k}" data-n="${n}" id="tbp${n}">${body}${p.k !== 'cover' ? `<span class="tb-pn">${n + 1}</span>` : ''}</section>`;
+  const tbFmt = d => L3(`${+d.slice(5, 7)}월 ${+d.slice(8)}일`, `${d.slice(5).replace('-', '/')}`, `${+d.slice(5, 7)}月${+d.slice(8)}日`);
+  const TB_LV_ART = ['🌰', '🌱', '🌿', '🌲', '🎄', '📸', '❄️', '🌌', '⭐'];
+  function tbItem(o) {
+    const who = `<p class="tb-who">— ${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}${o.to === '숲별' ? ` · ${L3('숲별에게', 'to fans', 'ファンへ')}` : ''}</p>`;
+    return o.shape === 4
+      ? `<div class="tb-it tb-pola" data-id="${esc(o.id)}"><div class="tb-ph">${o.pic ? `<img src="${esc(o.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</div>${o.cap ? `<b class="tb-cap">${esc(o.cap)}</b>` : ''}<p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>${who}</div>`
+      : `<div class="tb-it tb-orn" data-id="${esc(o.id)}"><span class="tb-ball tb-s${o.shape || 0}" style="--c:${ORN_C[o.color] || ORN_C[0]}"></span><div><p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>${who}</div></div>`;
+  }
+  function tbLvPage(list) { // 연달아 오른 레벨은 한 쪽에
+    const last = list[list.length - 1][0];
+    return `<section class="tb-page tb-lv" data-sec="lv"><div class="tb-lv-art">${TB_LV_ART[last] || '🎄'}</div>${list.map(([i, d]) => `<h2>Lv${i + 1} ${esc(lvN(TREE_LV[i]))}</h2><p>${L3(`${tbFmt(d)}, 트리가 한 뼘 자랐어요`, `${tbFmt(d)}: the tree grew`, `${tbFmt(d)}、ツリーが育ちました`)}</p>`).join('')}<span class="tb-pn"></span></section>`;
   }
   function treeBookView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || ''), demo = qs.get('demo') === '1' && isAdmin(), to = qs.get('to') || '';
     const back = `<a class="back" href="#/tree">‹ ${L3('숲별 트리', 'Tree', 'ツリー')}</a>`;
     if (!TBOOK_PUBLIC && !isAdmin()) return back + `<p class="empty">${L3('준비 중이에요 🌱', 'Coming soon 🌱', '準備中です 🌱')}</p>`;
-    const open = !(qs.get('demo') === 'lock' && isAdmin()) && (demo || treeOpened() || isAdmin()); // ?demo=lock: 잠긴 표지 미리보기
+    const open = !(qs.get('demo') === 'lock' && isAdmin()) && (demo || treeOpened() || isAdmin());
     if (!open) { const left = Math.max(0, Math.ceil((treeOpenAt() - Date.now()) / 864e5));
       return back + `<div class="tb-wrap"><div class="tb-book"><section class="tb-page tb-cover tb-locked on"><div class="tb-cover-art">🎄</div><span class="tb-ribbon"></span><h1>${esc(treeName())}</h1><p>${L3('12월 24일 0시에 펼쳐져요', 'Opens Dec 24, 00:00 KST', '12月24日0時に開きます')}</p><p class="tb-dday">D-${left}</p></section></div></div>`; }
-    const st = treeState(), src = demo ? tbDemo() : { orn: st.orn, people: st.people, lvDays: tbLvDays() };
-    tbPages = tbBuild(src, to); const N = tbPages.length;
-    let saved = 0; try { saved = +(localStorage.getItem('sb-tbook-p') || 0); } catch (e) {} tbI = Math.min(Math.max(0, saved), N - 1);
-    return back + `<div class="tb-wrap">${!demo && !treeOpened() ? `<p class="tb-note">${L3('관리자 미리보기예요. 12월 24일 0시에 모두에게 열려요.', 'Admin preview.', '管理者プレビュー')}</p>` : ''}
-      <div class="tb-chips">${[['', L3('전체', 'All', 'すべて')], ['포레', L3('포레스텔라에게', 'To Forestella', 'フォレステラへ')], ['숲별', L3('숲별에게', 'To fans', 'ファンへ')]].map(([v, n]) => `<a href="#/treebook?${[demo ? 'demo=1' : '', v ? 'to=' + encodeURIComponent(v) : ''].filter(Boolean).join('&')}"${v === to ? ' class="on"' : ''}>${n}</a>`).join('')}</div>
-      <div class="tb-book" id="tb-book">${tbPages.map((p, n) => tbPage(p, n, N)).join('')}</div>
+    const st = treeState(), src = demo ? tbDemo() : { orn: st.orn, people: st.people, lvDays: tbLvDays() }, b = tbBuild(src, to), n = b.n;
+    const src2 = b.seq.map(s => s.t === 'lv' ? `<i data-lv="${s.x[0]}" data-d="${s.x[1]}"></i>` : tbItem(s.o).replace('<div class="tb-it', `<div data-d="${s.d}" class="tb-it`)).join('');
+    return `<div class="tb-wrap tb-live"><div class="tb-top">${back}${!demo && !treeOpened() ? `<span class="tb-note">${L3('관리자 미리보기', 'Admin preview', '管理者プレビュー')}</span>` : ''}</div>
+      <div class="tb-chips">${[['', L3('전체', 'All', 'すべて')], ['포레', L3('포레스텔라에게', 'To Forestella', 'フォレステラへ')], ['숲별', L3('숲별에게', 'To fans', 'ファンへ')]].map(([v, nm]) => `<a href="#/treebook?${[demo ? 'demo=1' : '', v ? 'to=' + encodeURIComponent(v) : ''].filter(Boolean).join('&')}"${v === to ? ' class="on"' : ''}>${nm}</a>`).join('')}</div>
+      <div class="tb-book" id="tb-book">
+        <section class="tb-page tb-cover" data-sec="cover"><div class="tb-cover-art">🎄</div><h1>${esc(treeName())}</h1><p>${L3('2026 겨울, 숲별들이 함께 꾸민 나무', 'Winter 2026, a tree decorated by fans together', '2026年冬、みんなで飾った木')}</p></section>
+        <section class="tb-page tb-intro" data-sec="intro"><h2>${L3('이 책은요', 'About this book', 'この本は')}</h2><p>${L3(`2026년 11월 5일부터 12월 24일까지<br><b>${n.people}명</b>의 숲별이 물을 주고<br>오너먼트 <b>${n.orn}개</b>와 폴라로이드 <b>${n.pola}장</b>을 달았어요.`, `From Nov 5 to Dec 24, 2026,<br><b>${n.people}</b> fans watered the tree and hung<br><b>${n.orn}</b> ornaments and <b>${n.pola}</b> polaroids.`, `2026年11月5日から12月24日まで<br><b>${n.people}人</b>が水をあげ<br>オーナメント<b>${n.orn}個</b>とポラロイド<b>${n.pola}枚</b>を飾りました。`)}</p><p class="tb-sm">${L3('한 장 한 장, 달린 순서대로 담았어요.', 'In the order they were hung.', '飾られた順に')}</p><span class="tb-pn"></span></section>
+        <section class="tb-page tb-end" data-sec="end"><h2>${L3('숲별 트리를 꾸민 숲별 일동', 'From all the fans who decorated the tree', 'ツリーを飾ったファン一同')}</h2><div class="tb-stats"><div><b>${n.fans}</b><span>${L3('명', 'fans', '人')}</span></div><div><b>${n.all}</b><span>${L3('편지', 'letters', '手紙')}</span></div></div><p class="tb-sm">${L3('늘 고마워요, 포레스텔라 💚', 'Thank you always, Forestella 💚', 'いつもありがとう、フォレステラ 💚')}</p><span class="tb-pn"></span></section>
+      </div><div id="tb-src" hidden>${src2}</div>
       <div class="tb-bar"><button class="tb-nav" id="tb-prev" aria-label="${L3('앞 쪽', 'Previous', '前へ')}">‹</button><button class="tb-cnt" id="tb-cnt"></button><button class="tb-nav" id="tb-next" aria-label="${L3('다음 쪽', 'Next', '次へ')}">›</button></div>
-      <div class="tb-toc" id="tb-toc" hidden>${tbPages.map((p, n) => p.sec ? `<button data-n="${n}" data-pg="p${n}">${esc(p.sec)}${p.k === 'lv' ? ` Lv${p.i + 1}` : ''}<small>${n + 1}</small></button>` : '').join('')}</div></div>`;
+      <div class="tb-toc" id="tb-toc" hidden></div></div>`;
+  }
+  // 쪽 채우기: 글을 하나씩 넣다가 넘치면 다음 쪽. 날이 바뀌는 곳엔 날짜 줄, 레벨 표시는 그 쪽이 끝난 뒤 레벨 쪽으로
+  function tbPack(book) {
+    const srcEl = document.getElementById('tb-src'), end = book.querySelector('.tb-end'), lvWait = [];
+    const over = pg => { const last = pg.querySelector('.tb-items').lastElementChild; return last && last.getBoundingClientRect().bottom > pg.getBoundingClientRect().bottom - 30; };
+    let pg = null, lastD = '', first = true;
+    const close = () => { if (pg) { pg.style.display = pg.style.visibility = ''; const its = pg.querySelectorAll('.tb-it'); if (its.length === 1 && its[0].classList.contains('tb-orn')) pg.classList.add('tb-solo'); } pg = null; if (lvWait.length) { end.insertAdjacentHTML('beforebegin', tbLvPage(lvWait.splice(0))); } };
+    const open = () => { pg = document.createElement('section'); pg.className = 'tb-page tb-msg'; if (first) { pg.dataset.sec = 'msg'; first = false; } pg.innerHTML = '<div class="tb-items"></div><span class="tb-pn"></span>'; end.before(pg); pg.style.display = 'block'; pg.style.visibility = 'hidden'; lastD = ''; };
+    [...srcEl.children].forEach(el => {
+      if (el.dataset.lv) { lvWait.push([+el.dataset.lv, el.dataset.d]); if (!pg) close(); return; }
+      if (!pg) open(); const box = pg.querySelector('.tb-items'), d = el.dataset.d, day = document.createElement('p'); day.className = 'tb-day'; day.textContent = tbFmt(d);
+      const add = () => { if (d !== lastD) box.appendChild(day); box.appendChild(el); };
+      add();
+      if (over(pg) && box.querySelectorAll('.tb-it').length > 1) { el.remove(); if (day.parentNode) day.remove(); close(); open(); lastD = ''; pg.querySelector('.tb-items').appendChild(day); pg.querySelector('.tb-items').appendChild(el); }
+      if (over(pg)) pg.classList.add('tb-fit'); if (over(pg)) pg.classList.add('tb-clip');
+      lastD = d; });
+    close(); srcEl.remove();
   }
   function bindTreeBook() {
     const book = document.getElementById('tb-book'); if (!book) return;
-    // 폰 크기마다 쪽에 넘치는 글은 다음 쪽으로 (날짜 줄·쪽 번호 다시 매김)
-    const fmtD = d => `${+d.slice(5, 7)}월 ${+d.slice(8)}일`, head = pg => { const ds = [...pg.querySelectorAll('[data-d]')].map(x => x.dataset.d).sort(), h = pg.querySelector('.tb-date'); if (h && ds.length) h.textContent = ds[0] === ds[ds.length - 1] ? fmtD(ds[0]) : `${fmtD(ds[0])} ~ ${fmtD(ds[ds.length - 1])}`; };
-    [...book.querySelectorAll('.tb-msg')].forEach(pg => { let cur = pg;
-      for (let guard = 0; guard < 40; guard++) { cur.style.display = 'block'; cur.style.visibility = 'hidden'; const box = cur.querySelector('.tb-items'), over = box && box.lastElementChild && box.getBoundingClientRect().bottom > cur.getBoundingClientRect().bottom - 28;
-        if (!over || box.children.length < 2) { cur.style.display = cur.style.visibility = ''; head(cur); break; }
-        let nx = cur.nextElementSibling; if (!nx || !nx.classList.contains('tb-split')) { nx = document.createElement('section'); nx.className = 'tb-page tb-msg tb-split'; nx.innerHTML = '<p class="tb-date"></p><div class="tb-items"></div><span class="tb-pn"></span>'; cur.after(nx); }
-        const moved = [...box.children].pop(); const nb = nx.querySelector('.tb-items'); const isP = moved.classList.contains('tb-pola'), firstOrn = [...nb.children].find(x => !x.classList.contains('tb-pola'));
-        if (isP) nb.insertBefore(moved, [...nb.children].find(x => !x.classList.contains('tb-pola')) || null); else nb.insertBefore(moved, firstOrn || null);
-        if (guard === 39) { cur.style.display = cur.style.visibility = ''; } else { const still = box.getBoundingClientRect().bottom > cur.getBoundingClientRect().bottom - 28; if (!still) { cur.style.display = cur.style.visibility = ''; head(cur); cur = nx; } } } });
-    // 한 개만 있어도 넘치는 긴 글: 글씨 줄이고, 그래도 넘치면 줄여 보이고 가운데를 누르면 전체
-    book.querySelectorAll('.tb-msg').forEach(pg => { const over = () => { const it = pg.querySelector('.tb-items'); return it && it.getBoundingClientRect().bottom > pg.getBoundingClientRect().bottom - 28; };
-      pg.style.display = 'block'; pg.style.visibility = 'hidden'; if (over()) pg.classList.add('tb-fit'); if (over()) pg.classList.add('tb-clip'); pg.style.display = pg.style.visibility = ''; });
-    [...book.querySelectorAll('.tb-page')].forEach((pg, n) => { pg.dataset.n = n; const pn = pg.querySelector('.tb-pn'); if (pn) pn.textContent = n + 1; });
-    document.querySelectorAll('#tb-toc button').forEach(b => { const el = document.getElementById('tb' + b.dataset.pg); if (el) { b.dataset.n = el.dataset.n; b.querySelector('small').textContent = +el.dataset.n + 1; } });
-    const pages = [...book.querySelectorAll('.tb-page')], N = pages.length, wide = () => false; // 사이트 화면 폭이 좁아서 펼친 두 쪽은 안 써요 (나중에 쓰려면 여기만)
-    const show = (i, dir = 0) => { const step = wide() ? 2 : 1; if (wide()) i = i && i - (i % 2 === 0 ? 1 : 0); tbI = Math.max(0, Math.min(N - 1, i)); // 넓은 화면: 표지 한 쪽 + 이후 두 쪽씩
-      const vis = wide() && tbI ? [tbI, tbI + 1] : [tbI];
-      pages.forEach((p, n) => { p.classList.toggle('on', vis.includes(n)); p.classList.toggle('tb-r', wide() && vis.length === 2 && n === vis[1]); });
+    { const top = book.getBoundingClientRect().top, h = Math.max(320, window.innerHeight - top - 74), w = Math.min(book.parentNode.clientWidth, Math.round(h * 148 / 210)); book.style.width = w + 'px'; book.style.height = Math.round(w * 210 / 148) + 'px'; } // 화면 가득 (책 비율 148:210)
+    tbPack(book);
+    book.querySelectorAll('.tb-page').forEach(p => { const inn = document.createElement('div'); inn.className = 'tb-in'; while (p.firstChild) inn.appendChild(p.firstChild); p.appendChild(inn); }); // 넘김 도구가 쪽 겉 상자를 쓰니 안쪽 칸에 배치
+    const pages = [...book.querySelectorAll('.tb-page')], N = pages.length;
+    pages.forEach((p, n) => { const pn = p.querySelector('.tb-pn'); if (pn) pn.textContent = n + 1; });
+    const SEC = { cover: L3('표지', 'Cover', '表紙'), intro: L3('소개', 'Intro', '紹介'), msg: L3('편지', 'Letters', '手紙'), lv: L3('트리가 자란 날', 'Growth', '成長'), end: L3('마무리', 'The end', 'おわりに') };
+    const toc = document.getElementById('tb-toc');
+    toc.innerHTML = pages.map((p, n) => p.dataset.sec ? `<button data-n="${n}">${SEC[p.dataset.sec]}${p.dataset.sec === 'lv' ? ' · ' + esc(p.querySelector('h2:last-of-type').textContent) : ''}<small>${n + 1}</small></button>` : '').join('');
+    let saved = 0; try { saved = +(localStorage.getItem('sb-tbook-p') || 0); } catch (e) {} tbI = Math.min(Math.max(0, saved), N - 1);
+    const read = i => [i, i + 1].forEach(n => { const p = pages[n]; if (!p) return; p.querySelectorAll('[data-id]').forEach(it => { if (it.dataset.rd) return; it.dataset.rd = 1; const o = (treeState().orn || []).find(x => x.id === it.dataset.id); if (o && !o.plain) treeRead(o).then(t => { const m = it.querySelector('.tb-m'); if (m) m.textContent = t == null ? '🔒' : t; }); }); });
+    const show = (i, dir = 0) => { tbI = Math.max(0, Math.min(N - 1, i));
+      pages.forEach((p, n) => p.classList.toggle('on', n === tbI));
       if (dir) { book.classList.remove('tb-fl', 'tb-fr'); void book.offsetWidth; book.classList.add(dir > 0 ? 'tb-fl' : 'tb-fr'); }
-      document.getElementById('tb-cnt').textContent = `${tbI + 1}${vis.length === 2 && tbI + 1 < N ? '–' + (tbI + 2) : ''} / ${N}`;
-      try { localStorage.setItem('sb-tbook-p', tbI); } catch (e) {}
-      vis.concat(vis.map(n => n + 1)).forEach(n => { const p = pages[n]; if (!p) return; p.querySelectorAll('[data-id]').forEach(it => { if (it.dataset.rd) return; it.dataset.rd = 1; const o = (treeState().orn || []).find(x => x.id === it.dataset.id); if (o && !o.plain) treeRead(o).then(t => { const m = it.querySelector('.tb-m'); if (m) m.textContent = t == null ? '🔒' : t; }); }); });
-      void step; };
-    const go = d => { const step = wide() ? (tbI === 0 ? 1 : 2) : 1, j = tbI + d * step; if (j < 0 || j >= N) return; show(j, d); };
+      document.getElementById('tb-cnt').textContent = `${tbI + 1} / ${N}`;
+      try { localStorage.setItem('sb-tbook-p', tbI); } catch (e) {} read(tbI); };
+    let pf = null; // 종이 넘김 (StPageFlip, lib/page-flip.browser.js). 못 불러오면 예전 방식
+    const go = d => { if (pf) { d > 0 ? pf.flipNext() : pf.flipPrev(); return; } const j = tbI + d; if (j < 0 || j >= N) return; show(j, d); };
+    const goTo = n => { if (pf) pf.turnToPage(n), after(n); else show(n); };
+    const after = n => { tbI = n; document.getElementById('tb-cnt').textContent = `${n + 1} / ${N}`; try { localStorage.setItem('sb-tbook-p', n); } catch (e) {} read(n); };
+    const startPf = () => { if (!window.St || !window.St.PageFlip || !book.isConnected) return;
+      const r = book.getBoundingClientRect(); pages.forEach(p => p.classList.add('on'));
+      pf = new window.St.PageFlip(book, { width: Math.round(r.width), height: Math.round(r.height), size: 'fixed', usePortrait: true, showCover: false, startPage: tbI, maxShadowOpacity: .35, flippingTime: 650, mobileScrollSupport: false, disableFlipByClick: true, clickEventForward: true, drawShadow: true });
+      pf.loadFromHTML(pages); book.classList.add('tb-pf'); pf.on('flip', e => after(e.data)); after(tbI); };
+    if (window.St && window.St.PageFlip) startPf(); else { const sc = document.createElement('script'); sc.src = 'lib/page-flip.browser.js?v=1'; sc.onload = startPf; document.head.appendChild(sc); }
     document.getElementById('tb-prev').onclick = () => go(-1); document.getElementById('tb-next').onclick = () => go(1);
-    book.onclick = e => { if (e.target.closest('a,button')) return; const r = book.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; if (x < .3) go(-1); else if (x > .7) go(1);
-      else { const it = e.target.closest('.tb-orn,.tb-pola'), m = it && it.querySelector('.tb-m'); if (!m || m.scrollHeight <= m.clientHeight + 2) return; const f = document.createElement('div'); f.className = 'tb-full'; f.innerHTML = `<div><p></p>${it.querySelector('.tb-who').outerHTML}<button>${L3('닫기', 'Close', '閉じる')}</button></div>`; f.querySelector('p').textContent = m.textContent; f.onclick = ev => { if (ev.target === f || ev.target.tagName === 'BUTTON') f.remove(); }; document.body.appendChild(f); } };
+    book.onclick = e => { if (e.target.closest('a,button')) return; const r = book.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; if (!pf && x < .3) go(-1); else if (!pf && x > .7) go(1);
+      else { const it = e.target.closest('.tb-it'), m = it && it.querySelector('.tb-m'); if (!m || m.scrollHeight <= m.clientHeight + 2) return; const f = document.createElement('div'); f.className = 'tb-full'; f.innerHTML = `<div><p></p>${it.querySelector('.tb-who').outerHTML}<button>${L3('닫기', 'Close', '閉じる')}</button></div>`; f.querySelector('p').textContent = m.textContent; f.onclick = ev => { if (ev.target === f || ev.target.tagName === 'BUTTON') f.remove(); }; document.body.appendChild(f); } };
     let sx = null; book.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
-    book.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); });
-    const toc = document.getElementById('tb-toc'); document.getElementById('tb-cnt').onclick = () => { toc.hidden = !toc.hidden; };
-    toc.querySelectorAll('button').forEach(b => { b.onclick = () => { toc.hidden = true; show(+b.dataset.n); }; });
+    book.addEventListener('touchend', e => { if (sx == null || pf) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); });
+    document.getElementById('tb-cnt').onclick = () => { toc.hidden = !toc.hidden; };
+    toc.querySelectorAll('button').forEach(b => { b.onclick = () => { toc.hidden = true; goTo(+b.dataset.n); }; });
     if (window.tbKey) document.removeEventListener('keydown', window.tbKey);
     window.tbKey = e => { if (!document.getElementById('tb-book')) return; if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); }; document.addEventListener('keydown', window.tbKey);
     show(tbI);
@@ -9340,8 +9351,8 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (name !== 'opinion') opNewIds = null;
     setTabs(name);
     if (name !== 'tree') treeFrom = location.hash || '#/';
-    const full = name === 'tree' && (TREE_OPEN || isAdmin()); document.body.classList.toggle('tree-full', full);
-    view.innerHTML = (full ? '' : ddayBadge(name)) + routes[name]() + (full || /^(opinion|admin|add|card)$/.test(name) ? '' : opBtn());
+    const full = name === 'tree' && (TREE_OPEN || isAdmin()); document.body.classList.toggle('tree-full', full); document.body.classList.toggle('tb-full', name === 'treebook');
+    view.innerHTML = (full || name === 'treebook' ? '' : ddayBadge(name)) + routes[name]() + (full || /^(opinion|admin|add|card|treebook)$/.test(name) ? '' : opBtn());
     fillSyncNote(name);
     if (name === 'home') { bindHome(); bindHomeEdit(); bindHomeTree(); }
     if (name === 'search') bindSearch();
