@@ -9385,7 +9385,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       + sec(L3('공식 X 생일 글', 'Official X birthday posts', '公式X 誕生日投稿'), xs.length ? `<a class="more-link" href="#/xfeed?cat=${encodeURIComponent('생일')}&m=${encodeURIComponent(M.m)}">${L3('생일 축하 글 모아보기 ›', 'All birthday posts ›', '誕生日投稿をまとめて見る ›')}</a>` : '')
       + (M.prog ? `<a class="more-link" href="${progHref(M.prog)}">${esc(L3(`${M.prog} 모아보기 ›`, `${M.prog === '팬텀싱어' ? 'Phantom Singer' : M.prog} ›`, `${M.prog === '팬텀싱어' ? 'ファントムシンガー' : M.prog}をまとめて見る ›`))}</a>` : '')
       + (M.m ? `<a class="more-link" href="#/members?m=${encodeURIComponent(M.m)}">${esc(L3(`${M.m} 활동 보기 ›`, `${memL(M.m)}'s activities ›`, `${memL(M.m)}の活動 ›`))}</a>` : '');
-    return html ? `<section class="mg dy-mem" id="dy-mem"><h2 class="mg-h">${A[3]} ${esc((nm => A[1] ? L3(`${nm}의 추억`, `Memories: ${anvBaseL(nm)}`, `${anvBaseL(nm)}の思い出`) : anvNameL(nm))(A[1] ? (A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]) : A[2]))}</h2>${html}</section>` : '';
+    return html ? `<section class="mg dy-mem" id="dy-mem"><h2 class="mg-h">${A[3]} ${esc((nm => A[1] ? L3(`${nm} 추억 모음`, `Memories: ${anvBaseL(nm)}`, `${anvBaseL(nm)}の思い出`) : anvNameL(nm))(A[1] ? (A[2] === '데뷔' || A[2] === '결성' ? '포레스텔라 ' + A[2] : A[2]) : A[2]))}</h2>${html}</section>` : '';
   }
   const ANV_KEY = 'sb-anniv';
   const anvStore = () => { try { return JSON.parse(localStorage.getItem(ANV_KEY)) || {}; } catch (e) { return {}; } };
