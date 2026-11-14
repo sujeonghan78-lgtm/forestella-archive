@@ -2838,8 +2838,8 @@ body.tb-full .tb-live { position: fixed; inset: 0; z-index: 60; background: line
 .tb-page:not(.tb-locked) { background: var(--tb-paper) !important; color: var(--tb-ink) !important; }
 .tb-page:not(.tb-locked)::before { content: ''; position: absolute; inset: 3.3%; border: 1px solid rgba(63,107,79,.35); outline: 1px solid rgba(63,107,79,.18); outline-offset: -4px; pointer-events: none; }
 .tb-in { display: flex; flex-direction: column; text-align: center; }
-.tb-rh { position: absolute; top: -6.5%; left: 0; right: 0; margin: 0; font-size: 9.5px; letter-spacing: .25em; color: var(--tb-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tb-pn { bottom: -6.5%; font-size: 10px; color: var(--tb-gold); opacity: 1; letter-spacing: .1em; }
+.tb-rh { position: absolute; top: -3.6%; left: 0; right: 0; margin: 0; font-size: 9.5px; letter-spacing: .25em; color: var(--tb-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-pn { bottom: -3.8%; font-size: 10px; color: var(--tb-gold); opacity: 1; letter-spacing: .1em; }
 .tb-items { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 0; }
 .tb-done .tb-items { flex: 1; justify-content: center; }
 .tb-it { display: block; flex: none; border: 0; padding: 0; }
@@ -2853,7 +2853,7 @@ body.tb-full .tb-live { position: fixed; inset: 0; z-index: 60; background: line
 .tb-pola figcaption { height: 2.4em; line-height: 2.4em; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tb-pola .tb-lv-art { font-size: 60px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 100%; margin: 0; }
 .tb-cover .tb-in, .tb-lv .tb-in, .tb-intro .tb-in, .tb-end .tb-in { justify-content: center; align-items: center; }
-.tb-orn-mark { color: var(--tb-gold); font-size: 11px; letter-spacing: .6em; margin: 0 0 14px .6em; }
+.tb-page .tb-orn-mark { color: var(--tb-gold); font-size: 11px; letter-spacing: .6em; margin: 0 0 14px .6em; }
 .tb-cover h1 { font-size: 30px; color: var(--tb-accent); margin: 6px 0 8px; }
 .tb-cover p { font-size: 13px; opacity: .8; margin: 2px 0; line-height: 1.7; }
 .tb-cover .tb-yr { font-size: 10px; letter-spacing: .3em; color: var(--tb-gold); margin-top: 14px; }
@@ -2865,3 +2865,7 @@ body.tb-full .tb-live { position: fixed; inset: 0; z-index: 60; background: line
 .tb-lv-row + .tb-lv-row::before { content: '✦ ✦ ✦'; display: block; color: var(--tb-gold); font-size: 9px; letter-spacing: .6em; margin: 12px 0 12px .6em; }
 .tb-progw { height: 3px; background: #e2e5dc; border-radius: 99px; margin: 10px auto 0; overflow: hidden; max-width: 100%; }
 .tb-progw i { display: block; height: 100%; width: 0; background: var(--tb-accent); border-radius: 99px; transition: width .35s; }
+.tb-cst { font-size: 13px !important; line-height: 1.8 !important; margin-top: 14px; } .tb-cst small { font-size: 11px; color: var(--tb-sub); }
+.tb-intro b { color: var(--tb-accent); }
+.tb-lv-h { font-size: 20px !important; margin: 0 0 10px !important; }
+.tb-lv .tb-in { justify-content: center; }
