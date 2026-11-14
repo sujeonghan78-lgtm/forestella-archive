@@ -2946,3 +2946,8 @@ mark.tb-mk1 { background: none; color: inherit; text-decoration: underline wavy 
 .tb-lined::before { -webkit-mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; mask: radial-gradient(4px at 50% 0, #0000 98%, #000) 0 0 / 10px 100% repeat-x; }
 .tb-torn::before { -webkit-mask: linear-gradient(#000, #000) top / 100% calc(100% - 6px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 9px 6px repeat-x; mask: linear-gradient(#000, #000) top / 100% calc(100% - 6px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 9px 6px repeat-x; }
 .tb-grid { isolation: isolate; }
+
+/* ── 📖 트리 책: 섞기 (종이 1~2개 + 펜글씨, 글씨체 2개, 엇갈린 배치) 11-14 ── */
+.tb-items { align-items: flex-start !important; }
+.tb-orn { margin-top: var(--dy, 0px) !important; translate: var(--dx, 0px) 0; }
+.tb-orn:not(.tb-pp) { padding: 2px 4px !important; }

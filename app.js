@@ -6479,11 +6479,11 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const TB_MAX = 6; // 한 쪽에 글 최대 6개 (너무 빽빽하지 않게)
   const tbH = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
   const TB_TAPE = ['#f6d26b', '#f4a7b9', '#a8d8c8', '#b9c7f0', '#f7b98a', '#d7c1f0'];
-  const tbVars = (id, k = 0) => { const h = tbH(id + k); return `--r:${((h % 9) - 4) * .7}deg;--dx:${(h >>> 4) % 14 - 7}px;--tc:${TB_TAPE[(h >>> 8) % TB_TAPE.length]};--ta:${((h >>> 11) % 11) - 5}deg;--tc2:${TB_TAPE[(h >>> 14) % TB_TAPE.length]}`; };
+  const tbVars = (id, k = 0) => { const h = tbH(id + k); return `--r:${((h % 9) - 4) * .7}deg;--dx:${(h >>> 4) % 14 - 7}px;--dy:${(h >>> 18) % 16}px;--tc:${TB_TAPE[(h >>> 8) % TB_TAPE.length]};--ta:${((h >>> 11) % 11) - 5}deg;--tc2:${TB_TAPE[(h >>> 14) % TB_TAPE.length]}`; };
   // 글을 다 풀어 넣은 뒤 꾸밈: 길이로 칸 너비, 글마다 손글씨 글꼴·이름 정렬·날짜 쓰는 법을 번호로 골라요
   const TB_KEY = /(사랑해요?|사랑합니다|고마워요?|고맙습니다|감사합니다|행복해요?|행복하세요|응원해요?|응원합니다|함께|기억해요?|보고 싶어요?|건강하세요|ありがとう|大好き|愛してる|応援)/;
   const tbDayFmt = (d, h) => { const m = +d.slice(5, 7), dd = +d.slice(8); return [`${m}.${dd}`, `${m}월 ${dd}일`, `${m}/${dd}`, `${dd}일`, `${m}.${String(dd).padStart(2, '0')}`][h % 5]; };
-  const TB_PAPER = ['postit', 'lined', 'grid', 'torn', 'postit', 'lined', 'grid', 'torn', 'postit', 'lined'];
+  const TB_PAPER = ['postit', 'grid', 'lined', 'torn'];
   const TB_PC = ['#fff1a8', '#ffd9e2', '#d8f0e3', '#dfe7ff', '#ffe2c4', '#efe0ff', '#e6f5b8', '#c9eef0', '#ffd0c2'];
   const TB_MAG = ['#e66b6b', '#5b9bd5', '#f2c14e', '#6cbf84', '#b48ad8'];
   const TB_PEN = ['<svg viewBox="0 0 60 40"><path d="M56 6C40 4 18 10 8 30" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round"/><path d="M5 22l3 9 8-5" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M56 30c-8-14-20-4-14 2s10-8-6-16S14 14 6 18" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12l-6 6 8 3" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M54 34C44 20 30 14 8 14" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 3"/><path d="M14 8l-7 6 7 6" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="34" y="10" font-size="8" fill="#3f6e5a" font-family="Gaegu">♡</text></svg>'];
@@ -6494,15 +6494,17 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     if (/[\u3040-\u30ff]/.test(t)) note.classList.add('tb-ja'); // 일본어 글은 일본어 손글씨체로만
     if (pair && (h >>> 3) % 2 === 0) { const el = document.createElement('i'); el.className = 'tb-pen tb-pen' + ((h >>> 6) % 3); el.innerHTML = TB_PEN[(h >>> 6) % 3]; it.appendChild(el); } // 폴라로이드 쪽을 가리키는 펜 화살표
     if (pair) { if (len > 60) it.classList.add('tb-stack'); return; } // 폴라로이드는 원래 글씨, 긴 글은 사진 아래로
-    note.classList.add('tb-f' + ((h >>> 2) % 5), len <= 30 ? 'tb-short' : len <= 80 ? 'tb-mid' : 'tb-long');
+    note.classList.add('tb-f' + ((h >>> 2) % 2), len <= 30 ? 'tb-short' : len <= 80 ? 'tb-mid' : 'tb-long');
     if ((h >>> 9) % 2) note.classList.add('tb-right');
     // 종이 꾸밈: 글마다 하나씩 (포스트잇·줄 노트·모눈·찢은 줄 노트) + 마스킹 테이프
-    const g = tbH(it.dataset.id + 'paper'), P = TB_PAPER[g % TB_PAPER.length];
-    note.classList.add('tb-pp', 'tb-' + P);
-    note.style.setProperty('--pc', TB_PC[(g >>> 4) % TB_PC.length]);
-    note.style.setProperty('--tc3', TB_TAPE[(g >>> 7) % TB_TAPE.length]);
-    if (P !== 'postit' && (g >>> 10) % 3) { const el = document.createElement('i'); el.className = 'tb-fx tb-fx-tape'; note.appendChild(el); } // 붙이는 건 마스킹 테이프만 (포스트잇은 원래 붙으니 없음)
-    if (len <= 40 && (g >>> 16) % 3 === 0) note.classList.add('tb-dood', 'tb-dd' + ((g >>> 18) % 3));
+    // 종이는 글 10개 중 3개쯤만 (포스트잇·모눈·줄노트·찢은 종이 섞어서), 나머지는 바탕에 펜으로 쓴 글. 쪽마다 2개 넘으면 묶은 뒤 뺌
+    const g = tbH(it.dataset.id + 'paper');
+    if (g % 10 < 3) { const P = TB_PAPER[(g >>> 20) % 4];
+      note.classList.add('tb-pp', 'tb-' + P);
+      note.style.setProperty('--pc', TB_PC[(g >>> 4) % TB_PC.length]);
+      note.style.setProperty('--tc3', TB_TAPE[(g >>> 7) % TB_TAPE.length]);
+      if (P !== 'postit') { const el = document.createElement('i'); el.className = 'tb-fx tb-fx-tape'; note.appendChild(el); } // 포스트잇은 원래 붙으니 테이프 없음
+    } else if (len <= 40 && (g >>> 16) % 3 === 0) note.classList.add('tb-dood', 'tb-dd' + ((g >>> 18) % 3));
   }
   function tbPola(id, photo, cap, extra = '') { // 폴라로이드: 실제 비율(88:107), 정사각 사진 + 아래 두꺼운 여백에 제목 한 줄
     const ph = tbH(id);
@@ -6514,17 +6516,17 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return `<div class="tb-it tb-orn tb-note" data-id="${esc(o.id)}" style="${tbVars(o.id)}">${msg}${who}</div>`;
   }
   const TB_STK = ['<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6z" fill="#f5c83c"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z" fill="#f4a7b9"/></svg>', '<svg viewBox="0 0 24 24"><g fill="#f7b98a"><circle cx="12" cy="6" r="4"/><circle cx="18" cy="11" r="4"/><circle cx="15" cy="18" r="4"/><circle cx="9" cy="18" r="4"/><circle cx="6" cy="11" r="4"/></g><circle cx="12" cy="12" r="3" fill="#fff3b0"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 2c.8 5 2 6.2 7 7-5 .8-6.2 2-7 7-.8-5-2-6.2-7-7 5-.8 6.2-2 7-7z" fill="#a8d8c8"/></svg>', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#b9e3a0"/><circle cx="9" cy="10" r="1.2" fill="#3b2f25"/><circle cx="15" cy="10" r="1.2" fill="#3b2f25"/><path d="M8.5 14c2 2 5 2 7 0" stroke="#3b2f25" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>', '<svg viewBox="0 0 24 24"><g stroke="#8fb8d8" stroke-width="1.8" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7"/><path d="M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5"/></g></svg>', '<svg viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="12" rx="1.5" fill="#e98b7a"/><rect x="3" y="6" width="18" height="4" rx="1" fill="#f2a597"/><path d="M12 6v15" stroke="#f6d26b" stroke-width="2.4"/><path d="M12 6c-2-4-6-3-5-1 .6 1.2 3 1 5 1 2 0 4.4.2 5-1 1-2-3-3-5 1z" fill="#f6d26b"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 2l7 10h-3l4 6H4l4-6H5z" fill="#7fb07a"/><rect x="10.5" y="18" width="3" height="4" fill="#a07850"/><circle cx="12" cy="2.6" r="1.6" fill="#f5c83c"/></svg>', '<svg viewBox="0 0 24 24"><path d="M7 4h7a3 3 0 0 1 3 3v6l3 2a2.5 2.5 0 0 1-3 4l-3-2H8a3 3 0 0 1-3-3V6a2 2 0 0 1 2-2z" fill="#c9a0dc"/><rect x="5" y="15" width="10" height="3" rx="1" fill="#fff" opacity=".7"/></svg>'];
-  function tbStickers(pg, n) { // 쪽 귀퉁이에 작은 스티커 두 개 + 쪽마다 하나씩 다른 꾸밈
-    const spots = [['3%', '2%'], ['89%', '2.5%'], ['30%', '1.5%'], ['64%', '1.5%'], ['3%', '94%']], h = tbH('p' + n);
-    [0, 1].forEach(k => { const [l, t] = spots[(h + k * 2) % spots.length], el = document.createElement('i'); el.className = 'tb-stk'; el.style.cssText = `left:${l};top:${t};--r:${((h >>> k) % 30) - 15}deg`; el.innerHTML = TB_STK[(h + k * 3) % TB_STK.length]; pg.appendChild(el); });
+  function tbStickers(pg, n) { // 쪽마다 스티커 하나 + 가끔 손그림 꾸밈, 귀퉁이 테이프는 장이 시작하는 쪽에만
+    const spots = [['4%', '2%'], ['88%', '2.5%'], ['64%', '1.5%'], ['5%', '94%'], ['88%', '94%']], h = tbH('p' + n);
+    { const [l, t] = spots[h % spots.length], el = document.createElement('i'); el.className = 'tb-stk'; el.style.cssText = `left:${l};top:${t};--r:${(h >>> 3) % 30 - 15}deg`; el.innerHTML = TB_STK[(h >>> 5) % TB_STK.length]; pg.appendChild(el); }
     const add = (c, html = '') => { const el = document.createElement('i'); el.className = 'tb-deco ' + c; el.style.setProperty('--tc', TB_TAPE[(h >>> 6) % TB_TAPE.length]); el.innerHTML = html; pg.appendChild(el); };
-    const pick = (h >>> 10) % 6;
-    if (pick === 0) add('tb-corner'); // 귀퉁이 마스킹 테이프
-    else if (pick === 1) add('tb-stamp', '<b>숲별</b><small>2026</small>'); // 동그란 도장
-    else if (pick === 2) add('tb-wave'); // 아래 손그림 물결선
-    else if (pick === 3) add('tb-dots'); // 아래 작은 별 점선
-    else if (pick === 4) add('tb-corner tb-corner2'); // 왼쪽 위 테이프
+    if (pg.dataset.sec) { add('tb-corner' + ((h >>> 9) % 2 ? ' tb-corner2' : '')); return; }
+    const pick = (h >>> 10) % 5;
+    if (pick === 0) add('tb-stamp', '<b>숲별</b><small>2026</small>');
+    else if (pick === 1) add('tb-wave');
+    else if (pick === 2) add('tb-dots');
   }
+
   function tbLvPage(list) { // 연달아 오른 레벨은 한 쪽에 — 트리 사진을 붙인 폴라로이드처럼
     const last = list[list.length - 1][0], id = 'lv' + last;
     return `<section class="tb-page tb-lv" data-sec="lv"><div class="tb-lv-stks">${list.map(([i], k) => `<span class="tb-lv-stk" style="--r:${k % 2 ? 8 : -6}deg">${TB_LV_ART[i] || '🎄'}</span>`).join('')}</div><div class="tb-lv-txt">${list.map(([i, d]) => `<h2>Lv${i + 1} ${esc(lvN(TREE_LV[i]))}</h2><p>${L3(`${tbFmt(d)}, 트리가 한 뼘 자랐어요`, `${tbFmt(d)}: the tree grew`, `${tbFmt(d)}、ツリーが育ちました`)}</p>`).join('')}</div><span class="tb-pn"></span></section>`;
@@ -6581,6 +6583,7 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const pages = [...book.querySelectorAll('.tb-page')], N = pages.length;
     pages.forEach((p, n) => { const pn = p.querySelector('.tb-pn'); if (pn) pn.textContent = n + 1; });
     pages.forEach((p, n) => { if (!p.classList.contains('tb-cover')) tbStickers(p, n); });
+    pages.forEach(p => [...p.querySelectorAll('.tb-pp')].slice(2).forEach(x => { x.classList.remove('tb-pp', 'tb-postit', 'tb-grid', 'tb-lined', 'tb-torn'); x.querySelectorAll('.tb-fx').forEach(f => f.remove()); }));
     const SEC = { cover: L3('표지', 'Cover', '表紙'), intro: L3('소개', 'Intro', '紹介'), msg: L3('편지', 'Letters', '手紙'), lv: L3('트리가 자란 날', 'Growth', '成長'), end: L3('마무리', 'The end', 'おわりに') };
     const toc = document.getElementById('tb-toc');
     toc.innerHTML = pages.map((p, n) => p.dataset.sec ? `<button data-n="${n}">${SEC[p.dataset.sec]}${p.dataset.sec === 'lv' ? ' · ' + esc(p.querySelector('h2:last-of-type').textContent) : ''}<small>${n + 1}</small></button>` : '').join('');
