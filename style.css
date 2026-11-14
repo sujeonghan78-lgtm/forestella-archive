@@ -2978,3 +2978,23 @@ mark.tb-mk1 { background: none; color: inherit; text-decoration: underline wavy 
 .tb-postit { box-shadow: 0 4px 7px -3px rgba(60,40,20,.28); }
 .tb-layered .tb-items { row-gap: 30px !important; padding-top: 18px; align-content: center !important; }
 .tb-layered .tb-orn.tb-lay2 { margin-top: -34px !important; }
+
+/* 긴 글은 쪽 너비 가득, 아주 짧은 글 종이는 작게, 섞은 순서라 쪽 위 날짜는 숨김 (11-14) */
+.tb-orn.tb-sm.tb-wide, .tb-orn.tb-sc.tb-wide { flex: 0 0 100% !important; margin-left: 0 !important; margin-right: 0 !important; }
+.tb-orn.tb-lay1.tb-tiny, .tb-orn.tb-lay2.tb-tiny { flex-basis: 46% !important; }
+.tb-solo .tb-orn.tb-sm, .tb-solo .tb-orn.tb-sc { flex: 0 0 92% !important; margin: 0 auto !important; text-align: left; }
+.tb-msg .tb-pdate { visibility: hidden; }
+
+/* 틀 4~6: 목록·인용구·테이프 글 (11-14) */
+.tb-orn.tb-li { flex: 0 0 100% !important; padding: 0 0 0 22px !important; position: relative; transform: none; }
+.tb-orn.tb-li::before { content: '♥'; position: absolute; left: 2px; top: 2px; font-size: 13px; color: var(--lc); }
+.tb-orn.tb-li .tb-who { display: inline; margin-left: 6px; }
+.tb-orn.tb-li .tb-m { display: inline !important; }
+.tb-orn.tb-quote { flex: 0 0 100% !important; text-align: center; padding: 18px 10% 8px !important; position: relative; transform: rotate(-1deg); }
+.tb-orn.tb-quote .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 30px !important; line-height: 1.3 !important; color: #2f5a46 !important; }
+.tb-orn.tb-quote::before, .tb-orn.tb-quote::after { position: absolute; font-family: Georgia, serif; font-size: 44px; color: #eaa79a; line-height: 1; }
+.tb-orn.tb-quote::before { content: '“'; left: 2%; top: 0; } .tb-orn.tb-quote::after { content: '”'; right: 2%; bottom: 14px; }
+.tb-orn.tb-quote .tb-who { text-align: center !important; margin-top: 8px; }
+.tb-orn.tb-tag { flex: 0 0 auto !important; max-width: 78%; padding: 7px 16px 5px !important; background: var(--tc3) repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 5px, transparent 5px 11px); opacity: .95; transform: rotate(var(--r)); -webkit-mask: conic-gradient(from -45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / 5px 7px repeat-y, linear-gradient(#000, #000) center / calc(100% - 10px) 100% no-repeat, conic-gradient(from 135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / 5px 7px repeat-y; mask: conic-gradient(from -45deg at left, #0000, #000 1deg 89deg, #0000 90deg) left / 5px 7px repeat-y, linear-gradient(#000, #000) center / calc(100% - 10px) 100% no-repeat, conic-gradient(from 135deg at right, #0000, #000 1deg 89deg, #0000 90deg) right / 5px 7px repeat-y; }
+.tb-orn.tb-tag .tb-m { font-family: 'Nanum Pen Script', 'Yomogi', sans-serif !important; font-size: 20px !important; }
+.tb-orn.tb-tag .tb-who { color: #6b5a48 !important; opacity: .8; }

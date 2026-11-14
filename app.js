@@ -6466,9 +6466,10 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   }
   // 쪽 재료: 날짜순 글 + 그 사이 레벨 오른 표시. 실제 쪽 나누기는 화면 크기를 재서 bindTreeBook이 해요
   function tbBuild(src, to) {
-    const items = src.orn.filter(o => !to || o.to === to).slice().sort((a, b) => (a.at || 0) - (b.at || 0)), seq = [], lv = src.lvDays.slice();
+    // 편지는 날짜 순서 말고 섞어서 (번호로 섞어서 새로고침해도 같은 순서), 트리가 자란 날은 맨 뒤 한 장으로 모아요
+    const items = src.orn.filter(o => !to || o.to === to).slice().sort((a, b) => tbH(a.id + 'mix') - tbH(b.id + 'mix')), seq = [], lv = src.lvDays.slice();
     const grp = []; lv.forEach(x => { const g = grp[grp.length - 1]; if (g && g.length < 2 && (Date.parse(x[1]) - Date.parse(g[g.length - 1][1])) <= 3 * 864e5) g.push(x); else grp.push([x]); }); // 3일 안에 연달아 오른 레벨은 한 쪽에
-    items.forEach(o => { const d = kstDay(o.at || Date.now()); while (grp.length && grp[0][grp[0].length - 1][1] <= d) seq.push({ t: 'lv', x: grp.shift() }); seq.push({ t: 'o', o, d }); });
+    items.forEach(o => seq.push({ t: 'o', o, d: kstDay(o.at || Date.now()) }));
     grp.forEach(x => seq.push({ t: 'lv', x }));
     const nP = items.filter(o => o.shape === 4).length;
     return { seq, n: { people: src.people, fans: new Set(items.map(o => o.by || o.nick)).size, orn: items.length - nP, pola: nP, all: items.length } };
@@ -6486,18 +6487,22 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   const TB_PAPER = ['postit', 'grid', 'lined', 'torn'];
   const TB_PC = ['#fff0b3', '#e3eed8', '#f8dcd3'];
   // 쪽 배치 틀: 쪽마다 돌아가며 — 큰 글 하나 + 작은 글들 / 종이 두 장 겹침 + 작은 글 / 크기 다른 펜글씨. 폴라로이드가 있는 쪽은 폴라로이드가 중심
-  const TB_TPL = ['hero', 'layer', 'scatter'];
+  const TB_TPL = ['hero', 'scatter', 'layer', 'list', 'quote', 'tape'];
   function tbRole(pg, el) {
-    el.classList.remove('tb-hero', 'tb-lay1', 'tb-lay2', 'tb-sm', 'tb-sc', 'tb-sc-big', 'tb-alt', 'tb-pp', 'tb-postit', 'tb-grid', 'tb-lined', 'tb-torn', 'tb-dood', 'tb-dd0', 'tb-dd1', 'tb-dd2');
+    el.classList.remove('tb-quote', 'tb-li', 'tb-tag', 'tb-wide', 'tb-tiny', 'tb-hero', 'tb-lay1', 'tb-lay2', 'tb-sm', 'tb-sc', 'tb-sc-big', 'tb-alt', 'tb-pp', 'tb-postit', 'tb-grid', 'tb-lined', 'tb-torn', 'tb-dood', 'tb-dd0', 'tb-dd1', 'tb-dd2');
     el.querySelectorAll('.tb-fx').forEach(f => f.remove());
     if (!el.classList.contains('tb-orn')) return;
     const T = pg.dataset.tpl, no = +pg.dataset.no, m = el.querySelector('.tb-m'), len = ((m && m.textContent) || '').length, h = tbH(el.dataset.id);
     const k = [...pg.querySelectorAll('.tb-orn')].indexOf(el), hasPair = !!pg.querySelector('.tb-pair');
     const paper = P => { el.classList.add('tb-pp', 'tb-' + P); el.style.setProperty('--pc', TB_PC[(no + k) % TB_PC.length]); el.style.setProperty('--tc3', TB_TAPE[(no + k + 1) % TB_TAPE.length]); if (P !== 'postit') { const t = document.createElement('i'); t.className = 'tb-fx tb-fx-tape'; el.appendChild(t); } };
+    const wide = len > 70;
     if (!hasPair && T === 'hero' && !pg.querySelector('.tb-hero') && len <= 110) { el.classList.add('tb-hero'); paper(no % 4 < 2 ? 'lined' : 'postit'); return; }
-    if (T === 'layer' && pg.querySelectorAll('.tb-lay1, .tb-lay2').length < (hasPair ? 1 : 2) && len <= 90) { const n = pg.querySelector('.tb-lay1') ? 2 : 1; el.classList.add('tb-lay' + n); paper(n === 1 ? (no % 2 ? 'grid' : 'torn') : 'postit'); return; }
-    if (T === 'scatter') { el.classList.add('tb-sc'); if (len <= 24) el.classList.add('tb-sc-big'); if (k % 2) el.classList.add('tb-alt'); if (len <= 40 && h % 3 === 0) el.classList.add('tb-dood', 'tb-dd' + (h >>> 4) % 3); return; }
-    el.classList.add('tb-sm'); if (k % 2) el.classList.add('tb-alt');
+    if (T === 'layer' && pg.querySelectorAll('.tb-lay1, .tb-lay2').length < (hasPair ? 1 : 2) && len <= 90) { const n = pg.querySelector('.tb-lay1') ? 2 : 1; el.classList.add('tb-lay' + n); if (len <= 12) el.classList.add('tb-tiny'); paper(n === 1 ? (no % 2 ? 'grid' : 'torn') : 'postit'); return; }
+    if (T === 'quote' && !pg.querySelector('.tb-quote') && len <= 60) { el.classList.add('tb-quote'); return; } // 인용구처럼 가운데 크게
+    if (T === 'list') { el.classList.add('tb-li'); el.style.setProperty('--lc', ['#7fa88c', '#d9a520', '#c0533a'][k % 3]); return; } // 목록처럼 한 줄씩
+    if (T === 'tape' && len <= 24) { el.classList.add('tb-tag'); el.style.setProperty('--tc3', TB_TAPE[(no + k) % TB_TAPE.length]); return; } // 마스킹 테이프 위에 쓴 글
+    if (T === 'scatter') { el.classList.add('tb-sc'); if (wide) el.classList.add('tb-wide'); if (len <= 24) el.classList.add('tb-sc-big'); if (k % 2) el.classList.add('tb-alt'); if (len <= 40 && h % 3 === 0) el.classList.add('tb-dood', 'tb-dd' + (h >>> 4) % 3); return; }
+    el.classList.add('tb-sm'); if (wide) el.classList.add('tb-wide'); if (k % 2) el.classList.add('tb-alt');
   }
   const TB_MAG = ['#e66b6b', '#5b9bd5', '#f2c14e', '#6cbf84', '#b48ad8'];
   const TB_PEN = ['<svg viewBox="0 0 60 40"><path d="M56 6C40 4 18 10 8 30" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round"/><path d="M5 22l3 9 8-5" fill="none" stroke="#5a4636" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M56 30c-8-14-20-4-14 2s10-8-6-16S14 14 6 18" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12l-6 6 8 3" fill="none" stroke="#c0533a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>', '<svg viewBox="0 0 60 40"><path d="M54 34C44 20 30 14 8 14" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 3"/><path d="M14 8l-7 6 7 6" fill="none" stroke="#3f6e5a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><text x="34" y="10" font-size="8" fill="#3f6e5a" font-family="Gaegu">♡</text></svg>'];
