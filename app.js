@@ -6474,15 +6474,28 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
   }
   const tbFmt = d => L3(`${+d.slice(5, 7)}월 ${+d.slice(8)}일`, `${d.slice(5).replace('-', '/')}`, `${+d.slice(5, 7)}月${+d.slice(8)}日`);
   const TB_LV_ART = ['🌰', '🌱', '🌿', '🌲', '🎄', '📸', '❄️', '🌌', '⭐'];
-  function tbItem(o) {
-    const who = `<p class="tb-who">— ${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}${o.to === '숲별' ? ` · ${L3('숲별에게', 'to fans', 'ファンへ')}` : ''}</p>`;
-    return o.shape === 4
-      ? `<div class="tb-it tb-pola" data-id="${esc(o.id)}"><div class="tb-ph">${o.pic ? `<img src="${esc(o.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</div>${o.cap ? `<b class="tb-cap">${esc(o.cap)}</b>` : ''}<p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>${who}</div>`
-      : `<div class="tb-it tb-orn" data-id="${esc(o.id)}"><span class="tb-ball tb-s${o.shape || 0}" style="--c:${ORN_C[o.color] || ORN_C[0]}"></span><div><p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>${who}</div></div>`;
+  // 스크랩북 꾸밈: 글마다 정해진 값(번호로 만든 수)으로 기울기·위치·테이프 색을 골라서 새로고침해도 그대로
+  const tbH = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+  const TB_TAPE = ['#f6d26b', '#f4a7b9', '#a8d8c8', '#b9c7f0', '#f7b98a', '#d7c1f0'];
+  const tbVars = (id, k = 0) => { const h = tbH(id + k); return `--r:${((h % 9) - 4) * .7}deg;--dx:${(h >> 4) % 14 - 7}px;--tc:${TB_TAPE[(h >> 8) % TB_TAPE.length]};--ta:${((h >> 11) % 11) - 5}deg;--tc2:${TB_TAPE[(h >> 14) % TB_TAPE.length]}`; };
+  const tbDeco = id => ['', 'tb-hl', 'tb-q', '', 'tb-ul'][tbH(id) % 5];
+  function tbPola(id, photo, cap, extra = '') { // 폴라로이드: 실제 비율(88:107), 정사각 사진 + 아래 두꺼운 여백에 제목 한 줄
+    return `<figure class="tb-pola ${tbH(id) % 3 ? 'tb-tape1' : 'tb-tape2'}${extra}" style="${tbVars(id, 1)}"><div class="tb-ph">${photo}</div><figcaption>${cap}</figcaption></figure>`;
   }
-  function tbLvPage(list) { // 연달아 오른 레벨은 한 쪽에
-    const last = list[list.length - 1][0];
-    return `<section class="tb-page tb-lv" data-sec="lv"><div class="tb-lv-art">${TB_LV_ART[last] || '🎄'}</div>${list.map(([i, d]) => `<h2>Lv${i + 1} ${esc(lvN(TREE_LV[i]))}</h2><p>${L3(`${tbFmt(d)}, 트리가 한 뼘 자랐어요`, `${tbFmt(d)}: the tree grew`, `${tbFmt(d)}、ツリーが育ちました`)}</p>`).join('')}<span class="tb-pn"></span></section>`;
+  function tbItem(o) {
+    const who = `<p class="tb-who">— ${esc(o.nick || L3('익명의 숲별', 'A fan', '匿名のファン'))}${o.to === '숲별' ? ` · ${L3('숲별에게', 'to fans', 'ファンへ')}` : ''}</p>`, h = tbH(o.id), msg = `<p class="tb-m">${o.plain ? esc(o.plain) : '…'}</p>`;
+    if (o.shape === 4) return `<div class="tb-it tb-pair${h % 2 ? ' tb-rev' : ''}" data-id="${esc(o.id)}" style="${tbVars(o.id)}">${tbPola(o.id, o.pic ? `<img src="${esc(o.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '', esc(o.cap || ''))}<div class="tb-note ${tbDeco(o.id)}">${msg}${who}</div></div>`;
+    const short = (o.plain || '').length && (o.plain || '').length < 34;
+    return `<div class="tb-it tb-orn tb-note ${tbDeco(o.id)}${short ? ' tb-short' : ''}${h % 2 ? ' tb-right' : ''}" data-id="${esc(o.id)}" style="${tbVars(o.id)}"><span class="tb-ball tb-s${o.shape || 0}" style="--c:${ORN_C[o.color] || ORN_C[0]}"></span>${msg}${who}</div>`;
+  }
+  const TB_STK = ['<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6z" fill="#f5c83c"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z" fill="#f4a7b9"/></svg>', '<svg viewBox="0 0 24 24"><g fill="#f7b98a"><circle cx="12" cy="6" r="4"/><circle cx="18" cy="11" r="4"/><circle cx="15" cy="18" r="4"/><circle cx="9" cy="18" r="4"/><circle cx="6" cy="11" r="4"/></g><circle cx="12" cy="12" r="3" fill="#fff3b0"/></svg>', '<svg viewBox="0 0 24 24"><path d="M12 2c.8 5 2 6.2 7 7-5 .8-6.2 2-7 7-.8-5-2-6.2-7-7 5-.8 6.2-2 7-7z" fill="#a8d8c8"/></svg>', '<svg viewBox="0 0 24 24"><path d="M4 18c4-1 8-5 10-10m0 0l-4 1m4-1l1 4" fill="none" stroke="#7aa0d8" stroke-width="1.6" stroke-linecap="round"/></svg>', '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#b9e3a0"/><circle cx="9" cy="10" r="1.2" fill="#3b2f25"/><circle cx="15" cy="10" r="1.2" fill="#3b2f25"/><path d="M8.5 14c2 2 5 2 7 0" stroke="#3b2f25" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>'];
+  function tbStickers(pg, n) { // 쪽 귀퉁이에 작은 스티커 두세 개
+    const spots = [['4%', '3%'], ['86%', '4%'], ['5%', '90%'], ['87%', '89%'], ['48%', '2%']], h = tbH('p' + n);
+    [0, 1, 2].slice(0, 2 + (h % 2)).forEach(k => { const [l, t] = spots[(h + k * 2) % spots.length], el = document.createElement('i'); el.className = 'tb-stk'; el.style.cssText = `left:${l};top:${t};--r:${((h >> k) % 30) - 15}deg`; el.innerHTML = TB_STK[(h + k * 3) % TB_STK.length]; pg.appendChild(el); });
+  }
+  function tbLvPage(list) { // 연달아 오른 레벨은 한 쪽에 — 트리 사진을 붙인 폴라로이드처럼
+    const last = list[list.length - 1][0], id = 'lv' + last;
+    return `<section class="tb-page tb-lv" data-sec="lv">${tbPola(id, `<span class="tb-lv-art">${TB_LV_ART[last] || '🎄'}</span>`, `Lv${last + 1} ${esc(lvN(TREE_LV[last]))}`, ' tb-big')}<div class="tb-lv-txt">${list.map(([i, d]) => `<h2>Lv${i + 1} ${esc(lvN(TREE_LV[i]))}</h2><p>${L3(`${tbFmt(d)}, 트리가 한 뼘 자랐어요`, `${tbFmt(d)}: the tree grew`, `${tbFmt(d)}、ツリーが育ちました`)}</p>`).join('')}</div><span class="tb-pn"></span></section>`;
   }
   function treeBookView() {
     const qs = new URLSearchParams(location.hash.split('?')[1] || ''), demo = qs.get('demo') === '1' && isAdmin(), to = qs.get('to') || '';
@@ -6493,10 +6506,10 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
       return back + `<div class="tb-wrap"><div class="tb-book"><section class="tb-page tb-cover tb-locked on"><div class="tb-cover-art">🎄</div><span class="tb-ribbon"></span><h1>${esc(treeName())}</h1><p>${L3('12월 24일 0시에 펼쳐져요', 'Opens Dec 24, 00:00 KST', '12月24日0時に開きます')}</p><p class="tb-dday">D-${left}</p></section></div></div>`; }
     const st = treeState(), src = demo ? tbDemo() : { orn: st.orn, people: st.people, lvDays: tbLvDays() }, b = tbBuild(src, to), n = b.n;
     const src2 = b.seq.map(s => s.t === 'lv' ? `<i data-lv="${s.x[0]}" data-d="${s.x[1]}"></i>` : tbItem(s.o).replace('<div class="tb-it', `<div data-d="${s.d}" class="tb-it`)).join('');
-    return `<div class="tb-wrap tb-live"><div class="tb-top">${back}${!demo && !treeOpened() ? `<span class="tb-note">${L3('관리자 미리보기', 'Admin preview', '管理者プレビュー')}</span>` : ''}</div>
+    return `<div class="tb-wrap tb-live"><div class="tb-top">${back}${!demo && !treeOpened() ? `<span class="tb-adm">${L3('관리자 미리보기', 'Admin preview', '管理者プレビュー')}</span>` : ''}</div>
       <div class="tb-chips">${[['', L3('전체', 'All', 'すべて')], ['포레', L3('포레스텔라에게', 'To Forestella', 'フォレステラへ')], ['숲별', L3('숲별에게', 'To fans', 'ファンへ')]].map(([v, nm]) => `<a href="#/treebook?${[demo ? 'demo=1' : '', v ? 'to=' + encodeURIComponent(v) : ''].filter(Boolean).join('&')}"${v === to ? ' class="on"' : ''}>${nm}</a>`).join('')}</div>
       <div class="tb-book" id="tb-book">
-        <section class="tb-page tb-cover" data-sec="cover"><div class="tb-cover-art">🎄</div><h1>${esc(treeName())}</h1><p>${L3('2026 겨울, 숲별들이 함께 꾸민 나무', 'Winter 2026, a tree decorated by fans together', '2026年冬、みんなで飾った木')}</p></section>
+        <section class="tb-page tb-cover" data-sec="cover">${tbPola('cover', '<span class="tb-lv-art">🎄</span>', '2026 · winter', ' tb-big')}<h1>${esc(treeName())}</h1><p>${L3('2026 겨울, 숲별들이 함께 꾸민 나무', 'Winter 2026, a tree decorated by fans together', '2026年冬、みんなで飾った木')}</p></section>
         <section class="tb-page tb-intro" data-sec="intro"><h2>${L3('이 책은요', 'About this book', 'この本は')}</h2><p>${L3(`2026년 11월 5일부터 12월 24일까지<br><b>${n.people}명</b>의 숲별이 물을 주고<br>오너먼트 <b>${n.orn}개</b>와 폴라로이드 <b>${n.pola}장</b>을 달았어요.`, `From Nov 5 to Dec 24, 2026,<br><b>${n.people}</b> fans watered the tree and hung<br><b>${n.orn}</b> ornaments and <b>${n.pola}</b> polaroids.`, `2026年11月5日から12月24日まで<br><b>${n.people}人</b>が水をあげ<br>オーナメント<b>${n.orn}個</b>とポラロイド<b>${n.pola}枚</b>を飾りました。`)}</p><p class="tb-sm">${L3('한 장 한 장, 달린 순서대로 담았어요.', 'In the order they were hung.', '飾られた順に')}</p><span class="tb-pn"></span></section>
         <section class="tb-page tb-end" data-sec="end"><h2>${L3('숲별 트리를 꾸민 숲별 일동', 'From all the fans who decorated the tree', 'ツリーを飾ったファン一同')}</h2><div class="tb-stats"><div><b>${n.fans}</b><span>${L3('명', 'fans', '人')}</span></div><div><b>${n.all}</b><span>${L3('편지', 'letters', '手紙')}</span></div></div><p class="tb-sm">${L3('늘 고마워요, 포레스텔라 💚', 'Thank you always, Forestella 💚', 'いつもありがとう、フォレステラ 💚')}</p><span class="tb-pn"></span></section>
       </div><div id="tb-src" hidden>${src2}</div>
@@ -6527,13 +6540,15 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     const orn = treeState().orn || [];
     await Promise.all([...srcEl.querySelectorAll('[data-id]')].map(it => { const o = orn.find(x => x.id === it.dataset.id); if (!o || o.plain) return null; it.dataset.rd = 1;
       return treeRead(o).then(t => { const m = it.querySelector('.tb-m'); if (m) m.textContent = t == null ? '🔒' : t; }).catch(() => {}); }));
-    await Promise.race([document.fonts ? document.fonts.ready : null, new Promise(r => setTimeout(r, 2500))]);
+    if (!document.getElementById('tb-font')) { const l = document.createElement('link'); l.id = 'tb-font'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Pen+Script&display=swap'; document.head.appendChild(l); }
+    await Promise.race([Promise.all([document.fonts ? document.fonts.ready : null, document.fonts ? document.fonts.load('16px Gaegu').catch(() => {}) : null, document.fonts ? document.fonts.load('20px "Nanum Pen Script"').catch(() => {}) : null]), new Promise(r => setTimeout(r, 3000))]);
     if (!book.isConnected) return; book.classList.remove('tb-wait');
     { const top = book.getBoundingClientRect().top, h = Math.max(320, window.innerHeight - top - 74), w = Math.min(book.parentNode.clientWidth, Math.round(h * 148 / 210)); book.style.width = w + 'px'; book.style.height = Math.round(w * 210 / 148) + 'px'; } // 화면 가득 (책 비율 148:210)
     tbPack(book);
     book.querySelectorAll('.tb-page').forEach(p => { const inn = document.createElement('div'); inn.className = 'tb-in'; while (p.firstChild) inn.appendChild(p.firstChild); p.appendChild(inn); }); // 넘김 도구가 쪽 겉 상자를 쓰니 안쪽 칸에 배치
     const pages = [...book.querySelectorAll('.tb-page')], N = pages.length;
     pages.forEach((p, n) => { const pn = p.querySelector('.tb-pn'); if (pn) pn.textContent = n + 1; });
+    pages.forEach((p, n) => { if (!p.classList.contains('tb-cover')) tbStickers(p, n); });
     const SEC = { cover: L3('표지', 'Cover', '表紙'), intro: L3('소개', 'Intro', '紹介'), msg: L3('편지', 'Letters', '手紙'), lv: L3('트리가 자란 날', 'Growth', '成長'), end: L3('마무리', 'The end', 'おわりに') };
     const toc = document.getElementById('tb-toc');
     toc.innerHTML = pages.map((p, n) => p.dataset.sec ? `<button data-n="${n}">${SEC[p.dataset.sec]}${p.dataset.sec === 'lv' ? ' · ' + esc(p.querySelector('h2:last-of-type').textContent) : ''}<small>${n + 1}</small></button>` : '').join('');
