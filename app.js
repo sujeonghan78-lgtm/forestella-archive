@@ -6494,10 +6494,10 @@ const wlab = st => st.done ? L3('내일 또 만나요', 'See you tomorrow', 'ま
     return `<section class="tb-page tb-${p.k}" data-n="${n}" id="tbp${n}">${body}${p.k !== 'cover' ? `<span class="tb-pn">${n + 1}</span>` : ''}</section>`;
   }
   function treeBookView() {
-    const qs = new URLSearchParams(location.hash.split('?')[1] || ''), demo = qs.get('demo') === '1', to = qs.get('to') || '';
+    const qs = new URLSearchParams(location.hash.split('?')[1] || ''), demo = qs.get('demo') === '1' && isAdmin(), to = qs.get('to') || '';
     const back = `<a class="back" href="#/tree">‹ ${L3('숲별 트리', 'Tree', 'ツリー')}</a>`;
-    if (!demo && qs.get('demo') !== 'lock' && !TBOOK_PUBLIC && !isAdmin()) return back + `<p class="empty">${L3('준비 중이에요 🌱', 'Coming soon 🌱', '準備中です 🌱')}</p>`;
-    const open = qs.get('demo') !== 'lock' && (demo || treeOpened() || isAdmin()); // ?demo=lock: 잠긴 표지 미리보기
+    if (!TBOOK_PUBLIC && !isAdmin()) return back + `<p class="empty">${L3('준비 중이에요 🌱', 'Coming soon 🌱', '準備中です 🌱')}</p>`;
+    const open = !(qs.get('demo') === 'lock' && isAdmin()) && (demo || treeOpened() || isAdmin()); // ?demo=lock: 잠긴 표지 미리보기
     if (!open) { const left = Math.max(0, Math.ceil((treeOpenAt() - Date.now()) / 864e5));
       return back + `<div class="tb-wrap"><div class="tb-book"><section class="tb-page tb-cover tb-locked on"><div class="tb-cover-art">🎄</div><span class="tb-ribbon"></span><h1>${esc(treeName())}</h1><p>${L3('12월 24일 0시에 펼쳐져요', 'Opens Dec 24, 00:00 KST', '12月24日0時に開きます')}</p><p class="tb-dday">D-${left}</p></section></div></div>`; }
     const st = treeState(), src = demo ? tbDemo() : { orn: st.orn, people: st.people, lvDays: tbLvDays() };
